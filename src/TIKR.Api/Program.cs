@@ -159,7 +159,7 @@ app.MapGet("/api/knowledge", async (TikrDbContext db) =>
     return items.Select(MapKnowledge).ToList();
 });
 
-app.MapPost("/api/knowledge", async (CreateKnowledgeEntryRequest request, TikrDbContext db, IAuditService audit) =>
+app.MapPost("/api/knowledge", async (CreateKnowledgeEntryRequest request, TikrDbContext db, IAuditService audit, IHybridAiService ai) =>
 {
     var entity = new KnowledgeEntry
     {
@@ -175,10 +175,15 @@ app.MapPost("/api/knowledge", async (CreateKnowledgeEntryRequest request, TikrDb
     db.KnowledgeEntries.Add(entity);
     await db.SaveChangesAsync();
     await audit.LogAsync("Create", nameof(KnowledgeEntry), entity.Id, entity.Title);
+
+    // Best-effort embed so new vault entries become semantically retrievable for the
+    // "hit by a bus" scenario. Never fail the write if Ollama is down.
+    _ = await ai.EmbedKnowledgeEntryAsync(entity.Id);
+
     return Results.Created($"/api/knowledge/{entity.Id}", MapKnowledge(entity));
 });
 
-app.MapPut("/api/knowledge/{id:guid}", async (Guid id, UpdateKnowledgeEntryRequest request, TikrDbContext db, IAuditService audit) =>
+app.MapPut("/api/knowledge/{id:guid}", async (Guid id, UpdateKnowledgeEntryRequest request, TikrDbContext db, IAuditService audit, IHybridAiService ai) =>
 {
     var entity = await db.KnowledgeEntries.FindAsync(id);
     if (entity is null) return Results.NotFound();
@@ -191,6 +196,10 @@ app.MapPut("/api/knowledge/{id:guid}", async (Guid id, UpdateKnowledgeEntryReque
 
     await db.SaveChangesAsync();
     await audit.LogAsync("Update", nameof(KnowledgeEntry), entity.Id, entity.Title);
+
+    // Refresh embedding so semantic search reflects edited content. Best-effort.
+    _ = await ai.EmbedKnowledgeEntryAsync(entity.Id);
+
     return Results.Ok(MapKnowledge(entity));
 });
 
@@ -246,6 +255,21 @@ app.MapPost("/api/ai/embed-document/{id:guid}", async (Guid id, IHybridAiService
     try
     {
         return Results.Ok(await ai.EmbedDocumentAsync(id));
+    }
+    catch (KeyNotFoundException ex)
+    {
+        return Results.NotFound(new { error = ex.Message });
+    }
+});
+
+app.MapPost("/api/ai/semantic-search-knowledge", async (SemanticSearchRequest request, IHybridAiService ai) =>
+    Results.Ok(await ai.SemanticSearchKnowledgeAsync(request)));
+
+app.MapPost("/api/ai/embed-knowledge/{id:guid}", async (Guid id, IHybridAiService ai) =>
+{
+    try
+    {
+        return Results.Ok(await ai.EmbedKnowledgeEntryAsync(id));
     }
     catch (KeyNotFoundException ex)
     {

@@ -155,28 +155,32 @@ Repeat-safe checklist — safe to re-run anytime:
 
 ## Phase 9 — Search and documents
 
-**Status:** in progress (semantic doc RAG backend MVP done; UI wiring + ingestion + PDF preview pending)
+**Status:** in progress (doc + vault RAG backend MVP done; UI wiring + ingestion + PDF preview pending)
 
 **Goal:** Semantic search, email ingestion, PDF preview.
 
 **Acceptance criteria:**
 
-- [x] Embeddings stored on `Document.Embedding` (BLOB) via EF migration `AddDocumentEmbedding`
+- [x] `Document.Embedding` (BLOB) via EF migration `AddDocumentEmbedding`
 - [x] `nomic-embed-text` wired through `IOllamaChatClientFactory.CreateEmbeddingGenerator`
 - [x] `HybridAiService.SemanticSearchDocumentsAsync` (cosine similarity, in-memory; town-clerk scale)
-- [x] `HybridAiService.EmbedDocumentAsync` backfill endpoint for pre-existing documents
-- [x] Auto-embed on `TagDocumentAsync` (best-effort, graceful when Ollama is offline)
+- [x] `HybridAiService.EmbedDocumentAsync` backfill endpoint
+- [x] Auto-embed docs on `TagDocumentAsync` (best-effort, graceful when Ollama is offline)
 - [x] `/api/ai/semantic-search` and `/api/ai/embed-document/{id}` endpoints
 - [x] `TikrApiClient.SemanticSearchDocumentsAsync` / `EmbedDocumentAsync` helpers
+- [x] `KnowledgeEntry.Embedding` (BLOB) via EF migration `AddKnowledgeEntryEmbedding`
+- [x] `HybridAiService.SemanticSearchKnowledgeAsync` / `EmbedKnowledgeEntryAsync` (mirrors doc RAG)
+- [x] Auto-embed Vault entries on `POST /api/knowledge` and `PUT /api/knowledge/{id}` (best-effort)
+- [x] `/api/ai/semantic-search-knowledge` and `/api/ai/embed-knowledge/{id}` endpoints
+- [x] `TikrApiClient.SemanticSearchKnowledgeAsync` / `EmbedKnowledgeEntryAsync` helpers
 - [ ] `Documents.razor` Semantic toggle wired to the new endpoint (UI follow-up PR)
-- [ ] `Assistant.razor` prepends top-K semantically relevant doc snippets (UI follow-up PR)
+- [ ] `Assistant.razor` prepends top-K semantically relevant **doc + vault** snippets (UI follow-up PR — closes the original "hit by a bus" gap end-to-end)
 - [ ] PDF preview (Syncfusion `SfPdfViewer` — deferred)
 - [ ] Rich DOCX editor / Spreadsheet preview (Syncfusion DocumentEditor / Spreadsheet — deferred)
 - [ ] Full-text extraction for non-text files (still stubbed; biggest backend lever remaining)
 - [ ] IMAP or forward-to-folder email ingestion scaffold
-- [ ] Knowledge Vault entries embedded + retrievable in Assistant context
 
-**Key paths:** `src/TIKR.Infrastructure/Services/HybridAiService.cs`, `src/TIKR.Shared/Entities/Document.cs`, `src/TIKR.Infrastructure/Data/Migrations/20260627225300_AddDocumentEmbedding.cs`, `tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceSemanticSearchTests.cs`
+**Key paths:** `src/TIKR.Infrastructure/Services/HybridAiService.cs`, `src/TIKR.Shared/Entities/Document.cs`, `src/TIKR.Shared/Entities/KnowledgeEntry.cs`, `tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceSemanticSearchTests.cs`, `tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceVaultRagTests.cs`
 
 ---
 
