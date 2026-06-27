@@ -19,6 +19,10 @@ updates:
           - minor
         patterns:
           - "*"
+      nuget-security:
+        applies-to: security-updates
+        patterns:
+          - "*"
     ignore:
       - dependency-name: bunit
         update-types:
@@ -47,5 +51,9 @@ updates:
         update-types:
           - patch
           - minor
+        patterns:
+          - "*"
+      actions-security:
+        applies-to: security-updates
         patterns:
           - "*"
