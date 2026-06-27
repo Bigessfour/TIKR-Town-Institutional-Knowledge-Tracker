@@ -52,6 +52,8 @@ npx skills add syncfusion/blazor-ui-components-skills -y
 
 ## Development Workflow
 
+For Cursor and AI agents: **[AGENTS.md](AGENTS.md)** (rules) and **[docs/incremental-plan.md](docs/incremental-plan.md)** (phased roadmap).
+
 ### 1. Secrets setup
 
 ```bash

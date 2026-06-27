@@ -489,7 +489,7 @@ ehthumbs_vista.db
 *.db
 *.db-shm
 *.db-wal
-data/
+/data/
 
 # Dump file
 *.stackdump
