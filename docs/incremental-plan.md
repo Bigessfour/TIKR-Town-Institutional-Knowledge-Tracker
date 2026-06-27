@@ -73,16 +73,16 @@ Living roadmap for TIKR development. Agents and contributors: read the **current
 
 ## Phase 5 — Post-push hardening
 
-**Status:** in progress
+**Status:** in progress (5A done; 5B manual GH settings pending)
 
 ### 5A — Fix CI (code)
 
 | Step | Action | Status |
 |------|--------|--------|
-| 1 | Fix `.gitignore`: `data/` → `/data/` so `src/TIKR.Infrastructure/Data/` is tracked | in progress |
-| 2 | Commit EF Core `TikrDbContext` + Migrations | in progress |
-| 3 | Run `dotnet format TIKR.sln`; verify `dotnet test` + Trunk on PR | in progress |
-| 4 | Merge PR `fix/ci-green-main` with green **TIKR CI** + **Trunk** | pending |
+| 1 | Fix `.gitignore`: `data/` → `/data/` so `src/TIKR.Infrastructure/Data/` is tracked | done |
+| 2 | Commit EF Core `TikrDbContext` + Migrations | done |
+| 3 | Run `dotnet format TIKR.sln`; verify `dotnet test` + Trunk on PR | done |
+| 4 | Merge PR `fix/ci-green-main` with green **TIKR CI** + **Trunk** | done ([PR #9](https://github.com/Bigessfour/TIKR-Town_Instutional_Knowledge_Tracker-/pull/9)) |
 | 5 | Triage Dependabot PRs after `main` is green | pending |
 
 **Verify locally:**
