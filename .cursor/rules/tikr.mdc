@@ -1,0 +1,26 @@
+---
+description: TIKR core agent rules — read AGENTS.md and incremental plan before large changes
+alwaysApply: true
+---
+
+# TIKR Agent Rules
+
+Before substantial work, read [AGENTS.md](../../AGENTS.md) and the active phase in [docs/incremental-plan.md](../../docs/incremental-plan.md).
+
+## Workflow
+
+- Branch from `main` (`feature/*`, `fix/*`); do not commit directly to `main`.
+- Pre-PR: `dotnet test TIKR.sln --configuration Release` and `trunk check --all`.
+- Merge only when **TIKR CI** and **Trunk** checks pass.
+
+## Secrets
+
+Never commit `docker/.env`, `.cursor/mcp.json`, API keys, or license keys. Use `.example` templates and user-secrets.
+
+## Syncfusion
+
+Individual packages only — do not add meta `Syncfusion.Blazor` alongside `Syncfusion.Blazor.InteractiveChat` or other granular packages.
+
+## Code
+
+Minimal diffs; match `.editorconfig`; reuse Shared DTOs and Infrastructure services. Commit EF Core files under `src/TIKR.Infrastructure/Data/`.
