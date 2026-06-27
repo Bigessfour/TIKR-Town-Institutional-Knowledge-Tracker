@@ -21,5 +21,8 @@ jobs:
         with:
           dotnet-version: 10.0.x
 
+      - name: Verify dotnet format
+        run: dotnet format TIKR.sln --verify-no-changes
+
       - name: Trunk Code Quality
         uses: trunk-io/trunk-action@v1

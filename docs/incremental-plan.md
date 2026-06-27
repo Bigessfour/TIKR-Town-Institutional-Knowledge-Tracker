@@ -63,7 +63,7 @@ Living roadmap for TIKR development. Agents and contributors: read the **current
 **Acceptance criteria:**
 
 - `.gitignore` hardened (`.agents/`, coverage, keys, env variants)
-- Trunk: gitleaks, dotnet-format, yamllint, markdownlint, hadolint
+- Trunk: gitleaks, yamllint, markdownlint, hadolint (+ dotnet format via workflow SDK 10)
 - LICENSE (MIT), SECURITY.md, PR template, dependabot
 - Initial commit pushed to `main`
 

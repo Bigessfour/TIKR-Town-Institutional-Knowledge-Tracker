@@ -19,7 +19,7 @@ Help design, implement, and document TIKR: Blazor Interactive Server UI, Minimal
 | Backend | Minimal Web API |
 | Data | EF Core, SQLite default, PostgreSQL optional |
 | AI | Ollama + optional Grok via `Microsoft.Extensions.AI` |
-| Quality | Trunk (gitleaks, dotnet-format, yaml/md/docker lint) |
+| Quality | Trunk (gitleaks, yaml/md/docker lint) + `dotnet format` in CI |
 | CI | GitHub Actions — **TIKR CI** + **Trunk** |
 
 ## Git Workflow
