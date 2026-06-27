@@ -1,0 +1,401 @@
+{
+  "version": 1,
+  "skills": {
+    "syncfusion-blazor-3D-charts": {
+      "source": "syncfusion/blazor-ui-components-skills",
+      "sourceType": "github",
+      "skillPath": "skills/syncfusion-blazor-3D-charts/SKILL.md",
+      "computedHash": "7c989e272ca5c003bac12d86ad9a2d8782453334977b39bd6caa8168d1a843f1"
+    },
+    "syncfusion-blazor-accordion": {
+      "source": "syncfusion/blazor-ui-components-skills",
+      "sourceType": "github",
+      "skillPath": "skills/syncfusion-blazor-accordion/SKILL.md",
+      "computedHash": "b6e37d7ec2c13d09a574b2eaae592cbbdf102a7f35812f96368b5c1b07cd5fae"
+    },
+    "syncfusion-blazor-accumulation-chart": {
+      "source": "syncfusion/blazor-ui-components-skills",
+      "sourceType": "github",
+      "skillPath": "skills/syncfusion-blazor-accumulation-chart/SKILL.md",
+      "computedHash": "e92c0c492a21d94cc806177ce0ec6eb4a2c5170b085951884fb1294d6522ce0b"
+    },
+    "syncfusion-blazor-ai-assistview": {
+      "source": "syncfusion/blazor-ui-components-skills",
+      "sourceType": "github",
+      "skillPath": "skills/syncfusion-blazor-ai-assistview/SKILL.md",
+      "computedHash": "5ba02db383b18d4477712c9ab72c875d02794e1693cc4886c894715e1639e520"
+    },
+    "syncfusion-blazor-appbar": {
+      "source": "syncfusion/blazor-ui-components-skills",
+      "sourceType": "github",
+      "skillPath": "skills/syncfusion-blazor-appbar/SKILL.md",
+      "computedHash": "4a7e76285ccb5255063d650f128e953ac30835f947d29d1b1928033693af398e"
+    },
+    "syncfusion-blazor-barcode": {
+      "source": "syncfusion/blazor-ui-components-skills",
+      "sourceType": "github",
+      "skillPath": "skills/syncfusion-blazor-barcode/SKILL.md",
+      "computedHash": "4bad2d700056e50032487af974763bc802243e795331776151b0aec8f7debb17"
+    },
+    "syncfusion-blazor-blockeditor": {
+      "source": "syncfusion/blazor-ui-components-skills",
+      "sourceType": "github",
+      "skillPath": "skills/syncfusion-blazor-blockeditor/SKILL.md",
+      "computedHash": "441ea299f56942110e4509e3039f5bd93194d37a1cd281326a261167f3631295"
+    },
+    "syncfusion-blazor-breadcrumb": {
+      "source": "syncfusion/blazor-ui-components-skills",
+      "sourceType": "github",
+      "skillPath": "skills/syncfusion-blazor-breadcrumb/SKILL.md",
+      "computedHash": "af8b1dfd2418fca6c565c28d035c8ee222c79ee6179d0c743e77696a9dade9e6"
+    },
+    "syncfusion-blazor-bullet-chart": {
+      "source": "syncfusion/blazor-ui-components-skills",
+      "sourceType": "github",
+      "skillPath": "skills/syncfusion-blazor-bullet-chart/SKILL.md",
+      "computedHash": "3cd8186aaaa262fb107353f1d9715581286f7135b4341fe4920edfd6807b9f0d"
+    },
+    "syncfusion-blazor-buttons": {
+      "source": "syncfusion/blazor-ui-components-skills",
+      "sourceType": "github",
+      "skillPath": "skills/syncfusion-blazor-buttons/SKILL.md",
+      "computedHash": "f62eee63bef7deecbc4477f1c66b65c292505afc46433f8764cf1d3b4364a9c8"
+    },
+    "syncfusion-blazor-calendars": {
+      "source": "syncfusion/blazor-ui-components-skills",
+      "sourceType": "github",
+      "skillPath": "skills/syncfusion-blazor-calendars/SKILL.md",
+      "computedHash": "69b29cc3ee1f2a12149bf496376116bff25c04122fbfc9d6e7d83e9365cf409b"
+    },
+    "syncfusion-blazor-card": {
+      "source": "syncfusion/blazor-ui-components-skills",
+      "sourceType": "github",
+      "skillPath": "skills/syncfusion-blazor-card/SKILL.md",
+      "computedHash": "1412d1d8edb03416e949df6920ee932565923e061f8c72e762c36597e572752b"
+    },
+    "syncfusion-blazor-carousel": {
+      "source": "syncfusion/blazor-ui-components-skills",
+      "sourceType": "github",
+      "skillPath": "skills/syncfusion-blazor-carousel/SKILL.md",
+      "computedHash": "d202d65b147f81cf15cca40d43181c178e138e65b09f8b3d9eb719307e97443e"
+    },
+    "syncfusion-blazor-chart-wizard": {
+      "source": "syncfusion/blazor-ui-components-skills",
+      "sourceType": "github",
+      "skillPath": "skills/syncfusion-blazor-chart-wizard/SKILL.md",
+      "computedHash": "b0d6f0bfd5bcea3e63e57df52579da0aae9aab203f825130b96a4854f0339d77"
+    },
+    "syncfusion-blazor-charts": {
+      "source": "syncfusion/blazor-ui-components-skills",
+      "sourceType": "github",
+      "skillPath": "skills/syncfusion-blazor-charts/SKILL.md",
+      "computedHash": "70353b670f0530fe0c5a6f27fd883d63a841aab80bb54a517639dd75bb25daf7"
+    },
+    "syncfusion-blazor-chat-ui": {
+      "source": "syncfusion/blazor-ui-components-skills",
+      "sourceType": "github",
+      "skillPath": "skills/syncfusion-blazor-chat-ui/SKILL.md",
+      "computedHash": "d26fbde798ac8295234a2a8b2ba67ec3325105daf5a9fca3d0003bc8dda5d73b"
+    },
+    "syncfusion-blazor-circular-gauge": {
+      "source": "syncfusion/blazor-ui-components-skills",
+      "sourceType": "github",
+      "skillPath": "skills/syncfusion-blazor-circular-gauge/SKILL.md",
+      "computedHash": "5d1feecc23f67eed928be832858700b69dcea12e8dfe3ff3dcb973777cd2e948"
+    },
+    "syncfusion-blazor-common": {
+      "source": "syncfusion/blazor-ui-components-skills",
+      "sourceType": "github",
+      "skillPath": "skills/syncfusion-blazor-common/SKILL.md",
+      "computedHash": "dc90d600cff9a33acec3567f9fc0edc951d8c491c3078fb7ee6f1b638d895786"
+    },
+    "syncfusion-blazor-context-menu": {
+      "source": "syncfusion/blazor-ui-components-skills",
+      "sourceType": "github",
+      "skillPath": "skills/syncfusion-blazor-context-menu/SKILL.md",
+      "computedHash": "d03a2e6046d5132976e27d33c89226d15fe7528b41f3215688f5a84e1112ff7e"
+    },
+    "syncfusion-blazor-dashboard-layout": {
+      "source": "syncfusion/blazor-ui-components-skills",
+      "sourceType": "github",
+      "skillPath": "skills/syncfusion-blazor-dashboard-layout/SKILL.md",
+      "computedHash": "13f2d89dc08851d68957e923fb71f65a74beefd577a74ec4dea2c8af002def2b"
+    },
+    "syncfusion-blazor-dataform": {
+      "source": "syncfusion/blazor-ui-components-skills",
+      "sourceType": "github",
+      "skillPath": "skills/syncfusion-blazor-data-form/SKILL.md",
+      "computedHash": "383ef1060ebc9b8d2b57b210cd8db3a7d1d32ca0a08618354d089e3a4d80bec5"
+    },
+    "syncfusion-blazor-datagrid": {
+      "source": "syncfusion/blazor-ui-components-skills",
+      "sourceType": "github",
+      "skillPath": "skills/syncfusion-blazor-datagrid/SKILL.md",
+      "computedHash": "3b981d43f1917ecf8d1ba9e8a6577c99ccf752e1ed12ac406cde9ebd856e4cf4"
+    },
+    "syncfusion-blazor-datamanager": {
+      "source": "syncfusion/blazor-ui-components-skills",
+      "sourceType": "github",
+      "skillPath": "skills/syncfusion-blazor-datamanager/SKILL.md",
+      "computedHash": "0d34f860697e4af80b3a31c9016022e492e0c7ee79c4ee547d4e51912d37d109"
+    },
+    "syncfusion-blazor-diagram": {
+      "source": "syncfusion/blazor-ui-components-skills",
+      "sourceType": "github",
+      "skillPath": "skills/syncfusion-blazor-diagram/SKILL.md",
+      "computedHash": "b455494bf38e5966e167e4ffb34910582a55fa9d986649c4d4317941e7c14537"
+    },
+    "syncfusion-blazor-dropdown-tree": {
+      "source": "syncfusion/blazor-ui-components-skills",
+      "sourceType": "github",
+      "skillPath": "skills/syncfusion-blazor-dropdown-tree/SKILL.md",
+      "computedHash": "4861a94c5ed7bcf568d7539d93e2bc3c5f6f8314fa8a8e17d57b066e41de44be"
+    },
+    "syncfusion-blazor-dropdowns": {
+      "source": "syncfusion/blazor-ui-components-skills",
+      "sourceType": "github",
+      "skillPath": "skills/syncfusion-blazor-dropdowns/SKILL.md",
+      "computedHash": "49b4777b61ca087dc4a6d2802938186047f9fd2befac13d9e2e1e21f948ea96d"
+    },
+    "syncfusion-blazor-file-manager": {
+      "source": "syncfusion/blazor-ui-components-skills",
+      "sourceType": "github",
+      "skillPath": "skills/syncfusion-blazor-file-manager/SKILL.md",
+      "computedHash": "5609333afa69c54658cbcbd9276e618aa72459c7b511ee99760ae52601bb0512"
+    },
+    "syncfusion-blazor-gantt-chart": {
+      "source": "syncfusion/blazor-ui-components-skills",
+      "sourceType": "github",
+      "skillPath": "skills/syncfusion-blazor-gantt-chart/SKILL.md",
+      "computedHash": "da7df02412c99ef11062777739c238978b2ab8297ab3d7494c1329c5d57091bc"
+    },
+    "syncfusion-blazor-heatmap-chart": {
+      "source": "syncfusion/blazor-ui-components-skills",
+      "sourceType": "github",
+      "skillPath": "skills/syncfusion-blazor-heatmap-chart/SKILL.md",
+      "computedHash": "7354bd73ef90ceac124ec79413dfd3d6985138353b271a3626dd372a4bc2cecc"
+    },
+    "syncfusion-blazor-image-editor": {
+      "source": "syncfusion/blazor-ui-components-skills",
+      "sourceType": "github",
+      "skillPath": "skills/syncfusion-blazor-image-editor/SKILL.md",
+      "computedHash": "2dc360497eaa16f2bf4995410275739fbc753088b0e9c46b4387cb365b679de1"
+    },
+    "syncfusion-blazor-inputs": {
+      "source": "syncfusion/blazor-ui-components-skills",
+      "sourceType": "github",
+      "skillPath": "skills/syncfusion-blazor-inputs/SKILL.md",
+      "computedHash": "df826050966370244d88fba0b4cb1cc500cfddffd3e97f6d46d0b14ae16efc08"
+    },
+    "syncfusion-blazor-kanban": {
+      "source": "syncfusion/blazor-ui-components-skills",
+      "sourceType": "github",
+      "skillPath": "skills/syncfusion-blazor-kanban/SKILL.md",
+      "computedHash": "3fbaf38276aefe263f495c42c17cc7635c7b38eb19979805f6ddd68a142d7195"
+    },
+    "syncfusion-blazor-license": {
+      "source": "syncfusion/blazor-ui-components-skills",
+      "sourceType": "github",
+      "skillPath": "skills/syncfusion-blazor-license/SKILL.md",
+      "computedHash": "4d187cbd822edea4be7aa4bd380d18b654e2085beb4afa1bd48cfdd38fe0b7c2"
+    },
+    "syncfusion-blazor-linear-gauge": {
+      "source": "syncfusion/blazor-ui-components-skills",
+      "sourceType": "github",
+      "skillPath": "skills/syncfusion-blazor-linear-gauge/SKILL.md",
+      "computedHash": "875fdffc52d2ce0825ad3db2a91fcd81e223a06491706593e00a1c008c257820"
+    },
+    "syncfusion-blazor-listview": {
+      "source": "syncfusion/blazor-ui-components-skills",
+      "sourceType": "github",
+      "skillPath": "skills/syncfusion-blazor-listview/SKILL.md",
+      "computedHash": "6886f942fc90629f7589f5b3851b5d633f2bcb4bf3fe3caa2be3b7b7eaf60d09"
+    },
+    "syncfusion-blazor-maps": {
+      "source": "syncfusion/blazor-ui-components-skills",
+      "sourceType": "github",
+      "skillPath": "skills/syncfusion-blazor-maps/SKILL.md",
+      "computedHash": "d25534168aee229f42fede83d98dc815ddb381777597d91398a2f13cb4d43226"
+    },
+    "syncfusion-blazor-media-query": {
+      "source": "syncfusion/blazor-ui-components-skills",
+      "sourceType": "github",
+      "skillPath": "skills/syncfusion-blazor-media-query/SKILL.md",
+      "computedHash": "8f27692253b0a7421b3f25e7a302971f181f45988a35b18cb77107952b880553"
+    },
+    "syncfusion-blazor-menu-bar": {
+      "source": "syncfusion/blazor-ui-components-skills",
+      "sourceType": "github",
+      "skillPath": "skills/syncfusion-blazor-menu-bar/SKILL.md",
+      "computedHash": "0fe08a5f128e1810a1ca6cc92ce50b8cff004bf0fc232105c27813c3953f7dec"
+    },
+    "syncfusion-blazor-multicolumn-combobox": {
+      "source": "syncfusion/blazor-ui-components-skills",
+      "sourceType": "github",
+      "skillPath": "skills/syncfusion-blazor-multicolumn-combobox/SKILL.md",
+      "computedHash": "b2ad0af2bb17a6cd767c8b7a3debce331989e44a270ff86ee457f552c4f751d3"
+    },
+    "syncfusion-blazor-notifications": {
+      "source": "syncfusion/blazor-ui-components-skills",
+      "sourceType": "github",
+      "skillPath": "skills/syncfusion-blazor-notifications/SKILL.md",
+      "computedHash": "b6cead360f7ab30d436f253b79155aac286552c900afdf941cac71d938bcfebf"
+    },
+    "syncfusion-blazor-pivot-table": {
+      "source": "syncfusion/blazor-ui-components-skills",
+      "sourceType": "github",
+      "skillPath": "skills/syncfusion-blazor-pivot-table/SKILL.md",
+      "computedHash": "747b4dcb3262a361036d6f15645b6cef88cbb6e841a18721217389cf6bfcde5f"
+    },
+    "syncfusion-blazor-popups": {
+      "source": "syncfusion/blazor-ui-components-skills",
+      "sourceType": "github",
+      "skillPath": "skills/syncfusion-blazor-popups/SKILL.md",
+      "computedHash": "9388ba24e4ef9c9b1d8d218c2e9ff050f17a94fe3c467c41babc80ca98034f57"
+    },
+    "syncfusion-blazor-progress-bar": {
+      "source": "syncfusion/blazor-ui-components-skills",
+      "sourceType": "github",
+      "skillPath": "skills/syncfusion-blazor-progress-bar/SKILL.md",
+      "computedHash": "d0242f3fcff8654b163a8147708e2937f1b576b402371acf4ac530ce5e592fb1"
+    },
+    "syncfusion-blazor-query-builder": {
+      "source": "syncfusion/blazor-ui-components-skills",
+      "sourceType": "github",
+      "skillPath": "skills/syncfusion-blazor-query-builder/SKILL.md",
+      "computedHash": "5ddfc34fd73d547a4694c16366220534e9e82c95556bd4f4580b577614c0754c"
+    },
+    "syncfusion-blazor-range-selectors": {
+      "source": "syncfusion/blazor-ui-components-skills",
+      "sourceType": "github",
+      "skillPath": "skills/syncfusion-blazor-range-selectors/SKILL.md",
+      "computedHash": "a34bd89ccc18903af817c3b2ff00dda3f4aa6f234b61994242c67a3da7499429"
+    },
+    "syncfusion-blazor-ribbon": {
+      "source": "syncfusion/blazor-ui-components-skills",
+      "sourceType": "github",
+      "skillPath": "skills/syncfusion-blazor-ribbon/SKILL.md",
+      "computedHash": "bd47cb7a47b934f39a74e88db1284f84c16355836c83111bdd59eafeea6ddbdf"
+    },
+    "syncfusion-blazor-rich-text-editor": {
+      "source": "syncfusion/blazor-ui-components-skills",
+      "sourceType": "github",
+      "skillPath": "skills/syncfusion-blazor-rich-text-editor/SKILL.md",
+      "computedHash": "1ab5438a31885848de87e553bbc51937739f0395f9d3166d8755c0e77179e67e"
+    },
+    "syncfusion-blazor-sankey": {
+      "source": "syncfusion/blazor-ui-components-skills",
+      "sourceType": "github",
+      "skillPath": "skills/syncfusion-blazor-sankey/SKILL.md",
+      "computedHash": "fa4ee766b863006ff94482f53d5dd45d69a881d9f220fc7be769f42c52d73170"
+    },
+    "syncfusion-blazor-scheduler": {
+      "source": "syncfusion/blazor-ui-components-skills",
+      "sourceType": "github",
+      "skillPath": "skills/syncfusion-blazor-scheduler/SKILL.md",
+      "computedHash": "f2ef8eec82255f80ff2eee31d3ed4e8dd0716aede0a735d047e990c97aa9edbf"
+    },
+    "syncfusion-blazor-security": {
+      "source": "syncfusion/blazor-ui-components-skills",
+      "sourceType": "github",
+      "skillPath": "skills/syncfusion-blazor-security/SKILL.md",
+      "computedHash": "19d71514588d3a3c86d7c800e95a35467774063b7ef06f386a03683c9afdd576"
+    },
+    "syncfusion-blazor-sidebar": {
+      "source": "syncfusion/blazor-ui-components-skills",
+      "sourceType": "github",
+      "skillPath": "skills/syncfusion-blazor-sidebar/SKILL.md",
+      "computedHash": "3483353827e0015ff29eef50faeca988a590e7c6194fe67db83cf7c015187d1d"
+    },
+    "syncfusion-blazor-smart-paste": {
+      "source": "syncfusion/blazor-ui-components-skills",
+      "sourceType": "github",
+      "skillPath": "skills/syncfusion-blazor-smart-paste/SKILL.md",
+      "computedHash": "cf9cffbacc0308aa4a47f4c8c699f6b9d11edfcf9f87138f239ba7c919b6c512"
+    },
+    "syncfusion-blazor-smart-rich-text-editor": {
+      "source": "syncfusion/blazor-ui-components-skills",
+      "sourceType": "github",
+      "skillPath": "skills/syncfusion-blazor-smart-rich-text-editor/SKILL.md",
+      "computedHash": "e06c87e2228b8e40440897160e22f5840740fc226a281580eb163184e35273b6"
+    },
+    "syncfusion-blazor-smart-textarea": {
+      "source": "syncfusion/blazor-ui-components-skills",
+      "sourceType": "github",
+      "skillPath": "skills/syncfusion-blazor-smart-textarea/SKILL.md",
+      "computedHash": "e0650638738522921dc3664f69890f2da2aac62d62109b09b05e29c5de805ae2"
+    },
+    "syncfusion-blazor-smith-charts": {
+      "source": "syncfusion/blazor-ui-components-skills",
+      "sourceType": "github",
+      "skillPath": "skills/syncfusion-blazor-smith-charts/SKILL.md",
+      "computedHash": "51a5bf394c51f58909ed188668267c6a49c227b8e4105d199d8daf7bb35312f1"
+    },
+    "syncfusion-blazor-sparkline-charts": {
+      "source": "syncfusion/blazor-ui-components-skills",
+      "sourceType": "github",
+      "skillPath": "skills/syncfusion-blazor-sparkline-charts/SKILL.md",
+      "computedHash": "47548d0432bbc257d86f529364d161803760caf316e327973853e261e88cb645"
+    },
+    "syncfusion-blazor-speech-to-text": {
+      "source": "syncfusion/blazor-ui-components-skills",
+      "sourceType": "github",
+      "skillPath": "skills/syncfusion-blazor-speech-to-text/SKILL.md",
+      "computedHash": "78bc2989bac114b17ea369f0207e4f9c93625f49db72fe5ce4ad6eccae616a09"
+    },
+    "syncfusion-blazor-splitter": {
+      "source": "syncfusion/blazor-ui-components-skills",
+      "sourceType": "github",
+      "skillPath": "skills/syncfusion-blazor-splitter/SKILL.md",
+      "computedHash": "7bac17220bd371813389e3159c2332f7de2d857463a185ee48eb4e9f1db6d388"
+    },
+    "syncfusion-blazor-stepper": {
+      "source": "syncfusion/blazor-ui-components-skills",
+      "sourceType": "github",
+      "skillPath": "skills/syncfusion-blazor-stepper/SKILL.md",
+      "computedHash": "213b808334210bacf984398dbec84c23a356be86f667d8c79cc3093080ea01e5"
+    },
+    "syncfusion-blazor-stock-charts": {
+      "source": "syncfusion/blazor-ui-components-skills",
+      "sourceType": "github",
+      "skillPath": "skills/syncfusion-blazor-stock-charts/SKILL.md",
+      "computedHash": "aaf5dd53ae9512d492ffe5b7db68dd031a560b8447c7d75a0607117d1bedc139"
+    },
+    "syncfusion-blazor-themes": {
+      "source": "syncfusion/blazor-ui-components-skills",
+      "sourceType": "github",
+      "skillPath": "skills/syncfusion-blazor-themes/SKILL.md",
+      "computedHash": "96976e1304702bb97bdd5fad6220db79929942ff4892679be974ccc253141432"
+    },
+    "syncfusion-blazor-timeline": {
+      "source": "syncfusion/blazor-ui-components-skills",
+      "sourceType": "github",
+      "skillPath": "skills/syncfusion-blazor-timeline/SKILL.md",
+      "computedHash": "9a792fa1fd5e6653dfb80901d4d9e7a914a6ce8a3ab5f9a838ae271e27f06331"
+    },
+    "syncfusion-blazor-toolbar": {
+      "source": "syncfusion/blazor-ui-components-skills",
+      "sourceType": "github",
+      "skillPath": "skills/syncfusion-blazor-toolbar/SKILL.md",
+      "computedHash": "ffe128ce0139f98d8c05e7a903ca357df6b0ad5d5e680e373e1d5fb67aacda44"
+    },
+    "syncfusion-blazor-treegrid": {
+      "source": "syncfusion/blazor-ui-components-skills",
+      "sourceType": "github",
+      "skillPath": "skills/syncfusion-blazor-treegrid/SKILL.md",
+      "computedHash": "3ed55e3232ae2c674029fcafbe49db07fb2f2ac038b02f241aae0f9c58e378cb"
+    },
+    "syncfusion-blazor-treemap": {
+      "source": "syncfusion/blazor-ui-components-skills",
+      "sourceType": "github",
+      "skillPath": "skills/syncfusion-blazor-treemap/SKILL.md",
+      "computedHash": "3b68d4a00cf4ee66829188f36830d71bf7dbc9ee8133be2751961ef1012b4960"
+    },
+    "syncfusion-blazor-treeview": {
+      "source": "syncfusion/blazor-ui-components-skills",
+      "sourceType": "github",
+      "skillPath": "skills/syncfusion-blazor-treeview/SKILL.md",
+      "computedHash": "378cb634c7e21c8b47142fd4f8b5fc1bc1720053bac1fd3d006cbd8440fffe53"
+    }
+  }
+}

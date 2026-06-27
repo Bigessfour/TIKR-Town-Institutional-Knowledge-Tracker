@@ -1,0 +1,27 @@
+﻿@inherits LayoutComponentBase
+
+<div class="tikr-layout">
+    <nav class="tikr-sidebar">
+        <div class="tikr-brand">
+            <h1>TIKR</h1>
+            <p>The Town Clerk's Second Brain</p>
+        </div>
+        <ul class="tikr-nav">
+            <li><NavLink href="/" Match="NavLinkMatch.All">Dashboard</NavLink></li>
+            <li><NavLink href="/calendar">Calendar</NavLink></li>
+            <li><NavLink href="/documents">Documents</NavLink></li>
+            <li><NavLink href="/assistant">AI Assistant</NavLink></li>
+            <li><NavLink href="/knowledge">Knowledge Vault</NavLink></li>
+            <li><NavLink href="/settings">Settings</NavLink></li>
+        </ul>
+    </nav>
+    <main class="tikr-main">
+        @Body
+    </main>
+</div>
+
+<div id="blazor-error-ui" data-nosnippet>
+    An unhandled error has occurred.
+    <a href="." class="reload">Reload</a>
+    <span class="dismiss">🗙</span>
+</div>

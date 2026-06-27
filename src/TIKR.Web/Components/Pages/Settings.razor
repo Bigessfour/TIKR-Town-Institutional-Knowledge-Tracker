@@ -1,0 +1,44 @@
+@page "/settings"
+@rendermode InteractiveServer
+@inject TikrApiClient Api
+
+<div class="page-header">
+    <h2>Settings</h2>
+    <p>AI configuration and system status</p>
+</div>
+
+<SfCard>
+    <CardHeader Title="AI Status" />
+    <CardContent>
+        @if (_status is null)
+        {
+            <p>Unable to reach API.</p>
+        }
+        else
+        {
+            <p><strong>Ollama:</strong> @(_status.OllamaAvailable ? "Connected" : "Unavailable") (@_status.OllamaModel)</p>
+            <p><strong>Grok (Advanced AI):</strong> @(_status.GrokEnabled ? "Enabled" : "Disabled — set USE_GROK=true on API")</p>
+        }
+    </CardContent>
+</SfCard>
+
+<div class="mt-4">
+    <h4>Advanced AI</h4>
+    <p class="text-muted">Use the dedicated <a href="/assistant">AI Assistant</a> page for local Ollama chat and optional Grok escalation.</p>
+</div>
+
+@code {
+    private AiStatusResponse? _status;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _status = await Api.GetAiStatusAsync();
+        }
+        catch
+        {
+            _status = null;
+        }
+    }
+}

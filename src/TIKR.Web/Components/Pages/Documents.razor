@@ -1,0 +1,72 @@
+@page "/documents"
+@rendermode InteractiveServer
+@inject TikrApiClient Api
+
+<div class="page-header">
+    <h2>Document Management</h2>
+    <p>Upload, tag, and search municipal documents</p>
+</div>
+
+<SfUploader AutoUpload="true" Multiple="true">
+    <UploaderEvents ValueChange="OnUpload"></UploaderEvents>
+</SfUploader>
+
+<div class="mt-3">
+    <SfTextBox Placeholder="Search documents..." @bind-Value="_searchQuery" Input="OnSearch"></SfTextBox>
+</div>
+
+<SfGrid DataSource="@_documents" AllowPaging="true" Height="400" CssClass="mt-3">
+    <GridColumns>
+        <GridColumn Field="@nameof(DocumentDto.FileName)" HeaderText="File Name" Width="200"></GridColumn>
+        <GridColumn Field="@nameof(DocumentDto.AiTags)" HeaderText="AI Tags" Width="150"></GridColumn>
+        <GridColumn Field="@nameof(DocumentDto.SuggestedFolder)" HeaderText="Suggested Folder" Width="150"></GridColumn>
+        <GridColumn Field="@nameof(DocumentDto.FileSizeBytes)" HeaderText="Size (bytes)" Width="120"></GridColumn>
+        <GridColumn Field="@nameof(DocumentDto.UploadedAt)" HeaderText="Uploaded" Format="g" Width="160"></GridColumn>
+    </GridColumns>
+</SfGrid>
+
+@if (!string.IsNullOrEmpty(_statusMessage))
+{
+    <p class="mt-2">@_statusMessage</p>
+}
+
+@code {
+    private List<DocumentDto> _documents = [];
+    private string _searchQuery = "";
+    private string? _statusMessage;
+
+    protected override async Task OnInitializedAsync() => await LoadDocuments();
+
+    private async Task LoadDocuments() =>
+        _documents = await Api.GetDocumentsAsync(string.IsNullOrWhiteSpace(_searchQuery) ? null : _searchQuery);
+
+    private async Task OnSearch(InputEventArgs args)
+    {
+        _searchQuery = args.Value?.ToString() ?? "";
+        await LoadDocuments();
+    }
+
+    private async Task OnUpload(UploadChangeEventArgs args)
+    {
+        foreach (var file in args.Files)
+        {
+            if (file.File is null) continue;
+
+            await using var stream = file.File.OpenReadStream(long.MaxValue);
+            var response = await Api.UploadDocumentAsync(stream, file.FileInfo.Name);
+            if (response.IsSuccessStatusCode)
+            {
+                _statusMessage = $"Uploaded {file.FileInfo.Name}";
+                var doc = await response.Content.ReadFromJsonAsync<DocumentDto>();
+                if (doc is not null)
+                    await Api.TagDocumentAsync(doc.Id);
+            }
+            else
+            {
+                _statusMessage = $"Failed to upload {file.FileInfo.Name}";
+            }
+        }
+
+        await LoadDocuments();
+    }
+}

@@ -1,0 +1,21 @@
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS base
+WORKDIR /app
+EXPOSE 8080
+ENV ASPNETCORE_URLS=http://+:8080
+
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+WORKDIR /src
+
+COPY ["src/TIKR.Web/TIKR.Web.csproj", "src/TIKR.Web/"]
+COPY ["src/TIKR.Shared/TIKR.Shared.csproj", "src/TIKR.Shared/"]
+
+RUN dotnet restore "src/TIKR.Web/TIKR.Web.csproj"
+
+COPY . .
+WORKDIR "/src/src/TIKR.Web"
+RUN dotnet publish "TIKR.Web.csproj" -c Release -o /app/publish /p:UseAppHost=false
+
+FROM base AS final
+WORKDIR /app
+COPY --from=build /app/publish .
+ENTRYPOINT ["dotnet", "TIKR.Web.dll"]

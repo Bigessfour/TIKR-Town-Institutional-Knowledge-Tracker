@@ -1,0 +1,164 @@
+@page "/assistant"
+@rendermode InteractiveServer
+@inject IChatClient ChatClient
+@inject TikrApiClient Api
+@using Markdig
+@using Microsoft.Extensions.AI
+
+<div class="page-header">
+    <h2>AI Assistant</h2>
+    <p>Local Ollama for everyday questions; Grok for advanced reasoning when enabled.</p>
+</div>
+
+@if (!string.IsNullOrEmpty(_contextSummary))
+{
+    <SfCard CssClass="mb-3">
+        <CardHeader Title="Clerk context" />
+        <CardContent>
+            <p class="mb-0" style="white-space: pre-wrap">@_contextSummary</p>
+        </CardContent>
+    </SfCard>
+}
+
+<div class="assistant-container">
+    <SfAIAssistView @ref="_assistView"
+                    ID="tikrAssistant"
+                    Prompt="What should I be working on this week?"
+                    PromptPlaceholder="Ask about deadlines, documents, or municipal procedures..."
+                    EnableStreaming="true"
+                    Width="100%"
+                    Height="100%"
+                    PromptRequested="OnPromptRequested"
+                    ResponseStopped="OnResponseStopped">
+    </SfAIAssistView>
+</div>
+
+<div class="mt-3">
+    <SfButton IsPrimary="false" Content="Ask Advanced AI (Grok)" OnClick="AskAdvancedAsync"></SfButton>
+    @if (!string.IsNullOrEmpty(_advancedNote))
+    {
+        <p class="mt-2 text-muted">@_advancedNote</p>
+    }
+</div>
+
+@if (!string.IsNullOrEmpty(_advancedAnswer))
+{
+    <SfCard CssClass="mt-3">
+        <CardHeader Title="Advanced AI (Grok)" />
+        <CardContent>
+            <div>@((MarkupString)_advancedAnswer)</div>
+        </CardContent>
+    </SfCard>
+}
+
+<style>
+    .assistant-container {
+        height: 520px;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        overflow: hidden;
+        background: #fff;
+    }
+</style>
+
+@code {
+    private SfAIAssistView? _assistView;
+    private string _contextSummary = "";
+    private string _advancedNote = "";
+    private string _advancedAnswer = "";
+    private string? _lastPrompt;
+    private CancellationTokenSource? _streamingCts;
+
+    private const string SystemPrompt =
+        "You are TIKR, a helpful AI assistant for a one-person Colorado municipal town clerk. " +
+        "Answer concisely about deadlines, documents, procedures, and institutional knowledge. " +
+        "If unsure, say so and suggest checking official Colorado statutes or the town attorney.";
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var priorities = await Api.GetDashboardPrioritiesAsync();
+            if (priorities.Count > 0)
+            {
+                _contextSummary = string.Join("\n", priorities.Select(p =>
+                    $"- {p.Title} ({p.Priority}): {p.Reason}" +
+                    (p.DueDate.HasValue ? $" — due {p.DueDate.Value:MMM d}" : "")));
+            }
+        }
+        catch
+        {
+            _contextSummary = "Unable to load deadline context from API.";
+        }
+    }
+
+    private async Task OnPromptRequested(AssistViewPromptRequestedEventArgs args)
+    {
+        _lastPrompt = args.Prompt;
+        _streamingCts?.Cancel();
+        _streamingCts = new CancellationTokenSource();
+        var token = _streamingCts.Token;
+
+        args.Response = "<div>";
+        var markdownBuilder = new System.Text.StringBuilder();
+
+        try
+        {
+            var userMessage = string.IsNullOrWhiteSpace(_contextSummary)
+                ? args.Prompt
+                : $"Upcoming priorities:\n{_contextSummary}\n\nQuestion: {args.Prompt}";
+
+            var messages = new List<Microsoft.Extensions.AI.ChatMessage>
+            {
+                new(Microsoft.Extensions.AI.ChatRole.System, SystemPrompt),
+                new(Microsoft.Extensions.AI.ChatRole.User, userMessage)
+            };
+
+            await foreach (var update in ChatClient.GetStreamingResponseAsync(messages, cancellationToken: token))
+            {
+                if (string.IsNullOrEmpty(update.Text))
+                    continue;
+
+                markdownBuilder.Append(update.Text);
+                var html = Markdown.ToHtml(markdownBuilder.ToString());
+                await _assistView!.UpdateResponseAsync(html);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            await _assistView!.UpdateResponseAsync("<p><em>Response stopped.</em></p>");
+        }
+        catch (Exception ex)
+        {
+            await _assistView!.UpdateResponseAsync($"<p class='text-danger'>Local AI unavailable: {ex.Message}. Is Ollama running?</p>");
+        }
+
+        await _assistView!.UpdateResponseAsync("</div>");
+    }
+
+    private void OnResponseStopped(ResponseStoppedEventArgs args) =>
+        _streamingCts?.Cancel();
+
+    private async Task AskAdvancedAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_lastPrompt))
+        {
+            _advancedNote = "Send a message in the chat first, then click Ask Advanced AI.";
+            return;
+        }
+
+        var result = await Api.AskAdvancedAsync(_lastPrompt, _contextSummary);
+        if (result is null)
+        {
+            _advancedNote = "Advanced AI unavailable. Enable USE_GROK=true and GROK_API_KEY on the API.";
+            return;
+        }
+
+        _advancedNote = result.UsedGrok
+            ? "Grok response shown below."
+            : "Advanced AI response shown below.";
+
+        _advancedAnswer = Markdown.ToHtml(result.Answer);
+        StateHasChanged();
+    }
+}

@@ -1,0 +1,64 @@
+name: TIKR CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore
+        run: dotnet restore TIKR.sln
+
+      - name: Build
+        run: dotnet build TIKR.sln --no-restore --configuration Release
+
+      - name: Test with coverage
+        run: |
+          dotnet test TIKR.sln \
+            --no-build \
+            --configuration Release \
+            --verbosity normal \
+            --settings coverlet.runsettings \
+            --collect:"XPlat Code Coverage" \
+            --results-directory coverage
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-report
+          path: coverage/**/coverage.cobertura.xml
+
+      - name: Docker Build & Smoke Test
+        # Requires Docker on ubuntu-latest. Copies placeholder env; no real secrets in CI.
+        # May fail on GH rate limits or Docker daemon issues — investigate logs if red.
+        continue-on-error: true
+        run: |
+          cp docker/.env.example docker/.env
+          docker compose -f docker/docker-compose.yml build
+          docker compose -f docker/docker-compose.yml up -d
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:5000/health; then
+              echo "API health check passed"
+              break
+            fi
+            sleep 5
+          done
+          curl -sf http://localhost:5000/health
+          curl -sf -o /dev/null -w "%{http_code}" http://localhost:8080/ | grep -qE '200|302'
+          docker compose -f docker/docker-compose.yml down

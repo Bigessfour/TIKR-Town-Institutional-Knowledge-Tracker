@@ -1,0 +1,14 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/TIKR.Shared/TIKR.Shared.csproj" />
+    <Project Path="src/TIKR.Infrastructure/TIKR.Infrastructure.csproj" />
+    <Project Path="src/TIKR.Api/TIKR.Api.csproj" />
+    <Project Path="src/TIKR.Web/TIKR.Web.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/TIKR.Shared.Tests/TIKR.Shared.Tests.csproj" />
+    <Project Path="tests/TIKR.Infrastructure.Tests/TIKR.Infrastructure.Tests.csproj" />
+    <Project Path="tests/TIKR.Api.Tests/TIKR.Api.Tests.csproj" />
+    <Project Path="tests/TIKR.Web.Tests/TIKR.Web.Tests.csproj" />
+  </Folder>
+</Solution>

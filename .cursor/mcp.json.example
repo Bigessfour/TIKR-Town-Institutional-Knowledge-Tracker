@@ -1,0 +1,21 @@
+{
+  "mcpServers": {
+    "sf-blazor-mcp": {
+      "command": "npx",
+      "args": ["-y", "@syncfusion/blazor-assistant@latest"],
+      "env": {
+        "Syncfusion_API_Key": "${env:SYNCFUSION_API_KEY}"
+      }
+    },
+    "microsoft-learn": {
+      "url": "https://learn.microsoft.com/api/mcp"
+    },
+    "ollama": {
+      "command": "npx",
+      "args": ["-y", "ollama-mcp"],
+      "env": {
+        "OLLAMA_HOST": "http://localhost:11434"
+      }
+    }
+  }
+}

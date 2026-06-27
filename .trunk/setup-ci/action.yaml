@@ -1,0 +1,9 @@
+name: Trunk Code Quality setup
+description: Install .NET SDK for dotnet-format in Trunk CI
+runs:
+  using: composite
+  steps:
+    - name: Setup .NET SDK
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 10.0.x

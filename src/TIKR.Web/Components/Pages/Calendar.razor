@@ -1,0 +1,60 @@
+@page "/calendar"
+@rendermode InteractiveServer
+@inject TikrApiClient Api
+
+<div class="page-header">
+    <h2>Deadline Calendar</h2>
+    <p>Colorado municipal deadlines and custom requirements</p>
+</div>
+
+<SfSchedule TValue="CalendarEvent" Height="650px" Readonly="true">
+    <ScheduleViews>
+        <ScheduleView Option="View.Month"></ScheduleView>
+        <ScheduleView Option="View.Agenda"></ScheduleView>
+    </ScheduleViews>
+    <ScheduleEventSettings DataSource="@_events">
+        <ScheduleField Id="@nameof(CalendarEvent.Id)">
+            <FieldSubject Name="@nameof(CalendarEvent.Subject)"></FieldSubject>
+            <FieldStartTime Name="@nameof(CalendarEvent.StartTime)"></FieldStartTime>
+            <FieldEndTime Name="@nameof(CalendarEvent.EndTime)"></FieldEndTime>
+            <FieldDescription Name="@nameof(CalendarEvent.Description)"></FieldDescription>
+        </ScheduleField>
+    </ScheduleEventSettings>
+</SfSchedule>
+
+<SfGrid DataSource="@_requirements" AllowPaging="true" Height="300" CssClass="mt-4">
+    <GridColumns>
+        <GridColumn Field="@nameof(RequirementDto.Title)" HeaderText="Requirement" Width="250"></GridColumn>
+        <GridColumn Field="@nameof(RequirementDto.DueDate)" HeaderText="Due Date" Format="d" Width="120"></GridColumn>
+        <GridColumn Field="@nameof(RequirementDto.Category)" HeaderText="Category" Width="120"></GridColumn>
+        <GridColumn Field="@nameof(RequirementDto.IsCompleted)" HeaderText="Done" DisplayAsCheckBox="true" Width="80"></GridColumn>
+        <GridColumn Field="@nameof(RequirementDto.IsSystemSeeded)" HeaderText="CO Default" DisplayAsCheckBox="true" Width="100"></GridColumn>
+    </GridColumns>
+</SfGrid>
+
+@code {
+    private List<RequirementDto> _requirements = [];
+    private List<CalendarEvent> _events = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        _requirements = await Api.GetRequirementsAsync();
+        _events = _requirements.Select(r => new CalendarEvent
+        {
+            Id = r.Id,
+            Subject = r.Title,
+            Description = r.Description,
+            StartTime = r.DueDate.ToDateTime(TimeOnly.MinValue),
+            EndTime = r.DueDate.ToDateTime(TimeOnly.MinValue).AddHours(1)
+        }).ToList();
+    }
+
+    public class CalendarEvent
+    {
+        public Guid Id { get; set; }
+        public string Subject { get; set; } = "";
+        public string? Description { get; set; }
+        public DateTime StartTime { get; set; }
+        public DateTime EndTime { get; set; }
+    }
+}

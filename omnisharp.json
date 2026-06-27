@@ -1,0 +1,19 @@
+{
+  "FormattingOptions": {
+    "EnableEditorConfigSupport": true
+  },
+  "RoslynExtensionsOptions": {
+    "EnableAnalyzersSupport": true
+  },
+  "MsBuild": {
+    "LoadProjectsOnDemand": false,
+    "UseLegacySdkResolver": false
+  },
+  "FileOptions": {
+    "SystemExcludeSearchPatterns": [
+      "**/node_modules/**",
+      "**/bin/**",
+      "**/obj/**"
+    ]
+  }
+}

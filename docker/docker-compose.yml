@@ -1,0 +1,45 @@
+services:
+  tikr-api:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.api
+    container_name: tikr-api
+    env_file:
+      - .env
+    environment:
+      - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Production}
+    ports:
+      - 5000:8080
+    volumes:
+      - tikr-data:/data
+    depends_on:
+      - ollama
+    restart: unless-stopped
+
+  tikr-web:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.web
+    container_name: tikr-web
+    env_file:
+      - .env
+    environment:
+      - TIKR_API_URL=http://tikr-api:8080
+    ports:
+      - 8080:8080
+    depends_on:
+      - tikr-api
+    restart: unless-stopped
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: tikr-ollama
+    ports:
+      - 11434:11434
+    volumes:
+      - ollama-models:/root/.ollama
+    restart: unless-stopped
+
+volumes:
+  tikr-data:
+  ollama-models:

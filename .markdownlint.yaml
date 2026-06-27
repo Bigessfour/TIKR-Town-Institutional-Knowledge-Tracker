@@ -1,0 +1,6 @@
+extends: markdownlint/style/prettier
+default: true
+MD036: false
+MD040: false
+MD060: false
+MD034: false

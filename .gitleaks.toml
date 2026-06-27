@@ -1,0 +1,9 @@
+# Allowlist test fixtures and env templates (placeholder keys only).
+title = "TIKR gitleaks config"
+
+[allowlist]
+description = "Test fixtures and docker env template placeholders"
+paths = [
+  '''tests/''',
+  '''docker/\.env\.example''',
+]

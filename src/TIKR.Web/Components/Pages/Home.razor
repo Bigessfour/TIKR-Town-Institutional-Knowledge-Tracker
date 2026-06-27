@@ -1,0 +1,69 @@
+﻿@page "/"
+@rendermode InteractiveServer
+@inject TikrApiClient Api
+
+<div class="page-header">
+    <h2>Dashboard</h2>
+    <p>What should you be working on today?</p>
+</div>
+
+@if (_loading)
+{
+    <p>Loading priorities...</p>
+}
+else if (_priorities.Count == 0)
+{
+    <SfCard>
+        <CardContent>
+            <p>No priorities found. Check the <a href="/calendar">Calendar</a> for upcoming deadlines.</p>
+        </CardContent>
+    </SfCard>
+}
+else
+{
+    <div class="e-card-deck">
+        @foreach (var item in _priorities)
+        {
+            <SfCard CssClass="mb-3">
+                <CardHeader Title="@item.Title" />
+                <CardContent>
+                    <p>@item.Reason</p>
+                    @if (item.DueDate.HasValue)
+                    {
+                        <p><strong>Due:</strong> @item.DueDate.Value.ToString("MMM d, yyyy")</p>
+                    }
+                    <span class="@GetPriorityClass(item.Priority)">@item.Priority priority</span>
+                </CardContent>
+            </SfCard>
+        }
+    </div>
+}
+
+@code {
+    private List<DashboardPriority> _priorities = [];
+    private bool _loading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _priorities = await Api.GetDashboardPrioritiesAsync();
+        }
+        catch
+        {
+            _priorities = [];
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private static string GetPriorityClass(string priority) => priority switch
+    {
+        "High" => "priority-high",
+        "Overdue" => "priority-overdue",
+        "Medium" => "priority-medium",
+        _ => ""
+    };
+}
