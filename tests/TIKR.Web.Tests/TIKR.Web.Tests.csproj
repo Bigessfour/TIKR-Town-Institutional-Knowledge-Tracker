@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
-    <PackageReference Include="bunit" Version="1.35.3" />
+    <PackageReference Include="bunit" Version="2.7.2" />
   </ItemGroup>
 
   <ItemGroup>
