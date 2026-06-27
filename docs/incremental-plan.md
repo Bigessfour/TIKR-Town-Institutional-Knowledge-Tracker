@@ -83,7 +83,7 @@ Living roadmap for TIKR development. Agents and contributors: read the **current
 | 2 | Commit EF Core `TikrDbContext` + Migrations | done |
 | 3 | Run `dotnet format TIKR.sln`; verify `dotnet test` + Trunk on PR | done |
 | 4 | Merge PR `fix/ci-green-main` with green **TIKR CI** + **Trunk** | done ([PR #9](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/9)) |
-| 5 | Triage Dependabot PRs after `main` is green | pending |
+| 5 | Triage Dependabot PRs after `main` is green — see [dependabot-policy.md](dependabot-policy.md) | done |
 
 **Verify locally:**
 
@@ -101,6 +101,7 @@ Repeat-safe checklist — safe to re-run anytime:
 - [x] **Settings → Branches:** protect `main`; require PR; require checks `build-and-test` + `trunk_check`
 - [x] **Settings → General:** **Allow auto-merge** enabled
 - [x] **Settings → Code security:** Secret scanning + Push protection (already enabled)
+- [x] **Settings → Advanced Security:** Grouped security updates (Dependabot)
 - [x] **Settings → General:** topics (`blazor`, `dotnet`, `sqlite`, `ollama`, `municipal`)
 - [ ] **Settings → Actions:** allow actions; read-only default `GITHUB_TOKEN`
 

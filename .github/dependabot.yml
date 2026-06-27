@@ -4,10 +4,48 @@ updates:
     directory: /
     schedule:
       interval: weekly
-    open-pull-requests-limit: 10
+      day: monday
+      time: "09:00"  # yamllint disable-line rule:quoted-strings
+      timezone: America/Denver
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - dependabot
+    groups:
+      nuget-patch-minor:
+        applies-to: version-updates
+        update-types:
+          - patch
+          - minor
+        patterns:
+          - "*"
+    ignore:
+      - dependency-name: bunit
+        update-types:
+          - version-update:semver-major
+      - dependency-name: coverlet.collector
+        update-types:
+          - version-update:semver-major
+      - dependency-name: Microsoft.NET.Test.Sdk
+        update-types:
+          - version-update:semver-major
 
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: weekly
-    open-pull-requests-limit: 5
+      day: monday
+      time: "09:00"  # yamllint disable-line rule:quoted-strings
+      timezone: America/Denver
+    open-pull-requests-limit: 3
+    labels:
+      - dependencies
+      - dependabot
+    groups:
+      actions-patch-minor:
+        applies-to: version-updates
+        update-types:
+          - patch
+          - minor
+        patterns:
+          - "*"
