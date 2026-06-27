@@ -101,7 +101,7 @@ Repeat-safe checklist — safe to re-run anytime:
 - [x] **Settings → Branches:** protect `main`; require PR; require checks `build-and-test` + `trunk_check`
 - [x] **Settings → General:** **Allow auto-merge** enabled
 - [x] **Settings → Code security:** Secret scanning + Push protection (already enabled)
-- [x] **Settings → Advanced Security:** Grouped security updates (Dependabot)
+- [x] **Settings → Advanced Security:** Dependabot security updates + grouped security (security updates enabled via API; grouping via `dependabot.yml` `applies-to: security-updates` groups)
 - [x] **Settings → General:** topics (`blazor`, `dotnet`, `sqlite`, `ollama`, `municipal`)
 - [ ] **Settings → Actions:** allow actions; read-only default `GITHUB_TOKEN`
 
