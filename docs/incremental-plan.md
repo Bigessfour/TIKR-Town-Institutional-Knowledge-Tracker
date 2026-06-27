@@ -98,10 +98,10 @@ trunk check --all
 
 Repeat-safe checklist — safe to re-run anytime:
 
-- [ ] **Settings → Branches:** protect `main`; require PR; require status checks **Trunk** + **TIKR CI** — configured via `gh` (see AGENTS.md)
-- [ ] **Settings → General:** enable **Allow auto-merge**
-- [ ] **Settings → Code security:** Secret scanning + Push protection
-- [ ] **Settings → General:** description + topics (`blazor`, `dotnet`, `sqlite`, `ollama`, `municipal`)
+- [x] **Settings → Branches:** protect `main`; require PR; require checks `build-and-test` + `trunk_check`
+- [x] **Settings → General:** **Allow auto-merge** enabled
+- [x] **Settings → Code security:** Secret scanning + Push protection (already enabled)
+- [x] **Settings → General:** topics (`blazor`, `dotnet`, `sqlite`, `ollama`, `municipal`)
 - [ ] **Settings → Actions:** allow actions; read-only default `GITHUB_TOKEN`
 
 ---
