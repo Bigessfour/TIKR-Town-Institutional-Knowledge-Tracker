@@ -1,7 +1,7 @@
 # TIKR – Town Institutional Knowledge Tracker
 
-[![TIKR CI](https://github.com/Bigessfour/TIKR-Town_Instutional_Knowledge_Tracker-/actions/workflows/ci.yml/badge.svg)](https://github.com/Bigessfour/TIKR-Town_Instutional_Knowledge_Tracker-/actions/workflows/ci.yml)
-[![Trunk](https://github.com/Bigessfour/TIKR-Town_Instutional_Knowledge_Tracker-/actions/workflows/trunk-check.yaml/badge.svg)](https://github.com/Bigessfour/TIKR-Town_Instutional_Knowledge_Tracker-/actions/workflows/trunk-check.yaml)
+[![TIKR CI](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/actions/workflows/ci.yml/badge.svg)](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/actions/workflows/ci.yml)
+[![Trunk](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/actions/workflows/trunk-check.yaml/badge.svg)](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/actions/workflows/trunk-check.yaml)
 
 **The Town Clerk's Second Brain**
 
@@ -96,8 +96,8 @@ See **[tests/README.md](tests/README.md)** for the coverage policy (90% target; 
 ### 1. Clone and restore
 
 ```bash
-git clone https://github.com/Bigessfour/TIKR-Town_Instutional_Knowledge_Tracker-.git
-cd TIKR-Town_Instutional_Knowledge_Tracker-
+git clone https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker.git
+cd TIKR-Town-Institutional-Knowledge-Tracker
 dotnet restore
 ```
 

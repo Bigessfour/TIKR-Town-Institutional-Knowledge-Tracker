@@ -2,7 +2,7 @@
 
 Living roadmap for TIKR development. Agents and contributors: read the **current phase** before large changes. See also [AGENTS.md](../AGENTS.md).
 
-**Repo:** https://github.com/Bigessfour/TIKR-Town_Instutional_Knowledge_Tracker-
+**Repo:** https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker
 
 ---
 
@@ -82,7 +82,7 @@ Living roadmap for TIKR development. Agents and contributors: read the **current
 | 1 | Fix `.gitignore`: `data/` → `/data/` so `src/TIKR.Infrastructure/Data/` is tracked | done |
 | 2 | Commit EF Core `TikrDbContext` + Migrations | done |
 | 3 | Run `dotnet format TIKR.sln`; verify `dotnet test` + Trunk on PR | done |
-| 4 | Merge PR `fix/ci-green-main` with green **TIKR CI** + **Trunk** | done ([PR #9](https://github.com/Bigessfour/TIKR-Town_Instutional_Knowledge_Tracker-/pull/9)) |
+| 4 | Merge PR `fix/ci-green-main` with green **TIKR CI** + **Trunk** | done ([PR #9](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/9)) |
 | 5 | Triage Dependabot PRs after `main` is green | pending |
 
 **Verify locally:**
@@ -98,7 +98,8 @@ trunk check --all
 
 Repeat-safe checklist — safe to re-run anytime:
 
-- [ ] **Settings → Branches:** protect `main`; require PR; require status checks **Trunk** + **TIKR CI**
+- [ ] **Settings → Branches:** protect `main`; require PR; require status checks **Trunk** + **TIKR CI** — configured via `gh` (see AGENTS.md)
+- [ ] **Settings → General:** enable **Allow auto-merge**
 - [ ] **Settings → Code security:** Secret scanning + Push protection
 - [ ] **Settings → General:** description + topics (`blazor`, `dotnet`, `sqlite`, `ollama`, `municipal`)
 - [ ] **Settings → Actions:** allow actions; read-only default `GITHUB_TOKEN`
