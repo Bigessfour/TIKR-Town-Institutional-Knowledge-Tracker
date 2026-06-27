@@ -238,6 +238,21 @@ app.MapPost("/api/ai/ask-advanced", async (AskAdvancedRequest request, IHybridAi
     }
 });
 
+app.MapPost("/api/ai/semantic-search", async (SemanticSearchRequest request, IHybridAiService ai) =>
+    Results.Ok(await ai.SemanticSearchDocumentsAsync(request)));
+
+app.MapPost("/api/ai/embed-document/{id:guid}", async (Guid id, IHybridAiService ai) =>
+{
+    try
+    {
+        return Results.Ok(await ai.EmbedDocumentAsync(id));
+    }
+    catch (KeyNotFoundException ex)
+    {
+        return Results.NotFound(new { error = ex.Message });
+    }
+});
+
 app.Run();
 
 static RequirementDto MapRequirement(Requirement r) =>
