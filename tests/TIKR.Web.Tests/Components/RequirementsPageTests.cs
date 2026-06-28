@@ -38,6 +38,17 @@ public class RequirementsPageTests : TestContext
         cut.Markup.Should().Contain("deputy clerk needs this list");
     }
 
+    [Fact]
+    public void Requirements_RendersAgentScanUploadControl()
+    {
+        RegisterApi("[]");
+        SetRendererInfo(new RendererInfo("Server", true));
+
+        var cut = RenderComponent<Requirements>();
+
+        cut.Markup.Should().Contain("AI Scan uploaded doc");
+    }
+
     private void RegisterApi(string json)
     {
         var handler = new StubHandler((_, _) => new HttpResponseMessage(HttpStatusCode.OK)

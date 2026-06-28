@@ -93,4 +93,35 @@ public class RequirementWorkflowHelpersTests
         csv.Should().Contain("\"Desc \"\"quoted\"\"\"");
         csv.Should().Contain("High");
     }
+
+    [Fact]
+    public void ApplyAgentExtraction_MapsAgentResultToCreateRequest()
+    {
+        var result = new DocumentAgentResult(
+            "Periodic Report",
+            "Extracted filing text",
+            new DateOnly(2026, 12, 1),
+            RecurrenceType.Annual,
+            RequirementCategory.Compliance,
+            2,
+            "agent/report.pdf",
+            true);
+
+        var request = RequirementWorkflowHelpers.ApplyAgentExtraction(result);
+
+        request.Title.Should().Be("Periodic Report");
+        request.Description.Should().Be("Extracted filing text");
+        request.DueDate.Should().Be(new DateOnly(2026, 12, 1));
+        request.Category.Should().Be(RequirementCategory.Compliance);
+    }
+
+    [Fact]
+    public void FormatAgentScanMessage_IncludesTableCount()
+    {
+        var result = new DocumentAgentResult(
+            "x", null, null, RecurrenceType.None, RequirementCategory.Custom, 3, "p", true);
+
+        RequirementWorkflowHelpers.FormatAgentScanMessage(result)
+            .Should().Be("Processed on Synology • 3 tables extracted");
+    }
 }

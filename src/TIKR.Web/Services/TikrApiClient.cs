@@ -150,4 +150,14 @@ public class TikrApiClient(HttpClient http)
         var response = await http.PostAsJsonAsync("/api/auth/change-password", request);
         return response.IsSuccessStatusCode;
     }
+
+    public async Task<DocumentAgentResult?> ScanDocumentWithAgentAsync(Stream content, string fileName)
+    {
+        using var multipart = new MultipartFormDataContent();
+        multipart.Add(new StreamContent(content), "file", fileName);
+        var response = await http.PostAsync("/api/ai/agent-scan", multipart);
+        return response.IsSuccessStatusCode
+            ? await response.Content.ReadFromJsonAsync<DocumentAgentResult>()
+            : null;
+    }
 }

@@ -291,6 +291,20 @@ api.MapPost("/ai/embed-knowledge/{id:guid}", async (Guid id, IHybridAiService ai
     }
 });
 
+api.MapPost("/ai/agent-scan", async (HttpRequest request, IDocumentAgentService agent) =>
+{
+    if (!request.HasFormContentType)
+        return Results.BadRequest("Expected multipart form data.");
+
+    var file = request.Form.Files.FirstOrDefault();
+    if (file is null || file.Length == 0)
+        return Results.BadRequest("No file uploaded.");
+
+    await using var stream = file.OpenReadStream();
+    var result = await agent.ProcessUploadAsync(stream, file.FileName);
+    return Results.Ok(result);
+});
+
 app.Run();
 
 static RequirementDto MapRequirement(Requirement r) =>
