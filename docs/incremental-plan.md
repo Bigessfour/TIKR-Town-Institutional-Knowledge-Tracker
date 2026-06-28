@@ -204,7 +204,7 @@ Repeat-safe checklist — safe to re-run anytime:
 |-------|--------|-----|
 | **10A** Requirements grid MVP | done | [#30](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/30) |
 | **10B** MVP agent stub + AI Scan | done | [#31](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/31) |
-| **10C** AgentTools + AES storage + hooks | in progress (A2) | [requirements-working-tree.md](requirements-working-tree.md), [sf-document-agent-tools.md](sf-document-agent-tools.md) |
+| **10C** AgentTools + AES storage + hooks | in progress (A1+A2 done #35; E2E PR) | [requirements-working-tree.md](requirements-working-tree.md), [sf-document-agent-tools.md](sf-document-agent-tools.md) |
 
 **Key paths:** `src/TIKR.Web/Components/Pages/Requirements.razor`, `src/TIKR.Infrastructure/Services/DocumentAgentService.cs`
 
@@ -326,6 +326,6 @@ Technical debt and UX consolidation. Safe to tackle in small PRs after #27 merge
 ### Suggested merge order
 
 1. **Phase 0** PR sequence ([#34](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/34) merged; docs → sign-off)
-2. **Phase 10C A1** — agent storage scaffold ([#35](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/35))
-3. **Phase 10C A2** — Syncfusion AgentTools NuGet + Storage Mode extraction — **current**
+2. **Phase 10C A1+A2** — agent storage + Syncfusion extraction ([#35](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/35) merged)
+3. **Phase 10C-D** — E2E proof (fixtures, Playwright, licensed workflow) — **current**
 4. Phase 6 when clerk forms need Smart AI

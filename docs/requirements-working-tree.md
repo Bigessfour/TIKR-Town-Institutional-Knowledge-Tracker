@@ -43,8 +43,8 @@ Living checklist for Requirements Manager work. Tracks MVP (ship now) vs deferre
 
 | Group | Scope | Status |
 |-------|--------|--------|
-| **A1** | `IAgentDocumentStorage`, optional AES (`TIKR_AGENT_STORAGE_KEY`), `IDocumentAgentExtractionBackend`, stub backend uses real plain-text extraction, `USE_SYNCFUSION_AGENT_TOOLS` flag | done (PR #35) |
-| **A2** | NuGet + `NasSyncfusionDocumentStorage` (`IDocumentStorage`); `SyncfusionDocumentAgentExtractor` (PDF text, Word text, table JSON) | in progress |
+| **A1** | `IAgentDocumentStorage`, optional AES (`TIKR_AGENT_STORAGE_KEY`), `IDocumentAgentExtractionBackend`, stub backend uses real plain-text extraction, `USE_SYNCFUSION_AGENT_TOOLS` flag | done ([#35](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/35)) |
+| **A2** | NuGet + `NasSyncfusionDocumentStorage` (`IDocumentStorage`); `SyncfusionDocumentAgentExtractor` (PDF text, Word text, table JSON) | done ([#35](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/35)) |
 | **A3** | Microsoft Agent Framework loop: Ollama selects tools → validated JSON → requirement mapping | planned |
 | **B** | In-memory vs storage-backed `IDocumentStorage` parity with Syncfusion modes | partial (NAS Storage Mode in A2) |
 | **C** | Requirements UI: show extraction source (stub vs Syncfusion), progress indicator on scan | partial (`UsedSyncfusionTools` on DTO; UI badge deferred) |
@@ -58,9 +58,9 @@ Living checklist for Requirements Manager work. Tracks MVP (ship now) vs deferre
 - [x] `USE_SYNCFUSION_AGENT_TOOLS` + `TIKR_AGENT_STORAGE_KEY` in `docker/.env.example`
 - [x] Refactor `DocumentAgentService` to use storage + backend abstractions
 - [x] Tests: crypto round-trip, NAS storage paths, `.txt` agent-scan extraction
-- [ ] Merge PR #35 (A1)
+- [x] Merge PR #35 (A1+A2)
 
-### A2 checklist (current)
+### A2 checklist
 
 - [x] `Syncfusion.DocumentSDK.AI.AgentTools` + `Syncfusion.Licensing` NuGet (33.2.15)
 - [x] `NasSyncfusionDocumentStorage` implements Syncfusion `IDocumentStorage` under `agent-scans/sf-work/`
@@ -71,9 +71,8 @@ Living checklist for Requirements Manager work. Tracks MVP (ship now) vs deferre
 - [x] E2E: API txt fixture test + Playwright stub spec + licensed workflow scaffold
 - [x] `DocumentAgentResult.UsedSyncfusionTools` for assertion in API/E2E
 - [ ] Manual NAS smoke: `USE_SYNCFUSION_AGENT_TOOLS=true` + PDF agent-scan
-- [ ] Merge PR
 
-### E2E proof (10C-D)
+### E2E proof (10C-D — open PR)
 
 - [x] Fixtures: `tests/fixtures/agent-scan/` (txt, pdf, docx)
 - [x] `DocumentAgentEndpointTests.AgentScan_ExtractsTxtFixture`
