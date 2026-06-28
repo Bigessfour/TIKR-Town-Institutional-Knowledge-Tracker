@@ -165,7 +165,7 @@ All controls **PASS** (see prior audit pass for detail).
 | Document download URL | `DocumentsPageTests.Documents_WiresDownloadToDocumentContentApi` |
 | Vault page smoke | `VaultPageTests.Vault_ShowsEmergencyBanner` |
 | SfUploader agent scan | `RequirementsPageTests.Requirements_RendersAgentScanUploadControl` |
-| SfDatePicker dialog | `RequirementsPageTests.Requirements_UsesSfDatePickerWhenDialogOpen` |
+| SfDatePicker dialog | `RequirementsPageTests.Requirements_UsesSfDatePickerWhenDialogOpen` (placeholder "Select due date") |
 | Voice note hydration (F2) | `DocumentSelectionStateTests.VaultVoiceNoteMapper_*` |
 | Download API client | `TikrApiClientTests.GetDocumentContentAsync_*` |
 

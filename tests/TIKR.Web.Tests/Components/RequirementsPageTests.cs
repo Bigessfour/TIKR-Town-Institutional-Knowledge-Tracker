@@ -45,7 +45,7 @@ public class RequirementsPageTests : ClerkTestContext
     }
 
     [Fact]
-    public void Requirements_UsesSfDatePickerWhenDialogOpen()
+    public async Task Requirements_UsesSfDatePickerWhenDialogOpen()
     {
         RegisterApi("[]");
         SetRendererInfo(new RendererInfo("Server", true));
@@ -53,8 +53,8 @@ public class RequirementsPageTests : ClerkTestContext
         var cut = RenderComponent<Requirements>();
         var addButton = cut.FindAll("button")
             .First(b => b.TextContent?.Contains("Add requirement", StringComparison.Ordinal) == true);
-        addButton.Click();
-        cut.WaitForAssertion(() => cut.Markup.Should().Contain("e-datepicker"));
+        await cut.InvokeAsync(() => addButton.Click());
+        cut.WaitForAssertion(() => cut.Markup.Should().Contain("Select due date"));
     }
 
     private void RegisterApi(string json)
