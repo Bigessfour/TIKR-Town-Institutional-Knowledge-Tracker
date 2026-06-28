@@ -129,4 +129,43 @@ public class TikrConfigurationTests
             ["GROK_MODEL"] = "grok-3"
         })).Should().Be("grok-3");
     }
+
+    [Fact]
+    public void IsAuthEnabled_TrueWhenAdminBootstrapCredsPresent()
+    {
+        TikrConfiguration.IsAuthEnabled(BuildConfig(new Dictionary<string, string?>
+        {
+            ["TIKR_ADMIN_EMAIL"] = "admin@town.gov",
+            ["TIKR_ADMIN_PASSWORD"] = "Password1!"
+        })).Should().BeTrue();
+    }
+
+    [Fact]
+    public void IsAuthEnabled_FalseWhenExplicitlyDisabled()
+    {
+        TikrConfiguration.IsAuthEnabled(BuildConfig(new Dictionary<string, string?>
+        {
+            ["TIKR_AUTH_ENABLED"] = "false",
+            ["TIKR_ADMIN_EMAIL"] = "admin@town.gov",
+            ["TIKR_ADMIN_PASSWORD"] = "Password1!"
+        })).Should().BeFalse();
+    }
+
+    [Fact]
+    public void IsAuthEnabled_FalseWhenNoCreds()
+    {
+        TikrConfiguration.IsAuthEnabled(BuildConfig([])).Should().BeFalse();
+    }
+
+    [Fact]
+    public void GetJwtSigningKey_ThrowsWhenAuthEnabledAndKeyMissing()
+    {
+        var act = () => TikrConfiguration.GetJwtSigningKey(BuildConfig(new Dictionary<string, string?>
+        {
+            ["TIKR_ADMIN_EMAIL"] = "admin@town.gov",
+            ["TIKR_ADMIN_PASSWORD"] = "Password1!"
+        }));
+
+        act.Should().Throw<InvalidOperationException>();
+    }
 }

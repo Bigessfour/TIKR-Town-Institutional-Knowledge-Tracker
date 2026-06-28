@@ -59,14 +59,30 @@ User action → HybridAiService
 
 ## Audit Trail
 
-All create/update/delete operations on Requirements, Documents, and Knowledge entries are logged to `AuditLog` for CORA/public records compliance.
+All create/update/delete operations on Requirements, Documents, and Knowledge entries are logged to `AuditLog` for CORA/public records compliance. When multi-user auth is enabled, `UserId` is set to the clerk's email from the JWT.
+
+## Authentication (optional multi-user)
+
+Auth is **off by default** (single-clerk open access). Set bootstrap credentials in `docker/.env` to enable:
+
+| Variable | Purpose |
+|----------|---------|
+| `TIKR_ADMIN_EMAIL` | First admin account (with password below, auto-enables auth) |
+| `TIKR_ADMIN_PASSWORD` | Initial admin password (change after first login) |
+| `TIKR_JWT_SIGNING_KEY` | HMAC secret for API JWTs (required when auth enabled) |
+| `TIKR_AUTH_ENABLED` | Optional explicit override (`true` / `false`) |
+
+**Flow:** Blazor Web login → `POST /api/auth/login` → JWT stored in HttpOnly cookie → `TikrApiClient` sends `Authorization: Bearer` to API. Roles: `Admin` (user management), `Clerk` (full clerk workflows).
+
+**UI:** `/login`, `/account` (change password), `/settings/users` (Admin only, Syncfusion Grid + DataForm).
 
 ## Deployment (Synology NAS)
 
 1. Map `tikr-data` Docker volume to a shared folder (e.g. `/volume1/tikr/data`)
 2. Import `docker/docker-compose.yml` in Container Manager
 3. Set `SYNCFUSION_LICENSE_KEY` for the web container
-4. Pull Ollama models on first run:
+4. Optional multi-user: set `TIKR_ADMIN_EMAIL`, `TIKR_ADMIN_PASSWORD`, and `TIKR_JWT_SIGNING_KEY` on **both** `tikr-api` and `tikr-web` via `docker/.env`
+5. Pull Ollama models on first run:
    ```bash
    docker exec -it tikr-ollama ollama pull llama3.2:3b
    docker exec -it tikr-ollama ollama pull nomic-embed-text
@@ -74,7 +90,6 @@ All create/update/delete operations on Requirements, Documents, and Knowledge en
 
 ## vNext (not in initial scaffold)
 
-- Authentication (single-clerk → multi-user)
-- Semantic search with stored embeddings
+- Email password reset / SMTP
+- Semantic search UI polish (PDF preview, full-text extraction)
 - Email ingestion (IMAP / forward-to-folder)
-- PDF preview and full-text extraction

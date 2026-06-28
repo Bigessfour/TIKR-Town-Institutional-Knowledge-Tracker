@@ -1,4 +1,9 @@
 ﻿@inherits LayoutComponentBase
+@using Microsoft.AspNetCore.Components.Authorization
+@inject AuthSettings Auth
+@inject IAuthSessionService AuthSession
+@inject NavigationManager Navigation
+@inject AuthenticationStateProvider AuthStateProvider
 
 <div class="tikr-layout">
     <nav class="tikr-sidebar">
@@ -13,7 +18,25 @@
             <li><NavLink href="/assistant">AI Assistant</NavLink></li>
             <li><NavLink href="/knowledge">Knowledge Vault</NavLink></li>
             <li><NavLink href="/settings">Settings</NavLink></li>
+            @if (Auth.IsEnabled)
+            {
+                <AuthorizeView Roles="@TikrRoles.Admin">
+                    <li><NavLink href="/settings/users">Users</NavLink></li>
+                </AuthorizeView>
+            }
         </ul>
+        @if (Auth.IsEnabled)
+        {
+            <div class="tikr-user-bar">
+                <AuthorizeView>
+                    <Authorized>
+                        <span class="tikr-user-email">@context.User.Identity?.Name</span>
+                        <button type="button" class="tikr-logout" @onclick="LogoutAsync">Sign out</button>
+                        <NavLink href="/account" class="tikr-account-link">Account</NavLink>
+                    </Authorized>
+                </AuthorizeView>
+            </div>
+        }
     </nav>
     <main class="tikr-main">
         @Body
@@ -25,3 +48,11 @@
     <a href="." class="reload">Reload</a>
     <span class="dismiss">🗙</span>
 </div>
+
+@code {
+    private async Task LogoutAsync()
+    {
+        await AuthSession.LogoutAsync();
+        Navigation.NavigateTo("/login", forceLoad: true);
+    }
+}

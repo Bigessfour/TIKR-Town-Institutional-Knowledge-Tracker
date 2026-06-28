@@ -4,15 +4,19 @@ using Microsoft.Extensions.Configuration;
 
 namespace TIKR.Api.Tests.Fixtures;
 
-public class TikrWebApplicationFactory : WebApplicationFactory<Program>
+public class AuthEnabledWebApplicationFactory : WebApplicationFactory<Program>
 {
-    private readonly string _dbPath = Path.Combine(Path.GetTempPath(), $"tikr-api-{Guid.NewGuid():N}.db");
-    private readonly string _storagePath = Path.Combine(Path.GetTempPath(), $"tikr-api-storage-{Guid.NewGuid():N}");
+    public const string AdminEmail = "admin@test.gov";
+    public const string AdminPassword = "Password1!";
+    private readonly string _dbPath = Path.Combine(Path.GetTempPath(), $"tikr-auth-api-{Guid.NewGuid():N}.db");
+    private readonly string _storagePath = Path.Combine(Path.GetTempPath(), $"tikr-auth-storage-{Guid.NewGuid():N}");
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Testing");
-        builder.UseSetting("TIKR_AUTH_ENABLED", "false");
+        builder.UseSetting("TIKR_ADMIN_EMAIL", AdminEmail);
+        builder.UseSetting("TIKR_ADMIN_PASSWORD", AdminPassword);
+        builder.UseSetting("TIKR_JWT_SIGNING_KEY", TestAuthConstants.JwtSigningKey);
         builder.ConfigureAppConfiguration((_, config) =>
         {
             config.AddInMemoryCollection(new Dictionary<string, string?>
@@ -21,7 +25,9 @@ public class TikrWebApplicationFactory : WebApplicationFactory<Program>
                 ["FileStorage:BasePath"] = _storagePath,
                 ["USE_GROK"] = "false",
                 ["OLLAMA_HOST"] = "http://127.0.0.1:1",
-                ["TIKR_AUTH_ENABLED"] = "false"
+                ["TIKR_ADMIN_EMAIL"] = AdminEmail,
+                ["TIKR_ADMIN_PASSWORD"] = AdminPassword,
+                ["TIKR_JWT_SIGNING_KEY"] = TestAuthConstants.JwtSigningKey
             });
         });
     }

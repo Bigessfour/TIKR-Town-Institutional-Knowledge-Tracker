@@ -1,6 +1,41 @@
-﻿<Router AppAssembly="typeof(Program).Assembly" NotFoundPage="typeof(Pages.NotFound)">
-    <Found Context="routeData">
-        <RouteView RouteData="routeData" DefaultLayout="typeof(Layout.MainLayout)" />
-        <FocusOnNavigate RouteData="routeData" Selector="h1" />
-    </Found>
-</Router>
+﻿@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@using TIKR.Web.Services
+@inject AuthSettings Auth
+
+<CascadingAuthenticationState>
+    <Router AppAssembly="typeof(Program).Assembly" NotFoundPage="typeof(Pages.NotFound)">
+        <Found Context="routeData">
+            @if (Auth.IsEnabled)
+            {
+                <AuthorizeRouteView RouteData="routeData" DefaultLayout="typeof(Layout.MainLayout)">
+                    <NotAuthorized>
+                        @if (context.User.Identity?.IsAuthenticated != true)
+                        {
+                            <RedirectToLogin ReturnUrl="@GetReturnUrl(routeData)" />
+                        }
+                        else
+                        {
+                            <p class="text-danger p-4">You are not authorized to view this page.</p>
+                        }
+                    </NotAuthorized>
+                </AuthorizeRouteView>
+            }
+            else
+            {
+                <RouteView RouteData="routeData" DefaultLayout="typeof(Layout.MainLayout)" />
+            }
+            <FocusOnNavigate RouteData="routeData" Selector="h1" />
+        </Found>
+    </Router>
+</CascadingAuthenticationState>
+
+@code {
+    private static string GetReturnUrl(RouteData routeData)
+    {
+        var template = routeData.PageType.GetCustomAttributes(typeof(RouteAttribute), inherit: true)
+            .Cast<RouteAttribute>()
+            .FirstOrDefault()?.Template;
+        return string.IsNullOrWhiteSpace(template) ? "/" : $"/{template.TrimStart('/')}";
+    }
+}

@@ -148,16 +148,18 @@ Repeat-safe checklist — safe to re-run anytime:
 
 ## Phase 8 — Auth
 
-**Status:** planned
+**Status:** done
 
 **Goal:** Single-clerk today → optional multi-user for larger towns.
 
 **Acceptance criteria:**
 
-- Identity provider or simple NAS-local auth design
-- Protected API routes; audit trail preserved
+- [x] ASP.NET Core Identity + JWT (NAS-local SQLite/Postgres; no cloud IdP)
+- [x] Auth auto-enables when `TIKR_ADMIN_EMAIL` + `TIKR_ADMIN_PASSWORD` are set; off otherwise
+- [x] Protected API routes when auth enabled; audit `UserId` populated from JWT
+- [x] Syncfusion login (`SfDataForm`), account password change, admin user grid (`/settings/users`)
 
-**Key paths:** `src/TIKR.Api/`, `docs/architecture.md`
+**Key paths:** `src/TIKR.Infrastructure/Identity/`, `src/TIKR.Api/AuthEndpoints.cs`, `src/TIKR.Web/Components/Pages/Login.razor`, `docker/.env.example`
 
 ---
 
