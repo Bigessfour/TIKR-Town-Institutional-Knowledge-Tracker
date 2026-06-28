@@ -117,6 +117,25 @@ public class DocumentsEndpointTests : IClassFixture<TikrWebApplicationFactory>
     }
 
     [Fact]
+    public async Task UploadTextFile_PersistsFullTextContent()
+    {
+        using var content = new MultipartFormDataContent();
+        var fileContent = new ByteArrayContent("Quarterly budget summary for council review"u8.ToArray());
+        fileContent.Headers.ContentType = new MediaTypeHeaderValue("text/plain");
+        content.Add(fileContent, "file", "budget-notes.txt");
+
+        var response = await _client.PostAsync("/api/documents", content);
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+
+        var created = await response.Content.ReadFromJsonAsync<DocumentDto>();
+        var items = await _client.GetFromJsonAsync<List<DocumentDto>>("/api/documents?q=council");
+
+        items.Should().Contain(d =>
+            d.Id == created!.Id
+            && d.FileName == "budget-notes.txt");
+    }
+
+    [Fact]
     public async Task UploadWithoutMultipart_ReturnsBadRequest()
     {
         using var content = new StringContent("not multipart", System.Text.Encoding.UTF8, "text/plain");

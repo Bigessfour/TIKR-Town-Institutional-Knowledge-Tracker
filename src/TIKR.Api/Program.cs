@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using TIKR.Api;
 using TIKR.Infrastructure;
 using TIKR.Infrastructure.Data;
+using TIKR.Infrastructure.Services;
 using TIKR.Shared.Configuration;
 using TIKR.Shared.Constants;
 using TIKR.Shared.DTOs;
@@ -137,8 +138,23 @@ api.MapPost("/documents", async (HttpRequest request, TikrDbContext db, IFileSto
     var file = form.Files.FirstOrDefault();
     if (file is null) return Results.BadRequest("No file uploaded.");
 
-    await using var stream = file.OpenReadStream();
-    var storagePath = await storage.SaveAsync(stream, file.FileName);
+    string storagePath;
+    string? fullText = null;
+
+    if (DocumentTextExtractionService.CanExtract(file.FileName))
+    {
+        await using var buffer = new MemoryStream();
+        await file.CopyToAsync(buffer);
+        buffer.Position = 0;
+        fullText = await DocumentTextExtractionService.TryExtractAsync(buffer, file.FileName);
+        buffer.Position = 0;
+        storagePath = await storage.SaveAsync(buffer, file.FileName);
+    }
+    else
+    {
+        await using var stream = file.OpenReadStream();
+        storagePath = await storage.SaveAsync(stream, file.FileName);
+    }
 
     var entity = new Document
     {
@@ -147,6 +163,7 @@ api.MapPost("/documents", async (HttpRequest request, TikrDbContext db, IFileSto
         StoragePath = storagePath,
         ContentType = file.ContentType,
         FileSizeBytes = file.Length,
+        FullTextContent = fullText,
         UploadedAt = DateTime.UtcNow,
         UpdatedAt = DateTime.UtcNow
     };
