@@ -19,6 +19,13 @@ TIKR targets **>90% line coverage** across unit, integration, and component test
 
 Fixtures for agent-scan live in **`tests/fixtures/agent-scan/`** (shared by API integration tests, Playwright, and licensed CI workflow).
 
+Licensed Syncfusion PDF/DOCX tests (`Category=SyncfusionLicensed`) skip when `SYNCFUSION_LICENSE_KEY` is unset. Run locally with the key set, or via **TIKR Syncfusion Agent Smoke** workflow.
+
+```bash
+export SYNCFUSION_LICENSE_KEY=your_key
+dotnet test tests/TIKR.Api.Tests/TIKR.Api.Tests.csproj --filter "Category=SyncfusionLicensed"
+```
+
 ### Playwright (Phase 0 + 10C)
 
 ```bash

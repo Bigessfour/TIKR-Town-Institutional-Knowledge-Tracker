@@ -215,6 +215,11 @@ In Development, the app also loads `.env` and `docker/.env` from the repo root i
 | `USE_GROK` | API | `false` | Enable xAI Grok for advanced AI |
 | `GROK_API_KEY` | API | — | xAI API key (required if USE_GROK=true) |
 | `GROK_MODEL` | API | `grok-2-latest` | Grok model name |
+| `USE_SYNCFUSION_AGENT_TOOLS` | API | `false` | Enable Syncfusion Document SDK agent-scan (PDF/Word/Excel/PPT) |
+| `USE_SYNCFUSION_AGENT_ORCHESTRATION` | API | `false` | Ollama tool loop over Syncfusion tools (requires agent tools + Ollama) |
+| `TIKR_AGENT_STORAGE_KEY` | API | — | Optional AES-256-GCM for agent-scan blobs on NAS |
+
+Document SDK setup: [docs/sf-document-agent-tools.md](docs/sf-document-agent-tools.md) · NAS smoke tracker: [docs/nas-agent-tools-setup.md](docs/nas-agent-tools-setup.md)
 
 ### Optional multi-user auth
 
