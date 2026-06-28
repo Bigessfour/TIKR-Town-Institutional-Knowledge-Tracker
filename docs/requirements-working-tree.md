@@ -58,8 +58,8 @@ Living checklist for Requirements Manager work. Tracks MVP (ship now) vs deferre
 | **A3** | Microsoft Agent Framework loop: Ollama selects tools → validated JSON → requirement mapping | planned |
 | **B** | In-memory vs storage-backed `IDocumentStorage` parity with Syncfusion modes | partial (NAS Storage Mode in A2) |
 | **C** | Requirements UI: show extraction source (stub vs Syncfusion), progress indicator on scan | **PR open** — banner shows source + scan spinner |
-| **D** | Playwright + API + docker proof for agent-scan | **PR #36 open** — not on `main` yet |
-| **E** | Docs: NAS setup, license, E2E tiers | partial on `main`; E2E tier table completes in **PR #36** |
+| **D** | Playwright + API + docker proof for agent-scan | **done on `main`** ([#36](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/36)) |
+| **E** | Docs: NAS setup, license, E2E tiers | **done on `main`** ([#36](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/36)) |
 
 ### A1+A2 (on `main` — merged #35)
 
@@ -81,8 +81,10 @@ Code complete on branch; **not on `main` until merged.**
 - [x] CI docker smoke: curl agent-scan txt (stub; `continue-on-error` on docker job today)
 - [x] Optional workflow: `.github/workflows/tikr-syncfusion-agent-smoke.yml` (needs repo secret `SYNCFUSION_LICENSE_KEY`)
 - [x] `LocalFileStorageService` preserves `agent-scans/` prefix
-- [ ] **Merge PR #36**
-- [ ] TIKR CI green on #36
+- [x] **Merge PR #36**
+- [x] TIKR CI green on #36
+
+### 10C-C extraction badge — [PR #37](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/37) (open)
 
 ### Gap vs Syncfusion product (honest)
 
