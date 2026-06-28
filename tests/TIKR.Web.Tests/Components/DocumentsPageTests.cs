@@ -7,11 +7,13 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.DependencyInjection;
 using Syncfusion.Blazor;
 using TIKR.Shared.DTOs;
+using TIKR.Shared.TestFixtures;
 using TIKR.Web.Components.Pages;
 using TIKR.Web.Services;
 
 namespace TIKR.Web.Tests.Components;
 
+[Trait("Category", TestCategories.FullyTested)]
 public class DocumentsPageTests : ClerkTestContext
 {
 

@@ -1,0 +1,20 @@
+sequenceDiagram
+    autonumber
+    actor Clerk
+    participant Web as TIKR.Web
+    participant API as TIKR.Api
+    participant Agent as DocumentAgentService
+    participant Storage as Agent document storage
+    participant Backend as Extraction backend
+
+    Clerk->>Web: Upload file on /requirements
+    Web->>API: POST /api/ai/agent-scan multipart
+    API->>Storage: Store under agent-scans/
+    API->>Agent: ScanAsync
+    Agent->>Backend: Stub plain-text or Syncfusion PDF/Word
+    Backend-->>Agent: text, tables, UsedSyncfusionTools
+    Agent-->>API: RequirementSuggestion
+    API-->>Web: JSON result
+    Web->>Clerk: Open Add requirement dialog with pre-filled notes
+
+    Note over Clerk,Backend: Playwright: tests/e2e/requirements-agent-scan.spec.ts

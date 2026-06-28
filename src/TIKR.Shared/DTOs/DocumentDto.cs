@@ -7,7 +7,8 @@ public record DocumentDto(
     long FileSizeBytes,
     string? AiTags,
     string? SuggestedFolder,
-    DateTime UploadedAt);
+    DateTime UploadedAt,
+    string? FullTextContent = null);
 
 public record DocumentSearchResult(
     Guid Id,

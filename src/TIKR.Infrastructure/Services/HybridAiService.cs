@@ -192,17 +192,21 @@ public class HybridAiService(
 
     public async Task<AskAdvancedResponse> AskAdvancedAsync(AskAdvancedRequest request, CancellationToken cancellationToken = default)
     {
-        if (!grokService.IsEnabled)
-            throw new InvalidOperationException("Advanced AI (Grok) is not enabled. Set USE_GROK=true and provide GROK_API_KEY.");
-
         var prompt = string.IsNullOrWhiteSpace(request.Context)
             ? request.Prompt
             : $"Context:\n{request.Context}\n\nQuestion:\n{request.Prompt}";
 
-        var answer = await grokService.CompleteAsync(prompt, cancellationToken: cancellationToken)
-            ?? "Unable to get a response from Grok. Check your API key and network connection.";
+        if (grokService.IsEnabled)
+        {
+            var grokAnswer = await grokService.CompleteAsync(prompt, cancellationToken: cancellationToken);
+            if (!string.IsNullOrWhiteSpace(grokAnswer))
+                return new AskAdvancedResponse(grokAnswer, UsedGrok: true);
+        }
 
-        return new AskAdvancedResponse(answer, UsedGrok: true);
+        var localAnswer = await GetLocalCompletionAsync(prompt, cancellationToken)
+            ?? "Unable to get a response. Check Ollama connectivity or enable USE_GROK with a valid GROK_API_KEY.";
+
+        return new AskAdvancedResponse(localAnswer, UsedGrok: false);
     }
 
     public async Task<AiStatusResponse> GetStatusAsync(CancellationToken cancellationToken = default)

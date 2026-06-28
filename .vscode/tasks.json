@@ -1,0 +1,88 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "TIKR: Docker Compose Up",
+      "type": "shell",
+      "command": "docker compose -f docker/docker-compose.yml --env-file docker/.env up --build -d",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "TIKR: Docker Compose Up (host Ollama override)",
+      "type": "shell",
+      "command": "TIKR_API_HOST_PORT=5001 TIKR_PUBLIC_API_URL=http://localhost:5001 docker compose -f docker/docker-compose.yml -f docker/docker-compose.host-ollama.yml -f docker/docker-compose.dev-mac.yml --env-file docker/.env up --build -d",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "TIKR: Docker Compose Down",
+      "type": "shell",
+      "command": "docker compose -f docker/docker-compose.yml down",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "TIKR: Docker Compose Logs",
+      "type": "shell",
+      "command": "docker compose -f docker/docker-compose.yml logs -f --tail=100",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "isBackground": true,
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "TIKR: Pull Ollama models (container)",
+      "type": "shell",
+      "command": "docker exec -it tikr-ollama ollama pull llama3.2:3b && docker exec -it tikr-ollama ollama pull nomic-embed-text",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "TIKR: Pull Ollama models (host)",
+      "type": "shell",
+      "command": "ollama pull llama3.2:3b && ollama pull nomic-embed-text",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    }
+  ]
+}

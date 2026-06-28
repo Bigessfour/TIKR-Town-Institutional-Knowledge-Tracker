@@ -5,9 +5,11 @@ using FluentAssertions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging.Abstractions;
 using TIKR.Infrastructure.Services;
+using TIKR.Shared.TestFixtures;
 
 namespace TIKR.Infrastructure.Tests.Services;
 
+[Trait("Category", TestCategories.FullyTested)]
 public class GrokServiceTests
 {
     [Fact]

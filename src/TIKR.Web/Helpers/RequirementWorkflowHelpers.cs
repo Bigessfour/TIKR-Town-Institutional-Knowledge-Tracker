@@ -131,8 +131,17 @@ public static class RequirementWorkflowHelpers
             result.SuggestedCategory);
     }
 
-    public static string FormatAgentScanMessage(DocumentAgentResult result) =>
-        $"Processed on Synology • {result.TablesExtractedCount} table{(result.TablesExtractedCount == 1 ? "" : "s")} extracted";
+    public static string FormatAgentScanMessage(DocumentAgentResult result)
+    {
+        var source = result.UsedSyncfusionTools ? "Syncfusion Document SDK" : "Plain-text extraction";
+        return $"Processed on Synology • {source} • {result.TablesExtractedCount} table{(result.TablesExtractedCount == 1 ? "" : "s")} extracted";
+    }
+
+    public static string GetExtractionBadgeCssClass(DocumentAgentResult result) =>
+        result.UsedSyncfusionTools ? "extraction-badge-syncfusion" : "extraction-badge-stub";
+
+    public static string GetExtractionSourceLabel(DocumentAgentResult result) =>
+        result.UsedSyncfusionTools ? "Syncfusion Document SDK" : "Plain-text extraction";
 
     public static CreateRequirementRequest ToCreateRequest(RequirementDto requirement) =>
         new(requirement.Title, requirement.Description, requirement.DueDate, requirement.Recurrence, requirement.Category);

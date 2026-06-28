@@ -1,0 +1,18 @@
+{
+  "containers.composeCommand": "docker compose",
+  "containers.composeSubcommand": "up",
+  "containers.environment": {
+    "COMPOSE_FILE": "docker/docker-compose.yml"
+  },
+  "docker.lsp.experimental.vulnerabilityDiagnostics": true,
+  "files.associations": {
+    "docker-compose*.yml": "compose",
+    "docker-compose*.yaml": "compose"
+  },
+  "search.exclude": {
+    "**/bin": true,
+    "**/obj": true,
+    "**/.venv": true,
+    "**/.rag_index": true
+  }
+}

@@ -15,7 +15,9 @@ test.describe('TIKR clerk smoke', () => {
 
   test('keyboard shortcut opens help dialog', async ({ page }) => {
     await page.goto('/');
-    await page.keyboard.press('Shift+/');
+    await page.waitForFunction(() => typeof (window as unknown as { sfBlazor?: unknown }).sfBlazor !== 'undefined');
+    await page.locator('main').click();
+    await page.keyboard.press('?');
     await expect(page.getByRole('dialog', { name: 'Keyboard shortcuts' })).toBeVisible();
     await expect(page.getByText('Go to Requirements')).toBeVisible();
   });

@@ -18,6 +18,10 @@ RUN dotnet publish "TIKR.Api.csproj" -c Release -o /app/publish /p:UseAppHost=fa
 
 FROM base AS final
 WORKDIR /app
+# hadolint ignore=DL3008
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends curl \
+    && rm -rf /var/lib/apt/lists/*
 RUN mkdir -p /data/documents
 COPY --from=build /app/publish .
 ENTRYPOINT ["dotnet", "TIKR.Api.dll"]

@@ -5,9 +5,11 @@ using TIKR.Infrastructure.Services;
 using TIKR.Infrastructure.Tests.Helpers;
 using TIKR.Shared.DTOs;
 using TIKR.Shared.Entities;
+using TIKR.Shared.TestFixtures;
 
 namespace TIKR.Infrastructure.Tests.Services;
 
+[Trait("Category", TestCategories.FullyTested)]
 public class HybridAiServiceSemanticSearchTests
 {
     private static readonly GrokService DisabledGrok = TestGrokServiceFactory.CreateDisabled();

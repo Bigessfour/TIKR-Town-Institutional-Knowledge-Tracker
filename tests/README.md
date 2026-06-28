@@ -57,6 +57,14 @@ dotnet test TIKR.sln --settings coverlet.runsettings --collect:"XPlat Code Cover
 dotnet test tests/TIKR.Infrastructure.Tests
 ```
 
+## FullyTested ship-bar filter
+
+Core MVP endpoints and stub closures are tagged `[Trait("Category", FullyTested)]`:
+
+```bash
+dotnet test TIKR.sln --configuration Release --filter "Category=FullyTested"
+```
+
 ## Coverage policy
 
 - **Targets (line coverage, per assembly):** Shared ≥90%, Infrastructure ≥90%, Api ≥90% (integration-tested endpoints), Web ≥85% on `Helpers/` + `Services/` (Blazor pages smoke-tested via bUnit)

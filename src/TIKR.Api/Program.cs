@@ -187,6 +187,15 @@ api.MapPost("/documents", async (HttpRequest request, TikrDbContext db, IFileSto
     return Results.Created($"/api/documents/{entity.Id}", MapDocument(entity));
 });
 
+api.MapGet("/documents/{id:guid}/content", async (Guid id, TikrDbContext db, IFileStorageService storage) =>
+{
+    var entity = await db.Documents.FindAsync(id);
+    if (entity is null) return Results.NotFound();
+
+    var stream = await storage.OpenReadAsync(entity.StoragePath);
+    return Results.File(stream, entity.ContentType ?? "application/octet-stream", entity.FileName);
+});
+
 api.MapDelete("/documents/{id:guid}", async (Guid id, TikrDbContext db, IFileStorageService storage, IAuditService audit, ICurrentUserService currentUser) =>
 {
     var entity = await db.Documents.FindAsync(id);
@@ -280,16 +289,7 @@ api.MapPost("/ai/tag-document", async (TagDocumentRequest request, IHybridAiServ
     }
 });
 api.MapPost("/ai/ask-advanced", async (AskAdvancedRequest request, IHybridAiService ai) =>
-{
-    try
-    {
-        return Results.Ok(await ai.AskAdvancedAsync(request));
-    }
-    catch (InvalidOperationException ex)
-    {
-        return Results.BadRequest(new { error = ex.Message });
-    }
-});
+    Results.Ok(await ai.AskAdvancedAsync(request)));
 
 api.MapPost("/ai/semantic-search", async (SemanticSearchRequest request, IHybridAiService ai) =>
     Results.Ok(await ai.SemanticSearchDocumentsAsync(request)));
@@ -341,7 +341,7 @@ static RequirementDto MapRequirement(Requirement r) =>
     new(r.Id, r.Title, r.Description, r.DueDate, r.Recurrence, r.Category, r.IsSystemSeeded, r.IsCompleted);
 
 static DocumentDto MapDocument(Document d) =>
-    new(d.Id, d.FileName, d.ContentType, d.FileSizeBytes, d.AiTags, d.SuggestedFolder, d.UploadedAt);
+    new(d.Id, d.FileName, d.ContentType, d.FileSizeBytes, d.AiTags, d.SuggestedFolder, d.UploadedAt, d.FullTextContent);
 
 static KnowledgeEntryDto MapKnowledge(KnowledgeEntry k) =>
     new(k.Id, k.Title, k.Content, k.Category, k.SortOrder);

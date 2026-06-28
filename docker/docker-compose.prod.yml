@@ -1,0 +1,76 @@
+# TIKR production stack — Synology DS225+ / Container Manager
+#
+# Prerequisites:
+#   cp docker/.env.example docker/.env   # SYNCFUSION_LICENSE_KEY, paths
+#   mkdir -p /volume1/tikr/data /volume1/tikr/ollama
+#
+# First deploy (after v1.0.0 GHCR images exist):
+#   docker compose -f docker/docker-compose.prod.yml --env-file docker/.env up -d --pull always
+#   ./validate-prod.sh
+#
+# Build-from-source fallback (no GHCR yet):
+#   docker compose -f docker/docker-compose.yml --env-file docker/.env up -d --build
+
+name: tikr-prod
+
+services:
+  ollama:
+    image: ollama/ollama:latest
+    container_name: tikr-ollama
+    restart: unless-stopped
+    ports:
+      - ${TIKR_OLLAMA_HOST_PORT:-11434}:11434
+    volumes:
+      - ${TIKR_OLLAMA_PATH:-/volume1/tikr/ollama}:/root/.ollama
+    healthcheck:
+      test: [CMD-SHELL, curl -sf http://localhost:11434/ || exit 1]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+
+  tikr-api:
+    image: ghcr.io/bigessfour/tikr-api:${TIKR_VERSION:-latest}
+    container_name: tikr-api
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
+      USE_GROK: ${USE_GROK:-false}
+      OLLAMA_HOST: http://ollama:11434
+      TIKR_API_URL: http://tikr-api:8080
+    ports:
+      - ${TIKR_API_HOST_PORT:-5000}:8080
+    volumes:
+      - ${TIKR_DATA_PATH:-/volume1/tikr/data}:/data
+    depends_on:
+      ollama:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD-SHELL, curl -sf http://localhost:8080/health || exit 1]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  tikr-web:
+    image: ghcr.io/bigessfour/tikr-web:${TIKR_VERSION:-latest}
+    container_name: tikr-web
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      TIKR_API_URL: http://tikr-api:8080
+      TIKR_PUBLIC_API_URL: http://localhost:${TIKR_API_HOST_PORT:-5000}
+    ports:
+      - ${TIKR_WEB_HOST_PORT:-8080}:8080
+    depends_on:
+      tikr-api:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD-SHELL, curl -sf http://localhost:8080/ || exit 1]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s

@@ -2,10 +2,12 @@ using System.Net.Http.Json;
 using FluentAssertions;
 using TIKR.Shared.DTOs;
 using TIKR.Shared.Enums;
+using TIKR.Shared.TestFixtures;
 using TIKR.Api.Tests.Fixtures;
 
 namespace TIKR.Api.Tests.Endpoints;
 
+[Trait("Category", TestCategories.FullyTested)]
 public class DocumentAgentEndpointTests : IClassFixture<TikrWebApplicationFactory>
 {
     private static readonly string FixtureDir = Path.GetFullPath(

@@ -1,0 +1,39 @@
+flowchart TB
+    subgraph pages["Clerk pages (MainLayout nav)"]
+        dash["/ Dashboard<br/>Urgency, AI summary, quick actions"]
+        cal["/calendar<br/>SfSchedule timeline"]
+        req["/requirements<br/>Grid CRUD, CSV, print packet, AI Scan"]
+        docs["/documents<br/>Upload, TreeView, Grid, semantic search, download, preview"]
+        asst["/assistant<br/>SfAIAssistView + RAG context"]
+        vault["/vault<br/>Tabs, RTE, Copy for New Clerk, SpeechToText"]
+        sett["/settings<br/>Audit list, NAS + Ollama health"]
+        users["/settings/users<br/>Admin user grid"]
+        acct["/account<br/>Change password"]
+        login["/login<br/>JWT sign-in"]
+    end
+
+    subgraph cross["Cross-cutting UX"]
+        offline["Offline banner"]
+        footer["NAS status footer"]
+        theme["Theme selector"]
+        keys["Keyboard shortcuts ? and g-nav"]
+        help["PageHelp on main pages"]
+        del["Confirm delete + undo toast"]
+        a11y["Skip link, focus-visible"]
+    end
+
+    subgraph defer["Deferred vNext"]
+        smart["Phase 6 Smart Paste / TextArea / Scheduler NL"]
+        pdf["Phase 9 IMAP ingestion, rich DOCX preview"]
+        req2["Requirements TreeGrid, Stepper, bulk import"]
+        authv["Auth SMTP reset, Viewer role"]
+    end
+
+    clerk((Town Clerk)) --> pages
+    clerk --> cross
+
+    class dash,cal,req,docs,asst,vault,sett,users,acct,login,offline,footer,theme,keys,help,del,a11y done
+    class smart,pdf,req2,authv defer
+
+    classDef done fill:#d4edda,stroke:#28a745,color:#155724
+    classDef defer fill:#e9ecef,stroke:#6c757d,color:#495057

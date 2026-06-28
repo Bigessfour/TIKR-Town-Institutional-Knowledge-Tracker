@@ -3,6 +3,7 @@
 @implements IDisposable
 @inject TikrApiClient Api
 @inject ClerkToastService Toast
+@inject IJSRuntime JS
 
 @using Syncfusion.Blazor.Layouts
 @using Syncfusion.Blazor.Navigations
@@ -110,7 +111,7 @@
                             }
                             <input type="checkbox"
                                    checked="@isSel"
-                                   @onchange="() => ToggleSelection(row)"
+                                   @onchange="() => ToggleSelectionAsync(row)"
                                    aria-label="Select document" />
                         </Template>
                     </GridColumn>
@@ -170,18 +171,30 @@
                     <div class="preview-actions">
                         <SfButton CssClass="tikr-action-btn" Content="Re-tag with AI" OnClick="@(async () => await RetagOne(d))" />
                         <SfButton CssClass="tikr-action-btn" Content="Delete" OnClick="@(() => RequestDelete(d))" />
-                        <SfButton CssClass="tikr-action-btn" Content="Download" OnClick="DownloadPlaceholder" />
+                        <SfButton CssClass="tikr-action-btn" Content="Download" OnClick="@(async () => await DownloadDocumentAsync(d))" />
                     </div>
 
-                    <div class="preview-note">
-                        Full-text content and PDF preview will be available after Phase 9 extraction work.
-                        <!-- Syncfusion review:
-                        - Document Editor SDK (Syncfusion.Blazor.DocumentEditor): Useful for rich DOCX-like editing in Vault or Documents. Could replace/enhance SfRichTextEditor for complex entries.
-                        - PDF Tools (Syncfusion.Blazor.PdfViewer): Highly useful for previewing uploaded PDFs in Documents preview pane (replaces placeholder). Would integrate with content URL.
-                        - Spreadsheet Tools (Syncfusion.Blazor.Spreadsheet): Useful for .xlsx budget/spreadsheets in Documents. Conditional preview/edit.
-                        Note: These packages were at lower versions (e.g. ~27) vs our 33.x; not added to avoid conflict. Recommend when versions align for Phase 9.
-                        -->
-                    </div>
+                    @if (IsPdf(d) && !string.IsNullOrEmpty(_pdfPreviewUrl) && _pdfPreviewDocId == d.Id)
+                    {
+                        <div class="preview-pdf">
+                            <SfPdfViewer2 DocumentPath="@_pdfPreviewUrl" Height="360px" Width="100%" EnableDownload="false" EnablePrint="false" />
+                        </div>
+                    }
+                    else if (HasTextPreview(d))
+                    {
+                        <div class="preview-text">
+                            <strong>Full text</strong>
+                            <pre class="preview-text-body">@d.FullTextContent</pre>
+                        </div>
+                    }
+                    else if (IsPdf(d) && _previewLoading)
+                    {
+                        <div class="preview-note">Loading PDF preview…</div>
+                    }
+                    else
+                    {
+                        <div class="preview-note">Preview not available for this file type.</div>
+                    }
                 }
                 else
                 {
@@ -197,7 +210,7 @@
     <MenuItems>
         <MenuItem Text="Re-tag with AI" Id="cm-retag" IconCss="e-icons e-reload" />
         <MenuItem Text="Delete" Id="cm-delete" IconCss="e-icons e-trash" />
-        <MenuItem Text="Download (placeholder)" Id="cm-download" IconCss="e-icons e-download" />
+        <MenuItem Text="Download" Id="cm-download" IconCss="e-icons e-download" />
     </MenuItems>
     <MenuEvents TValue="MenuItem" ItemSelected="OnContextMenuSelected" />
 </SfContextMenu>
@@ -230,6 +243,10 @@
     private string _confirmDeleteLabel = string.Empty;
     private DocumentDto? _pendingDeleteDoc;
     private bool _pendingBulkDelete;
+
+    private string? _pdfPreviewUrl;
+    private Guid? _pdfPreviewDocId;
+    private bool _previewLoading;
 
     private List<DocumentLibraryLogic.FolderNode> _folderNodes = [];
 
@@ -399,10 +416,72 @@
         }
     }
 
-    private void ToggleSelection(DocumentDto doc)
+    private async Task ToggleSelectionAsync(DocumentDto doc)
     {
+        await RevokePdfPreviewAsync();
         _selection.Toggle(doc, _documents);
+
+        if (_selection.SelectedPreview is { } preview && IsPdf(preview))
+            await LoadPdfPreviewAsync(preview);
+
         StateHasChanged();
+    }
+
+    private async Task LoadPdfPreviewAsync(DocumentDto doc)
+    {
+        _previewLoading = true;
+        StateHasChanged();
+
+        try
+        {
+            var bytes = await Api.GetDocumentContentAsync(doc.Id);
+            if (bytes is null || bytes.Length == 0)
+                return;
+
+            _pdfPreviewUrl = await JS.InvokeAsync<string>(
+                "tikrDownload.createBlobUrl",
+                bytes,
+                doc.ContentType ?? "application/pdf");
+            _pdfPreviewDocId = doc.Id;
+        }
+        finally
+        {
+            _previewLoading = false;
+        }
+    }
+
+    private async Task RevokePdfPreviewAsync()
+    {
+        if (string.IsNullOrEmpty(_pdfPreviewUrl))
+            return;
+
+        await JS.InvokeVoidAsync("tikrDownload.revokeBlobUrl", _pdfPreviewUrl);
+        _pdfPreviewUrl = null;
+        _pdfPreviewDocId = null;
+    }
+
+    private static bool IsPdf(DocumentDto doc) =>
+        doc.ContentType?.Contains("pdf", StringComparison.OrdinalIgnoreCase) == true
+        || doc.FileName.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase);
+
+    private static bool HasTextPreview(DocumentDto doc) =>
+        !string.IsNullOrWhiteSpace(doc.FullTextContent);
+
+    private async Task DownloadDocumentAsync(DocumentDto doc)
+    {
+        var bytes = await Api.GetDocumentContentAsync(doc.Id);
+        if (bytes is null || bytes.Length == 0)
+        {
+            _statusMessage = DocumentUiMessages.DownloadFailed();
+            return;
+        }
+
+        await JS.InvokeVoidAsync(
+            "tikrDownload.downloadFromBytes",
+            doc.FileName,
+            doc.ContentType ?? "application/octet-stream",
+            bytes);
+        _statusMessage = $"Downloaded {doc.FileName} from NAS storage.";
     }
 
     private void ClearSelection()
@@ -476,7 +555,7 @@
         await LoadDocumentsAsync();
     }
 
-    private void OnContextMenuSelected(Syncfusion.Blazor.Navigations.MenuEventArgs<Syncfusion.Blazor.Navigations.MenuItem> args)
+    private async Task OnContextMenuSelected(Syncfusion.Blazor.Navigations.MenuEventArgs<Syncfusion.Blazor.Navigations.MenuItem> args)
     {
         var targetDoc = _selection.SelectedPreview ?? _documents.FirstOrDefault(d => _selection.Contains(d.Id));
 
@@ -492,14 +571,10 @@
                 RequestDelete(targetDoc);
                 break;
             case "cm-download":
-                DownloadPlaceholder();
+                if (targetDoc is not null)
+                    await DownloadDocumentAsync(targetDoc);
                 break;
         }
-    }
-
-    private void DownloadPlaceholder()
-    {
-        _statusMessage = DocumentUiMessages.DownloadPlaceholder();
     }
 
     public void Dispose()
@@ -507,5 +582,6 @@
         _semanticDebounceCts?.Cancel();
         _semanticDebounceCts?.Dispose();
         _semanticDebounceCts = null;
+        _ = RevokePdfPreviewAsync();
     }
 }

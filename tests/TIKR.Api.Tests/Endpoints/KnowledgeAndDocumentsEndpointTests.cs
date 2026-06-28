@@ -5,9 +5,11 @@ using FluentAssertions;
 using TIKR.Api.Tests.Fixtures;
 using TIKR.Shared.DTOs;
 using TIKR.Shared.Enums;
+using TIKR.Shared.TestFixtures;
 
 namespace TIKR.Api.Tests.Endpoints;
 
+[Trait("Category", TestCategories.FullyTested)]
 public class KnowledgeEndpointTests : IClassFixture<TikrWebApplicationFactory>
 {
     private readonly HttpClient _client;
@@ -92,6 +94,7 @@ public class KnowledgeEndpointTests : IClassFixture<TikrWebApplicationFactory>
     }
 }
 
+[Trait("Category", TestCategories.FullyTested)]
 public class DocumentsEndpointTests : IClassFixture<TikrWebApplicationFactory>
 {
     private readonly HttpClient _client;
@@ -186,6 +189,33 @@ public class DocumentsEndpointTests : IClassFixture<TikrWebApplicationFactory>
     }
 
     [Fact]
+    public async Task GetDocumentContent_ReturnsUploadedBytes()
+    {
+        const string payload = "download-me-from-nas";
+        using var upload = new MultipartFormDataContent();
+        var fileContent = new ByteArrayContent(System.Text.Encoding.UTF8.GetBytes(payload));
+        fileContent.Headers.ContentType = new MediaTypeHeaderValue("text/plain");
+        upload.Add(fileContent, "file", "download-me.txt");
+
+        var create = await _client.PostAsync("/api/documents", upload);
+        var created = await create.Content.ReadFromJsonAsync<DocumentDto>();
+
+        var response = await _client.GetAsync($"/api/documents/{created!.Id}/content");
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        response.Content.Headers.ContentType!.MediaType.Should().Be("text/plain");
+
+        var bytes = await response.Content.ReadAsByteArrayAsync();
+        System.Text.Encoding.UTF8.GetString(bytes).Should().Be(payload);
+    }
+
+    [Fact]
+    public async Task GetDocumentContent_ReturnsNotFoundForMissingId()
+    {
+        var response = await _client.GetAsync($"/api/documents/{Guid.NewGuid()}/content");
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
     public async Task DeleteDocument_ReturnsNotFoundForMissingId()
     {
         var response = await _client.DeleteAsync($"/api/documents/{Guid.NewGuid()}");
@@ -193,6 +223,7 @@ public class DocumentsEndpointTests : IClassFixture<TikrWebApplicationFactory>
     }
 }
 
+[Trait("Category", TestCategories.FullyTested)]
 public class AiEndpointTests : IClassFixture<TikrWebApplicationFactory>
 {
     private readonly HttpClient _client;
@@ -217,13 +248,26 @@ public class AiEndpointTests : IClassFixture<TikrWebApplicationFactory>
     }
 
     [Fact]
-    public async Task AskAdvanced_WhenGrokDisabled_ReturnsBadRequest()
+    public async Task AskAdvanced_WhenGrokDisabled_FallsBackToOllamaStub()
     {
         var response = await _client.PostAsJsonAsync(
             "/api/ai/ask-advanced",
             new AskAdvancedRequest("What is TABOR?", null));
 
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var body = await response.Content.ReadFromJsonAsync<AskAdvancedResponse>();
+        body.Should().NotBeNull();
+        body!.UsedGrok.Should().BeFalse();
+        body.Answer.Should().NotBeNullOrWhiteSpace();
+    }
+
+    [Fact]
+    public async Task GetLocalStatus_ReturnsPayload()
+    {
+        var status = await _client.GetFromJsonAsync<LocalStorageStatusDto>("/api/system/local-status");
+        status.Should().NotBeNull();
+        status!.TownName.Should().NotBeNullOrWhiteSpace();
+        status.StorageLabel.Should().NotBeNullOrWhiteSpace();
     }
 
     [Fact]

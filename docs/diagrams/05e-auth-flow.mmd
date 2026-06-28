@@ -1,0 +1,24 @@
+sequenceDiagram
+    autonumber
+    actor Clerk
+    participant Web as TIKR.Web
+    participant API as TIKR.Api
+    participant Id as ASP.NET Identity
+
+    Note over Clerk,Id: Only when TIKR_ADMIN_EMAIL plus password set
+
+    Clerk->>Web: GET protected page
+    Web-->>Clerk: Redirect to /login
+    Clerk->>Web: Submit credentials SfDataForm
+    Web->>API: POST /api/auth/login
+    API->>Id: Validate user
+    Id-->>API: JWT claims Admin or Clerk
+    API-->>Web: Token in HttpOnly cookie
+    Web->>API: GET /api/requirements Authorization Bearer
+    API-->>Web: Data with audit UserId on writes
+
+    opt Admin
+        Clerk->>Web: /settings/users
+        Web->>API: POST /api/auth/users
+        API->>Id: Create Clerk account
+    end

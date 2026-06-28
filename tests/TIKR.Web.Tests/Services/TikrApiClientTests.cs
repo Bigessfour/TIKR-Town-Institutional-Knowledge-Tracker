@@ -10,6 +10,7 @@ using TIKR.Web.Services;
 
 namespace TIKR.Web.Tests.Services;
 
+[Trait("Category", TestCategories.FullyTested)]
 public class TikrApiClientTests
 {
     [Fact]
@@ -287,6 +288,32 @@ public class TikrApiClientTests
         var id = Guid.NewGuid();
         var sut = new TikrApiClient(new HttpClient { BaseAddress = new Uri("http://localhost/") });
         sut.GetDocumentContentUrl(id).Should().Be($"/api/documents/{id}/content");
+    }
+
+    [Fact]
+    public void GetAbsoluteDocumentContentUri_BuildsAbsoluteUrl()
+    {
+        var id = Guid.NewGuid();
+        var sut = new TikrApiClient(new HttpClient { BaseAddress = new Uri("http://localhost:5000/") });
+        sut.GetAbsoluteDocumentContentUri(id).Should().Be(new Uri($"http://localhost:5000/api/documents/{id}/content"));
+    }
+
+    [Fact]
+    public async Task GetDocumentContentAsync_ReturnsBytes()
+    {
+        var payload = "nas-bytes"u8.ToArray();
+        var handler = new RecordingHandler((req, _) =>
+        {
+            req.RequestUri!.PathAndQuery.Should().Contain("/content");
+            return new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new ByteArrayContent(payload)
+            };
+        });
+        var sut = new TikrApiClient(new HttpClient(handler) { BaseAddress = new Uri("http://localhost/") });
+
+        var bytes = await sut.GetDocumentContentAsync(Guid.NewGuid());
+        bytes.Should().Equal(payload);
     }
 
     [Fact]

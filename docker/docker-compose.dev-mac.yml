@@ -1,0 +1,8 @@
+# macOS dev notes (optional override file — prefer TIKR_API_HOST_PORT in docker/.env).
+# AirPlay Receiver often binds :5000; set TIKR_API_HOST_PORT=5001 in docker/.env.
+# The host-Ollama IDE task exports 5001 automatically when you omit it from .env.
+
+services:
+  tikr-api:
+    environment:
+      TIKR_PUBLIC_API_URL: http://localhost:${TIKR_API_HOST_PORT:-5000}

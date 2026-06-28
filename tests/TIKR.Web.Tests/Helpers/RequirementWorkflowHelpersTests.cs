@@ -1,10 +1,12 @@
 using FluentAssertions;
 using TIKR.Shared.DTOs;
 using TIKR.Shared.Enums;
+using TIKR.Shared.TestFixtures;
 using TIKR.Web.Helpers;
 
 namespace TIKR.Web.Tests.Helpers;
 
+[Trait("Category", TestCategories.FullyTested)]
 public class RequirementWorkflowHelpersTests
 {
     private static readonly DateOnly Today = new(2026, 6, 28);
@@ -123,7 +125,18 @@ public class RequirementWorkflowHelpersTests
             "x", null, null, RecurrenceType.None, RequirementCategory.Custom, 3, "p", true, UsedSyncfusionTools: false);
 
         RequirementWorkflowHelpers.FormatAgentScanMessage(result)
-            .Should().Be("Processed on Synology • 3 tables extracted");
+            .Should().Be("Processed on Synology • Plain-text extraction • 3 tables extracted");
+    }
+
+    [Fact]
+    public void GetExtractionSourceLabel_ReflectsSyncfusionFlag()
+    {
+        var stub = new DocumentAgentResult(
+            "x", null, null, RecurrenceType.None, RequirementCategory.Custom, 0, "p", true, UsedSyncfusionTools: false);
+        var licensed = stub with { UsedSyncfusionTools = true };
+
+        RequirementWorkflowHelpers.GetExtractionSourceLabel(stub).Should().Be("Plain-text extraction");
+        RequirementWorkflowHelpers.GetExtractionSourceLabel(licensed).Should().Be("Syncfusion Document SDK");
     }
 
     [Fact]
