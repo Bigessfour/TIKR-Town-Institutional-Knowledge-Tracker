@@ -2,6 +2,16 @@
 
 Living checklist for Requirements Manager work. Tracks MVP (ship now) vs deferred Phase 2+.
 
+**Updated:** 2026-06-28 — honest snapshot of `main` vs active branch.
+
+## Where we are
+
+| Layer | Truth |
+|-------|--------|
+| **`main`** | 10A, 10B, 10C **A1+A2** merged ([#35](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/35)). **275 tests**. Syncfusion PDF/Word extraction wired behind `USE_SYNCFUSION_AGENT_TOOLS=true` (not exercised in default CI). No `UsedSyncfusionTools` on DTO yet. Playwright: `clerk-smoke.spec.ts` only. |
+| **Active branch** | `feature/phase10c-e2e-proof` → open **[PR #36](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/36)** (10C-D E2E proof). Adds fixtures, API test, Playwright agent-scan spec, docker smoke curl, licensed workflow scaffold, `UsedSyncfusionTools`. **277 tests** when merged. |
+| **Next after #36** | Manual NAS smoke (licensed PDF), 10C-C UI badge, 10C-A3 Ollama orchestration, Phase 0 docs/sign-off. |
+
 **Repo reality**
 
 - No local `RequirementService` — use `TikrApiClient` + `RequirementWorkflowHelpers`
@@ -9,7 +19,7 @@ Living checklist for Requirements Manager work. Tracks MVP (ship now) vs deferre
 - DTOs: [`src/TIKR.Shared/DTOs/RequirementDto.cs`](../src/TIKR.Shared/DTOs/RequirementDto.cs)
 - [`Calendar.razor`](../src/TIKR.Web/Components/Pages/Calendar.razor) remains the timeline/schedule consumer; `/requirements` is the CRUD hub
 
-**Syncfusion reference:** [AI Agent Tools for Document SDK](https://www.syncfusion.com/explore/ai-agent-tools-for-document-sdk/) — Storage Mode on NAS. Configuration: [sf-document-agent-tools.md](sf-document-agent-tools.md). **A2** wires deterministic PDF/Word extraction; **A3** adds Ollama tool orchestration.
+**Syncfusion reference:** [AI Agent Tools for Document SDK](https://www.syncfusion.com/explore/ai-agent-tools-for-document-sdk/) — Storage Mode on NAS. Configuration: [sf-document-agent-tools.md](sf-document-agent-tools.md). **A2** (on `main`) wires deterministic PDF/Word extraction; **A3** adds Ollama tool orchestration (not started).
 
 ---
 
@@ -35,60 +45,55 @@ Living checklist for Requirements Manager work. Tracks MVP (ship now) vs deferre
 
 ---
 
-## Phase 10C — Syncfusion AI Agent Tools (active)
+## Phase 10C — Syncfusion AI Agent Tools
 
 **Goal:** Replace stub inference with [Syncfusion Document SDK AI Agent Tools](https://www.syncfusion.com/explore/ai-agent-tools-for-document-sdk/) — AI-callable, deterministic extraction (tables, KV pairs, OCR) on NAS, orchestrated by Ollama locally (no cloud required for core flows).
 
-**NuGet (A2):** `Syncfusion.DocumentSDK.AI.AgentTools` (+ `Microsoft.Agents.AI.OpenAI` or existing `Microsoft.Extensions.AI` + Ollama). Requires `SYNCFUSION_LICENSE_KEY` (Document SDK entitlement).
+**NuGet (A2, on `main`):** `Syncfusion.DocumentSDK.AI.AgentTools` (33.2.15). Requires `SYNCFUSION_LICENSE_KEY` (Document SDK entitlement).
 
 | Group | Scope | Status |
 |-------|--------|--------|
-| **A1** | `IAgentDocumentStorage`, optional AES (`TIKR_AGENT_STORAGE_KEY`), `IDocumentAgentExtractionBackend`, stub backend uses real plain-text extraction, `USE_SYNCFUSION_AGENT_TOOLS` flag | done ([#35](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/35)) |
-| **A2** | NuGet + `NasSyncfusionDocumentStorage` (`IDocumentStorage`); `SyncfusionDocumentAgentExtractor` (PDF text, Word text, table JSON) | done ([#35](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/35)) |
+| **A1** | `IAgentDocumentStorage`, optional AES (`TIKR_AGENT_STORAGE_KEY`), `IDocumentAgentExtractionBackend`, stub backend uses real plain-text extraction, `USE_SYNCFUSION_AGENT_TOOLS` flag | **done on `main`** ([#35](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/35)) |
+| **A2** | NuGet + `NasSyncfusionDocumentStorage` (`IDocumentStorage`); `SyncfusionDocumentAgentExtractor` (PDF text, Word text, table JSON) | **done on `main`** ([#35](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/35)) — licensed path not CI-proven until #36 + NAS smoke |
 | **A3** | Microsoft Agent Framework loop: Ollama selects tools → validated JSON → requirement mapping | planned |
 | **B** | In-memory vs storage-backed `IDocumentStorage` parity with Syncfusion modes | partial (NAS Storage Mode in A2) |
-| **C** | Requirements UI: show extraction source (stub vs Syncfusion), progress indicator on scan | partial (`UsedSyncfusionTools` on DTO; UI badge deferred) |
-| **D** | Playwright: upload → agent-scan → pre-filled requirement dialog | done (txt stub in `tests/e2e/requirements-agent-scan.spec.ts`; PDF via licensed workflow) |
-| **E** | Docs: NAS setup, license, `USE_SYNCFUSION_AGENT_TOOLS` runbook | done ([sf-document-agent-tools.md](sf-document-agent-tools.md) E2E tiers) |
+| **C** | Requirements UI: show extraction source (stub vs Syncfusion), progress indicator on scan | partial — `UsedSyncfusionTools` on DTO in **PR #36 only**; UI badge not built |
+| **D** | Playwright + API + docker proof for agent-scan | **PR #36 open** — not on `main` yet |
+| **E** | Docs: NAS setup, license, E2E tiers | partial on `main`; E2E tier table completes in **PR #36** |
 
-### A1 checklist
+### A1+A2 (on `main` — merged #35)
 
 - [x] `IAgentDocumentStorage` + `NasAgentDocumentStorage` (`agent-scans/` prefix, optional AES-256-GCM)
 - [x] `IDocumentAgentExtractionBackend` + `StubDocumentAgentExtractionBackend` (plain-text via `DocumentTextExtractionService`)
 - [x] `USE_SYNCFUSION_AGENT_TOOLS` + `TIKR_AGENT_STORAGE_KEY` in `docker/.env.example`
 - [x] Refactor `DocumentAgentService` to use storage + backend abstractions
-- [x] Tests: crypto round-trip, NAS storage paths, `.txt` agent-scan extraction
-- [x] Merge PR #35 (A1+A2)
+- [x] Tests: crypto round-trip, NAS storage paths, Syncfusion extractor unit tests
+- [ ] **Manual NAS smoke:** `USE_SYNCFUSION_AGENT_TOOLS=true` + `minimal-clerk-report.pdf` on real NAS/Docker with license (not recorded)
 
-### A2 checklist
+### 10C-D E2E proof — [PR #36](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/36) (open)
 
-- [x] `Syncfusion.DocumentSDK.AI.AgentTools` + `Syncfusion.Licensing` NuGet (33.2.15)
-- [x] `NasSyncfusionDocumentStorage` implements Syncfusion `IDocumentStorage` under `agent-scans/sf-work/`
-- [x] `SyncfusionDocumentAgentExtractor` — `PdfContentExtractionAgentTools`, `WordImportExportAgentTools`, `DataExtractionAgentTools`
-- [x] License registration in `AddTikrInfrastructure` (`SYNCFUSION_LICENSE_KEY`)
-- [x] `SyncfusionDocumentAgentExtractionBackend` delegates to extractor (no throw)
-- [x] Tests: `NasSyncfusionDocumentStorageTests`
-- [x] E2E: API txt fixture test + Playwright stub spec + licensed workflow scaffold
-- [x] `DocumentAgentResult.UsedSyncfusionTools` for assertion in API/E2E
-- [ ] Manual NAS smoke: `USE_SYNCFUSION_AGENT_TOOLS=true` + PDF agent-scan
-
-### E2E proof (10C-D — open PR)
+Code complete on branch; **not on `main` until merged.**
 
 - [x] Fixtures: `tests/fixtures/agent-scan/` (txt, pdf, docx)
 - [x] `DocumentAgentEndpointTests.AgentScan_ExtractsTxtFixture`
-- [x] Playwright: `tests/e2e/requirements-agent-scan.spec.ts`
-- [x] CI docker smoke: curl agent-scan txt (stub)
-- [x] Optional workflow: `.github/workflows/tikr-syncfusion-agent-smoke.yml`
+- [x] `DocumentAgentResult.UsedSyncfusionTools` for API/E2E assertions
+- [x] Playwright: `tests/e2e/requirements-agent-scan.spec.ts` (manual against Docker)
+- [x] CI docker smoke: curl agent-scan txt (stub; `continue-on-error` on docker job today)
+- [x] Optional workflow: `.github/workflows/tikr-syncfusion-agent-smoke.yml` (needs repo secret `SYNCFUSION_LICENSE_KEY`)
+- [x] `LocalFileStorageService` preserves `agent-scans/` prefix
+- [ ] **Merge PR #36**
+- [ ] TIKR CI green on #36
 
 ### Gap vs Syncfusion product (honest)
 
 | Syncfusion capability | TIKR today |
 |----------------------|------------|
-| PDF/Word agent tools (Storage Mode) | Wired in A2 when flag enabled |
+| PDF/Word agent tools (Storage Mode) | On `main` when `USE_SYNCFUSION_AGENT_TOOLS=true`; not default CI path |
 | Smart Data Extraction → JSON | Table count via `ExtractTableAsJson` |
 | Microsoft Agent Framework `AITool` loop | Not wired (A3) |
 | Storage-backed distributed agents | `NasSyncfusionDocumentStorage` on NAS volume |
 | Included with Document SDK license | Same `SYNCFUSION_LICENSE_KEY` as Blazor |
+| Automated proof of licensed extraction | PR #36 + optional smoke workflow; neither merged/run yet |
 
 ---
 
@@ -117,8 +122,8 @@ Living checklist for Requirements Manager work. Tracks MVP (ship now) vs deferre
 - [ ] "Copy for Deputy Clerk" per row
 - [ ] "AI Fill Gaps" button (Ollama suggest similar CO requirements)
 - [ ] "Test Submit" action
-- [ ] Print Packet export (basic print shipped in Phase 0 #33)
-- [ ] Offline mode indicator / Synology NAS badge (Phase 0 #33)
+- [x] Print Packet export (basic print shipped in Phase 0 [#33](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/33))
+- [x] Offline mode indicator / Synology NAS badge (Phase 0 [#33](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/33))
 
 ### Integrations
 
@@ -131,7 +136,7 @@ Living checklist for Requirements Manager work. Tracks MVP (ship now) vs deferre
 ### Infrastructure
 
 - [ ] Add Syncfusion.Blazor.TreeGrid package (individual, not meta)
-- [ ] Playwright E2E clerk flows for requirements (extend `tests/e2e/`)
+- [ ] Playwright E2E clerk flows — `clerk-smoke.spec.ts` on `main`; `requirements-agent-scan.spec.ts` in PR #36; neither wired as required CI gate yet
 
 ---
 
@@ -143,25 +148,25 @@ Captured from codebase + plan review. Tracks stubs, Phase 0 closure, and non-Req
 
 | Order | PR focus | Closes |
 |-------|----------|--------|
-| 1 | Phase 0 PR #2 — E2E + a11y | Playwright CI gate, `FullyTested` trait, extend smoke flows |
-| 2 | Documents download API + UI | Remove `DownloadPlaceholder` stub |
-| 3 | Documents delete undo | Toast undo parity with Requirements/Vault |
-| 4 | 10C A2 merge + NAS smoke | PDF/DOCX agent-scan; extraction source badge (10C-C) |
-| 5 | Phase 0 PR #3 — Docs | Deb handover; honest footer wording |
-| 6 | Phase 0 PR #4 — Sign-off | Done Detector checklist + recorded walkthrough |
-| Later | Voice STT, PDF preview, 10C-A3, Phase 6, Requirements Phase 2 | Post-ship / vNext |
+| **Now** | **Merge [PR #36](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/36)** — 10C-D E2E | Fixtures, `UsedSyncfusionTools`, agent-scan API/Playwright/docker smoke |
+| 1 | Manual NAS smoke + optional licensed workflow dispatch | Proves PDF/DOCX with `SYNCFUSION_LICENSE_KEY` |
+| 2 | 10C-C UI badge | `FormatAgentScanMessage` shows stub vs Syncfusion |
+| 3 | Phase 0 PR #3 — Docs | Deb handover; honest footer wording ("Last saved" vs "Last backed up") |
+| 4 | Phase 0 PR #4 — Sign-off | Done Detector checklist + recorded walkthrough |
+| 5 | Documents download API + UI | Remove `DownloadPlaceholder` stub |
+| 6 | Documents delete undo | Toast undo parity with Requirements/Vault |
+| Later | Phase 0 Playwright CI gate, `FullyTested` trait, Voice STT, PDF preview, 10C-A3, Phase 6, Requirements Phase 2 | Post-ship / vNext |
 
-### Phase 0 closure (PRs 2–4 — [incremental-plan.md](incremental-plan.md))
+### Phase 0 closure ([incremental-plan.md](incremental-plan.md))
 
-**Status:** PR #33 merged; items below remain before Deb sign-off.
+**Status:** [#33](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/33) + [#34](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/34) merged on `main`. PRs 3–4 remain before Deb sign-off.
 
-- [ ] **PR #2 — Test & accessibility:** Expand Playwright beyond 4 specs (`clerk-smoke.spec.ts`, `requirements-agent-scan.spec.ts`); wire as ship gate (dedicated workflow or CI step — today Docker smoke is `continue-on-error`)
-- [ ] **PR #2:** Add `FullyTested` trait/category + `dotnet test --filter FullyTested`
-- [ ] **PR #2:** Mobile/tablet manual verification (44px touch targets baseline shipped)
+- [x] **PR #2 — partial ([#34](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/34)):** Keyboard nav, bUnit polish tests, plan cleanup
+- [ ] **PR #2 — remaining:** Playwright as required CI gate (docker smoke still `continue-on-error`); `FullyTested` trait + `dotnet test --filter FullyTested`; mobile/tablet manual pass
 - [ ] **PR #3 — Documentation:** Clerk handover doc + Deb walkthrough checklist
-- [ ] **PR #3:** Footer wording — today shows SQLite mtime as "Last saved"; spec said "Last backed up" (Synology Hyper Backup not wired)
+- [ ] **PR #3:** Footer wording — SQLite mtime shown as "Last saved"; spec wanted "Last backed up" (Hyper Backup not wired)
 - [ ] **PR #4 — Sign-off:** Deb walkthrough recorded; Done Detector criteria signed off
-- [ ] **PR #4:** Confirm `TIKR_STORAGE_LABEL` env matches clerk NAS model (e.g. DS225+)
+- [ ] **PR #4:** Confirm `TIKR_STORAGE_LABEL` matches clerk NAS model (e.g. DS225+)
 
 ### Stubs & placeholders in code (circle back)
 
@@ -170,9 +175,9 @@ Captured from codebase + plan review. Tracks stubs, Phase 0 closure, and non-Req
 - [ ] **Document download** — `Documents.razor` `DownloadPlaceholder()`; `PageWorkflowHelpers.DownloadPlaceholder()` — needs `GET /api/documents/{id}/content` streaming from `IFileStorageService`
 - [ ] **PDF/DOCX preview pane** — `Documents.razor` placeholder text; defer `SfPdfViewer` or show extracted text when available
 - [ ] **Voice notes** — `Vault.razor` + `VaultVoiceNoteSimulator` — timer simulates transcription; no mic/Ollama STT yet
-- [ ] **Agent scan binary PDF/DOCX (stub path)** — `StubDocumentAgentExtractionBackend` when `USE_SYNCFUSION_AGENT_TOOLS=false` (CI default); finish via 10C A2 merge + NAS flag
+- [ ] **Agent scan PDF/DOCX (stub path)** — **By design** when `USE_SYNCFUSION_AGENT_TOOLS=false` (CI/default docker). Plain `.txt` works. Licensed PDF/Word on `main` via Syncfusion when flag + key set; proof pending NAS smoke / PR #36 merge + licensed workflow
 - [ ] **Documents delete — no undo** — `ConfirmDeleteAsync` shows toast without undo callback (Requirements/Vault have undo)
-- [ ] **Extraction source badge (10C-C)** — `FormatAgentScanMessage` ignores `UsedSyncfusionTools`; add Stub vs Syncfusion badge + scan progress spinner
+- [ ] **Extraction source badge (10C-C)** — `FormatAgentScanMessage` ignores `UsedSyncfusionTools` (field lands with PR #36); UI badge not built
 
 #### Medium impact — spec vs implementation
 
@@ -182,8 +187,8 @@ Captured from codebase + plan review. Tracks stubs, Phase 0 closure, and non-Req
 
 #### Low impact
 
-- [ ] **10C-A3** — `IAgentDocumentStorage` comment references A3 orchestration; Microsoft Agent Framework loop not wired
-- [ ] **SyncfusionDocumentAgentExtractor** — A2 code present; manual NAS smoke + merge pending (see A2 checklist above)
+- [ ] **10C-A3** — Microsoft Agent Framework / Ollama tool loop not wired
+- [ ] **Licensed Syncfusion smoke** — workflow file in PR #36; needs secret + manual dispatch or weekly run after merge
 
 ### Phase 9 / 6 / auth deferred (not Requirements-specific)
 
@@ -193,7 +198,9 @@ Captured from codebase + plan review. Tracks stubs, Phase 0 closure, and non-Req
 - [ ] Auth vNext — email password reset (SMTP), token refresh, read-only `Viewer` role
 - [ ] GitHub manual — Settings → Actions read-only default `GITHUB_TOKEN` (Phase 5B)
 
-### Doc drift (fix when closing Phase 0)
+### Repo hygiene (2026-06-28)
 
-- [ ] Mark done in **Deferred → UI** above: offline banner + Synology footer shipped in Phase 0 #33 (lines 122–123)
-- [ ] Reconcile **Deferred → Infrastructure** Playwright line (line 135) with Phase 0 PR #2 scope above
+- [x] Merged feature branches deleted from origin (`phase10b`, `phase0-*`, `phase9-text-extraction`, `phase10c-agent-tools-a1`)
+- [x] E2E work rebased to `feature/phase10c-e2e-proof` after #35 squash-merge
+- [ ] Merge PR #36; delete `feature/phase10c-e2e-proof` after merge
+- [ ] Dependabot action bumps ([#15](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/15)–[#17](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/17)) — green CI; `@dependabot rebase` requested
