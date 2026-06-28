@@ -61,7 +61,14 @@
     <div class="login-error mb-3">@_error</div>
 }
 
-@if (!string.IsNullOrWhiteSpace(_agentMessage))
+@if (_agentScanning)
+{
+    <div class="ai-suggestion-banner mb-3" aria-busy="true" aria-live="polite">
+        <strong>Scanning document on Synology…</strong>
+        <div class="banner-body">Extracting text and tables for the requirement form.</div>
+    </div>
+}
+else if (!string.IsNullOrWhiteSpace(_agentMessage))
 {
     <div class="ai-suggestion-banner mb-3">
         <strong>@_agentMessage</strong>
@@ -168,6 +175,7 @@
     private Guid? _editingId;
     private string? _error;
     private string? _agentMessage;
+    private bool _agentScanning;
     private DateTime _formDueDate = DateTime.Today.AddMonths(1);
     private readonly RequirementFormModel _form = new();
     private bool _confirmDeleteVisible;
@@ -344,6 +352,7 @@
         if (file is null)
             return;
 
+        _agentScanning = true;
         try
         {
             await using var stream = file.OpenReadStream(maxAllowedSize: 52_428_800);
@@ -364,6 +373,10 @@
         catch
         {
             _error = "Could not scan document. Try a smaller PDF or text file.";
+        }
+        finally
+        {
+            _agentScanning = false;
         }
     }
 

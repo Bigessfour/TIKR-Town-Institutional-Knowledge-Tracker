@@ -131,8 +131,12 @@ public static class RequirementWorkflowHelpers
             result.SuggestedCategory);
     }
 
-    public static string FormatAgentScanMessage(DocumentAgentResult result) =>
-        $"Processed on Synology • {result.TablesExtractedCount} table{(result.TablesExtractedCount == 1 ? "" : "s")} extracted";
+    public static string FormatAgentScanMessage(DocumentAgentResult result)
+    {
+        var tables = $"{result.TablesExtractedCount} table{(result.TablesExtractedCount == 1 ? "" : "s")} extracted";
+        var source = result.UsedSyncfusionTools ? "Syncfusion extraction" : "plain-text extraction";
+        return $"Processed on Synology • {tables} • {source}";
+    }
 
     public static CreateRequirementRequest ToCreateRequest(RequirementDto requirement) =>
         new(requirement.Title, requirement.Description, requirement.DueDate, requirement.Recurrence, requirement.Category);
