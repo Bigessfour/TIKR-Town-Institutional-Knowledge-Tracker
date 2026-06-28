@@ -143,10 +143,26 @@ public class HybridAiServiceVaultRagTests
             StringSplitOptions.RemoveEmptyEntries);
         foreach (var token in tokens)
         {
-            var slot = (uint)token.GetHashCode() % VectorDimensions;
+            // FNV-1a: deterministic across processes/platforms, unlike string.GetHashCode()
+            // which is randomized per AppDomain in .NET Core 2.1+ and caused this test to
+            // collide token slots differently on Linux CI vs macOS local.
+            var slot = StableHash(token) % VectorDimensions;
             vector[slot] += 1f;
         }
         return vector;
+    }
+
+    private static uint StableHash(string s)
+    {
+        const uint fnvOffsetBasis = 2166136261;
+        const uint fnvPrime = 16777619;
+        uint hash = fnvOffsetBasis;
+        foreach (var c in s)
+        {
+            hash ^= c;
+            hash *= fnvPrime;
+        }
+        return hash;
     }
 
     private static KnowledgeEntry SeedEntry(TikrDbContext db, string title, string content, KnowledgeCategory category)
