@@ -191,6 +191,24 @@ public class DocumentsEndpointTests : IClassFixture<TikrWebApplicationFactory>
         var response = await _client.DeleteAsync($"/api/documents/{Guid.NewGuid()}");
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
+
+    [Fact]
+    public async Task GetDocumentContent_StreamsUploadedFile()
+    {
+        var bytes = "download me"u8.ToArray();
+        using var upload = new MultipartFormDataContent();
+        var fileContent = new ByteArrayContent(bytes);
+        fileContent.Headers.ContentType = new MediaTypeHeaderValue("text/plain");
+        upload.Add(fileContent, "file", "download-me.txt");
+
+        var create = await _client.PostAsync("/api/documents", upload);
+        var created = await create.Content.ReadFromJsonAsync<DocumentDto>();
+
+        var response = await _client.GetAsync($"/api/documents/{created!.Id}/content");
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var downloaded = await response.Content.ReadAsByteArrayAsync();
+        downloaded.Should().Equal(bytes);
+    }
 }
 
 public class AiEndpointTests : IClassFixture<TikrWebApplicationFactory>

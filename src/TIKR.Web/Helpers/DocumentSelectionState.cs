@@ -40,10 +40,44 @@ public sealed class DocumentSelectionState
 
 public static class VaultVoiceNoteSimulator
 {
+    public const string TitlePrefix = "Voice Note - ";
+
     public static string BuildDefaultTitle(DateTime timestamp) =>
-        $"Voice Note - {timestamp:MMM dd}";
+        $"{TitlePrefix}{timestamp:MMM dd}";
 
     public static string BuildSimulatedTranscription(DateTime timestamp) =>
         $"[Voice Note - {timestamp:HH:mm}] " +
         "Key thing I always forget: call the county assessor before Dec 15 for mill levy. Also, the safe combination is in the red folder under 'E'. The new clerk should know the trustees meet on the second Tuesday.";
+}
+
+public static class VaultVoiceNoteMapper
+{
+    public static bool IsVoiceNote(KnowledgeEntryDto entry) =>
+        entry.Title.StartsWith(VaultVoiceNoteSimulator.TitlePrefix, StringComparison.Ordinal);
+
+    public static VaultVoiceNote ToVoiceNote(KnowledgeEntryDto entry) =>
+        new()
+        {
+            Id = entry.Id,
+            Title = entry.Title,
+            Transcription = entry.Content,
+            Timestamp = ResolveTimestamp(entry.Title)
+        };
+
+    public static DateTime ResolveTimestamp(string title)
+    {
+        if (!title.StartsWith(VaultVoiceNoteSimulator.TitlePrefix, StringComparison.Ordinal))
+            return DateTime.UtcNow;
+
+        var datePart = title[VaultVoiceNoteSimulator.TitlePrefix.Length..].Trim();
+        return DateTime.TryParse(datePart, out var parsed) ? parsed : DateTime.UtcNow;
+    }
+}
+
+public sealed class VaultVoiceNote
+{
+    public Guid Id { get; set; }
+    public string Title { get; set; } = "";
+    public string Transcription { get; set; } = "";
+    public DateTime Timestamp { get; set; }
 }

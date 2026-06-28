@@ -26,6 +26,9 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
+// ASP.NET Core / Document SDK: register after Build, before handling requests (Syncfusion guidance).
+SyncfusionDocumentLicense.RegisterFromConfiguration(app.Configuration);
+
 var authEnabled = TikrConfiguration.IsAuthEnabled(app.Configuration);
 
 await app.Services.InitializeDatabaseAsync();
@@ -185,6 +188,23 @@ api.MapPost("/documents", async (HttpRequest request, TikrDbContext db, IFileSto
     await db.SaveChangesAsync();
     await audit.LogAsync("Upload", nameof(Document), entity.Id, entity.FileName, currentUser.UserId);
     return Results.Created($"/api/documents/{entity.Id}", MapDocument(entity));
+});
+
+api.MapGet("/documents/{id:guid}/content", async (Guid id, TikrDbContext db, IFileStorageService storage) =>
+{
+    var entity = await db.Documents.FindAsync(id);
+    if (entity is null)
+        return Results.NotFound();
+
+    if (!File.Exists(storage.GetFullPath(entity.StoragePath)))
+        return Results.NotFound();
+
+    var stream = await storage.OpenReadAsync(entity.StoragePath);
+    var contentType = string.IsNullOrWhiteSpace(entity.ContentType)
+        ? "application/octet-stream"
+        : entity.ContentType;
+
+    return Results.File(stream, contentType, entity.FileName);
 });
 
 api.MapDelete("/documents/{id:guid}", async (Guid id, TikrDbContext db, IFileStorageService storage, IAuditService audit, ICurrentUserService currentUser) =>

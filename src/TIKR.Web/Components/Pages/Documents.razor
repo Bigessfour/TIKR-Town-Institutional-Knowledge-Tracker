@@ -3,6 +3,7 @@
 @implements IDisposable
 @inject TikrApiClient Api
 @inject ClerkToastService Toast
+@inject IJSRuntime JS
 
 @using Syncfusion.Blazor.Layouts
 @using Syncfusion.Blazor.Navigations
@@ -97,9 +98,7 @@
                     AllowSorting="true"
                     AllowFiltering="true"
                     Height="520px"
-                    CssClass="doc-grid"
-                    AllowSelection="true">
-                <GridSelectionSettings Type="Syncfusion.Blazor.Grids.SelectionType.Multiple" CheckboxOnly="false" />
+                    CssClass="doc-grid">
                 <GridColumns>
                     <!-- Selection checkbox (reliable client state) -->
                     <GridColumn Width="50" HeaderText="">
@@ -170,7 +169,7 @@
                     <div class="preview-actions">
                         <SfButton CssClass="tikr-action-btn" Content="Re-tag with AI" OnClick="@(async () => await RetagOne(d))" />
                         <SfButton CssClass="tikr-action-btn" Content="Delete" OnClick="@(() => RequestDelete(d))" />
-                        <SfButton CssClass="tikr-action-btn" Content="Download" OnClick="DownloadPlaceholder" />
+                        <SfButton CssClass="tikr-action-btn" Content="Download" OnClick="@(() => DownloadDocumentAsync(d))" />
                     </div>
 
                     <div class="preview-note">
@@ -197,7 +196,7 @@
     <MenuItems>
         <MenuItem Text="Re-tag with AI" Id="cm-retag" IconCss="e-icons e-reload" />
         <MenuItem Text="Delete" Id="cm-delete" IconCss="e-icons e-trash" />
-        <MenuItem Text="Download (placeholder)" Id="cm-download" IconCss="e-icons e-download" />
+        <MenuItem Text="Download" Id="cm-download" IconCss="e-icons e-download" />
     </MenuItems>
     <MenuEvents TValue="MenuItem" ItemSelected="OnContextMenuSelected" />
 </SfContextMenu>
@@ -492,14 +491,27 @@
                 RequestDelete(targetDoc);
                 break;
             case "cm-download":
-                DownloadPlaceholder();
+                _ = DownloadDocumentAsync(targetDoc);
                 break;
         }
     }
 
-    private void DownloadPlaceholder()
+    private async Task DownloadDocumentAsync(DocumentDto doc)
     {
-        _statusMessage = DocumentUiMessages.DownloadPlaceholder();
+        var content = await Api.GetDocumentContentAsync(doc.Id);
+        if (content is null)
+        {
+            _statusMessage = DocumentUiMessages.DownloadFailed(doc.FileName);
+            return;
+        }
+
+        var (bytes, contentType) = content.Value;
+        await JS.InvokeVoidAsync(
+            "tikrDownload.bytes",
+            doc.FileName,
+            Convert.ToBase64String(bytes),
+            contentType ?? doc.ContentType ?? "application/octet-stream");
+        _statusMessage = DocumentUiMessages.DownloadSuccess(doc.FileName);
     }
 
     public void Dispose()

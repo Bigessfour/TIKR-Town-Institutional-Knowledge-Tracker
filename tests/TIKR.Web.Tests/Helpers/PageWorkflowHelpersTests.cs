@@ -75,7 +75,8 @@ public class PageWorkflowHelpersTests
         DocumentUiMessages.BulkDelete(3).Should().Contain("3");
         DocumentUiMessages.BulkRetag(2).Should().Contain("Re-tagged");
         DocumentUiMessages.SuggestionAccepted().Should().Contain("accepted");
-        DocumentUiMessages.DownloadPlaceholder().Should().Contain("NAS");
+        DocumentUiMessages.DownloadSuccess("a.pdf").Should().Contain("a.pdf");
+        DocumentUiMessages.DownloadFailed("a.pdf").Should().Contain("a.pdf");
         DocumentUiMessages.SemanticSearchFailed("timeout").Should().Contain("timeout");
     }
 }
