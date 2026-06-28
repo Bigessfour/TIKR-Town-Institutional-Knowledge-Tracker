@@ -164,6 +164,35 @@ public class HybridAiServiceSemanticSearchTests
         response.Hits.Should().BeEmpty();
     }
 
+    [Fact]
+    public async Task EmbedDocumentAsync_ThrowsWhenDocumentMissing()
+    {
+        await using var db = await TestDbContextFactory.CreateMigratedAsync();
+        var ollama = CreateOllamaFactoryWithEmbedder(_ => Vector("x"));
+        var sut = new HybridAiService(db, ollama, DisabledGrok, NullLogger<HybridAiService>.Instance);
+
+        var act = async () => await sut.EmbedDocumentAsync(Guid.NewGuid());
+        await act.Should().ThrowAsync<KeyNotFoundException>();
+    }
+
+    [Fact]
+    public async Task SemanticSearchDocumentsAsync_ClampsTopK()
+    {
+        await using var db = await TestDbContextFactory.CreateMigratedAsync();
+        for (var i = 0; i < 5; i++)
+            SeedWithEmbedding(db, $"doc{i}.pdf", $"budget content {i}");
+        await db.SaveChangesAsync();
+
+        var ollama = CreateOllamaFactoryWithEmbedder(text => Vector(text));
+        var sut = new HybridAiService(db, ollama, DisabledGrok, NullLogger<HybridAiService>.Instance);
+
+        var low = await sut.SemanticSearchDocumentsAsync(new SemanticSearchRequest("budget", 0));
+        low.Hits.Should().HaveCountLessThanOrEqualTo(1);
+
+        var high = await sut.SemanticSearchDocumentsAsync(new SemanticSearchRequest("budget", 100));
+        high.Hits.Should().HaveCountLessThanOrEqualTo(20);
+    }
+
     private const int VectorDimensions = 16;
 
     /// <summary>

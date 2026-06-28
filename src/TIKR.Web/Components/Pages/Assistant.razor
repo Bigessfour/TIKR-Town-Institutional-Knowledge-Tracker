@@ -75,24 +75,7 @@
     private string? _lastPrompt;
     private CancellationTokenSource? _streamingCts;
 
-    private string SystemPrompt => BuildSystemPrompt();
-
-    private string BuildSystemPrompt()
-    {
-        var basePrompt =
-            "You are TIKR, a helpful AI assistant for a one-person Colorado municipal town clerk. " +
-            "Answer concisely about deadlines, documents, procedures, and institutional knowledge. " +
-            "If unsure, say so and recommend the most relevant source below by name and URL; " +
-            "for binding legal questions, always advise consulting the town attorney.";
-
-        var catalogBlock = ResourceCatalog.ToSystemPromptBlock();
-        if (string.IsNullOrWhiteSpace(catalogBlock))
-            return basePrompt;
-
-        return basePrompt +
-            "\n\nTrusted external sources for Colorado municipal clerks (cite name + URL when referring users out):\n" +
-            catalogBlock;
-    }
+    private string SystemPrompt => AssistantPromptBuilder.BuildSystemPrompt(ResourceCatalog);
 
     protected override async Task OnInitializedAsync()
     {
@@ -100,11 +83,7 @@
         {
             var priorities = await Api.GetDashboardPrioritiesAsync();
             if (priorities.Count > 0)
-            {
-                _contextSummary = string.Join("\n", priorities.Select(p =>
-                    $"- {p.Title} ({p.Priority}): {p.Reason}" +
-                    (p.DueDate.HasValue ? $" — due {p.DueDate.Value:MMM d}" : "")));
-            }
+                _contextSummary = AssistantPromptBuilder.FormatDeadlineContext(priorities);
         }
         catch
         {
@@ -211,6 +190,7 @@
         if (string.IsNullOrWhiteSpace(_lastPrompt))
         {
             _advancedNote = "Send a message in the chat first, then click Ask Advanced AI.";
+            StateHasChanged();
             return;
         }
 
@@ -218,6 +198,7 @@
         if (result is null)
         {
             _advancedNote = "Advanced AI unavailable. Enable USE_GROK=true and GROK_API_KEY on the API.";
+            StateHasChanged();
             return;
         }
 

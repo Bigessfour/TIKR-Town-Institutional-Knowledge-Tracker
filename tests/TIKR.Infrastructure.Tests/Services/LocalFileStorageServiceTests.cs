@@ -59,6 +59,17 @@ public class LocalFileStorageServiceTests : IDisposable
         await act.Should().NotThrowAsync();
     }
 
+    [Fact]
+    public async Task SaveAsync_StripsPathTraversalFromFileName()
+    {
+        await using var stream = new MemoryStream("safe"u8.ToArray());
+        var path = await _sut.SaveAsync(stream, "../../etc/passwd");
+
+        path.Should().EndWith("_passwd");
+        path.Should().NotContain("..");
+        File.Exists(_sut.GetFullPath(path)).Should().BeTrue();
+    }
+
     public void Dispose()
     {
         if (Directory.Exists(_basePath))

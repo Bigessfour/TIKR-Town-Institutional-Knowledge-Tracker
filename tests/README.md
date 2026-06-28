@@ -32,10 +32,18 @@ dotnet test tests/TIKR.Infrastructure.Tests
 
 ## Coverage policy
 
-- **Current CI:** collects Cobertura coverage artifacts; no hard floor yet (~40% on Infrastructure today)
-- **Target:** 90%+ on `TIKR.Shared`, `TIKR.Infrastructure`, and `TIKR.Api`
-- **Excluded:** EF migrations, generated code
-- **Ramp plan:** enable `Threshold` in `coverlet.runsettings` at 60 → 75 → 90 as suites grow
+- **Targets (line coverage, per assembly):** Shared ≥90%, Infrastructure ≥90%, Api ≥90% (integration-tested endpoints), Web ≥85% on `Helpers/` + `Services/` (Blazor pages smoke-tested via bUnit)
+- **CI enforcement:** `scripts/check_coverage.py` parses Cobertura artifacts after `dotnet test`
+- **Excluded:** EF migrations, `Program.cs` / `Program.Partial.cs`, generated code
+- **Run locally:**
+
+```bash
+dotnet test TIKR.sln --configuration Release \
+  --settings coverlet.runsettings \
+  --collect:"XPlat Code Coverage" \
+  --results-directory coverage
+python3 scripts/check_coverage.py coverage
+```
 
 ## Conventions
 

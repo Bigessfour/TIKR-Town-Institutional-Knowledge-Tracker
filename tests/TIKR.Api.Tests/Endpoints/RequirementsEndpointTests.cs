@@ -135,6 +135,13 @@ public class RequirementsEndpointTests : IClassFixture<TikrWebApplicationFactory
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
     }
 
+    [Fact]
+    public async Task DeleteRequirement_ReturnsNotFoundForMissingId()
+    {
+        var response = await _client.DeleteAsync($"/api/requirements/{Guid.NewGuid()}");
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
     private sealed record AuditLogDto(
         Guid Id,
         string Action,
