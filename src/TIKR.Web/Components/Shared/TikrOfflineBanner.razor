@@ -1,0 +1,18 @@
+@rendermode InteractiveServer
+@inject LocalConnectionStateService Connection
+@implements IDisposable
+
+@if (Connection.ApiOffline)
+{
+    <div class="tikr-offline-banner" role="alert" aria-live="assertive">
+        API offline — your data is still on the NAS. Edits may not save until the API is back.
+    </div>
+}
+
+@code {
+    protected override void OnInitialized() => Connection.Changed += OnChanged;
+
+    private void OnChanged() => InvokeAsync(StateHasChanged);
+
+    public void Dispose() => Connection.Changed -= OnChanged;
+}

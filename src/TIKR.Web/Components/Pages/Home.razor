@@ -2,9 +2,14 @@
 @rendermode InteractiveServer
 @inject TikrApiClient Api
 
+@using TIKR.Web.Components.Shared
+
 <div class="page-header">
-    <h2>Dashboard</h2>
-    <p>What should you be working on today?</p>
+    <div class="page-header-main">
+        <h2>Dashboard</h2>
+        <p>What should you be working on today?</p>
+    </div>
+    <PageHelp HelpText="Your daily priorities from Colorado deadlines and open requirements. Everything is computed locally from your NAS database." />
 </div>
 
 @if (_loading)

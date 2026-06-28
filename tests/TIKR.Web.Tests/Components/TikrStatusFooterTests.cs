@@ -8,7 +8,7 @@ using TIKR.Web.Services;
 
 namespace TIKR.Web.Tests.Components;
 
-public class TikrStatusFooterTests : TestContext
+public class TikrStatusFooterTests : ClerkTestContext
 {
     [Fact]
     public void StatusFooter_RendersLocalNasMessageWhenApiResponds()

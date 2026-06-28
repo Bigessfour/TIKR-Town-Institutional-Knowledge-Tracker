@@ -266,6 +266,34 @@ When these four PRs are green and Deb gives thumbs-up → TIKR is officially shi
 
 ---
 
+## Phase 0 — Final Gap Closure & Ship-Ready Polish
+
+**Status:** done (combined PR #33)
+
+**Purpose:** Clerk-facing polish before Deb sign-off — local-first trust cues, safe deletes, accessibility, and E2E smoke.
+
+**Acceptance criteria:**
+
+- [x] Help (`PageHelp`) on every MainLayout page (Dashboard, Calendar, Requirements, Documents, Assistant, Vault, Settings, Account, Users)
+- [x] Confirm delete dialog + 5s undo toast (Requirements, Vault; toast-only for Documents)
+- [x] Audit note on delete + recent audit list on Settings
+- [x] Print-friendly council packet export on Requirements (`Print council packet` + print CSS)
+- [x] Theme switch (Light / Dark / High contrast) persisted in `localStorage`
+- [x] Offline banner on every page when API unreachable
+- [x] Live Synology footer (`GET /api/system/local-status`) on all pages
+- [x] Keyboard shortcuts help modal (`?`)
+- [x] Mobile touch targets (44px) and responsive sidebar
+- [x] Settings: Synology health + Ollama status card
+- [x] Playwright E2E scaffold (`tests/e2e/`) — run manually against Docker stack
+- [x] bUnit coverage for footer, toast, helpers
+- [x] Skip link + `:focus-visible` accessibility baseline
+
+**Env vars:** `TIKR_TOWN_NAME` (default Wiley), `TIKR_STORAGE_LABEL` (default Synology NAS)
+
+**Key paths:** `src/TIKR.Web/Components/Shared/`, `src/TIKR.Web/wwwroot/css/tikr-clerk-polish.css`, `tests/e2e/`
+
+---
+
 ## How to update this doc
 
 When a phase completes, set **Status** to `done` and move **in progress** to the next phase. Keep acceptance criteria honest — check boxes only when verified in CI or manual test.

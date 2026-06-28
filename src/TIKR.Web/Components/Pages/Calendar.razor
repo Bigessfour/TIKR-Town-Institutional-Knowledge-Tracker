@@ -2,9 +2,14 @@
 @rendermode InteractiveServer
 @inject TikrApiClient Api
 
+@using TIKR.Web.Components.Shared
+
 <div class="page-header">
-    <h2>Deadline Calendar</h2>
-    <p>Colorado municipal deadlines and custom requirements</p>
+    <div class="page-header-main">
+        <h2>Deadline Calendar</h2>
+        <p>Colorado municipal deadlines and custom requirements</p>
+    </div>
+    <PageHelp HelpText="Read-only timeline of statutory and custom due dates. Edit items on Requirements; filing status syncs here automatically." />
 </div>
 
 <SfSchedule TValue="CalendarEvent" Height="650px" Readonly="true">

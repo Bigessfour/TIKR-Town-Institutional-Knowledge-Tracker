@@ -13,14 +13,8 @@ using TIKR.Web.Services;
 
 namespace TIKR.Web.Tests.Components;
 
-public class RequirementsPageTests : TestContext
+public class RequirementsPageTests : ClerkTestContext
 {
-    public RequirementsPageTests()
-    {
-        Services.AddSyncfusionBlazor();
-        JSInterop.Mode = JSRuntimeMode.Loose;
-    }
-
     [Fact]
     public void Requirements_LoadsGridWithSeededData()
     {

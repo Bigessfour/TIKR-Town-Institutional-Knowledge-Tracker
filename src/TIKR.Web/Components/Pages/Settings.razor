@@ -2,12 +2,36 @@
 @rendermode InteractiveServer
 @inject TikrApiClient Api
 
+@using TIKR.Shared.Entities
+@using TIKR.Web.Components.Shared
+@using TIKR.Web.Helpers
+
 <div class="page-header">
-    <h2>Settings</h2>
-    <p>AI configuration and system status</p>
+    <div class="page-header-main">
+        <h2>Settings</h2>
+        <p>AI configuration, Synology health, and audit trail</p>
+    </div>
+    <PageHelp HelpText="Check Ollama and local storage status before council night. Optional Grok escalation is configured on the API container." />
 </div>
 
-<SfCard>
+<SfCard CssClass="mb-3">
+    <CardHeader Title="Local storage (Synology NAS)" />
+    <CardContent>
+        @if (_localStatus is null)
+        {
+            <p>Unable to reach API — data remains on the NAS; try again when the API is online.</p>
+        }
+        else
+        {
+            <p><strong>Town:</strong> @_localStatus.TownName</p>
+            <p><strong>Storage:</strong> @_localStatus.StorageLabel</p>
+            <p><strong>Database:</strong> @LocalStatusFooterHelper.FormatLastSaved(_localStatus.DataLastModifiedUtc, DateTime.UtcNow)</p>
+            <p><strong>Ollama:</strong> @(_localStatus.OllamaAvailable ? "Ready on NAS" : "Offline — local AI features pause until Ollama returns")</p>
+        }
+    </CardContent>
+</SfCard>
+
+<SfCard CssClass="mb-3">
     <CardHeader Title="AI Status" />
     <CardContent>
         @if (_status is null)
@@ -22,6 +46,28 @@
     </CardContent>
 </SfCard>
 
+<SfCard CssClass="mb-3">
+    <CardHeader Title="Recent audit log" />
+    <CardContent>
+        @if (_audit.Count == 0)
+        {
+            <p>No recent actions or API unavailable.</p>
+        }
+        else
+        {
+            <ul class="shortcuts-list">
+                @foreach (var entry in _audit)
+                {
+                    <li>
+                        <span>@entry.Action @entry.EntityType @(entry.Details is not null ? $"— {entry.Details}" : "")</span>
+                        <span>@entry.Timestamp.ToLocalTime().ToString("g")</span>
+                    </li>
+                }
+            </ul>
+        }
+    </CardContent>
+</SfCard>
+
 <div class="mt-4">
     <h4>Advanced AI</h4>
     <p class="text-muted">Use the dedicated <a href="/assistant">AI Assistant</a> page for local Ollama chat and optional Grok escalation.</p>
@@ -29,16 +75,22 @@
 
 @code {
     private AiStatusResponse? _status;
+    private LocalStorageStatusDto? _localStatus;
+    private List<AuditLog> _audit = [];
 
     protected override async Task OnInitializedAsync()
     {
         try
         {
             _status = await Api.GetAiStatusAsync();
+            _localStatus = await Api.GetLocalStorageStatusAsync();
+            _audit = await Api.GetRecentAuditAsync(8);
         }
         catch
         {
             _status = null;
+            _localStatus = null;
+            _audit = [];
         }
     }
 }

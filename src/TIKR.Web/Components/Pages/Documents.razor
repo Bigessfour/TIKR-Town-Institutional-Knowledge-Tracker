@@ -2,6 +2,7 @@
 @rendermode InteractiveServer
 @implements IDisposable
 @inject TikrApiClient Api
+@inject ClerkToastService Toast
 
 @using Syncfusion.Blazor.Layouts
 @using Syncfusion.Blazor.Navigations
@@ -68,7 +69,7 @@
 {
     <div class="bulk-toolbar">
         <span class="bulk-count">@_selection.Count selected</span>
-        <SfButton CssClass="tikr-action-btn" IconCss="e-icons e-trash" Content="Delete selected" OnClick="BulkDeleteAsync" />
+        <SfButton CssClass="tikr-action-btn" IconCss="e-icons e-trash" Content="Delete selected" OnClick="RequestBulkDelete" />
         <SfButton CssClass="tikr-action-btn" IconCss="e-icons e-reload" Content="Re-tag with AI" OnClick="BulkRetagAsync" />
         <SfButton CssClass="tikr-action-btn" Content="Clear selection" OnClick="ClearSelection" />
     </div>
@@ -168,7 +169,7 @@
 
                     <div class="preview-actions">
                         <SfButton CssClass="tikr-action-btn" Content="Re-tag with AI" OnClick="@(async () => await RetagOne(d))" />
-                        <SfButton CssClass="tikr-action-btn" Content="Delete" OnClick="@(async () => await DeleteOneAsync(d))" />
+                        <SfButton CssClass="tikr-action-btn" Content="Delete" OnClick="@(() => RequestDelete(d))" />
                         <SfButton CssClass="tikr-action-btn" Content="Download" OnClick="DownloadPlaceholder" />
                     </div>
 
@@ -206,6 +207,10 @@
     <div class="status-msg mt-2">@_statusMessage</div>
 }
 
+<ConfirmDeleteDialog @bind-Visible="_confirmDeleteVisible"
+                     ItemName="@_confirmDeleteLabel"
+                     OnConfirm="ConfirmDeleteAsync" />
+
 @code {
     [SupplyParameterFromQuery(Name = "action")]
     public string? Action { get; set; }
@@ -220,6 +225,11 @@
     private bool _showUploadBanner;
     private TagDocumentResponse? _lastTagSuggestion;
     private HashSet<Guid>? _semanticHitIds; // when non-null, VisibleDocuments is restricted + ordered by these
+
+    private bool _confirmDeleteVisible;
+    private string _confirmDeleteLabel = string.Empty;
+    private DocumentDto? _pendingDeleteDoc;
+    private bool _pendingBulkDelete;
 
     private List<DocumentLibraryLogic.FolderNode> _folderNodes = [];
 
@@ -401,15 +411,52 @@
         StateHasChanged();
     }
 
-    private async Task BulkDeleteAsync()
+    private void RequestBulkDelete()
     {
-        foreach (var id in _selection.SelectedIds.ToList())
+        if (_selection.Count == 0)
+            return;
+
+        _pendingBulkDelete = true;
+        _pendingDeleteDoc = null;
+        _confirmDeleteLabel = $"{_selection.Count} selected document{(_selection.Count == 1 ? "" : "s")}";
+        _confirmDeleteVisible = true;
+    }
+
+    private void RequestDelete(DocumentDto doc)
+    {
+        _pendingBulkDelete = false;
+        _pendingDeleteDoc = doc;
+        _confirmDeleteLabel = doc.FileName;
+        _confirmDeleteVisible = true;
+    }
+
+    private async Task ConfirmDeleteAsync()
+    {
+        if (_pendingBulkDelete)
         {
-            try { await Api.DeleteDocumentAsync(id); } catch { /* continue */ }
+            var count = _selection.Count;
+            foreach (var id in _selection.SelectedIds.ToList())
+            {
+                try { await Api.DeleteDocumentAsync(id); } catch { /* continue */ }
+            }
+
+            Toast.Show($"Deleted {count} document{(count == 1 ? "" : "s")}");
+            _statusMessage = DocumentUiMessages.BulkDelete(count);
+            await LoadDocumentsAsync();
+            ClearSelection();
+            _pendingBulkDelete = false;
+            return;
         }
-        _statusMessage = DocumentUiMessages.BulkDelete(_selection.Count);
+
+        if (_pendingDeleteDoc is null)
+            return;
+
+        var doc = _pendingDeleteDoc;
+        _pendingDeleteDoc = null;
+        await Api.DeleteDocumentAsync(doc.Id);
+        Toast.Show($"Deleted \"{doc.FileName}\"");
         await LoadDocumentsAsync();
-        ClearSelection();
+        _selection.RemoveIfSelected(doc.Id);
     }
 
     private async Task BulkRetagAsync()
@@ -429,13 +476,6 @@
         await LoadDocumentsAsync();
     }
 
-    private async Task DeleteOneAsync(DocumentDto doc)
-    {
-        await Api.DeleteDocumentAsync(doc.Id);
-        await LoadDocumentsAsync();
-        _selection.RemoveIfSelected(doc.Id);
-    }
-
     private void OnContextMenuSelected(Syncfusion.Blazor.Navigations.MenuEventArgs<Syncfusion.Blazor.Navigations.MenuItem> args)
     {
         var targetDoc = _selection.SelectedPreview ?? _documents.FirstOrDefault(d => _selection.Contains(d.Id));
@@ -449,7 +489,7 @@
                 _ = RetagOne(targetDoc);
                 break;
             case "cm-delete":
-                _ = DeleteOneAsync(targetDoc);
+                RequestDelete(targetDoc);
                 break;
             case "cm-download":
                 DownloadPlaceholder();

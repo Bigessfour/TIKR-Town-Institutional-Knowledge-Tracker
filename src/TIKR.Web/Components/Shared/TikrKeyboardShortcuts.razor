@@ -1,0 +1,55 @@
+@rendermode InteractiveServer
+@inject IJSRuntime JS
+@implements IAsyncDisposable
+
+<SfDialog @bind-Visible="_visible" Width="480px" IsModal="true" ShowCloseIcon="true" Header="Keyboard shortcuts">
+    <DialogTemplates>
+        <Content>
+            <p class="mb-2">Press <kbd>?</kbd> anytime to open this list.</p>
+            <ul class="shortcuts-list">
+                <li><span>Go to Dashboard</span><kbd>g d</kbd></li>
+                <li><span>Go to Requirements</span><kbd>g r</kbd></li>
+                <li><span>Go to Documents</span><kbd>g o</kbd></li>
+                <li><span>Go to Vault</span><kbd>g v</kbd></li>
+                <li><span>Go to Assistant</span><kbd>g a</kbd></li>
+                <li><span>Go to Settings</span><kbd>g s</kbd></li>
+                <li><span>Show shortcuts</span><kbd>?</kbd></li>
+            </ul>
+        </Content>
+    </DialogTemplates>
+</SfDialog>
+
+@code {
+    private bool _visible;
+    private DotNetObjectReference<TikrKeyboardShortcuts>? _dotNetRef;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+            return;
+
+        _dotNetRef = DotNetObjectReference.Create(this);
+        await JS.InvokeVoidAsync("tikrShortcuts.register", _dotNetRef);
+    }
+
+    [JSInvokable]
+    public Task OnShortcutsRequested()
+    {
+        _visible = true;
+        return InvokeAsync(StateHasChanged);
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("tikrShortcuts.dispose");
+        }
+        catch
+        {
+            // Circuit may already be gone.
+        }
+
+        _dotNetRef?.Dispose();
+    }
+}

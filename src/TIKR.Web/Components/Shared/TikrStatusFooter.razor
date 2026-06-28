@@ -1,5 +1,6 @@
 @rendermode InteractiveServer
 @inject TikrApiClient Api
+@inject LocalConnectionStateService Connection
 @implements IDisposable
 
 <footer class="tikr-status-footer" role="contentinfo" aria-live="polite">
@@ -39,18 +40,21 @@
             if (status is null)
             {
                 _apiOffline = true;
+                Connection.SetApiOffline(true);
                 _primaryMessage = "All data stays local on Synology NAS";
                 _connectionHint = LocalStatusFooterHelper.BuildConnectionHint(true, false);
                 return;
             }
 
             _apiOffline = false;
+            Connection.SetApiOffline(false);
             _primaryMessage = LocalStatusFooterHelper.BuildFooterMessage(status, DateTime.UtcNow);
             _connectionHint = LocalStatusFooterHelper.BuildConnectionHint(false, status.OllamaAvailable);
         }
         catch
         {
             _apiOffline = true;
+            Connection.SetApiOffline(true);
             _primaryMessage = "All data stays local on Synology NAS";
             _connectionHint = LocalStatusFooterHelper.BuildConnectionHint(true, false);
         }

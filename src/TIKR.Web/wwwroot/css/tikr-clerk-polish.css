@@ -1,0 +1,256 @@
+.tikr-skip-link {
+    position: absolute;
+    left: -9999px;
+    top: 0;
+    z-index: 10000;
+    padding: 0.75rem 1rem;
+    background: #1e3a5f;
+    color: #fff;
+    text-decoration: none;
+    border-radius: 0 0 6px 0;
+}
+
+.tikr-skip-link:focus {
+    left: 0;
+    outline: 3px solid #fbbf24;
+}
+
+:focus-visible {
+    outline: 2px solid #2563eb;
+    outline-offset: 2px;
+}
+
+.tikr-offline-banner {
+    background: #fff3cd;
+    border-bottom: 1px solid #e0a800;
+    color: #664d03;
+    padding: 0.5rem 2rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.clerk-toast {
+    position: fixed;
+    bottom: 4.5rem;
+    right: 1.5rem;
+    z-index: 9000;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    max-width: min(420px, calc(100vw - 2rem));
+    padding: 0.75rem 1rem;
+    background: #1e293b;
+    color: #f8fafc;
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+    font-size: 0.9rem;
+}
+
+.clerk-toast-undo {
+    flex-shrink: 0;
+    padding: 0.35rem 0.75rem;
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    border-radius: 6px;
+    background: transparent;
+    color: #93c5fd;
+    cursor: pointer;
+    font: inherit;
+    min-height: 44px;
+    min-width: 44px;
+}
+
+.clerk-toast-undo:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.confirm-audit-note {
+    margin: 0.75rem 0 0;
+    font-size: 0.85rem;
+    color: #64748b;
+}
+
+.tikr-theme-bar {
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
+    font-size: 0.85rem;
+}
+
+.tikr-theme-bar label {
+    display: block;
+    margin-bottom: 0.35rem;
+    opacity: 0.9;
+}
+
+.tikr-theme-bar select {
+    width: 100%;
+    min-height: 44px;
+    padding: 0.4rem 0.5rem;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    background: rgba(0, 0, 0, 0.2);
+    color: #fff;
+    font: inherit;
+}
+
+.page-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.75rem 1rem;
+}
+
+.page-header-main h2 {
+    margin: 0 0 0.25rem;
+}
+
+.page-header-main p {
+    margin: 0;
+    color: #666;
+}
+
+.tikr-help-btn {
+    min-width: 44px;
+    min-height: 44px;
+}
+
+.tikr-action-btn,
+.tikr-action-btn.small {
+    min-height: 44px;
+}
+
+.tikr-action-btn.small {
+    min-width: 44px;
+    padding-left: 0.65rem;
+    padding-right: 0.65rem;
+}
+
+.tikr-nav a {
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+}
+
+.shortcuts-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.shortcuts-list li {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.shortcuts-list kbd {
+    font-family: inherit;
+    background: #f1f5f9;
+    border: 1px solid #cbd5e1;
+    border-radius: 4px;
+    padding: 0.15rem 0.45rem;
+    font-size: 0.85rem;
+}
+
+html[data-theme="dark"] {
+    color-scheme: dark;
+}
+
+html[data-theme="dark"] .tikr-main {
+    background: #0f172a;
+    color: #e2e8f0;
+}
+
+html[data-theme="dark"] .page-header-main p,
+html[data-theme="dark"] .tikr-status-footer {
+    color: #94a3b8;
+    background: #1e293b;
+    border-color: #334155;
+}
+
+html[data-theme="dark"] .tikr-status-footer-primary {
+    color: #e2e8f0;
+}
+
+html[data-theme="high-contrast"] {
+    color-scheme: light;
+}
+
+html[data-theme="high-contrast"] .tikr-sidebar {
+    background: #000;
+    color: #fff;
+}
+
+html[data-theme="high-contrast"] .tikr-main {
+    background: #fff;
+    color: #000;
+}
+
+html[data-theme="high-contrast"] .tikr-nav a,
+html[data-theme="high-contrast"] .tikr-status-footer-hint.is-local {
+    color: #000;
+    font-weight: 700;
+}
+
+html[data-theme="high-contrast"] :focus-visible {
+    outline: 3px solid #000;
+    outline-offset: 2px;
+}
+
+@media (max-width: 768px) {
+    .tikr-layout {
+        flex-direction: column;
+    }
+
+    .tikr-sidebar {
+        width: 100%;
+        padding: 1rem;
+    }
+
+    .tikr-nav {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.25rem;
+    }
+
+    .tikr-nav li {
+        margin: 0;
+    }
+
+    .tikr-main-content {
+        padding: 1rem;
+    }
+
+    .tikr-status-footer {
+        padding: 0.65rem 1rem;
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}
+
+@media print {
+    .tikr-sidebar,
+    .tikr-status-footer,
+    .tikr-offline-banner,
+    .clerk-toast,
+    .requirements-toolbar,
+    .requirements-filters,
+    .vault-emergency-banner,
+    .page-header .tikr-help-btn,
+    .e-gridpager,
+    .e-grid .e-rowcell:last-child,
+    .e-grid .e-headercell:last-child {
+        display: none !important;
+    }
+
+    .tikr-main-content {
+        padding: 0;
+    }
+
+    .tikr-print-area {
+        break-inside: avoid;
+    }
+}

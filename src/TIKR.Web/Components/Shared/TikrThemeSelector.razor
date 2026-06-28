@@ -1,0 +1,27 @@
+@rendermode InteractiveServer
+@inject ThemeService Theme
+
+<div class="tikr-theme-bar">
+    <label for="tikr-theme-select">Display theme</label>
+    <select id="tikr-theme-select" @bind="_selected" @bind:after="OnThemeChangedAsync" aria-label="Display theme">
+        <option value="light">Light</option>
+        <option value="dark">Dark</option>
+        <option value="high-contrast">High contrast</option>
+    </select>
+</div>
+
+@code {
+    private string _selected = "light";
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+            return;
+
+        await Theme.InitializeAsync();
+        _selected = Theme.Current;
+        StateHasChanged();
+    }
+
+    private async Task OnThemeChangedAsync() => await Theme.SetThemeAsync(_selected);
+}

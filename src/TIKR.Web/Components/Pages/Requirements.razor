@@ -2,6 +2,7 @@
 @rendermode InteractiveServer
 @inject TikrApiClient Api
 @inject IJSRuntime JS
+@inject ClerkToastService Toast
 
 @using TIKR.Web.Components.Shared
 
@@ -24,6 +25,7 @@
 <div class="requirements-toolbar mb-3">
     <SfButton CssClass="tikr-action-btn e-primary" IsPrimary="true" IconCss="e-icons e-plus" Content="Add requirement" OnClick="OpenCreateDialog" />
     <SfButton CssClass="tikr-action-btn" IconCss="e-icons e-export" Content="Export CSV" OnClick="ExportCsvAsync" />
+    <SfButton CssClass="tikr-action-btn" IconCss="e-icons e-print" Content="Print council packet" OnClick="PrintPacketAsync" />
     <label class="e-btn tikr-action-btn requirements-agent-upload">
         AI Scan uploaded doc
         <InputFile OnChange="OnAgentFileSelectedAsync" accept=".pdf,.doc,.docx,.txt,.csv" />
@@ -51,6 +53,7 @@
         <input type="checkbox" @bind="_includeCompleted" @bind:after="OnFilterChangedAsync" />
         Show completed
     </label>
+    <SfButton CssClass="tikr-action-btn" Content="Reset Wiley view" OnClick="ResetFiltersToWileyDefaults" />
 </div>
 
 @if (!string.IsNullOrWhiteSpace(_error))
@@ -66,7 +69,7 @@
     </div>
 }
 
-<SfGrid DataSource="@VisibleRequirements" AllowPaging="true" PageSize="12" AllowSorting="true" Height="520">
+<SfGrid CssClass="tikr-print-area" DataSource="@VisibleRequirements" AllowPaging="true" PageSize="12" AllowSorting="true" Height="520">
     <GridColumns>
         <GridColumn Field="@nameof(RequirementDto.Title)" HeaderText="Requirement" Width="240" />
         <GridColumn HeaderText="Urgency" Width="110">
@@ -93,7 +96,7 @@
                 <SfButton CssClass="tikr-action-btn small" Content="Edit" OnClick="@(() => OpenEditDialog(item))" />
                 @if (!item.IsSystemSeeded)
                 {
-                    <SfButton CssClass="tikr-action-btn small danger" Content="Delete" OnClick="@(() => DeleteAsync(item))" />
+                    <SfButton CssClass="tikr-action-btn small danger" Content="Delete" OnClick="@(() => RequestDelete(item))" />
                 }
             </Template>
         </GridColumn>
@@ -151,6 +154,10 @@
     </DialogTemplates>
 </SfDialog>
 
+<ConfirmDeleteDialog @bind-Visible="_confirmDeleteVisible"
+                     ItemName="@(_pendingDelete?.Title ?? "this item")"
+                     OnConfirm="ConfirmDeleteAsync" />
+
 @code {
     private List<RequirementDto> _requirements = [];
     private string _searchText = string.Empty;
@@ -163,6 +170,8 @@
     private string? _agentMessage;
     private DateTime _formDueDate = DateTime.Today.AddMonths(1);
     private readonly RequirementFormModel _form = new();
+    private bool _confirmDeleteVisible;
+    private RequirementDto? _pendingDelete;
 
     private readonly List<string> _categoryOptions = ["All", .. Enum.GetNames<RequirementCategory>()];
     private readonly List<string> _urgencyOptions = ["All", "Overdue", "High", "Medium", "Low", "Done"];
@@ -275,12 +284,39 @@
         }
     }
 
-    private async Task DeleteAsync(RequirementDto item)
+    private void ResetFiltersToWileyDefaults()
     {
+        _searchText = string.Empty;
+        _categoryFilterValue = "All";
+        _urgencyFilterValue = "All";
+        _includeCompleted = false;
+        StateHasChanged();
+    }
+
+    private void RequestDelete(RequirementDto item)
+    {
+        _pendingDelete = item;
+        _confirmDeleteVisible = true;
+    }
+
+    private async Task ConfirmDeleteAsync()
+    {
+        if (_pendingDelete is null)
+            return;
+
+        var item = _pendingDelete;
+        _pendingDelete = null;
         _error = null;
+
         try
         {
+            var recreate = RequirementWorkflowHelpers.ToCreateRequest(item);
             await Api.DeleteRequirementAsync(item.Id);
+            Toast.Show($"Deleted \"{item.Title}\"", async () =>
+            {
+                await Api.CreateRequirementAsync(recreate);
+                await LoadAsync();
+            });
             await LoadAsync();
         }
         catch
@@ -288,6 +324,8 @@
             _error = "Could not delete requirement. System-seeded Colorado defaults cannot be removed.";
         }
     }
+
+    private async Task PrintPacketAsync() => await JS.InvokeVoidAsync("print");
 
     private async Task ExportCsvAsync()
     {

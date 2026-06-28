@@ -10,14 +10,8 @@ using TIKR.Web.Services;
 
 namespace TIKR.Web.Tests.Components;
 
-public class VaultPageTests : TestContext
+public class VaultPageTests : ClerkTestContext
 {
-    public VaultPageTests()
-    {
-        Services.AddSyncfusionBlazor();
-        JSInterop.Mode = JSRuntimeMode.Loose;
-    }
-
     [Fact]
     public void Vault_ShowsEmergencyBanner()
     {
