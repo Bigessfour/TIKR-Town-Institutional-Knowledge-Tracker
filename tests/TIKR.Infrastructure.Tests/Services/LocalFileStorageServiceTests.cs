@@ -70,6 +70,16 @@ public class LocalFileStorageServiceTests : IDisposable
         File.Exists(_sut.GetFullPath(path)).Should().BeTrue();
     }
 
+    [Fact]
+    public async Task SaveAsync_PreservesAgentScansPrefix()
+    {
+        await using var stream = new MemoryStream("scan"u8.ToArray());
+        var path = await _sut.SaveAsync(stream, "agent-scans/report.txt");
+
+        path.Should().Be("agent-scans/report.txt");
+        File.Exists(_sut.GetFullPath(path)).Should().BeTrue();
+    }
+
     public void Dispose()
     {
         if (Directory.Exists(_basePath))

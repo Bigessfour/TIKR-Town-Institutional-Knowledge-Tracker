@@ -16,6 +16,13 @@
       "env": {
         "OLLAMA_HOST": "http://localhost:11434"
       }
+    },
+    "tikr-rag-mcp": {
+      "command": "/absolute/path/to/repo/.venv/bin/python3",
+      "args": ["/absolute/path/to/repo/scripts/tikr_rag_mcp.py"],
+      "env": {
+        "OLLAMA_HOST": "http://localhost:11434"
+      }
     }
   }
 }

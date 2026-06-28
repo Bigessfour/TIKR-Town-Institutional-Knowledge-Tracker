@@ -196,7 +196,7 @@ Repeat-safe checklist — safe to re-run anytime:
 
 ## Phase 10 — Requirements Manager + Document Agent
 
-**Status:** in progress (10A + 10B merged; 10C groups A–E deferred)
+**Status:** in progress — 10A + 10B + 10C **A1+A2** on `main`; **10C-D** in open [#36](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/36)
 
 **Goal:** `/requirements` CRUD hub + incremental NAS-local document agent without breaking MVP grid.
 
@@ -204,7 +204,9 @@ Repeat-safe checklist — safe to re-run anytime:
 |-------|--------|-----|
 | **10A** Requirements grid MVP | done | [#30](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/30) |
 | **10B** MVP agent stub + AI Scan | done | [#31](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/31) |
-| **10C** AgentTools + AES storage + hooks | in progress (A2) | [requirements-working-tree.md](requirements-working-tree.md), [sf-document-agent-tools.md](sf-document-agent-tools.md) |
+| **10C A1+A2** Agent storage, AES, Syncfusion Storage Mode extraction | done on `main` | [#35](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/35) |
+| **10C-D** E2E proof (fixtures, Playwright, licensed workflow) | open | [#36](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/36) |
+| **10C A3** Ollama + Microsoft Agent Framework tool loop | planned | — |
 
 **Key paths:** `src/TIKR.Web/Components/Pages/Requirements.razor`, `src/TIKR.Infrastructure/Services/DocumentAgentService.cs`
 
@@ -212,7 +214,7 @@ Repeat-safe checklist — safe to re-run anytime:
 
 ## Phase 0 — Final Gap Closure & Ship-Ready Polish
 
-**Status:** in progress (PR #33 merged; PR sequence 2–4 remaining)
+**Status:** in progress ([#33](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/33) + [#34](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/34) merged; PR sequence 3–4 remaining)
 
 **Purpose:** Clerk-facing polish before Deb sign-off — local-first trust cues, safe deletes, accessibility, and E2E smoke.
 
@@ -221,7 +223,7 @@ Repeat-safe checklist — safe to re-run anytime:
 | # | Slice | Status |
 |---|-------|--------|
 | 1 | UI polish + NAS footer (#33) | done |
-| 2 | Final test & accessibility pass (keyboard nav, bUnit, Playwright) | in progress |
+| 2 | Test & accessibility pass (#34) | **partial** — keyboard nav + bUnit merged; Playwright CI gate + `FullyTested` trait still open |
 | 3 | Documentation & clerk touches | planned |
 | 4 | Health UI closure + Done Detector sign-off | planned |
 
@@ -255,7 +257,7 @@ When a phase completes, set **Status** to `done` and move **in progress** to the
 
 ## MVP remaining (2026-06-28)
 
-**Ship bar:** Phases **1–9 core**, **10A–10B**, and **Phase 0 PR #33** merged on `main`. Phase 0 PR sequence items 2–4 remain before Deb sign-off.
+**Ship bar:** Phases **1–9 core**, **10A–10B**, **10C A1+A2** ([#35](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/35)), and **Phase 0 PR #33–#34** on `main`. **10C-D** ([#36](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/36)) + Phase 0 PRs 3–4 remain before full Deb sign-off.
 
 ### Phases 1–9 summary
 
@@ -326,6 +328,7 @@ Technical debt and UX consolidation. Safe to tackle in small PRs after #27 merge
 ### Suggested merge order
 
 1. **Phase 0** PR sequence ([#34](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/34) merged; docs → sign-off)
-2. **Phase 10C A1** — agent storage scaffold ([#35](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/35))
-3. **Phase 10C A2** — Syncfusion AgentTools NuGet + Storage Mode extraction — **current**
-4. Phase 6 when clerk forms need Smart AI
+2. **Phase 10C A1+A2** — agent storage + Syncfusion extraction ([#35](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/35) merged)
+3. **Phase 10C-D** — E2E proof ([#36](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/36)) — **current**
+4. Phase 0 PR #3–#4 (docs + Deb sign-off)
+5. Phase 6 when clerk forms need Smart AI

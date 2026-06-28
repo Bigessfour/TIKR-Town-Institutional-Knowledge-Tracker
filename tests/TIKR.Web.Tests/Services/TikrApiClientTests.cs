@@ -429,7 +429,7 @@ public class TikrApiClientTests
     {
         var json = JsonSerializer.Serialize(new DocumentAgentResult(
             "Budget report", "text", DateOnly.FromDateTime(DateTime.UtcNow),
-            RecurrenceType.Annual, RequirementCategory.Budget, 2, "agent/x.pdf", true));
+            RecurrenceType.Annual, RequirementCategory.Budget, 2, "agent/x.pdf", true, UsedSyncfusionTools: false));
         HttpMethod? method = null;
         var handler = new RecordingHandler((req, _) =>
         {

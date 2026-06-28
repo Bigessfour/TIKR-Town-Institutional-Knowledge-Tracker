@@ -105,7 +105,8 @@ public class RequirementWorkflowHelpersTests
             RequirementCategory.Compliance,
             2,
             "agent/report.pdf",
-            true);
+            true,
+            UsedSyncfusionTools: false);
 
         var request = RequirementWorkflowHelpers.ApplyAgentExtraction(result);
 
@@ -119,7 +120,7 @@ public class RequirementWorkflowHelpersTests
     public void FormatAgentScanMessage_IncludesTableCount()
     {
         var result = new DocumentAgentResult(
-            "x", null, null, RecurrenceType.None, RequirementCategory.Custom, 3, "p", true);
+            "x", null, null, RecurrenceType.None, RequirementCategory.Custom, 3, "p", true, UsedSyncfusionTools: false);
 
         RequirementWorkflowHelpers.FormatAgentScanMessage(result)
             .Should().Be("Processed on Synology • 3 tables extracted");

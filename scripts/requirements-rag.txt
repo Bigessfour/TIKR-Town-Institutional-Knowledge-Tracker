@@ -1,0 +1,2 @@
+# TIKR RAG MCP (scripts/tikr_rag_mcp.py, update_tikr_rag_index.py)
+requests>=2.31.0,<3
