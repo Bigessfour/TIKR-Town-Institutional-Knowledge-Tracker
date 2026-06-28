@@ -26,7 +26,8 @@ public class DocumentAgentSyncfusionLicensedTests : IClassFixture<SyncfusionAgen
         if (!SyncfusionAgentWebApplicationFactory.IsLicensed)
             return;
 
-        var bytes = await File.ReadAllBytesAsync(Path.Combine(FixtureDir, "minimal-clerk-report.pdf"));
+        var fixturePath = Path.Combine(FixtureDir, "minimal-clerk-report.pdf");
+        var bytes = await AgentScanPdfFixture.EnsureMinimalClerkReportPdfAsync(fixturePath);
         using var content = new MultipartFormDataContent();
         content.Add(new ByteArrayContent(bytes), "file", "minimal-clerk-report.pdf");
 
@@ -35,7 +36,7 @@ public class DocumentAgentSyncfusionLicensedTests : IClassFixture<SyncfusionAgen
         response.IsSuccessStatusCode.Should().BeTrue();
         var body = await response.Content.ReadFromJsonAsync<DocumentAgentResult>();
         body!.UsedSyncfusionTools.Should().BeTrue();
-        body.ExtractedText.Should().Contain("Wiley clerk report");
+        body.ExtractedText.Should().Contain(AgentScanPdfFixture.ExpectedText);
     }
 
     [Fact]

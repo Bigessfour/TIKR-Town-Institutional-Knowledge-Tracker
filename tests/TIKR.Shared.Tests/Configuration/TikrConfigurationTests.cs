@@ -108,6 +108,15 @@ public class TikrConfigurationTests
     }
 
     [Fact]
+    public void GetGrokApiKey_FallsBackToXaiApiKey()
+    {
+        TikrConfiguration.GetGrokApiKey(BuildConfig(new Dictionary<string, string?>
+        {
+            ["XAI_API_KEY"] = "xai-from-keychain"
+        })).Should().Be("xai-from-keychain");
+    }
+
+    [Fact]
     public void GetGrokApiKey_ReturnsNullWhenUnset()
     {
         TikrConfiguration.GetGrokApiKey(BuildConfig([])).Should().BeNull();
@@ -124,7 +133,7 @@ public class TikrConfigurationTests
     public void GetGrokModel_UsesDefaultsAndOverrides()
     {
         TikrConfiguration.GetGrokModel(BuildConfig([]))
-            .Should().Be("grok-2-latest");
+            .Should().Be("grok-3");
 
         TikrConfiguration.GetGrokModel(BuildConfig(new Dictionary<string, string?>
         {

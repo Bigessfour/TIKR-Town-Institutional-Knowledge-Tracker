@@ -170,9 +170,14 @@ public sealed class SyncfusionDocumentAgentExtractor
 
     private static string UnwrapPayload(AgentToolResult result)
     {
-        if (result.Success)
-            return result.Message ?? result.Data?.ToString() ?? string.Empty;
+        if (!result.Success)
+            return result.Error ?? string.Empty;
 
-        return result.Error ?? string.Empty;
+        var dataText = result.Data?.ToString();
+        if (!string.IsNullOrWhiteSpace(dataText) &&
+            !dataText.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase))
+            return dataText;
+
+        return result.Message ?? dataText ?? string.Empty;
     }
 }

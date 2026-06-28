@@ -21,9 +21,19 @@ Fixtures for agent-scan live in **`tests/fixtures/agent-scan/`** (shared by API 
 
 Licensed Syncfusion PDF/DOCX tests (`Category=SyncfusionLicensed`) skip when `SYNCFUSION_LICENSE_KEY` is unset. Run locally with the key set, or via **TIKR Syncfusion Agent Smoke** workflow.
 
+Licensed Grok tests (`Category=GrokLicensed`) skip when `GROK_API_KEY` / `XAI_API_KEY` is unset. Default model is **`grok-3`** (xAI returns HTTP 400 for deprecated `grok-2-latest`).
+
+Keychain helpers (macOS Passwords):
+
 ```bash
-export SYNCFUSION_LICENSE_KEY=your_key
-dotnet test tests/TIKR.Api.Tests/TIKR.Api.Tests.csproj --filter "Category=SyncfusionLicensed"
+./scripts/sync-syncfusion-license-key.sh --export   # SYNCFUSION_LICENSE_KEY
+./scripts/sync-grok-key.sh --export                 # GROK_API_KEY from XAI_API_KEY
+```
+
+```bash
+eval "$(./scripts/sync-syncfusion-license-key.sh --export)"
+eval "$(./scripts/sync-grok-key.sh --export)"
+dotnet test tests/TIKR.Api.Tests/TIKR.Api.Tests.csproj --filter "Category=SyncfusionLicensed|Category=GrokLicensed"
 ```
 
 ### Playwright (Phase 0 + 10C)

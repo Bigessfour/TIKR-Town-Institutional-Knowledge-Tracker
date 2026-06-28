@@ -32,12 +32,12 @@ public static class TikrConfiguration
     }
 
     public static string? GetGrokApiKey(IConfiguration configuration) =>
-        configuration["GROK_API_KEY"];
+        configuration["GROK_API_KEY"] ?? configuration["XAI_API_KEY"];
 
     public static string GetGrokModel(IConfiguration configuration) =>
         configuration["AI:GrokModel"]
         ?? configuration["GROK_MODEL"]
-        ?? "grok-2-latest";
+        ?? "grok-3";
 
     public static bool IsAuthEnabled(IConfiguration configuration)
     {
