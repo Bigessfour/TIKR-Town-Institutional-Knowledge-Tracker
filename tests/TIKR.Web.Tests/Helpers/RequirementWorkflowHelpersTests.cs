@@ -117,13 +117,23 @@ public class RequirementWorkflowHelpersTests
     }
 
     [Fact]
-    public void FormatAgentScanMessage_IncludesTableCount()
+    public void FormatAgentScanMessage_IncludesTableCountAndPlainTextSource()
     {
         var result = new DocumentAgentResult(
             "x", null, null, RecurrenceType.None, RequirementCategory.Custom, 3, "p", true, UsedSyncfusionTools: false);
 
         RequirementWorkflowHelpers.FormatAgentScanMessage(result)
-            .Should().Be("Processed on Synology • 3 tables extracted");
+            .Should().Be("Processed on Synology • 3 tables extracted • plain-text extraction");
+    }
+
+    [Fact]
+    public void FormatAgentScanMessage_IncludesSyncfusionSourceWhenFlagSet()
+    {
+        var result = new DocumentAgentResult(
+            "x", null, null, RecurrenceType.None, RequirementCategory.Custom, 1, "p", true, UsedSyncfusionTools: true);
+
+        RequirementWorkflowHelpers.FormatAgentScanMessage(result)
+            .Should().Be("Processed on Synology • 1 table extracted • Syncfusion extraction");
     }
 
     [Fact]
