@@ -34,3 +34,17 @@ public record SemanticSearchResponse(
     IReadOnlyList<SemanticSearchHit> Hits);
 
 public record EmbedDocumentResponse(Guid DocumentId, bool Embedded, string? Reason);
+
+public record SemanticSearchKnowledgeHit(
+    Guid EntryId,
+    string Title,
+    string Category,
+    string? Snippet,
+    double Score);
+
+public record SemanticSearchKnowledgeResponse(
+    string Query,
+    int Considered,
+    IReadOnlyList<SemanticSearchKnowledgeHit> Hits);
+
+public record EmbedKnowledgeEntryResponse(Guid EntryId, bool Embedded, string? Reason);

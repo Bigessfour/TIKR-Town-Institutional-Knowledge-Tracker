@@ -111,6 +111,53 @@ public class HybridAiService(
         return new SemanticSearchResponse(request.Query, docs.Count, hits);
     }
 
+    public async Task<EmbedKnowledgeEntryResponse> EmbedKnowledgeEntryAsync(Guid entryId, CancellationToken cancellationToken = default)
+    {
+        var entry = await db.KnowledgeEntries.FindAsync([entryId], cancellationToken)
+            ?? throw new KeyNotFoundException($"Knowledge entry {entryId} not found.");
+
+        var text = BuildKnowledgeEmbeddingText(entry);
+        var vector = await TryGenerateEmbeddingAsync(text, cancellationToken);
+        if (vector is null)
+            return new EmbedKnowledgeEntryResponse(entryId, false, "Embedding generator unavailable (is Ollama running with nomic-embed-text?)");
+
+        entry.Embedding = PackFloats(vector);
+        entry.UpdatedAt = DateTime.UtcNow;
+        await db.SaveChangesAsync(cancellationToken);
+        return new EmbedKnowledgeEntryResponse(entryId, true, null);
+    }
+
+    public async Task<SemanticSearchKnowledgeResponse> SemanticSearchKnowledgeAsync(SemanticSearchRequest request, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(request.Query))
+            return new SemanticSearchKnowledgeResponse(request.Query, 0, []);
+
+        var topK = Math.Clamp(request.TopK, 1, 20);
+
+        var queryVector = await TryGenerateEmbeddingAsync(request.Query, cancellationToken);
+        if (queryVector is null)
+            return new SemanticSearchKnowledgeResponse(request.Query, 0, []);
+
+        var entries = await db.KnowledgeEntries
+            .Where(e => e.Embedding != null)
+            .Select(e => new { e.Id, e.Title, e.Category, e.Content, e.Embedding })
+            .ToListAsync(cancellationToken);
+
+        var hits = entries
+            .Select(e =>
+            {
+                var vec = UnpackFloats(e.Embedding!);
+                var score = CosineSimilarity(queryVector, vec);
+                var snippet = BuildSnippet(e.Content, request.Query, 240);
+                return new SemanticSearchKnowledgeHit(e.Id, e.Title, e.Category.ToString(), snippet, score);
+            })
+            .OrderByDescending(h => h.Score)
+            .Take(topK)
+            .ToList();
+
+        return new SemanticSearchKnowledgeResponse(request.Query, entries.Count, hits);
+    }
+
     public async Task<IReadOnlyList<DashboardPriority>> GetDashboardPrioritiesAsync(CancellationToken cancellationToken = default)
     {
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
@@ -217,6 +264,12 @@ public class HybridAiService(
         if (!string.IsNullOrWhiteSpace(document.FullTextContent))
             parts.Add(document.FullTextContent);
         return string.Join("\n", parts);
+    }
+
+    private static string BuildKnowledgeEmbeddingText(KnowledgeEntry entry)
+    {
+        // Category gives the embedder useful framing (HowTo vs Contacts vs Tribal vs VoiceNotes).
+        return $"{entry.Category}: {entry.Title}\n{entry.Content}";
     }
 
     internal static byte[] PackFloats(float[] vector)
