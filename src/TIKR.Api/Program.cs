@@ -50,6 +50,19 @@ var api = app.MapGroup("/api");
 if (authEnabled)
     api.RequireAuthorization(TikrAuthPolicies.Authenticated);
 
+api.MapGet("/system/local-status", async (IConfiguration config, IHybridAiService ai) =>
+{
+    var town = config["TIKR_TOWN_NAME"] ?? "Wiley";
+    var storageLabel = config["TIKR_STORAGE_LABEL"] ?? "Synology NAS";
+    DateTime? dataModified = null;
+
+    if (TryGetSqlitePath(config.GetConnectionString("Default"), out var dbPath) && File.Exists(dbPath))
+        dataModified = File.GetLastWriteTimeUtc(dbPath);
+
+    var aiStatus = await ai.GetStatusAsync();
+    return Results.Ok(new LocalStorageStatusDto(town, storageLabel, dataModified, aiStatus.OllamaAvailable));
+});
+
 // Requirements
 api.MapGet("/requirements", async (TikrDbContext db) =>
 {
@@ -332,3 +345,23 @@ static DocumentDto MapDocument(Document d) =>
 
 static KnowledgeEntryDto MapKnowledge(KnowledgeEntry k) =>
     new(k.Id, k.Title, k.Content, k.Category, k.SortOrder);
+
+static bool TryGetSqlitePath(string? connectionString, out string path)
+{
+    path = string.Empty;
+    if (string.IsNullOrWhiteSpace(connectionString))
+        return false;
+
+    const string prefix = "Data Source=";
+    var idx = connectionString.IndexOf(prefix, StringComparison.OrdinalIgnoreCase);
+    if (idx < 0)
+        return false;
+
+    var value = connectionString[(idx + prefix.Length)..].Trim();
+    var semi = value.IndexOf(';');
+    if (semi >= 0)
+        value = value[..semi];
+
+    path = value.Trim('"');
+    return !string.IsNullOrWhiteSpace(path);
+}

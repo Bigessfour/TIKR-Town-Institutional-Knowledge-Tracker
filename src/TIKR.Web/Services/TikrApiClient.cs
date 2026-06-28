@@ -32,6 +32,9 @@ public class TikrApiClient(HttpClient http)
     public async Task<AiStatusResponse?> GetAiStatusAsync() =>
         await http.GetFromJsonAsync<AiStatusResponse>("/api/ai/status");
 
+    public async Task<LocalStorageStatusDto?> GetLocalStorageStatusAsync() =>
+        await http.GetFromJsonAsync<LocalStorageStatusDto>("/api/system/local-status");
+
     public async Task<HttpResponseMessage> UploadDocumentAsync(Stream content, string fileName) =>
         await http.PostAsync("/api/documents", new MultipartFormDataContent
         {

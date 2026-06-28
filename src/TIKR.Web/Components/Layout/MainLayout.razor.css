@@ -50,8 +50,41 @@
 
 .tikr-main {
     flex: 1;
-    padding: 1.5rem 2rem;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
     background: #f5f7fa;
+}
+
+.tikr-main-content {
+    flex: 1;
+    padding: 1.5rem 2rem;
+}
+
+.tikr-status-footer {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem 1rem;
+    padding: 0.65rem 2rem;
+    font-size: 0.8rem;
+    color: #4a5568;
+    background: #e8edf3;
+    border-top: 1px solid #d0d7e2;
+}
+
+.tikr-status-footer-primary {
+    font-weight: 500;
+}
+
+.tikr-status-footer-hint.is-local {
+    color: #1e6b3a;
+}
+
+.tikr-status-footer-hint.is-offline {
+    color: #9a6700;
+    font-weight: 600;
 }
 
 .page-header {
