@@ -1,0 +1,117 @@
+{
+  "lastReviewed": "2026-06-28",
+  "resources": [
+    {
+      "name": "Colorado Municipal League (CML)",
+      "url": "https://www.cml.org",
+      "kind": "organization",
+      "topics": ["governance", "training", "publications", "legislative"],
+      "summary": "Primary trade association for Colorado cities and towns. Publications, training, sample municipal code, legislative tracking. Main switchboard: 303-831-6411."
+    },
+    {
+      "name": "CML – Colorado Municipal Clerk's Reference Guide",
+      "url": "https://www.cml.org/home/publications-news/bookstore",
+      "kind": "publication",
+      "topics": ["clerk-reference", "procedures"],
+      "summary": "Day-to-day clerk reference handbook covering common municipal clerk duties. Order via CML bookstore."
+    },
+    {
+      "name": "CML – Open Meetings, Open Records: Colorado's Sunshine Laws",
+      "url": "https://www.cml.org/home/publications-news/bookstore",
+      "kind": "publication",
+      "topics": ["cora", "sunshine", "open-meetings", "open-records"],
+      "summary": "Authoritative practical guide to Colorado Open Records Act (CORA) and Open Meetings Law. Always consult town attorney for specific requests."
+    },
+    {
+      "name": "CML – TABOR: A Guide to the Taxpayer's Bill of Rights",
+      "url": "https://www.cml.org/home/publications-news/bookstore",
+      "kind": "publication",
+      "topics": ["tabor", "finance", "elections"],
+      "summary": "Plain-language explanation of TABOR limits, ballot requirements, and revenue retention."
+    },
+    {
+      "name": "CML – Election Book",
+      "url": "https://www.cml.org/home/publications-news/bookstore",
+      "kind": "publication",
+      "topics": ["elections"],
+      "summary": "Comprehensive guide to municipal elections in Colorado, including coordinated elections."
+    },
+    {
+      "name": "CML – Governance 101",
+      "url": "https://www.cml.org/docs/default-source/uploadedfiles/resources/publications/2019-cml-governance-101.pdf",
+      "kind": "publication",
+      "topics": ["governance", "training", "elected-officials"],
+      "summary": "Foundational orientation for newly elected municipal officials. Free PDF (2019)."
+    },
+    {
+      "name": "Colorado Revised Statutes – Title 31 (Government – Municipal)",
+      "url": "https://leg.colorado.gov/colorado-revised-statutes",
+      "kind": "statute",
+      "topics": ["municipal-law", "statutes", "towns", "cities"],
+      "summary": "Statutory law governing statutory cities and towns. Reference these for binding legal requirements."
+    },
+    {
+      "name": "Colorado Revised Statutes – Title 24, Article 72 (CORA / Open Records)",
+      "url": "https://leg.colorado.gov/colorado-revised-statutes",
+      "kind": "statute",
+      "topics": ["cora", "open-records", "statutes"],
+      "summary": "Colorado Open Records Act text. The legal basis for public records requests."
+    },
+    {
+      "name": "Colorado Revised Statutes – Title 1 (Elections)",
+      "url": "https://leg.colorado.gov/colorado-revised-statutes",
+      "kind": "statute",
+      "topics": ["elections", "statutes"],
+      "summary": "Election Code – governs municipal election procedures."
+    },
+    {
+      "name": "Colorado Secretary of State",
+      "url": "https://www.coloradosos.gov",
+      "kind": "agency",
+      "topics": ["elections", "business-records", "notary"],
+      "summary": "State elections authority, business filings, and notary administration."
+    },
+    {
+      "name": "Department of Local Affairs (DOLA)",
+      "url": "https://dola.colorado.gov",
+      "kind": "agency",
+      "topics": ["budget", "finance", "audit", "grants", "annexation"],
+      "summary": "Required annual budget filing, audit oversight, local government finance technical assistance, grants."
+    },
+    {
+      "name": "Office of the State Auditor",
+      "url": "https://leg.colorado.gov/agencies/office-state-auditor",
+      "kind": "agency",
+      "topics": ["audit", "finance"],
+      "summary": "Establishes audit requirements for local governments; reviews submitted audits."
+    },
+    {
+      "name": "CIRSA – Colorado Intergovernmental Risk Sharing Agency",
+      "url": "https://www.cirsa.org",
+      "kind": "organization",
+      "topics": ["risk", "insurance", "ethics", "training", "liability"],
+      "summary": "Risk pool serving most Colorado small towns. Ethics, liability, and best-practices training and handbooks."
+    },
+    {
+      "name": "CMCA – Colorado Municipal Clerks Association",
+      "url": "https://www.coloradoclerks.org",
+      "kind": "organization",
+      "topics": ["peer-support", "certification", "training"],
+      "summary": "Peer association for municipal clerks. Certification, networking, regional conferences."
+    },
+    {
+      "name": "Municipal Clerk Advisor Program (CML + CIRSA + CMCA)",
+      "url": "tel:+13039818022",
+      "kind": "service",
+      "topics": ["free-help", "peer-support"],
+      "summary": "Free advisor service for Colorado municipal clerks. Karen Goldman, 303-981-8022. Call when stuck on a specific clerk question."
+    },
+    {
+      "name": "Town Attorney",
+      "url": "",
+      "kind": "internal",
+      "topics": ["legal", "cora", "contracts"],
+      "summary": "Always consult your municipality's contracted attorney for binding legal questions, CORA judgment calls, contract review, and litigation risk."
+    }
+  ]
+}
