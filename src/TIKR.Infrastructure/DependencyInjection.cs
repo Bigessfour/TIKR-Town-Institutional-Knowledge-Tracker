@@ -15,6 +15,8 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddTikrInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
+        SyncfusionDocumentLicense.RegisterFromConfiguration(configuration);
+
         var provider = TikrConfiguration.GetDatabaseProvider(configuration);
 
         services.AddDbContext<TikrDbContext>(options =>
@@ -36,6 +38,15 @@ public static class DependencyInjection
         services.AddScoped<IAuditService, AuditService>();
         services.AddSingleton<IFileStorageService, LocalFileStorageService>();
         services.AddScoped<IHybridAiService, HybridAiService>();
+        services.AddScoped<IAgentDocumentStorage, NasAgentDocumentStorage>();
+        services.AddSingleton<NasSyncfusionDocumentStorage>();
+        services.AddScoped<SyncfusionDocumentAgentExtractor>();
+        services.AddScoped<StubDocumentAgentExtractionBackend>();
+        services.AddScoped<SyncfusionDocumentAgentExtractionBackend>();
+        services.AddScoped<IDocumentAgentExtractionBackend>(sp =>
+            TikrConfiguration.GetUseSyncfusionAgentTools(sp.GetRequiredService<IConfiguration>())
+                ? sp.GetRequiredService<SyncfusionDocumentAgentExtractionBackend>()
+                : sp.GetRequiredService<StubDocumentAgentExtractionBackend>());
         services.AddScoped<IDocumentAgentService, DocumentAgentService>();
         services.AddHttpClient<GrokService>();
 

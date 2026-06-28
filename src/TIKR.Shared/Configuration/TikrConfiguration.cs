@@ -72,4 +72,10 @@ public static class TikrConfiguration
         int.TryParse(configuration["TIKR_JWT_EXPIRATION_HOURS"], out var hours) && hours > 0
             ? hours
             : 8;
+
+    public static bool GetUseSyncfusionAgentTools(IConfiguration configuration) =>
+        bool.TryParse(configuration["USE_SYNCFUSION_AGENT_TOOLS"], out var enabled) && enabled;
+
+    public static string? GetAgentStorageKey(IConfiguration configuration) =>
+        configuration["TIKR_AGENT_STORAGE_KEY"];
 }

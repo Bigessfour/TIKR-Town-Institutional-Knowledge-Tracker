@@ -5,28 +5,36 @@ using TIKR.Shared.Interfaces;
 namespace TIKR.Infrastructure.Services;
 
 /// <summary>
-/// In-memory MVP stub for document agent extraction. Syncfusion DocumentSDK AgentTools
-/// integration is Phase 10 group A — this proves NAS-local save + requirement mapping.
+/// NAS-local document agent orchestration. Extraction backend is swappable (stub vs Syncfusion AgentTools).
 /// </summary>
-public class DocumentAgentService(IFileStorageService storage) : IDocumentAgentService
+public class DocumentAgentService(
+    IAgentDocumentStorage agentStorage,
+    IDocumentAgentExtractionBackend extractionBackend) : IDocumentAgentService
 {
     public async Task<DocumentAgentResult> ProcessUploadAsync(
         Stream content,
         string fileName,
         CancellationToken cancellationToken = default)
     {
-        var storagePath = await SynologyDocumentStorage.SaveAgentScanAsync(storage, content, fileName, cancellationToken);
+        await using var buffer = new MemoryStream();
+        await content.CopyToAsync(buffer, cancellationToken);
+        var bytes = buffer.ToArray();
+
+        var storagePath = await agentStorage.SaveAgentScanAsync(new MemoryStream(bytes), fileName, cancellationToken);
+
+        await using var extractStream = new MemoryStream(bytes);
+        var extraction = await extractionBackend.ExtractAsync(extractStream, fileName, cancellationToken);
+
         var title = DeriveTitle(fileName);
         var category = InferCategory(title);
-        var tables = InferTableCount(fileName);
 
         return new DocumentAgentResult(
             SuggestedTitle: title,
-            ExtractedText: $"Agent stub extracted text from {Path.GetFileName(fileName)} (saved to NAS volume).",
+            ExtractedText: extraction.ExtractedText,
             SuggestedDueDate: DateOnly.FromDateTime(DateTime.UtcNow.AddMonths(1)),
             SuggestedRecurrence: RecurrenceType.Annual,
             SuggestedCategory: category,
-            TablesExtractedCount: tables,
+            TablesExtractedCount: extraction.TablesExtractedCount,
             StoragePath: storagePath,
             ProcessedLocally: true);
     }
