@@ -1,5 +1,6 @@
 @page "/documents"
 @rendermode InteractiveServer
+@implements IDisposable
 @inject TikrApiClient Api
 
 @using Syncfusion.Blazor.Layouts
@@ -362,7 +363,11 @@
             return;
         }
 
+        // Dispose the previous debounce CTS before allocating a new one so we
+        // don't leak CancellationTokenSource instances on every keystroke in a
+        // long-running Blazor Server circuit.
         _semanticDebounceCts?.Cancel();
+        _semanticDebounceCts?.Dispose();
         _semanticDebounceCts = new CancellationTokenSource();
         var token = _semanticDebounceCts.Token;
         try
@@ -579,5 +584,12 @@
     private async Task EnsureClientDelete(Guid id)
     {
         // Will be replaced by proper client call after we edit TikrApiClient
+    }
+
+    public void Dispose()
+    {
+        _semanticDebounceCts?.Cancel();
+        _semanticDebounceCts?.Dispose();
+        _semanticDebounceCts = null;
     }
 }

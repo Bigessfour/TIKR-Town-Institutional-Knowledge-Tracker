@@ -421,6 +421,10 @@ FodyWeavers.xsd
 # Cursor MCP config with user secrets (use mcp.json.example as template)
 .cursor/mcp.json
 
+# Syncfusion API key file referenced by sf-blazor-mcp.
+# Per AGENTS.md, SYNCFUSION_API_KEY belongs in user env or MCP config only — never in the repo.
+.cursor/syncfusion-api-key
+
 # Windows Installer files from build outputs
 *.cab
 *.msi
