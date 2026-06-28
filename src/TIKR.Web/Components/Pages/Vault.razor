@@ -1,5 +1,6 @@
 @page "/vault"
 @rendermode InteractiveServer
+@implements IDisposable
 @inject TikrApiClient Api
 @inject IJSRuntime JS
 
@@ -269,17 +270,16 @@
         RecordingSeconds = 0;
         PendingTranscription = "";
 
-        _timer?.Stop();
+        DisposeTimer();
         _timer = new System.Timers.Timer(1000);
-        _timer.Elapsed += (s, e) => { RecordingSeconds++; StateHasChanged(); };
+        _timer.Elapsed += (s, e) => { RecordingSeconds++; InvokeAsync(StateHasChanged); };
         _timer.Start();
     }
 
     private void StopRecording()
     {
         IsRecording = false;
-        _timer?.Stop();
-        _timer = null;
+        DisposeTimer();
 
         // Simulate transcription
         PendingTranscription = $"[Voice Note - {DateTime.Now:HH:mm}] " +
@@ -287,19 +287,27 @@
         StateHasChanged();
     }
 
+    private void DisposeTimer()
+    {
+        if (_timer is null) return;
+        _timer.Stop();
+        _timer.Dispose();
+        _timer = null;
+    }
+
     private async Task SaveVoiceNoteAsync()
     {
         if (string.IsNullOrWhiteSpace(PendingTranscription)) return;
 
         var title = $"Voice Note - {DateTime.Now:MMM dd}";
-        // Persist as Tribal Knowledge entry so it's durable
-        await Api.CreateKnowledgeEntryAsync(new CreateKnowledgeEntryRequest(
+        // Persist as Tribal Knowledge entry so it's durable. Capture the created
+        // entry's Id so DeleteVoiceNote can remove the row from the database too.
+        var created = await Api.CreateKnowledgeEntryAsync(new CreateKnowledgeEntryRequest(
             title, PendingTranscription, KnowledgeCategory.TribalKnowledge, _allEntries.Count));
 
-        // Also keep in local voice list for the tab
         VoiceNotes.Add(new VoiceNote
         {
-            Id = Guid.NewGuid(),
+            Id = created?.Id ?? Guid.Empty,
             Title = title,
             Transcription = PendingTranscription,
             Timestamp = DateTime.UtcNow
@@ -309,9 +317,31 @@
         await LoadEntriesAsync();
     }
 
-    private void DeleteVoiceNote(VoiceNote note)
+    private async Task DeleteVoiceNote(VoiceNote note)
     {
+        // Voice notes are persisted as TribalKnowledge entries; deletion must hit
+        // the API so the underlying row goes away too (otherwise it reappears in
+        // the Tribal Knowledge tab and after page refresh).
+        if (note.Id != Guid.Empty)
+        {
+            try
+            {
+                await Api.DeleteKnowledgeEntryAsync(note.Id);
+            }
+            catch
+            {
+                // Best-effort: if the API call fails, fall through and still
+                // remove from the local list so the UI doesn't appear stuck.
+            }
+        }
+
         VoiceNotes.Remove(note);
+        await LoadEntriesAsync();
+    }
+
+    public void Dispose()
+    {
+        DisposeTimer();
     }
 
     // Copy everything

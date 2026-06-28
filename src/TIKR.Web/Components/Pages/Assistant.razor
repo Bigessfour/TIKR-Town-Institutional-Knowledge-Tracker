@@ -1,5 +1,6 @@
 @page "/assistant"
 @rendermode InteractiveServer
+@implements IDisposable
 @inject IChatClient ChatClient
 @inject TikrApiClient Api
 @inject ColoradoResourceCatalog ResourceCatalog
@@ -114,7 +115,11 @@
     private async Task OnPromptRequested(AssistViewPromptRequestedEventArgs args)
     {
         _lastPrompt = args.Prompt;
+        // Dispose the previous streaming CTS before allocating a new one so we
+        // don't leak CancellationTokenSource instances across chat turns in a
+        // long-running Blazor Server circuit.
         _streamingCts?.Cancel();
+        _streamingCts?.Dispose();
         _streamingCts = new CancellationTokenSource();
         var token = _streamingCts.Token;
 
@@ -222,5 +227,12 @@
 
         _advancedAnswer = Markdown.ToHtml(result.Answer);
         StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        _streamingCts?.Cancel();
+        _streamingCts?.Dispose();
+        _streamingCts = null;
     }
 }
