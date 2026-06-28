@@ -16,6 +16,14 @@ public class DocumentsPageTests : ClerkTestContext
 {
 
     [Fact]
+    public void Documents_WiresDownloadToDocumentContentApi()
+    {
+        var client = new TikrApiClient(new HttpClient { BaseAddress = new Uri("http://localhost/") });
+        var id = Guid.NewGuid();
+        client.GetDocumentContentUrl(id).Should().Be($"/api/documents/{id}/content");
+    }
+
+    [Fact]
     public void Documents_LoadsDocumentListFromApi()
     {
         var docId = Guid.NewGuid();

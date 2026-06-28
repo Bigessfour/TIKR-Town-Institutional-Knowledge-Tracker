@@ -176,12 +176,12 @@
 
                     <SfGrid DataSource="@VoiceNotes" AllowPaging="true" PageSize="6" Height="220">
                         <GridColumns>
-                            <GridColumn Field="Title" HeaderText="Title" Width="200" />
-                            <GridColumn Field="Transcription" HeaderText="Transcription" Width="280" />
+                            <GridColumn Field="@nameof(VaultVoiceNote.Title)" HeaderText="Title" Width="200" />
+                            <GridColumn Field="@nameof(VaultVoiceNote.Transcription)" HeaderText="Transcription" Width="280" />
                             <GridColumn Width="80">
                                 <Template>
                                     @{
-                                        var v = (context as VoiceNote)!;
+                                        var v = (context as VaultVoiceNote)!;
                                     }
                                     <SfButton CssClass="tikr-action-btn small danger" Content="Del" OnClick="@(() => RequestDeleteVoiceNote(v))" />
                                 </Template>
@@ -217,9 +217,9 @@
     private bool _confirmDeleteVisible;
     private string _confirmDeleteLabel = string.Empty;
     private KnowledgeEntryDto? _pendingEntryDelete;
-    private VoiceNote? _pendingVoiceDelete;
+    private VaultVoiceNote? _pendingVoiceDelete;
     private List<KnowledgeEntryDto> _allEntries = [];
-    private List<VoiceNote> VoiceNotes { get; set; } = new();
+    private List<VaultVoiceNote> VoiceNotes { get; set; } = [];
 
     private KnowledgeEntryDto? SelectedEntry;
     private string EditorContent = "";
@@ -231,7 +231,10 @@
 
     private List<KnowledgeEntryDto> HowToEntries => VaultCopyBuilder.FilterCategory(_allEntries, KnowledgeCategory.HowTo).ToList();
     private List<KnowledgeEntryDto> ContactEntries => VaultCopyBuilder.FilterCategory(_allEntries, KnowledgeCategory.Contact).ToList();
-    private List<KnowledgeEntryDto> TribalEntries => VaultCopyBuilder.FilterCategory(_allEntries, KnowledgeCategory.TribalKnowledge).ToList();
+    private List<KnowledgeEntryDto> TribalEntries =>
+        VaultCopyBuilder.FilterCategory(_allEntries, KnowledgeCategory.TribalKnowledge)
+            .Where(e => !VaultVoiceNoteMapper.IsVoiceNote(e))
+            .ToList();
 
     protected override async Task OnInitializedAsync()
     {
@@ -241,6 +244,11 @@
     private async Task LoadEntriesAsync()
     {
         _allEntries = await Api.GetKnowledgeEntriesAsync();
+        VoiceNotes = _allEntries
+            .Where(VaultVoiceNoteMapper.IsVoiceNote)
+            .Select(VaultVoiceNoteMapper.ToVoiceNote)
+            .OrderByDescending(v => v.Timestamp)
+            .ToList();
     }
 
     private void SelectEntry(KnowledgeEntryDto entry)
@@ -274,7 +282,7 @@
         _confirmDeleteVisible = true;
     }
 
-    private void RequestDeleteVoiceNote(VoiceNote note)
+    private void RequestDeleteVoiceNote(VaultVoiceNote note)
     {
         _pendingEntryDelete = null;
         _pendingVoiceDelete = note;
@@ -371,19 +379,11 @@
         var created = await Api.CreateKnowledgeEntryAsync(new CreateKnowledgeEntryRequest(
             title, PendingTranscription, KnowledgeCategory.TribalKnowledge, _allEntries.Count));
 
-        VoiceNotes.Add(new VoiceNote
-        {
-            Id = created?.Id ?? Guid.Empty,
-            Title = title,
-            Transcription = PendingTranscription,
-            Timestamp = DateTime.UtcNow
-        });
-
         PendingTranscription = "";
         await LoadEntriesAsync();
     }
 
-    private Task DeleteVoiceNote(VoiceNote note)
+    private Task DeleteVoiceNote(VaultVoiceNote note)
     {
         RequestDeleteVoiceNote(note);
         return Task.CompletedTask;
@@ -408,13 +408,5 @@
         // Show warm confirmation (simple status for now)
         // In real app could use SfToast, here we can navigate or set temp message via existing patterns.
         // For visibility we'll just let the user see it worked via browser.
-    }
-
-    public class VoiceNote
-    {
-        public Guid Id { get; set; }
-        public string Title { get; set; } = "";
-        public string Transcription { get; set; } = "";
-        public DateTime Timestamp { get; set; }
     }
 }

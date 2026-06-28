@@ -1,5 +1,6 @@
 using FluentAssertions;
 using TIKR.Shared.DTOs;
+using TIKR.Shared.Enums;
 using TIKR.Web.Helpers;
 
 namespace TIKR.Web.Tests.Helpers;
@@ -46,6 +47,21 @@ public class DocumentSelectionStateTests
         state.RemoveIfSelected(id);
         state.Contains(id).Should().BeFalse();
         state.SelectedPreview.Should().BeNull();
+    }
+
+    [Fact]
+    public void VaultVoiceNoteMapper_IdentifiesAndMapsVoiceNotes()
+    {
+        var voice = new KnowledgeEntryDto(
+            Guid.NewGuid(),
+            VaultVoiceNoteSimulator.BuildDefaultTitle(new DateTime(2026, 6, 28)),
+            "transcription text",
+            KnowledgeCategory.TribalKnowledge,
+            1);
+
+        VaultVoiceNoteMapper.IsVoiceNote(voice).Should().BeTrue();
+        var note = VaultVoiceNoteMapper.ToVoiceNote(voice);
+        note.Transcription.Should().Be("transcription text");
     }
 
     [Fact]

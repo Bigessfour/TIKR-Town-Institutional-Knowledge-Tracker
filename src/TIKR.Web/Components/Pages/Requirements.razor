@@ -26,10 +26,14 @@
     <SfButton CssClass="tikr-action-btn e-primary" IsPrimary="true" IconCss="e-icons e-plus" Content="Add requirement" OnClick="OpenCreateDialog" />
     <SfButton CssClass="tikr-action-btn" IconCss="e-icons e-export" Content="Export CSV" OnClick="ExportCsvAsync" />
     <SfButton CssClass="tikr-action-btn" IconCss="e-icons e-print" Content="Print council packet" OnClick="PrintPacketAsync" />
-    <label class="e-btn tikr-action-btn requirements-agent-upload">
-        AI Scan uploaded doc
-        <InputFile OnChange="OnAgentFileSelectedAsync" accept=".pdf,.doc,.docx,.txt,.csv" />
-    </label>
+    <div class="requirements-agent-upload">
+        <SfUploader AutoUpload="true"
+                    AllowedExtensions=".pdf,.doc,.docx,.txt,.csv"
+                    MaxFileSize="52428800">
+            <UploaderEvents ValueChange="OnAgentUploadAsync" />
+        </SfUploader>
+        <span class="requirements-agent-hint">AI Scan uploaded doc</span>
+    </div>
 </div>
 
 <div class="requirements-filters mb-3">
@@ -61,7 +65,14 @@
     <div class="login-error mb-3">@_error</div>
 }
 
-@if (!string.IsNullOrWhiteSpace(_agentMessage))
+@if (_agentScanning)
+{
+    <div class="ai-suggestion-banner mb-3" aria-busy="true" aria-live="polite">
+        <strong>Scanning document on Synology…</strong>
+        <div class="banner-body">Extracting text and tables for the requirement form.</div>
+    </div>
+}
+else if (!string.IsNullOrWhiteSpace(_agentMessage))
 {
     <div class="ai-suggestion-banner mb-3">
         <strong>@_agentMessage</strong>
@@ -118,7 +129,10 @@
                         </FormItem>
                         <FormItem Field="@nameof(RequirementFormModel.DueDate)" LabelText="Due date">
                             <Template>
-                                <input type="date" class="e-input" @bind="_formDueDate" @bind:format="yyyy-MM-dd" />
+                                <SfDatePicker TValue="DateTime?"
+                                              @bind-Value="_formDueDate"
+                                              Format="d"
+                                              Placeholder="Select due date" />
                             </Template>
                         </FormItem>
                         <FormItem Field="@nameof(RequirementFormModel.Recurrence)" LabelText="Recurrence">
@@ -168,7 +182,8 @@
     private Guid? _editingId;
     private string? _error;
     private string? _agentMessage;
-    private DateTime _formDueDate = DateTime.Today.AddMonths(1);
+    private bool _agentScanning;
+    private DateTime? _formDueDate = DateTime.Today.AddMonths(1);
     private readonly RequirementFormModel _form = new();
     private bool _confirmDeleteVisible;
     private RequirementDto? _pendingDelete;
@@ -251,7 +266,7 @@
     private async Task SaveAsync()
     {
         _error = null;
-        var dueDate = DateOnly.FromDateTime(_formDueDate);
+        var dueDate = DateOnly.FromDateTime(_formDueDate ?? DateTime.Today);
 
         try
         {
@@ -336,14 +351,16 @@
             $"(() => {{ const a = document.createElement('a'); a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent({System.Text.Json.JsonSerializer.Serialize(csv)}); a.download = {System.Text.Json.JsonSerializer.Serialize(fileName)}; a.click(); }})()");
     }
 
-    private async Task OnAgentFileSelectedAsync(InputFileChangeEventArgs e)
+    private async Task OnAgentUploadAsync(UploadChangeEventArgs args)
     {
         _error = null;
         _agentMessage = null;
-        var file = e.File;
+
+        var file = args.Files.FirstOrDefault()?.File;
         if (file is null)
             return;
 
+        _agentScanning = true;
         try
         {
             await using var stream = file.OpenReadStream(maxAllowedSize: 52_428_800);
@@ -364,6 +381,10 @@
         catch
         {
             _error = "Could not scan document. Try a smaller PDF or text file.";
+        }
+        finally
+        {
+            _agentScanning = false;
         }
     }
 

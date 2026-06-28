@@ -94,6 +94,17 @@ public class TikrApiClient(HttpClient http)
 
     public string GetDocumentContentUrl(Guid id) => $"/api/documents/{id}/content";
 
+    public async Task<(byte[] Content, string? ContentType)?> GetDocumentContentAsync(Guid id)
+    {
+        var response = await http.GetAsync($"/api/documents/{id}/content");
+        if (!response.IsSuccessStatusCode)
+            return null;
+
+        var bytes = await response.Content.ReadAsByteArrayAsync();
+        var contentType = response.Content.Headers.ContentType?.MediaType;
+        return (bytes, contentType);
+    }
+
     public async Task<SemanticSearchResponse?> SemanticSearchDocumentsAsync(string query, int topK = 3)
     {
         var response = await http.PostAsJsonAsync("/api/ai/semantic-search", new SemanticSearchRequest(query, topK));

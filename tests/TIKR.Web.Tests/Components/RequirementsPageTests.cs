@@ -41,6 +41,20 @@ public class RequirementsPageTests : ClerkTestContext
         var cut = RenderComponent<Requirements>();
 
         cut.Markup.Should().Contain("AI Scan uploaded doc");
+        cut.Markup.Should().Contain("e-upload");
+    }
+
+    [Fact]
+    public async Task Requirements_UsesSfDatePickerWhenDialogOpen()
+    {
+        RegisterApi("[]");
+        SetRendererInfo(new RendererInfo("Server", true));
+
+        var cut = RenderComponent<Requirements>();
+        var addButton = cut.FindAll("button")
+            .First(b => b.TextContent?.Contains("Add requirement", StringComparison.Ordinal) == true);
+        await cut.InvokeAsync(() => addButton.Click());
+        cut.WaitForAssertion(() => cut.Markup.Should().Contain("Select due date"));
     }
 
     private void RegisterApi(string json)

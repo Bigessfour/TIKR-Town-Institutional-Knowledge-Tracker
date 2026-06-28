@@ -290,6 +290,21 @@ public class TikrApiClientTests
     }
 
     [Fact]
+    public async Task GetDocumentContentAsync_ReturnsBytesOnSuccess()
+    {
+        var payload = "sample pdf bytes"u8.ToArray();
+        var handler = new RecordingHandler((_, _) => new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new ByteArrayContent(payload)
+        });
+        var sut = new TikrApiClient(new HttpClient(handler) { BaseAddress = new Uri("http://localhost/") });
+
+        var result = await sut.GetDocumentContentAsync(Guid.NewGuid());
+        result.Should().NotBeNull();
+        result!.Value.Content.Should().Equal(payload);
+    }
+
+    [Fact]
     public async Task SemanticSearchDocumentsAsync_DeserializesResponse()
     {
         var json = JsonSerializer.Serialize(new SemanticSearchResponse("budget", 1, [
