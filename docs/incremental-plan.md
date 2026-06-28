@@ -73,7 +73,14 @@ Living roadmap for TIKR development. Agents and contributors: read the **current
 
 ## Phase 5 — Post-push hardening
 
-**Status:** in progress (5A done; 5B manual GH settings pending)
+**Status:** in progress (5A done; 5B manual GH settings pending; UI features largely complete via Prompts 2/4/5)
+
+**Note on UI Completion (2026 analysis):** Major UI elements delivered:
+- Dashboard (Prompt 2): Urgency pills, AI summary, quick actions, grids, activity.
+- Documents (Prompt 4): Uploader, TreeView folders, Grid with search/filters, ContextMenu, Splitter preview, AI banners.
+- Knowledge Vault (Prompt 5 at /vault): Red "hit by bus" banner, SfTab (How-To/Contacts/Tribal/Voice), Accordion/Grid, RichTextEditor, voice sim, "Copy for New Clerk".
+Calendar solid. Legacy /knowledge and thin Requirements remain as cleanup items.
+AI runtime context still limited (see RAG MCP and gaps). Docker/CI support strong for shipping.
 
 ### 5A — Fix CI (code)
 
@@ -155,7 +162,7 @@ Repeat-safe checklist — safe to re-run anytime:
 
 ## Phase 9 — Search and documents
 
-**Status:** in progress (doc + vault RAG backend MVP done; UI wiring + ingestion + PDF preview pending)
+**Status:** in progress (doc + vault RAG backend done; UI wiring + ingestion + PDF preview pending)
 
 **Goal:** Semantic search, email ingestion, PDF preview.
 
@@ -173,8 +180,8 @@ Repeat-safe checklist — safe to re-run anytime:
 - [x] Auto-embed Vault entries on `POST /api/knowledge` and `PUT /api/knowledge/{id}` (best-effort)
 - [x] `/api/ai/semantic-search-knowledge` and `/api/ai/embed-knowledge/{id}` endpoints
 - [x] `TikrApiClient.SemanticSearchKnowledgeAsync` / `EmbedKnowledgeEntryAsync` helpers
-- [ ] `Documents.razor` Semantic toggle wired to the new endpoint (UI follow-up PR)
-- [ ] `Assistant.razor` prepends top-K semantically relevant **doc + vault** snippets (UI follow-up PR — closes the original "hit by a bus" gap end-to-end)
+- [x] `Documents.razor` Semantic toggle wired to the new endpoint
+- [x] `Assistant.razor` prepends top-K semantically relevant **doc + vault** snippets (closes the original "hit by a bus" gap end-to-end)
 - [ ] PDF preview (Syncfusion `SfPdfViewer` — deferred)
 - [ ] Rich DOCX editor / Spreadsheet preview (Syncfusion DocumentEditor / Spreadsheet — deferred)
 - [ ] Full-text extraction for non-text files (still stubbed; biggest backend lever remaining)

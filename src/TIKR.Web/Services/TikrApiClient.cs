@@ -1,4 +1,5 @@
 using TIKR.Shared.DTOs;
+using TIKR.Shared.Entities;
 
 namespace TIKR.Web.Services;
 
@@ -9,6 +10,15 @@ public class TikrApiClient(HttpClient http)
 
     public async Task<List<RequirementDto>> GetRequirementsAsync() =>
         await http.GetFromJsonAsync<List<RequirementDto>>("/api/requirements") ?? [];
+
+    public async Task<RequirementDto?> GetRequirementAsync(Guid id) =>
+        await http.GetFromJsonAsync<RequirementDto>($"/api/requirements/{id}");
+
+    public async Task UpdateRequirementAsync(Guid id, UpdateRequirementRequest request)
+    {
+        var response = await http.PutAsJsonAsync($"/api/requirements/{id}", request);
+        response.EnsureSuccessStatusCode();
+    }
 
     public async Task<List<DocumentDto>> GetDocumentsAsync(string? query = null)
     {
@@ -49,6 +59,26 @@ public class TikrApiClient(HttpClient http)
 
     public async Task CreateKnowledgeEntryAsync(CreateKnowledgeEntryRequest request) =>
         await http.PostAsJsonAsync("/api/knowledge", request);
+
+    public async Task UpdateKnowledgeEntryAsync(Guid id, UpdateKnowledgeEntryRequest request) =>
+        await http.PutAsJsonAsync($"/api/knowledge/{id}", request);
+
+    public async Task DeleteKnowledgeEntryAsync(Guid id)
+    {
+        var response = await http.DeleteAsync($"/api/knowledge/{id}");
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task<List<AuditLog>> GetRecentAuditAsync(int limit = 10) =>
+        await http.GetFromJsonAsync<List<AuditLog>>($"/api/audit?limit={limit}") ?? [];
+
+    public async Task DeleteDocumentAsync(Guid id)
+    {
+        var response = await http.DeleteAsync($"/api/documents/{id}");
+        response.EnsureSuccessStatusCode();
+    }
+
+    public string GetDocumentContentUrl(Guid id) => $"/api/documents/{id}/content";
 
     public async Task<SemanticSearchResponse?> SemanticSearchDocumentsAsync(string query, int topK = 3)
     {

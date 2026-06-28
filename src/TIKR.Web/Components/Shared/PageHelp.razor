@@ -1,0 +1,12 @@
+@rendermode InteractiveServer
+
+<SfTooltip Content="@HelpText" Position="Position.TopCenter">
+    <SfButton CssClass="tikr-help-btn"
+              IconCss="e-icons e-circle-info"
+              aria-label="Help for this page"></SfButton>
+</SfTooltip>
+
+@code {
+    [Parameter, EditorRequired]
+    public string HelpText { get; set; } = "";
+}
