@@ -89,7 +89,7 @@ docker compose -f docker/docker-compose.yml up --build
 dotnet test TIKR.sln --settings coverlet.runsettings --collect:"XPlat Code Coverage"
 ```
 
-See **[tests/README.md](tests/README.md)** for the coverage policy (90% target; CI floor ramps up over time). Current suite: **264 tests** across Shared, Infrastructure, Api integration, and Web (bUnit). Playwright smoke tests live in `tests/e2e/` (manual against Docker).
+See **[tests/README.md](tests/README.md)** for the coverage policy (90% target; CI floor ramps up over time). Current suite: **275 tests** across Shared, Infrastructure, Api integration, and Web (bUnit). Playwright smoke tests live in `tests/e2e/` (manual against Docker).
 
 ## Local Development (detailed)
 

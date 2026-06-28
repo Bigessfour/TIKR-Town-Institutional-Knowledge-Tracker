@@ -17,6 +17,26 @@ public class AgentStorageCryptoTests
     }
 
     [Fact]
+    public void Encrypt_RejectsWrongKeyLength()
+    {
+        var act = () => AgentStorageCrypto.Encrypt("x"u8.ToArray(), new byte[16]);
+        act.Should().Throw<ArgumentException>();
+    }
+
+    [Fact]
+    public void Decrypt_RejectsShortEnvelope()
+    {
+        var act = () => AgentStorageCrypto.Decrypt(new byte[8], Key);
+        act.Should().Throw<ArgumentException>();
+    }
+
+    [Fact]
+    public void TryParseKey_RejectsInvalidBase64()
+    {
+        AgentStorageCrypto.TryParseKey("not!!!valid", out _).Should().BeFalse();
+    }
+
+    [Fact]
     public void TryParseKey_AcceptsValidBase64Key()
     {
         AgentStorageCrypto.TryParseKey(Convert.ToBase64String(Key), out var parsed).Should().BeTrue();
