@@ -77,6 +77,13 @@ public class KnowledgeEndpointTests : IClassFixture<TikrWebApplicationFactory>
     }
 
     [Fact]
+    public async Task DeleteKnowledgeEntry_ReturnsNotFoundForMissingId()
+    {
+        var response = await _client.DeleteAsync($"/api/knowledge/{Guid.NewGuid()}");
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
     public async Task PutKnowledgeEntry_ReturnsNotFoundForMissingId()
     {
         var update = new UpdateKnowledgeEntryRequest("x", "y", KnowledgeCategory.HowTo, 0);
@@ -115,6 +122,30 @@ public class DocumentsEndpointTests : IClassFixture<TikrWebApplicationFactory>
         using var content = new StringContent("not multipart", System.Text.Encoding.UTF8, "text/plain");
         var response = await _client.PostAsync("/api/documents", content);
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task UploadEmptyMultipart_ReturnsBadRequest()
+    {
+        using var content = new MultipartFormDataContent();
+        content.Add(new StringContent("notes only"), "description");
+        var response = await _client.PostAsync("/api/documents", content);
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task GetDocuments_Unfiltered_ReturnsUploadedItems()
+    {
+        using var upload = new MultipartFormDataContent();
+        var fileContent = new ByteArrayContent("list test"u8.ToArray());
+        fileContent.Headers.ContentType = new MediaTypeHeaderValue("text/plain");
+        upload.Add(fileContent, "file", "list-test.txt");
+
+        var create = await _client.PostAsync("/api/documents", upload);
+        var created = await create.Content.ReadFromJsonAsync<DocumentDto>();
+
+        var items = await _client.GetFromJsonAsync<List<DocumentDto>>("/api/documents");
+        items.Should().Contain(d => d.Id == created!.Id);
     }
 
     [Fact]

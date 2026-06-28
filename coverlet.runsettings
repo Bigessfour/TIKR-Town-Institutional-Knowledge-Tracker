@@ -5,9 +5,9 @@
       <DataCollector friendlyName="XPlat code coverage">
         <Configuration>
           <Format>cobertura</Format>
-          <ExcludeByFile>**/Migrations/**,**/Program.Partial.cs</ExcludeByFile>
+          <ExcludeByFile>**/Migrations/**,**/Program.Partial.cs,**/TIKR.Web/**/Program.cs</ExcludeByFile>
           <ExcludeByAttribute>Obsolete,GeneratedCodeAttribute,CompilerGeneratedAttribute</ExcludeByAttribute>
-          <!-- Threshold enforcement added when merged coverage exceeds 60%; target is 90% -->
+          <!-- Per-assembly thresholds enforced via scripts/check_coverage.py in CI -->
         </Configuration>
       </DataCollector>
     </DataCollectors>

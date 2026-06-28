@@ -69,6 +69,21 @@ public class GrokServiceTests
         (await sut.CompleteAsync("What is TABOR?")).Should().Be("Grok answer");
     }
 
+    [Fact]
+    public async Task CompleteAsync_ReturnsNullOnHttpError()
+    {
+        var handler = new StubHttpMessageHandler(_ =>
+            new HttpResponseMessage(HttpStatusCode.InternalServerError));
+
+        var sut = CreateService(new Dictionary<string, string?>
+        {
+            ["USE_GROK"] = "true",
+            ["GROK_API_KEY"] = "xai-key"
+        }, handler);
+
+        (await sut.CompleteAsync("fail")).Should().BeNull();
+    }
+
     private static GrokService CreateService(
         Dictionary<string, string?> settings,
         HttpMessageHandler? handler = null)

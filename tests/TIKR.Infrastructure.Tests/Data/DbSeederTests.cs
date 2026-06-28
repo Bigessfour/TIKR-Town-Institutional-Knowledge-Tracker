@@ -30,4 +30,22 @@ public class DbSeederTests
 
         (await db.Requirements.CountAsync()).Should().Be(7);
     }
+
+    [Fact]
+    public async Task SeedAsync_IncludesKnownColoradoDeadlines()
+    {
+        await using var db = await TestDbContextFactory.CreateMigratedAsync();
+
+        await DbSeeder.SeedAsync(db);
+
+        var titles = await db.Requirements.Where(r => r.IsSystemSeeded).Select(r => r.Title).ToListAsync();
+        titles.Should().Contain("Annual Budget Submission");
+        titles.Should().Contain("Mill Levy Certification");
+        titles.Should().Contain("TABOR Revenue Report");
+
+        var millLevy = await db.Requirements.SingleAsync(r => r.Title == "Mill Levy Certification");
+        millLevy.Category.Should().Be(Shared.Enums.RequirementCategory.MillLevy);
+        millLevy.DueDate.Month.Should().Be(12);
+        millLevy.DueDate.Day.Should().Be(15);
+    }
 }

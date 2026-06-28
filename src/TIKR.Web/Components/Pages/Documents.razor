@@ -64,10 +64,10 @@
 </div>
 
 <!-- Bulk toolbar (large, appears when selection) -->
-@if (_selectedIds.Count > 0)
+@if (_selection.Count > 0)
 {
     <div class="bulk-toolbar">
-        <span class="bulk-count">@_selectedIds.Count selected</span>
+        <span class="bulk-count">@_selection.Count selected</span>
         <SfButton CssClass="tikr-action-btn" IconCss="e-icons e-trash" Content="Delete selected" OnClick="BulkDeleteAsync" />
         <SfButton CssClass="tikr-action-btn" IconCss="e-icons e-reload" Content="Re-tag with AI" OnClick="BulkRetagAsync" />
         <SfButton CssClass="tikr-action-btn" Content="Clear selection" OnClick="ClearSelection" />
@@ -80,9 +80,9 @@
         <!-- Left: Folder tree -->
         <SplitterPane Size="20%" Min="160px" Max="280px">
             <div class="folder-tree-header">Folders</div>
-            <SfTreeView TValue="FolderNode" CssClass="doc-tree" AllowMultiSelection="false">
-                <TreeViewFieldsSettings TValue="FolderNode" DataSource="@_folderNodes" Id="Id" Text="DisplayName" Child="Children" Expanded="IsExpanded" />
-                <TreeViewEvents TValue="FolderNode" NodeSelected="OnFolderSelected" />
+            <SfTreeView TValue="DocumentLibraryLogic.FolderNode" CssClass="doc-tree" AllowMultiSelection="false">
+                <TreeViewFieldsSettings TValue="DocumentLibraryLogic.FolderNode" DataSource="@_folderNodes" Id="Id" Text="DisplayName" Child="Children" Expanded="IsExpanded" />
+                <TreeViewEvents TValue="DocumentLibraryLogic.FolderNode" NodeSelected="OnFolderSelected" />
             </SfTreeView>
             <div class="tree-hint">Click a folder to filter the list</div>
         </SplitterPane>
@@ -105,7 +105,7 @@
                         <Template>
                             @{
                                 var row = (context as DocumentDto)!;
-                                bool isSel = _selectedIds.Contains(row.Id);
+                                bool isSel = _selection.Contains(row.Id);
                             }
                             <input type="checkbox"
                                    checked="@isSel"
@@ -118,7 +118,7 @@
                         <Template>
                             @{
                                 var d = (context as DocumentDto)!;
-                                var tags = ParseTags(d.AiTags);
+                                var tags = DisplayFormat.ParseTags(d.AiTags);
                             }
                             @if (tags.Length > 0)
                             {
@@ -144,13 +144,13 @@
         <!-- Right: Preview pane -->
         <SplitterPane Size="24%" Min="200px">
             <div class="preview-pane">
-                @if (_selectedPreviewDoc is not null)
+                @if (_selection.SelectedPreview is not null)
                 {
-                    var d = _selectedPreviewDoc;
+                    var d = _selection.SelectedPreview;
                     <h4 class="preview-title">@d.FileName</h4>
                     <div class="preview-meta">
                         <div><strong>Uploaded:</strong> @d.UploadedAt.ToLocalTime().ToString("g")</div>
-                        <div><strong>Size:</strong> @FormatBytes(d.FileSizeBytes)</div>
+                        <div><strong>Size:</strong> @DisplayFormat.FormatBytes(d.FileSizeBytes)</div>
                         @if (!string.IsNullOrWhiteSpace(d.SuggestedFolder))
                         {
                             <div><strong>AI Folder:</strong> @d.SuggestedFolder</div>
@@ -159,11 +159,11 @@
 
                     <div class="preview-tags">
                         <strong>Tags:</strong>
-                        @foreach (var t in ParseTags(d.AiTags))
+                        @foreach (var t in DisplayFormat.ParseTags(d.AiTags))
                         {
                             <span class="doc-tag">@t</span>
                         }
-                        @if (ParseTags(d.AiTags).Length == 0) { <span class="text-muted">None yet</span> }
+                        @if (DisplayFormat.ParseTags(d.AiTags).Length == 0) { <span class="text-muted">None yet</span> }
                     </div>
 
                     <div class="preview-actions">
@@ -213,8 +213,7 @@
     private SfGrid<DocumentDto>? GridRef;
 
     private List<DocumentDto> _documents = [];
-    private HashSet<Guid> _selectedIds = new();
-    private DocumentDto? _selectedPreviewDoc;
+    private readonly DocumentSelectionState _selection = new();
     private string _searchQuery = "";
     private string SearchMode { get; set; } = "full"; // "full" | "semantic"
     private string? _statusMessage;
@@ -222,52 +221,10 @@
     private TagDocumentResponse? _lastTagSuggestion;
     private HashSet<Guid>? _semanticHitIds; // when non-null, VisibleDocuments is restricted + ordered by these
 
-    private List<FolderNode> _folderNodes = [];
+    private List<DocumentLibraryLogic.FolderNode> _folderNodes = [];
 
-    private class FolderNode
-    {
-        public string Id { get; set; } = "";
-        public string DisplayName { get; set; } = "";
-        public string? FolderKey { get; set; } // original SuggestedFolder or null for Uncategorized
-        public bool IsExpanded { get; set; } = true;
-        public List<FolderNode> Children { get; set; } = new();
-    }
-
-    private IEnumerable<DocumentDto> VisibleDocuments
-    {
-        get
-        {
-            var folderFiltered = _documents.Where(d =>
-            {
-                if (string.IsNullOrEmpty(_currentFolderFilter))
-                    return true;
-                if (_currentFolderFilter == "__UNCAT__")
-                    return string.IsNullOrWhiteSpace(d.SuggestedFolder);
-                return string.Equals(d.SuggestedFolder, _currentFolderFilter, StringComparison.OrdinalIgnoreCase);
-            });
-
-            // Semantic mode: if backend returned hit IDs, show only those in semantic order.
-            if (SearchMode == "semantic" && _semanticHitIds is { Count: > 0 })
-            {
-                var hitOrder = _semanticHitIds.ToList();
-                return folderFiltered
-                    .Where(d => _semanticHitIds.Contains(d.Id))
-                    .OrderBy(d => hitOrder.IndexOf(d.Id));
-            }
-
-            return folderFiltered
-                .Where(d =>
-                {
-                    if (string.IsNullOrWhiteSpace(_searchQuery)) return true;
-                    var q = _searchQuery.Trim();
-                    bool nameMatch = d.FileName.Contains(q, StringComparison.OrdinalIgnoreCase);
-                    bool tagMatch = (d.AiTags ?? "").Contains(q, StringComparison.OrdinalIgnoreCase);
-                    bool folderMatch = (d.SuggestedFolder ?? "").Contains(q, StringComparison.OrdinalIgnoreCase);
-                    return nameMatch || tagMatch || folderMatch;
-                })
-                .OrderByDescending(d => d.UploadedAt);
-        }
-    }
+    private IEnumerable<DocumentDto> VisibleDocuments =>
+        DocumentLibraryLogic.FilterVisible(_documents, _currentFolderFilter, SearchMode, _searchQuery, _semanticHitIds);
 
     private string? _currentFolderFilter; // null = All, "__UNCAT__" or the folder string
 
@@ -289,39 +246,8 @@
         _statusMessage = null;
     }
 
-    private void RebuildFolderTree()
-    {
-        var groups = _documents
-            .GroupBy(d => d.SuggestedFolder?.Trim() ?? "")
-            .OrderBy(g => g.Key);
-
-        var nodes = new List<FolderNode>
-        {
-            new FolderNode
-            {
-                Id = "all",
-                DisplayName = $"All Documents ({_documents.Count})",
-                FolderKey = null
-            }
-        };
-
-        foreach (var g in groups)
-        {
-            string key = g.Key;
-            string label = string.IsNullOrEmpty(key) ? "Uncategorized" : key;
-            int count = g.Count();
-            var n = new FolderNode
-            {
-                Id = "f_" + (string.IsNullOrEmpty(key) ? "uncat" : key.GetHashCode().ToString()),
-                DisplayName = $"{label} ({count})",
-                FolderKey = string.IsNullOrEmpty(key) ? "__UNCAT__" : key
-            };
-            nodes.Add(n);
-        }
-
-        // Put Uncategorized and others under a root if desired; for simplicity use flat list under implicit root
-        _folderNodes = nodes;
-    }
+    private void RebuildFolderTree() =>
+        _folderNodes = DocumentLibraryLogic.BuildFolderTree(_documents);
 
     private CancellationTokenSource? _semanticDebounceCts;
 
@@ -382,22 +308,14 @@
         try
         {
             var result = await Api.SemanticSearchDocumentsAsync(_searchQuery.Trim(), topK: 10);
-            if (result is null || result.Hits.Count == 0)
-            {
-                _semanticHitIds = new HashSet<Guid>();
-                _statusMessage = result is null
-                    ? "Semantic search unavailable (is Ollama running?)."
-                    : $"No semantic matches yet. {result.Considered} document(s) embedded so far.";
-            }
-            else
-            {
-                _semanticHitIds = result.Hits.Select(h => h.DocumentId).ToHashSet();
-                _statusMessage = $"Showing {result.Hits.Count} semantic match(es) from {result.Considered} embedded document(s).";
-            }
+            _semanticHitIds = result is null || result.Hits.Count == 0
+                ? new HashSet<Guid>()
+                : result.Hits.Select(h => h.DocumentId).ToHashSet();
+            _statusMessage = DocumentLibraryLogic.DescribeSemanticResults(result);
         }
         catch (Exception ex)
         {
-            _statusMessage = $"Semantic search failed: {ex.Message}";
+            _statusMessage = DocumentUiMessages.SemanticSearchFailed(ex.Message);
             _semanticHitIds = new HashSet<Guid>();
         }
 
@@ -420,12 +338,12 @@
                 {
                     var tagResp = await Api.TagDocumentAsync(created.Id);
                     _lastTagSuggestion = tagResp;           // drives the banner
-                    _statusMessage = $"Uploaded and AI-analyzed: {created.FileName}";
+                    _statusMessage = DocumentUiMessages.UploadSuccess(created.FileName);
                 }
             }
             else
             {
-                _statusMessage = $"Failed to upload {file.FileInfo.Name}";
+                _statusMessage = DocumentUiMessages.UploadFailure(file.FileInfo.Name);
             }
         }
 
@@ -437,7 +355,7 @@
         // Data is already persisted server-side by TagDocumentAsync.
         // Just clear the transient banner.
         _lastTagSuggestion = null;
-        _statusMessage = "Suggestion accepted.";
+        _statusMessage = DocumentUiMessages.SuggestionAccepted();
     }
 
     private async Task RetagLast()
@@ -457,7 +375,7 @@
             try
             {
                 var data = dyn.NodeData;
-                if (data is FolderNode f)
+                if (data is DocumentLibraryLogic.FolderNode f)
                 {
                     _currentFolderFilter = f.FolderKey;
                     StateHasChanged();
@@ -473,43 +391,35 @@
 
     private void ToggleSelection(DocumentDto doc)
     {
-        if (_selectedIds.Contains(doc.Id))
-            _selectedIds.Remove(doc.Id);
-        else
-            _selectedIds.Add(doc.Id);
-
-        // Update preview (prefer last toggled single)
-        _selectedPreviewDoc = _documents.FirstOrDefault(d => _selectedIds.Contains(d.Id));
-
+        _selection.Toggle(doc, _documents);
         StateHasChanged();
     }
 
     private void ClearSelection()
     {
-        _selectedIds.Clear();
-        _selectedPreviewDoc = null;
+        _selection.Clear();
         StateHasChanged();
     }
 
     private async Task BulkDeleteAsync()
     {
-        foreach (var id in _selectedIds.ToList())
+        foreach (var id in _selection.SelectedIds.ToList())
         {
             try { await Api.DeleteDocumentAsync(id); } catch { /* continue */ }
         }
-        _statusMessage = $"Deleted {_selectedIds.Count} document(s).";
+        _statusMessage = DocumentUiMessages.BulkDelete(_selection.Count);
         await LoadDocumentsAsync();
         ClearSelection();
     }
 
     private async Task BulkRetagAsync()
     {
-        var ids = _selectedIds.ToList();
+        var ids = _selection.SelectedIds.ToList();
         foreach (var id in ids)
         {
             try { await Api.TagDocumentAsync(id); } catch { }
         }
-        _statusMessage = $"Re-tagged {ids.Count} document(s).";
+        _statusMessage = DocumentUiMessages.BulkRetag(ids.Count);
         await LoadDocumentsAsync();
     }
 
@@ -523,13 +433,12 @@
     {
         await Api.DeleteDocumentAsync(doc.Id);
         await LoadDocumentsAsync();
-        if (_selectedIds.Contains(doc.Id)) _selectedIds.Remove(doc.Id);
-        if (_selectedPreviewDoc?.Id == doc.Id) _selectedPreviewDoc = null;
+        _selection.RemoveIfSelected(doc.Id);
     }
 
     private void OnContextMenuSelected(Syncfusion.Blazor.Navigations.MenuEventArgs<Syncfusion.Blazor.Navigations.MenuItem> args)
     {
-        var targetDoc = _selectedPreviewDoc ?? _documents.FirstOrDefault(d => _selectedIds.Contains(d.Id));
+        var targetDoc = _selection.SelectedPreview ?? _documents.FirstOrDefault(d => _selection.Contains(d.Id));
 
         if (targetDoc is null) return;
 
@@ -550,40 +459,7 @@
 
     private void DownloadPlaceholder()
     {
-        _statusMessage = "Download would stream the original file from NAS storage (API endpoint not yet implemented).";
-    }
-
-    private string[] ParseTags(string? raw)
-    {
-        if (string.IsNullOrWhiteSpace(raw)) return Array.Empty<string>();
-        try
-        {
-            // It is usually a JSON array string
-            var arr = System.Text.Json.JsonSerializer.Deserialize<string[]>(raw);
-            return arr ?? new[] { raw };
-        }
-        catch
-        {
-            return raw.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-        }
-    }
-
-    private static string FormatBytes(long bytes)
-    {
-        if (bytes < 1024) return $"{bytes} B";
-        if (bytes < 1024 * 1024) return $"{bytes / 1024.0:F1} KB";
-        return $"{bytes / (1024.0 * 1024):F1} MB";
-    }
-
-    private async Task LoadAfterMutation()
-    {
-        await LoadDocumentsAsync();
-    }
-
-    // Helper used by bulk/one (we will also extend the client)
-    private async Task EnsureClientDelete(Guid id)
-    {
-        // Will be replaced by proper client call after we edit TikrApiClient
+        _statusMessage = DocumentUiMessages.DownloadPlaceholder();
     }
 
     public void Dispose()

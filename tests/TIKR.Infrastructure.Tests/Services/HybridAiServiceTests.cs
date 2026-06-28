@@ -174,6 +174,149 @@ public class HybridAiServiceTests
         status.GrokEnabled.Should().BeTrue();
     }
 
+    [Fact]
+    public async Task GetStatusAsync_ReportsOllamaUnavailable()
+    {
+        await using var db = await TestDbContextFactory.CreateMigratedAsync();
+        var ollama = new Mock<IOllamaChatClientFactory>();
+        ollama.Setup(o => o.IsAvailableAsync(It.IsAny<CancellationToken>())).ReturnsAsync(false);
+        ollama.SetupGet(o => o.ChatModel).Returns("llama3.2:3b");
+
+        var sut = CreateService(db, ollama.Object, DisabledGrok);
+        var status = await sut.GetStatusAsync();
+        status.OllamaAvailable.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task GetDashboardPrioritiesAsync_ExcludesCompletedRequirements()
+    {
+        await using var db = await TestDbContextFactory.CreateMigratedAsync();
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        db.Requirements.Add(Requirement("Done item", today.AddDays(3), isCompleted: true));
+        db.Requirements.Add(Requirement("Active item", today.AddDays(3)));
+        await db.SaveChangesAsync();
+
+        var sut = CreateService(db, Mock.Of<IOllamaChatClientFactory>(), DisabledGrok);
+        var priorities = await sut.GetDashboardPrioritiesAsync();
+
+        priorities.Should().Contain(p => p.Title == "Active item");
+        priorities.Should().NotContain(p => p.Title == "Done item");
+    }
+
+    [Fact]
+    public async Task GetDashboardPrioritiesAsync_ExcludesRequirementsOlderThan30Days()
+    {
+        await using var db = await TestDbContextFactory.CreateMigratedAsync();
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        db.Requirements.Add(Requirement("Ancient overdue", today.AddDays(-45)));
+        db.Requirements.Add(Requirement("Recent overdue", today.AddDays(-5)));
+        await db.SaveChangesAsync();
+
+        var sut = CreateService(db, Mock.Of<IOllamaChatClientFactory>(), DisabledGrok);
+        var priorities = await sut.GetDashboardPrioritiesAsync();
+
+        priorities.Should().Contain(p => p.Title == "Recent overdue");
+        priorities.Should().NotContain(p => p.Title == "Ancient overdue");
+    }
+
+    [Fact]
+    public async Task GetDashboardPrioritiesAsync_AssignsMediumPriority()
+    {
+        await using var db = await TestDbContextFactory.CreateMigratedAsync();
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        db.Requirements.Add(Requirement("Medium window", today.AddDays(20)));
+        await db.SaveChangesAsync();
+
+        var sut = CreateService(db, Mock.Of<IOllamaChatClientFactory>(), DisabledGrok);
+        var priorities = await sut.GetDashboardPrioritiesAsync();
+
+        priorities.Should().ContainSingle(p => p.Title == "Medium window" && p.Priority == "Medium");
+    }
+
+    [Fact]
+    public async Task GetDashboardPrioritiesAsync_CapsAtTenItems()
+    {
+        await using var db = await TestDbContextFactory.CreateMigratedAsync();
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        for (var i = 0; i < 12; i++)
+            db.Requirements.Add(Requirement($"Item {i:D2}", today.AddDays(i + 1)));
+        await db.SaveChangesAsync();
+
+        var sut = CreateService(db, Mock.Of<IOllamaChatClientFactory>(), DisabledGrok);
+        var priorities = await sut.GetDashboardPrioritiesAsync();
+
+        priorities.Should().HaveCount(10);
+    }
+
+    [Fact]
+    public async Task AskAdvancedAsync_ReturnsFallbackWhenGrokReturnsNull()
+    {
+        await using var db = await TestDbContextFactory.CreateMigratedAsync();
+        var grok = TestGrokServiceFactory.Create(
+            new Dictionary<string, string?> { ["USE_GROK"] = "true", ["GROK_API_KEY"] = "xai-key" },
+            new DelegatingHandlerStub(_ => new HttpResponseMessage(System.Net.HttpStatusCode.OK)
+            {
+                Content = new StringContent("""{ "choices": [] }""", System.Text.Encoding.UTF8, "application/json")
+            }));
+        var sut = CreateService(db, Mock.Of<IOllamaChatClientFactory>(), grok);
+
+        var result = await sut.AskAdvancedAsync(new AskAdvancedRequest("Question?", null));
+        result.Answer.Should().Contain("Unable to get a response from Grok");
+    }
+
+    [Fact]
+    public async Task AskAdvancedAsync_UsesPromptOnlyWhenContextMissing()
+    {
+        await using var db = await TestDbContextFactory.CreateMigratedAsync();
+        string? capturedBody = null;
+        var grok = TestGrokServiceFactory.Create(
+            new Dictionary<string, string?> { ["USE_GROK"] = "true", ["GROK_API_KEY"] = "xai-key" },
+            new DelegatingHandlerStub(req =>
+            {
+                capturedBody = req.Content!.ReadAsStringAsync().GetAwaiter().GetResult();
+                return new HttpResponseMessage(System.Net.HttpStatusCode.OK)
+                {
+                    Content = new StringContent(
+                        """{ "choices": [ { "message": { "content": "ok" } } ] }""",
+                        System.Text.Encoding.UTF8,
+                        "application/json")
+                };
+            }));
+        var sut = CreateService(db, Mock.Of<IOllamaChatClientFactory>(), grok);
+
+        await sut.AskAdvancedAsync(new AskAdvancedRequest("Plain question", null));
+
+        capturedBody.Should().Contain("Plain question");
+        capturedBody.Should().NotContain("Context:");
+    }
+
+    [Fact]
+    public async Task TagDocumentAsync_PersistsEmbeddingWhenEmbedderSucceeds()
+    {
+        await using var db = await TestDbContextFactory.CreateMigratedAsync();
+        var document = new Document
+        {
+            Id = Guid.NewGuid(),
+            FileName = "embed-me.pdf",
+            StoragePath = "2026/01/embed-me.pdf",
+            ContentType = "application/pdf",
+            UploadedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
+        db.Documents.Add(document);
+        await db.SaveChangesAsync();
+
+        var ollama = CreateOllamaFactory(
+            """{"tags":["x"],"suggestedFolder":"F"}""",
+            _ => new[] { 1f, 0f, 0f, 0f });
+        var sut = CreateService(db, ollama, DisabledGrok);
+
+        await sut.TagDocumentAsync(document.Id);
+
+        var updated = await db.Documents.FindAsync(document.Id);
+        updated!.Embedding.Should().NotBeNull();
+    }
+
     private static HybridAiService CreateService(
         TikrDbContext db,
         IOllamaChatClientFactory ollama,
@@ -207,13 +350,14 @@ public class HybridAiServiceTests
                     "application/json")
             }));
 
-    private static Requirement Requirement(string title, DateOnly dueDate) => new()
+    private static Requirement Requirement(string title, DateOnly dueDate, bool isCompleted = false) => new()
     {
         Id = Guid.NewGuid(),
         Title = title,
         DueDate = dueDate,
         Recurrence = RecurrenceType.Annual,
         Category = RequirementCategory.Compliance,
+        IsCompleted = isCompleted,
         CreatedAt = DateTime.UtcNow,
         UpdatedAt = DateTime.UtcNow
     };

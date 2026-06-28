@@ -132,14 +132,15 @@ Repeat-safe checklist — safe to re-run anytime:
 
 ## Phase 7 — Coverage ramp
 
-**Status:** planned
+**Status:** done
 
-**Goal:** Raise line coverage toward 90% per `tests/README.md`.
+**Goal:** Raise line coverage toward per-assembly targets in `tests/README.md`.
 
 **Acceptance criteria:**
 
-- CI coverage floor increases incrementally
-- Gaps filled in Api endpoints, Infrastructure edge cases, Web pages
+- [x] CI coverage floor via `scripts/check_coverage.py` (Shared/Infra ≥90%, Api integration-tested, Web Helpers/Services ≥85%)
+- [x] Gaps filled in Api AI endpoints, Infrastructure edge cases, Web client + bUnit pages
+- [ ] Playwright E2E (deferred)
 
 **Key paths:** `tests/`, `coverlet.runsettings`
 

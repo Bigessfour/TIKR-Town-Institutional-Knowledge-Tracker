@@ -29,4 +29,18 @@ public class AuditServiceTests
         log.Details.Should().Be("Test requirement");
         log.Timestamp.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
     }
+
+    [Fact]
+    public async Task LogAsync_AllowsNullEntityIdAndDetails()
+    {
+        await using var db = await TestDbContextFactory.CreateMigratedAsync();
+        var sut = new AuditService(db);
+
+        await sut.LogAsync("Login", "User", entityId: null, details: null, userId: "clerk@town.gov");
+
+        var log = await db.AuditLogs.SingleAsync();
+        log.EntityId.Should().BeNull();
+        log.Details.Should().BeNull();
+        log.UserId.Should().Be("clerk@town.gov");
+    }
 }

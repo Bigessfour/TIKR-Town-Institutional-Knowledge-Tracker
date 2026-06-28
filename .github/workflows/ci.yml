@@ -44,6 +44,9 @@ jobs:
           name: coverage-report
           path: coverage/**/coverage.cobertura.xml
 
+      - name: Verify per-assembly coverage thresholds
+        run: python3 scripts/check_coverage.py coverage
+
       - name: Docker Build & Smoke Test
         # Requires Docker on ubuntu-latest. Copies placeholder env; no real secrets in CI.
         # May fail on GH rate limits or Docker daemon issues — investigate logs if red.

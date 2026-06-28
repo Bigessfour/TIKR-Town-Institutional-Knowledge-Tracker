@@ -51,14 +51,14 @@
                         @foreach (var e in HowToEntries)
                         {
                             <AccordionItem>
-                                <Header>
+                                <HeaderTemplate>
                                     <div class="acc-header">@e.Title</div>
-                                </Header>
-                                <Content>
+                                </HeaderTemplate>
+                                <ContentTemplate>
                                     <div class="acc-content" @onclick="() => SelectEntry(e)">
-                                        @(new MarkupString(TruncateForDisplay(e.Content)))
+                                        @(new MarkupString(DisplayFormat.TruncateForDisplay(e.Content)))
                                     </div>
-                                </Content>
+                                </ContentTemplate>
                             </AccordionItem>
                         }
                     </SfAccordion>
@@ -92,12 +92,12 @@
                         @foreach (var e in ContactEntries)
                         {
                             <AccordionItem>
-                                <Header><div class="acc-header">@e.Title</div></Header>
-                                <Content>
+                                <HeaderTemplate><div class="acc-header">@e.Title</div></HeaderTemplate>
+                                <ContentTemplate>
                                     <div class="acc-content" @onclick="() => SelectEntry(e)">
-                                        @(new MarkupString(TruncateForDisplay(e.Content)))
+                                        @(new MarkupString(DisplayFormat.TruncateForDisplay(e.Content)))
                                     </div>
-                                </Content>
+                                </ContentTemplate>
                             </AccordionItem>
                         }
                     </SfAccordion>
@@ -131,12 +131,12 @@
                         @foreach (var e in TribalEntries)
                         {
                             <AccordionItem>
-                                <Header><div class="acc-header">@e.Title</div></Header>
-                                <Content>
+                                <HeaderTemplate><div class="acc-header">@e.Title</div></HeaderTemplate>
+                                <ContentTemplate>
                                     <div class="acc-content" @onclick="() => SelectEntry(e)">
-                                        @(new MarkupString(TruncateForDisplay(e.Content)))
+                                        @(new MarkupString(DisplayFormat.TruncateForDisplay(e.Content)))
                                     </div>
-                                </Content>
+                                </ContentTemplate>
                             </AccordionItem>
                         }
                     </SfAccordion>
@@ -219,9 +219,9 @@
     private System.Timers.Timer? _timer;
     private string PendingTranscription = "";
 
-    private List<KnowledgeEntryDto> HowToEntries => _allEntries.Where(e => e.Category == KnowledgeCategory.HowTo).OrderBy(e => e.SortOrder).ToList();
-    private List<KnowledgeEntryDto> ContactEntries => _allEntries.Where(e => e.Category == KnowledgeCategory.Contact).OrderBy(e => e.SortOrder).ToList();
-    private List<KnowledgeEntryDto> TribalEntries => _allEntries.Where(e => e.Category == KnowledgeCategory.TribalKnowledge).OrderBy(e => e.SortOrder).ToList();
+    private List<KnowledgeEntryDto> HowToEntries => VaultCopyBuilder.FilterCategory(_allEntries, KnowledgeCategory.HowTo).ToList();
+    private List<KnowledgeEntryDto> ContactEntries => VaultCopyBuilder.FilterCategory(_allEntries, KnowledgeCategory.Contact).ToList();
+    private List<KnowledgeEntryDto> TribalEntries => VaultCopyBuilder.FilterCategory(_allEntries, KnowledgeCategory.TribalKnowledge).ToList();
 
     protected override async Task OnInitializedAsync()
     {
@@ -282,8 +282,7 @@
         DisposeTimer();
 
         // Simulate transcription
-        PendingTranscription = $"[Voice Note - {DateTime.Now:HH:mm}] " +
-            "Key thing I always forget: call the county assessor before Dec 15 for mill levy. Also, the safe combination is in the red folder under 'E'. The new clerk should know the trustees meet on the second Tuesday.";
+        PendingTranscription = VaultVoiceNoteSimulator.BuildSimulatedTranscription(DateTime.Now);
         StateHasChanged();
     }
 
@@ -299,7 +298,7 @@
     {
         if (string.IsNullOrWhiteSpace(PendingTranscription)) return;
 
-        var title = $"Voice Note - {DateTime.Now:MMM dd}";
+        var title = VaultVoiceNoteSimulator.BuildDefaultTitle(DateTime.Now);
         // Persist as Tribal Knowledge entry so it's durable. Capture the created
         // entry's Id so DeleteVoiceNote can remove the row from the database too.
         var created = await Api.CreateKnowledgeEntryAsync(new CreateKnowledgeEntryRequest(
@@ -347,37 +346,18 @@
     // Copy everything
     private async Task CopyAllForNewClerkAsync()
     {
-        var sb = new System.Text.StringBuilder();
-        sb.AppendLine("=== TIKR KNOWLEDGE VAULT - FOR THE NEW CLERK ===");
-        sb.AppendLine("If I'm gone, this has everything you need. Take care of the town.");
-        sb.AppendLine(DateTime.Now.ToString("yyyy-MM-dd HH:mm"));
-        sb.AppendLine();
+        var text = VaultCopyBuilder.BuildCopyAllText(
+            HowToEntries,
+            ContactEntries,
+            TribalEntries,
+            VoiceNotes.Select(v => (v.Title, v.Timestamp, v.Transcription)));
 
-        sb.AppendLine("--- HOW-TO ---");
-        foreach (var e in HowToEntries)
-            sb.AppendLine($"• {e.Title}\n{e.Content}\n");
-
-        sb.AppendLine("--- CONTACTS ---");
-        foreach (var e in ContactEntries)
-            sb.AppendLine($"• {e.Title}\n{e.Content}\n");
-
-        sb.AppendLine("--- TRIBAL KNOWLEDGE ---");
-        foreach (var e in TribalEntries)
-            sb.AppendLine($"• {e.Title}\n{e.Content}\n");
-
-        sb.AppendLine("--- VOICE NOTES ---");
-        foreach (var v in VoiceNotes)
-            sb.AppendLine($"• {v.Title} ({v.Timestamp:HH:mm})\n{v.Transcription}\n");
-
-        await JS.InvokeVoidAsync("navigator.clipboard.writeText", sb.ToString());
+        await JS.InvokeVoidAsync("navigator.clipboard.writeText", text);
 
         // Show warm confirmation (simple status for now)
         // In real app could use SfToast, here we can navigate or set temp message via existing patterns.
         // For visibility we'll just let the user see it worked via browser.
     }
-
-    private static string TruncateForDisplay(string content) =>
-        content.Length > 180 ? content[..177] + "..." : content;
 
     public class VoiceNote
     {

@@ -106,6 +106,19 @@ public class TikrConfigurationTests
     }
 
     [Fact]
+    public void GetGrokApiKey_ReturnsNullWhenUnset()
+    {
+        TikrConfiguration.GetGrokApiKey(BuildConfig([])).Should().BeNull();
+    }
+
+    [Fact]
+    public void GetFileStoragePath_UsesDefaultWhenUnset()
+    {
+        var path = TikrConfiguration.GetFileStoragePath(BuildConfig([]));
+        path.Should().EndWith(Path.Combine("data", "documents"));
+    }
+
+    [Fact]
     public void GetGrokModel_UsesDefaultsAndOverrides()
     {
         TikrConfiguration.GetGrokModel(BuildConfig([]))
