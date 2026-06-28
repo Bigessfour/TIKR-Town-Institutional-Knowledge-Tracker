@@ -15,8 +15,6 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddTikrInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
-        SyncfusionDocumentLicense.RegisterFromConfiguration(configuration);
-
         var provider = TikrConfiguration.GetDatabaseProvider(configuration);
 
         services.AddDbContext<TikrDbContext>(options =>
@@ -40,6 +38,8 @@ public static class DependencyInjection
         services.AddScoped<IHybridAiService, HybridAiService>();
         services.AddScoped<IAgentDocumentStorage, NasAgentDocumentStorage>();
         services.AddSingleton<NasSyncfusionDocumentStorage>();
+        services.AddSingleton<SyncfusionDocumentAgentToolRegistry>();
+        services.AddScoped<SyncfusionDocumentAgentOrchestrator>();
         services.AddScoped<SyncfusionDocumentAgentExtractor>();
         services.AddScoped<StubDocumentAgentExtractionBackend>();
         services.AddScoped<SyncfusionDocumentAgentExtractionBackend>();
