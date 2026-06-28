@@ -1,4 +1,5 @@
 using FluentAssertions;
+using Microsoft.Extensions.Configuration;
 using TIKR.Infrastructure.Services;
 using TIKR.Shared.Enums;
 
@@ -21,17 +22,35 @@ public class DocumentAgentServiceTests
     [Fact]
     public async Task ProcessUploadAsync_SavesToStorageAndReturnsLocalResult()
     {
-        var storage = new InMemoryFileStorage();
-        var sut = new DocumentAgentService(storage);
+        var sut = CreateService(new ConfigurationBuilder().Build());
         await using var content = new MemoryStream("sample ordinance text"u8.ToArray());
 
         var result = await sut.ProcessUploadAsync(content, "budget-report.pdf");
 
         result.ProcessedLocally.Should().BeTrue();
-        result.StoragePath.Should().NotBeNullOrWhiteSpace();
+        result.StoragePath.Should().StartWith("agent-scans/");
         result.SuggestedCategory.Should().Be(RequirementCategory.Budget);
         result.TablesExtractedCount.Should().Be(3);
-        storage.SavedFileNames.Should().ContainSingle().Which.Should().Be("budget-report.pdf");
+    }
+
+    [Fact]
+    public async Task ProcessUploadAsync_ExtractsPlainTextFromTxtUpload()
+    {
+        var sut = CreateService(new ConfigurationBuilder().Build());
+        await using var content = new MemoryStream("Colorado periodic report due Q1"u8.ToArray());
+
+        var result = await sut.ProcessUploadAsync(content, "periodic-report.txt");
+
+        result.ExtractedText.Should().Contain("Colorado periodic report");
+        result.TablesExtractedCount.Should().Be(1);
+    }
+
+    private static DocumentAgentService CreateService(IConfiguration configuration)
+    {
+        var fileStorage = new InMemoryFileStorage();
+        var agentStorage = new NasAgentDocumentStorage(fileStorage, configuration);
+        var backend = new StubDocumentAgentExtractionBackend();
+        return new DocumentAgentService(agentStorage, backend);
     }
 
     private sealed class InMemoryFileStorage : Shared.Interfaces.IFileStorageService
@@ -41,7 +60,7 @@ public class DocumentAgentServiceTests
         public Task<string> SaveAsync(Stream content, string fileName, CancellationToken cancellationToken = default)
         {
             SavedFileNames.Add(fileName);
-            return Task.FromResult($"agent/{fileName}");
+            return Task.FromResult(fileName);
         }
 
         public Task<Stream> OpenReadAsync(string storagePath, CancellationToken cancellationToken = default) =>

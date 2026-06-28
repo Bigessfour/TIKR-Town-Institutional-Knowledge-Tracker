@@ -9,9 +9,11 @@ Living checklist for Requirements Manager work. Tracks MVP (ship now) vs deferre
 - DTOs: [`src/TIKR.Shared/DTOs/RequirementDto.cs`](../src/TIKR.Shared/DTOs/RequirementDto.cs)
 - [`Calendar.razor`](../src/TIKR.Web/Components/Pages/Calendar.razor) remains the timeline/schedule consumer; `/requirements` is the CRUD hub
 
+**Syncfusion reference:** [AI Agent Tools for Document SDK](https://www.syncfusion.com/explore/ai-agent-tools-for-document-sdk/) — Storage Mode on NAS. Configuration: [sf-document-agent-tools.md](sf-document-agent-tools.md). **A2** wires deterministic PDF/Word extraction; **A3** adds Ollama tool orchestration.
+
 ---
 
-## MVP (in progress / ship now)
+## MVP (done)
 
 - [x] DeleteRequirementAsync on TikrApiClient + test
 - [x] RequirementWorkflowHelpers (urgency, filter, CSV) + tests
@@ -23,19 +25,65 @@ Living checklist for Requirements Manager work. Tracks MVP (ship now) vs deferre
 - [x] Update README features if needed
 - [x] dotnet test + coverage + trunk check
 
-### Phase 10B — MVP AI agent stub (PR after #28)
+### Phase 10B — MVP AI agent stub (merged #31)
 
-- [x] `IDocumentAgentService` + stub `DocumentAgentService` (in-memory inference; Syncfusion AgentTools → group A)
-- [x] `SynologyDocumentStorage` save helper (encryption → group A)
+- [x] `IDocumentAgentService` + stub `DocumentAgentService` (filename heuristics; not Syncfusion tools)
 - [x] `POST /api/ai/agent-scan` + `TikrApiClient.ScanDocumentWithAgentAsync`
-- [x] Requirements toolbar **AI Scan uploaded doc** + banner message (SfToast deferred — uses existing AI banner pattern)
+- [x] Requirements toolbar **AI Scan uploaded doc** + banner message
 - [x] `RequirementWorkflowHelpers.ApplyAgentExtraction` + `FormatAgentScanMessage`
 - [x] Infrastructure, Api, Web helper, and bUnit tests
-- [x] Merge PR [#31](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/31) on `main`
 
 ---
 
-## Deferred (Phase 2+ — swing back after MVP)
+## Phase 10C — Syncfusion AI Agent Tools (active)
+
+**Goal:** Replace stub inference with [Syncfusion Document SDK AI Agent Tools](https://www.syncfusion.com/explore/ai-agent-tools-for-document-sdk/) — AI-callable, deterministic extraction (tables, KV pairs, OCR) on NAS, orchestrated by Ollama locally (no cloud required for core flows).
+
+**NuGet (A2):** `Syncfusion.DocumentSDK.AI.AgentTools` (+ `Microsoft.Agents.AI.OpenAI` or existing `Microsoft.Extensions.AI` + Ollama). Requires `SYNCFUSION_LICENSE_KEY` (Document SDK entitlement).
+
+| Group | Scope | Status |
+|-------|--------|--------|
+| **A1** | `IAgentDocumentStorage`, optional AES (`TIKR_AGENT_STORAGE_KEY`), `IDocumentAgentExtractionBackend`, stub backend uses real plain-text extraction, `USE_SYNCFUSION_AGENT_TOOLS` flag | done (PR #35) |
+| **A2** | NuGet + `NasSyncfusionDocumentStorage` (`IDocumentStorage`); `SyncfusionDocumentAgentExtractor` (PDF text, Word text, table JSON) | in progress |
+| **A3** | Microsoft Agent Framework loop: Ollama selects tools → validated JSON → requirement mapping | planned |
+| **B** | In-memory vs storage-backed `IDocumentStorage` parity with Syncfusion modes | partial (NAS Storage Mode in A2) |
+| **C** | Requirements UI: show extraction source (stub vs Syncfusion), progress indicator on scan | planned |
+| **D** | Playwright: upload PDF → agent-scan → pre-filled requirement dialog | planned |
+| **E** | Docs: NAS setup, license, `USE_SYNCFUSION_AGENT_TOOLS` runbook | partial ([sf-document-agent-tools.md](sf-document-agent-tools.md)) |
+
+### A1 checklist
+
+- [x] `IAgentDocumentStorage` + `NasAgentDocumentStorage` (`agent-scans/` prefix, optional AES-256-GCM)
+- [x] `IDocumentAgentExtractionBackend` + `StubDocumentAgentExtractionBackend` (plain-text via `DocumentTextExtractionService`)
+- [x] `USE_SYNCFUSION_AGENT_TOOLS` + `TIKR_AGENT_STORAGE_KEY` in `docker/.env.example`
+- [x] Refactor `DocumentAgentService` to use storage + backend abstractions
+- [x] Tests: crypto round-trip, NAS storage paths, `.txt` agent-scan extraction
+- [ ] Merge PR #35 (A1)
+
+### A2 checklist (current)
+
+- [x] `Syncfusion.DocumentSDK.AI.AgentTools` + `Syncfusion.Licensing` NuGet (33.2.15)
+- [x] `NasSyncfusionDocumentStorage` implements Syncfusion `IDocumentStorage` under `agent-scans/sf-work/`
+- [x] `SyncfusionDocumentAgentExtractor` — `PdfContentExtractionAgentTools`, `WordImportExportAgentTools`, `DataExtractionAgentTools`
+- [x] License registration in `AddTikrInfrastructure` (`SYNCFUSION_LICENSE_KEY`)
+- [x] `SyncfusionDocumentAgentExtractionBackend` delegates to extractor (no throw)
+- [x] Tests: `NasSyncfusionDocumentStorageTests`
+- [ ] Manual NAS smoke: `USE_SYNCFUSION_AGENT_TOOLS=true` + PDF agent-scan
+- [ ] Merge PR
+
+### Gap vs Syncfusion product (honest)
+
+| Syncfusion capability | TIKR today |
+|----------------------|------------|
+| PDF/Word agent tools (Storage Mode) | Wired in A2 when flag enabled |
+| Smart Data Extraction → JSON | Table count via `ExtractTableAsJson` |
+| Microsoft Agent Framework `AITool` loop | Not wired (A3) |
+| Storage-backed distributed agents | `NasSyncfusionDocumentStorage` on NAS volume |
+| Included with Document SDK license | Same `SYNCFUSION_LICENSE_KEY` as Blazor |
+
+---
+
+## Deferred (Phase 2+ — after 10C ship)
 
 ### Schema / data model
 
@@ -60,8 +108,8 @@ Living checklist for Requirements Manager work. Tracks MVP (ship now) vs deferre
 - [ ] "Copy for Deputy Clerk" per row
 - [ ] "AI Fill Gaps" button (Ollama suggest similar CO requirements)
 - [ ] "Test Submit" action
-- [ ] Print Packet export
-- [ ] Offline mode indicator / Synology NAS badge
+- [ ] Print Packet export (basic print shipped in Phase 0 #33)
+- [ ] Offline mode indicator / Synology NAS badge (Phase 0 #33)
 
 ### Integrations
 
@@ -74,6 +122,4 @@ Living checklist for Requirements Manager work. Tracks MVP (ship now) vs deferre
 ### Infrastructure
 
 - [ ] Add Syncfusion.Blazor.TreeGrid package (individual, not meta)
-- [ ] `Syncfusion.DocumentSDK.AI.AgentTools` full integration (MVP uses stub service)
-- [ ] New API endpoints for AI suggest, CSV server-side export if needed
-- [ ] Playwright E2E clerk flows for requirements
+- [ ] Playwright E2E clerk flows for requirements (extend `tests/e2e/`)
