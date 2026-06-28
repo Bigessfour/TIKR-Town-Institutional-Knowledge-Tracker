@@ -119,4 +119,18 @@ public static class RequirementWorkflowHelpers
             return $"\"{value.Replace("\"", "\"\"", StringComparison.Ordinal)}\"";
         return value;
     }
+
+    public static CreateRequirementRequest ApplyAgentExtraction(DocumentAgentResult result)
+    {
+        var dueDate = result.SuggestedDueDate ?? DateOnly.FromDateTime(DateTime.UtcNow.AddMonths(1));
+        return new CreateRequirementRequest(
+            result.SuggestedTitle,
+            result.ExtractedText,
+            dueDate,
+            result.SuggestedRecurrence,
+            result.SuggestedCategory);
+    }
+
+    public static string FormatAgentScanMessage(DocumentAgentResult result) =>
+        $"Processed on Synology • {result.TablesExtractedCount} table{(result.TablesExtractedCount == 1 ? "" : "s")} extracted";
 }

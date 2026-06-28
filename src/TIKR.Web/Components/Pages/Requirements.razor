@@ -24,6 +24,10 @@
 <div class="requirements-toolbar mb-3">
     <SfButton CssClass="tikr-action-btn e-primary" IsPrimary="true" IconCss="e-icons e-plus" Content="Add requirement" OnClick="OpenCreateDialog" />
     <SfButton CssClass="tikr-action-btn" IconCss="e-icons e-export" Content="Export CSV" OnClick="ExportCsvAsync" />
+    <label class="e-btn tikr-action-btn requirements-agent-upload">
+        AI Scan uploaded doc
+        <InputFile OnChange="OnAgentFileSelectedAsync" accept=".pdf,.doc,.docx,.txt,.csv" />
+    </label>
 </div>
 
 <div class="requirements-filters mb-3">
@@ -52,6 +56,14 @@
 @if (!string.IsNullOrWhiteSpace(_error))
 {
     <div class="login-error mb-3">@_error</div>
+}
+
+@if (!string.IsNullOrWhiteSpace(_agentMessage))
+{
+    <div class="ai-suggestion-banner mb-3">
+        <strong>@_agentMessage</strong>
+        <div class="banner-body">Review the pre-filled requirement below, then save or edit before filing.</div>
+    </div>
 }
 
 <SfGrid DataSource="@VisibleRequirements" AllowPaging="true" PageSize="12" AllowSorting="true" Height="520">
@@ -148,6 +160,7 @@
     private bool _showDialog;
     private Guid? _editingId;
     private string? _error;
+    private string? _agentMessage;
     private DateTime _formDueDate = DateTime.Today.AddMonths(1);
     private readonly RequirementFormModel _form = new();
 
@@ -201,6 +214,7 @@
     {
         _editingId = null;
         _error = null;
+        _agentMessage = null;
         _form.Title = string.Empty;
         _form.Description = null;
         _form.Recurrence = RecurrenceType.Annual;
@@ -282,6 +296,49 @@
         await JS.InvokeVoidAsync(
             "eval",
             $"(() => {{ const a = document.createElement('a'); a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent({System.Text.Json.JsonSerializer.Serialize(csv)}); a.download = {System.Text.Json.JsonSerializer.Serialize(fileName)}; a.click(); }})()");
+    }
+
+    private async Task OnAgentFileSelectedAsync(InputFileChangeEventArgs e)
+    {
+        _error = null;
+        _agentMessage = null;
+        var file = e.File;
+        if (file is null)
+            return;
+
+        try
+        {
+            await using var stream = file.OpenReadStream(maxAllowedSize: 52_428_800);
+            await using var buffer = new MemoryStream();
+            await stream.CopyToAsync(buffer);
+            buffer.Position = 0;
+
+            var result = await Api.ScanDocumentWithAgentAsync(buffer, file.Name);
+            if (result is null)
+            {
+                _error = "AI scan failed. Is the API running?";
+                return;
+            }
+
+            _agentMessage = RequirementWorkflowHelpers.FormatAgentScanMessage(result);
+            OpenCreateDialogFromDraft(RequirementWorkflowHelpers.ApplyAgentExtraction(result));
+        }
+        catch
+        {
+            _error = "Could not scan document. Try a smaller PDF or text file.";
+        }
+    }
+
+    private void OpenCreateDialogFromDraft(CreateRequirementRequest draft)
+    {
+        _editingId = null;
+        _form.Title = draft.Title;
+        _form.Description = draft.Description;
+        _form.Recurrence = draft.Recurrence;
+        _form.Category = draft.Category;
+        _form.IsCompleted = false;
+        _formDueDate = draft.DueDate.ToDateTime(TimeOnly.MinValue);
+        _showDialog = true;
     }
 
     private sealed class RequirementFormModel

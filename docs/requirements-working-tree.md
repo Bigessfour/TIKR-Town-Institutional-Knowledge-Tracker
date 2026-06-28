@@ -23,6 +23,16 @@ Living checklist for Requirements Manager work. Tracks MVP (ship now) vs deferre
 - [x] Update README features if needed
 - [x] dotnet test + coverage + trunk check
 
+### Phase 10B — MVP AI agent stub (PR after #28)
+
+- [x] `IDocumentAgentService` + stub `DocumentAgentService` (in-memory inference; Syncfusion AgentTools → group A)
+- [x] `SynologyDocumentStorage` save helper (encryption → group A)
+- [x] `POST /api/ai/agent-scan` + `TikrApiClient.ScanDocumentWithAgentAsync`
+- [x] Requirements toolbar **AI Scan uploaded doc** + banner message (SfToast deferred — uses existing AI banner pattern)
+- [x] `RequirementWorkflowHelpers.ApplyAgentExtraction` + `FormatAgentScanMessage`
+- [x] Infrastructure, Api, Web helper, and bUnit tests
+- [ ] Merge stacked PR after #28
+
 ---
 
 ## Deferred (Phase 2+ — swing back after MVP)
@@ -64,5 +74,6 @@ Living checklist for Requirements Manager work. Tracks MVP (ship now) vs deferre
 ### Infrastructure
 
 - [ ] Add Syncfusion.Blazor.TreeGrid package (individual, not meta)
+- [ ] `Syncfusion.DocumentSDK.AI.AgentTools` full integration (MVP uses stub service)
 - [ ] New API endpoints for AI suggest, CSV server-side export if needed
 - [ ] Playwright E2E clerk flows for requirements

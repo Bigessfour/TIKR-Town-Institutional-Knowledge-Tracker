@@ -36,6 +36,7 @@ public static class DependencyInjection
         services.AddScoped<IAuditService, AuditService>();
         services.AddSingleton<IFileStorageService, LocalFileStorageService>();
         services.AddScoped<IHybridAiService, HybridAiService>();
+        services.AddScoped<IDocumentAgentService, DocumentAgentService>();
         services.AddHttpClient<GrokService>();
 
         services.AddSingleton<IOllamaChatClientFactory>(_ =>

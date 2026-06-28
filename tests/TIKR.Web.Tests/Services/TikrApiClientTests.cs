@@ -422,6 +422,30 @@ public class TikrApiClientTests
         ok.Should().BeFalse();
     }
 
+    [Fact]
+    public async Task ScanDocumentWithAgentAsync_PostsMultipart()
+    {
+        var json = JsonSerializer.Serialize(new DocumentAgentResult(
+            "Budget report", "text", DateOnly.FromDateTime(DateTime.UtcNow),
+            RecurrenceType.Annual, RequirementCategory.Budget, 2, "agent/x.pdf", true));
+        HttpMethod? method = null;
+        var handler = new RecordingHandler((req, _) =>
+        {
+            method = req.Method;
+            return new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(json, Encoding.UTF8, "application/json")
+            };
+        });
+        var sut = new TikrApiClient(new HttpClient(handler) { BaseAddress = new Uri("http://localhost/") });
+
+        await using var stream = new MemoryStream("bytes"u8.ToArray());
+        var result = await sut.ScanDocumentWithAgentAsync(stream, "budget.pdf");
+
+        method.Should().Be(HttpMethod.Post);
+        result!.SuggestedCategory.Should().Be(RequirementCategory.Budget);
+    }
+
     private static (HttpClient Client, RecordingHandler Handler) CreateClient(string json, HttpMethod expectedMethod, string expectedPath)
     {
         HttpMethod? method = null;
