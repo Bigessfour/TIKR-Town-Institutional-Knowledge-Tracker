@@ -1,5 +1,9 @@
 using FluentAssertions;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging.Abstractions;
+using Moq;
 using TIKR.Infrastructure.Services;
+using TIKR.Shared.Interfaces;
 
 namespace TIKR.Infrastructure.Tests.Services;
 
@@ -9,7 +13,12 @@ public class SyncfusionDocumentAgentExtractionBackendTests
     public async Task ExtractAsync_DelegatesToExtractor()
     {
         var storage = new NasSyncfusionDocumentStorage(new InMemoryFileStorage());
-        var extractor = new SyncfusionDocumentAgentExtractor(storage);
+        var config = new ConfigurationBuilder().Build();
+        var ollama = Mock.Of<IOllamaChatClientFactory>();
+        var registry = new SyncfusionDocumentAgentToolRegistry(storage);
+        var orchestrator = new SyncfusionDocumentAgentOrchestrator(
+            ollama, registry, config, NullLogger<SyncfusionDocumentAgentOrchestrator>.Instance);
+        var extractor = new SyncfusionDocumentAgentExtractor(storage, orchestrator);
         var sut = new SyncfusionDocumentAgentExtractionBackend(extractor);
         await using var content = new MemoryStream("delegated text"u8.ToArray());
 

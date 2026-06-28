@@ -1,0 +1,30 @@
+sequenceDiagram
+    autonumber
+    actor Clerk
+    participant Web as TIKR.Web
+    participant API as TIKR.Api
+    participant FS as File storage
+    participant DB as SQLite
+    participant AI as HybridAiService
+    participant Ollama as Ollama
+
+    Clerk->>Web: Upload file on /documents
+    Web->>API: POST /api/documents multipart
+    API->>FS: Save to /data/documents
+    API->>DB: Insert Document row plus FullTextContent if txt/md/csv
+    API-->>Web: Created document DTO
+
+    Clerk->>Web: Trigger AI tag
+    Web->>API: POST /api/ai/tag-document
+    API->>AI: TagDocumentAsync
+    AI->>Ollama: Suggest tags from content
+    AI->>AI: EmbedDocumentAsync best-effort
+    AI-->>API: Tags plus embedding stored
+    API-->>Web: Updated tags
+
+    Clerk->>Web: Semantic search toggle
+    Web->>API: POST /api/ai/semantic-search
+    API->>AI: Cosine similarity over embeddings
+    AI-->>Web: Ranked document matches
+
+    Note over Clerk,Web: Download stream not implemented yet

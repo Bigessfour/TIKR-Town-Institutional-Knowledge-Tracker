@@ -1,0 +1,61 @@
+flowchart LR
+    subgraph web_ui["TIKR.Web pages"]
+        W_Dash["Dashboard"]
+        W_Req["Requirements"]
+        W_Doc["Documents"]
+        W_Vault["Vault"]
+        W_Asst["Assistant"]
+        W_Set["Settings"]
+        W_Auth["Login / Account / Users"]
+    end
+
+    subgraph api_sys["System"]
+        A_Health["GET /health"]
+        A_Status["GET /api/system/local-status"]
+    end
+
+    subgraph api_crud["Domain CRUD"]
+        A_Req["/api/requirements"]
+        A_Doc["/api/documents"]
+        A_DlContent["GET /api/documents/id/content"]
+        A_Know["/api/knowledge"]
+        A_Audit["GET /api/audit"]
+    end
+
+    subgraph api_ai["AI"]
+        A_AIStat["GET /api/ai/status"]
+        A_Prior["GET /api/ai/dashboard-priorities"]
+        A_Tag["POST /api/ai/tag-document"]
+        A_Adv["POST /api/ai/ask-advanced"]
+        A_SSem["POST /api/ai/semantic-search"]
+        A_KEmb["POST /api/ai/embed-document/id"]
+        A_KSem["POST /api/ai/semantic-search-knowledge"]
+        A_VEmb["POST /api/ai/embed-knowledge/id"]
+        A_Agent["POST /api/ai/agent-scan"]
+    end
+
+    subgraph api_auth["Auth optional"]
+        A_Login["POST /api/auth/login"]
+        A_Me["GET /api/auth/me"]
+        A_Pwd["POST /api/auth/change-password"]
+        A_Users["/api/auth/users"]
+    end
+
+    W_Dash --> A_Prior
+    W_Dash --> A_Status
+    W_Req --> A_Req
+    W_Req --> A_Agent
+    W_Doc --> A_Doc
+    W_Doc --> A_Tag
+    W_Doc --> A_SSem
+    W_Doc --> A_DlContent
+    W_Vault --> A_Know
+    W_Asst --> A_SSem
+    W_Asst --> A_KSem
+    W_Set --> A_Audit
+    W_Set --> A_AIStat
+    W_Set --> A_Status
+    W_Auth --> A_Login
+    W_Auth --> A_Me
+    W_Auth --> A_Pwd
+    W_Auth --> A_Users

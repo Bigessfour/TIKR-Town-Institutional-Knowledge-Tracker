@@ -1,0 +1,22 @@
+C4Deployment
+title TIKR Deployment on Synology NAS
+
+Deployment_Node(nas, "Synology NAS", "Container Manager, shared folder") {
+    Deployment_Node(docker, "Docker host") {
+        Container(web_c, "tikr-web", "Blazor", "Port 8080")
+        Container(api_c, "tikr-api", "Minimal API", "Port 5000 to 8080")
+        Container(ollama_c, "tikr-ollama", "Ollama", "Port 11434")
+    }
+    Deployment_Node(vol, "Volumes") {
+        ContainerDb(data_vol, "tikr-data", "SQLite tikr.db plus uploaded files")
+        ContainerDb(ollama_vol, "ollama-models", "Pulled LLM weights")
+    }
+}
+
+Person(clerk, "Town Clerk", "Browser on LAN")
+
+Rel(clerk, web_c, "HTTPS", "8080")
+Rel(web_c, api_c, "TIKR_API_URL", "internal")
+Rel(api_c, data_vol, "Read/write", "/data mount")
+Rel(api_c, ollama_c, "OLLAMA_HOST", "internal")
+Rel(ollama_c, ollama_vol, "Model cache")

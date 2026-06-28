@@ -32,12 +32,12 @@ public static class TikrConfiguration
     }
 
     public static string? GetGrokApiKey(IConfiguration configuration) =>
-        configuration["GROK_API_KEY"];
+        configuration["GROK_API_KEY"] ?? configuration["XAI_API_KEY"];
 
     public static string GetGrokModel(IConfiguration configuration) =>
         configuration["AI:GrokModel"]
         ?? configuration["GROK_MODEL"]
-        ?? "grok-2-latest";
+        ?? "grok-3";
 
     public static bool IsAuthEnabled(IConfiguration configuration)
     {
@@ -76,6 +76,20 @@ public static class TikrConfiguration
     public static bool GetUseSyncfusionAgentTools(IConfiguration configuration) =>
         bool.TryParse(configuration["USE_SYNCFUSION_AGENT_TOOLS"], out var enabled) && enabled;
 
+    /// <summary>
+    /// When true (and agent tools enabled), Ollama orchestrates Syncfusion tool calls via Microsoft.Extensions.AI.
+    /// Requires Ollama at <see cref="GetOllamaHost"/> with a tool-capable chat model.
+    /// </summary>
+    public static bool GetUseSyncfusionAgentOrchestration(IConfiguration configuration) =>
+        GetUseSyncfusionAgentTools(configuration) &&
+        bool.TryParse(configuration["USE_SYNCFUSION_AGENT_ORCHESTRATION"], out var enabled) && enabled;
+
     public static string? GetAgentStorageKey(IConfiguration configuration) =>
         configuration["TIKR_AGENT_STORAGE_KEY"];
+
+    /// <summary>
+    /// Runtime Syncfusion license key (Blazor UI + Document SDK). Set via docker/.env, user-secrets, or CI secret — never commit.
+    /// </summary>
+    public static string? GetSyncfusionLicenseKey(IConfiguration configuration) =>
+        configuration["SYNCFUSION_LICENSE_KEY"];
 }

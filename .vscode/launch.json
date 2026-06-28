@@ -1,0 +1,21 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "dockerfile",
+      "request": "launch",
+      "name": "Docker DX: Build API",
+      "dockerfile": "docker/Dockerfile.api",
+      "contextPath": "${workspaceFolder}",
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "type": "dockerfile",
+      "request": "launch",
+      "name": "Docker DX: Build Web",
+      "dockerfile": "docker/Dockerfile.web",
+      "contextPath": "${workspaceFolder}",
+      "cwd": "${workspaceFolder}"
+    }
+  ]
+}

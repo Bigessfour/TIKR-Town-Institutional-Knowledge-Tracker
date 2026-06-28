@@ -3,9 +3,11 @@ using System.Net.Http.Json;
 using FluentAssertions;
 using TIKR.Api.Tests.Fixtures;
 using TIKR.Shared.DTOs;
+using TIKR.Shared.TestFixtures;
 
 namespace TIKR.Api.Tests.Endpoints;
 
+[Trait("Category", TestCategories.FullyTested)]
 public class AiSemanticEndpointTests : IClassFixture<AiStubWebApplicationFactory>
 {
     private readonly HttpClient _client;

@@ -71,6 +71,14 @@ jobs:
           echo "$response" | grep -qi "Wiley clerk memo"
           echo "$response" | grep -q '"usedSyncfusionTools":true'
 
+      - name: Licensed agent-scan integration tests
+        env:
+          SYNCFUSION_LICENSE_KEY: ${{ secrets.SYNCFUSION_LICENSE_KEY }}
+        run: |
+          if [ -z "$SYNCFUSION_LICENSE_KEY" ]; then exit 0; fi
+          dotnet test tests/TIKR.Api.Tests/TIKR.Api.Tests.csproj --configuration Release \
+            --filter "Category=SyncfusionLicensed" --no-restore
+
       - name: Tear down
         if: always()
         env:

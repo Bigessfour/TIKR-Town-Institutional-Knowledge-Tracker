@@ -11,17 +11,17 @@ Captured from [Syncfusion Getting Started](https://help.syncfusion.com/document-
 | **Storage Mode** for web APIs, stateless, scalable | **Yes** — `NasSyncfusionDocumentStorage` implements `IDocumentStorage` on the NAS file volume |
 | **In-Memory Mode** for desktop/console | No — clerk uploads are ephemeral API requests |
 | **Azure Blob / S3** storage backends | No — local disk via `IFileStorageService` |
-| **OpenAI** agent orchestration | **Deferred (10C-A3)** — use deterministic tool calls in A2; Ollama + `Microsoft.Extensions.AI` in A3 |
+| **OpenAI** agent orchestration | **Ollama + `Microsoft.Extensions.AI`** (10C-A3) when `USE_SYNCFUSION_AGENT_ORCHESTRATION=true`; deterministic A2 fallback |
 | **License** | Same `SYNCFUSION_LICENSE_KEY` as Blazor (Document SDK entitlement; no extra purchase) |
 
 ## Startup (required)
 
-Register the license before any Document SDK call (API `Program.cs`):
+Per [Syncfusion license registration](https://help.syncfusion.com/common/essential-studio/licensing/registering-license-keys), register **after** `builder.Build()` in each host’s `Program.cs` (before the HTTP pipeline or first Document SDK call). TIKR reads the key from `SYNCFUSION_LICENSE_KEY` (never hard-coded):
 
 ```csharp
-var licenseKey = builder.Configuration["SYNCFUSION_LICENSE_KEY"];
-if (!string.IsNullOrWhiteSpace(licenseKey))
-    Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense(licenseKey);
+var app = builder.Build();
+SyncfusionDocumentLicense.RegisterFromConfiguration(app.Configuration); // Api
+// Web: SyncfusionLicenseProvider.RegisterLicense(TikrConfiguration.GetSyncfusionLicenseKey(app.Configuration)!);
 ```
 
 ## Environment
@@ -30,18 +30,43 @@ if (!string.IsNullOrWhiteSpace(licenseKey))
 |----------|---------|
 | `SYNCFUSION_LICENSE_KEY` | Runtime Document SDK + Agent Tools license (docker/.env, user-secrets) |
 | `USE_SYNCFUSION_AGENT_TOOLS` | `true` → `SyncfusionDocumentAgentExtractionBackend`; `false` → stub (CI default) |
+| `USE_SYNCFUSION_AGENT_ORCHESTRATION` | `true` (requires agent tools + Ollama) → Ollama picks Syncfusion tools via `Microsoft.Extensions.AI` function calling; falls back to deterministic A2 |
 | `TIKR_AGENT_STORAGE_KEY` | Optional AES for persisted agent-scan blobs (A1) |
 | `SYNCFUSION_API_KEY` | MCP developer key only — not used at runtime |
 
 ## Phase 10C tool mapping
+
+**Coverage vs [Syncfusion product page](https://www.syncfusion.com/explore/ai-agent-tools-for-document-sdk/):** PDF/Word/Excel/PowerPoint clerk extraction + Office→PDF + PDF operations registered for orchestration. Security/redact/sign tools omitted. See [nas-agent-tools-setup.md](nas-agent-tools-setup.md).
 
 | Clerk flow | Syncfusion tool class | Mode |
 |------------|----------------------|------|
 | AI Scan PDF → requirement text | `PdfContentExtractionAgentTools.ExtractText` | Storage |
 | AI Scan PDF → table count | `DataExtractionAgentTools.ExtractTableAsJson` | Storage |
 | AI Scan Word → text | `WordImportExportAgentTools.GetText` | Storage |
+| AI Scan Excel → text | `OfficeToPdfAgentTools.ConvertExcelToPdf` → `ExtractText` | Storage |
+| AI Scan PowerPoint → text | `PresentationContentAgentTools.GetText` | Storage |
 | Plain `.txt` / `.csv` | TIKR `DocumentTextExtractionService` (no AgentTools) | — |
-| Future: agent picks tools | `DataExtractionAgentTools`, full tool registry | A3 + Ollama |
+| Ollama picks tools (A3) | Full clerk registry in `SyncfusionDocumentAgentToolRegistry` | Storage |
+
+## Phase 10C-A3 orchestration (Storage Mode + Ollama)
+
+Per [Syncfusion Getting Started — Storage Mode](https://help.syncfusion.com/document-processing/ai-agent-tools/getting-started):
+
+1. `NasSyncfusionDocumentStorage` implements `IDocumentStorage` on the NAS volume.
+2. `SyncfusionDocumentAgentToolRegistry` wraps `DocumentStorageManager` and registers clerk extraction tools as `AIFunction` via `AIFunctionFactory.Create`.
+3. `SyncfusionDocumentAgentOrchestrator` builds `ChatClientBuilder(...).UseFunctionInvocation()` over Ollama; system prompt instructs sequential tool use, JSON response.
+4. `SyncfusionDocumentAgentExtractor` tries orchestration first when enabled, then falls back to deterministic PDF/Word/table calls (A2).
+
+Enable on NAS:
+
+```bash
+USE_SYNCFUSION_AGENT_TOOLS=true
+USE_SYNCFUSION_AGENT_ORCHESTRATION=true
+SYNCFUSION_LICENSE_KEY=<Document SDK key>
+OLLAMA_HOST=http://ollama:11434
+```
+
+**Key paths:** `SyncfusionDocumentAgentToolRegistry.cs`, `SyncfusionDocumentAgentOrchestrator.cs`, `SyncfusionDocumentAgentExtractor.cs`
 
 ## NuGet (Infrastructure)
 
@@ -67,6 +92,8 @@ if (!string.IsNullOrWhiteSpace(licenseKey))
 | `clerk-memo.docx` | Syncfusion Word text extraction |
 
 ### Manual NAS checklist
+
+**Tracker (hardware not available yet):** [nas-agent-tools-setup.md](nas-agent-tools-setup.md) — coverage matrix vs Syncfusion product types + smoke-test log.
 
 ```bash
 cp docker/.env.example docker/.env

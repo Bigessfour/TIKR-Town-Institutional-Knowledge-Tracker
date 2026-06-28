@@ -1,0 +1,13 @@
+C4Context
+title TIKR System Context
+
+Person(clerk, "Town Clerk", "One-person municipal clerk in a small Colorado town")
+System(tikr, "TIKR", "Local-first institutional knowledge tracker on Synology NAS")
+System_Ext(ollama, "Ollama", "Local LLM chat and nomic-embed-text embeddings")
+System_Ext(grok, "xAI Grok", "Optional advanced reasoning when USE_GROK=true")
+System_Ext(syncfusion, "Syncfusion Document SDK", "Licensed PDF/Word agent tools when USE_SYNCFUSION_AGENT_TOOLS=true")
+
+Rel(clerk, tikr, "Uses via browser", "HTTPS")
+Rel(tikr, ollama, "Chat, tag, embed, agent orchestration", "HTTP")
+Rel(tikr, grok, "Ask Advanced AI only", "HTTPS")
+Rel(tikr, syncfusion, "Agent-scan extraction", "In-process SDK")

@@ -74,7 +74,7 @@ public static class DocumentUiMessages
     public static string BulkDelete(int count) => $"Deleted {count} document(s).";
     public static string BulkRetag(int count) => $"Re-tagged {count} document(s).";
     public static string SuggestionAccepted() => "Suggestion accepted.";
-    public static string DownloadPlaceholder() =>
-        "Download would stream the original file from NAS storage (API endpoint not yet implemented).";
+    public static string DownloadFailed() =>
+        "Download failed. Is the API running and is the file still on NAS storage?";
     public static string SemanticSearchFailed(string message) => $"Semantic search failed: {message}";
 }

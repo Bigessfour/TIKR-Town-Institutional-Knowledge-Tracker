@@ -8,9 +8,11 @@ using TIKR.Infrastructure.Tests.Helpers;
 using TIKR.Shared.DTOs;
 using TIKR.Shared.Entities;
 using TIKR.Shared.Enums;
+using TIKR.Shared.TestFixtures;
 
 namespace TIKR.Infrastructure.Tests.Services;
 
+[Trait("Category", TestCategories.FullyTested)]
 public class HybridAiServiceTests
 {
     private static readonly GrokService DisabledGrok = TestGrokServiceFactory.CreateDisabled();
@@ -135,13 +137,16 @@ public class HybridAiServiceTests
     }
 
     [Fact]
-    public async Task AskAdvancedAsync_ThrowsWhenGrokDisabled()
+    public async Task AskAdvancedAsync_FallsBackToOllamaWhenGrokDisabled()
     {
         await using var db = await TestDbContextFactory.CreateMigratedAsync();
-        var sut = CreateService(db, Mock.Of<IOllamaChatClientFactory>(), DisabledGrok);
+        var ollama = CreateOllamaFactory("Local fallback answer");
+        var sut = CreateService(db, ollama, DisabledGrok);
 
-        var act = async () => await sut.AskAdvancedAsync(new AskAdvancedRequest("hello", null));
-        await act.Should().ThrowAsync<InvalidOperationException>();
+        var result = await sut.AskAdvancedAsync(new AskAdvancedRequest("hello", null));
+
+        result.UsedGrok.Should().BeFalse();
+        result.Answer.Should().Be("Local fallback answer");
     }
 
     [Fact]
@@ -258,10 +263,12 @@ public class HybridAiServiceTests
             {
                 Content = new StringContent("""{ "choices": [] }""", System.Text.Encoding.UTF8, "application/json")
             }));
-        var sut = CreateService(db, Mock.Of<IOllamaChatClientFactory>(), grok);
+        var ollama = CreateOllamaFactory("Ollama after Grok miss");
+        var sut = CreateService(db, ollama, grok);
 
         var result = await sut.AskAdvancedAsync(new AskAdvancedRequest("Question?", null));
-        result.Answer.Should().Contain("Unable to get a response from Grok");
+        result.UsedGrok.Should().BeFalse();
+        result.Answer.Should().Be("Ollama after Grok miss");
     }
 
     [Fact]

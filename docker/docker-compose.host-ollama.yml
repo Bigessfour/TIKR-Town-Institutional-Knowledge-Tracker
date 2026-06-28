@@ -1,0 +1,19 @@
+# Use when host Ollama already binds localhost:11434 (common on dev Macs).
+# API/Web containers talk to host Ollama; the bundled ollama service is not started.
+#
+# Run:
+#   docker compose -f docker/docker-compose.yml \
+#     -f docker/docker-compose.host-ollama.yml \
+#     -f docker/docker-compose.dev-mac.yml \
+#     --env-file docker/.env up --build -d
+#
+# Or: Terminal → Run Task → "TIKR: Docker Compose Up (host Ollama override)"
+
+services:
+  ollama:
+    profiles: [bundled-ollama]
+
+  tikr-api:
+    depends_on: !reset []
+    environment:
+      OLLAMA_HOST: http://host.docker.internal:11434

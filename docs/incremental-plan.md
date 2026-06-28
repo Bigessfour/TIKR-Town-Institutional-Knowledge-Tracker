@@ -196,7 +196,7 @@ Repeat-safe checklist — safe to re-run anytime:
 
 ## Phase 10 — Requirements Manager + Document Agent
 
-**Status:** in progress — 10A + 10B + 10C **A1+A2** on `main`; **10C-D** in open [#36](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/36)
+**Status:** in progress — 10C **A1–A3 + document tool coverage** on branch; **10C-C** extraction badge in [#37](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/37)
 
 **Goal:** `/requirements` CRUD hub + incremental NAS-local document agent without breaking MVP grid.
 
@@ -205,8 +205,9 @@ Repeat-safe checklist — safe to re-run anytime:
 | **10A** Requirements grid MVP | done | [#30](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/30) |
 | **10B** MVP agent stub + AI Scan | done | [#31](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/31) |
 | **10C A1+A2** Agent storage, AES, Syncfusion Storage Mode extraction | done on `main` | [#35](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/35) |
-| **10C-D** E2E proof (fixtures, Playwright, licensed workflow) | open | [#36](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/36) |
-| **10C A3** Ollama + Microsoft Agent Framework tool loop | planned | — |
+| **10C-D** E2E proof (fixtures, Playwright, licensed workflow) | done on `main` | [#36](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/36) |
+| **10C A3** Ollama + Microsoft.Extensions.AI function loop over Storage Mode tools | done | `SyncfusionDocumentAgentOrchestrator`, `USE_SYNCFUSION_AGENT_ORCHESTRATION` |
+| **10C-F** Clerk document tool coverage (PDF ops, Word, Excel, PPT, Office→PDF registry + deterministic paths) | done | `SyncfusionDocumentAgentToolRegistry`, `feature/phase10c-document-tool-coverage` |
 
 **Key paths:** `src/TIKR.Web/Components/Pages/Requirements.razor`, `src/TIKR.Infrastructure/Services/DocumentAgentService.cs`
 

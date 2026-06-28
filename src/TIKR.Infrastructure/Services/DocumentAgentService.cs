@@ -66,7 +66,8 @@ public class DocumentAgentService(
         return ext switch
         {
             ".pdf" => 3,
-            ".xlsx" or ".csv" => 2,
+            ".xlsx" or ".xls" or ".csv" => 2,
+            ".ppt" or ".pptx" => 1,
             _ => 1
         };
     }

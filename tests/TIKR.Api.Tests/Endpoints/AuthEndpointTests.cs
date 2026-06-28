@@ -9,6 +9,7 @@ using TIKR.Shared.Entities;
 
 namespace TIKR.Api.Tests.Endpoints;
 
+[Trait("Category", TestCategories.FullyTested)]
 public class AuthEndpointTests : IClassFixture<AuthEnabledWebApplicationFactory>
 {
     private readonly HttpClient _client;

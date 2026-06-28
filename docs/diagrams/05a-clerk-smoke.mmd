@@ -1,0 +1,15 @@
+sequenceDiagram
+    autonumber
+    actor Clerk
+    participant Web as TIKR.Web
+    participant API as TIKR.Api
+
+    Clerk->>Web: GET /
+    Web->>API: GET /api/system/local-status
+    API-->>Web: town, storage label, db mtime, Ollama flag
+    Web-->>Clerk: Dashboard + Synology footer
+
+    Clerk->>Web: Shift+/ keyboard shortcut
+    Web-->>Clerk: Keyboard shortcuts dialog
+
+    Note over Clerk,Web: Playwright: tests/e2e/clerk-smoke.spec.ts

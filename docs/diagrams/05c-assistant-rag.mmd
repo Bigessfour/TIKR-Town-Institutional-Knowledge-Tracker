@@ -1,0 +1,19 @@
+sequenceDiagram
+    autonumber
+    actor Clerk
+    participant Web as TIKR.Web
+    participant API as TIKR.Api
+    participant AI as HybridAiService
+    participant Ollama as Ollama
+
+    Clerk->>Web: Send message on /assistant
+    Web->>API: POST /api/ai/semantic-search query
+    API->>AI: SemanticSearchDocumentsAsync
+    AI->>Ollama: Embed query nomic-embed-text
+    AI-->>API: Top-K document snippets
+    Web->>API: POST /api/ai/semantic-search-knowledge query
+    API->>AI: SemanticSearchKnowledgeAsync
+    AI-->>API: Top-K vault snippets
+    Web->>Ollama: Chat with RAG context prepended
+    Ollama-->>Web: Assistant reply
+    Web-->>Clerk: SfAIAssistView message

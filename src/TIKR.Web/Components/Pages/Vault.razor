@@ -1,6 +1,5 @@
 @page "/vault"
 @rendermode InteractiveServer
-@implements IDisposable
 @inject TikrApiClient Api
 @inject IJSRuntime JS
 @inject ClerkToastService Toast
@@ -154,15 +153,11 @@
             <ContentTemplate>
                 <div class="voice-section">
                     <div class="voice-recorder">
-                        @if (!IsRecording)
-                        {
-                            <SfButton CssClass="tikr-action-btn voice-record-btn" IconCss="e-icons e-microphone" Content="Start Voice Note" OnClick="StartRecording" />
-                        }
-                        else
-                        {
-                            <SfButton CssClass="tikr-action-btn voice-stop-btn" IconCss="e-icons e-stop" Content="@($"Stop & Transcribe ({RecordingSeconds} s)")" OnClick="StopRecording" />
-                            <div class="recording-indicator">Recording... Speak clearly for the new clerk.</div>
-                        }
+                        <SfSpeechToText @bind-Transcript="PendingTranscription"
+                                        Language="en-US"
+                                        AllowInterimResults="true"
+                                        ButtonSettings="@(new SpeechToTextButtonSettings { Text = "Start Voice Note", StopStateText = "Stop & Transcribe" })" />
+                        <p class="voice-help">Speak clearly for the new clerk. Edit the transcript below before saving.</p>
                     </div>
 
                     @if (!string.IsNullOrEmpty(PendingTranscription))
@@ -224,9 +219,6 @@
     private KnowledgeEntryDto? SelectedEntry;
     private string EditorContent = "";
 
-    private bool IsRecording;
-    private int RecordingSeconds;
-    private System.Timers.Timer? _timer;
     private string PendingTranscription = "";
 
     private List<KnowledgeEntryDto> HowToEntries => VaultCopyBuilder.FilterCategory(_allEntries, KnowledgeCategory.HowTo).ToList();
@@ -330,37 +322,6 @@
         await LoadEntriesAsync();
     }
 
-    // Voice simulation
-    private void StartRecording()
-    {
-        IsRecording = true;
-        RecordingSeconds = 0;
-        PendingTranscription = "";
-
-        DisposeTimer();
-        _timer = new System.Timers.Timer(1000);
-        _timer.Elapsed += (s, e) => { RecordingSeconds++; InvokeAsync(StateHasChanged); };
-        _timer.Start();
-    }
-
-    private void StopRecording()
-    {
-        IsRecording = false;
-        DisposeTimer();
-
-        // Simulate transcription
-        PendingTranscription = VaultVoiceNoteSimulator.BuildSimulatedTranscription(DateTime.Now);
-        StateHasChanged();
-    }
-
-    private void DisposeTimer()
-    {
-        if (_timer is null) return;
-        _timer.Stop();
-        _timer.Dispose();
-        _timer = null;
-    }
-
     private async Task SaveVoiceNoteAsync()
     {
         if (string.IsNullOrWhiteSpace(PendingTranscription)) return;
@@ -387,11 +348,6 @@
     {
         RequestDeleteVoiceNote(note);
         return Task.CompletedTask;
-    }
-
-    public void Dispose()
-    {
-        DisposeTimer();
     }
 
     // Copy everything

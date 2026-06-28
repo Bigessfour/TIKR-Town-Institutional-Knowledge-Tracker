@@ -153,6 +153,35 @@ docker exec -it tikr-ollama ollama pull llama3.2:3b
 docker exec -it tikr-ollama ollama pull nomic-embed-text
 ```
 
+### Production (Synology DS225+ / GHCR)
+
+After a release tag (e.g. `v1.0.0`) publishes images to GHCR:
+
+```bash
+cp docker/.env.example docker/.env   # SYNCFUSION_LICENSE_KEY + /volume1 paths
+mkdir -p /volume1/tikr/data /volume1/tikr/ollama
+docker compose -f docker/docker-compose.prod.yml --env-file docker/.env up -d --pull always
+./validate-prod.sh
+```
+
+Before the first GHCR release, build from source with `docker/docker-compose.yml` instead. See [docker/README.md](docker/README.md).
+
+### Windows self-contained publish (optional VM)
+
+```bash
+./scripts/publish-tikr.sh
+# Outputs: publish/TIKR.Api/TIKR.Api.exe and publish/TIKR.Web/TIKR.Web.exe
+```
+
+Run **Api** first, then **Web** in separate terminals (not a single combined EXE).
+
+### Demo scripts
+
+| Audience | Doc |
+|----------|-----|
+| Code Platoon (developers) | [docs/demo-code-platoon.md](docs/demo-code-platoon.md) |
+| Deb (clerk walkthrough) | [docs/demo-deb.md](docs/demo-deb.md) |
+
 ## Synology NAS Deployment
 
 1. Copy the repo to your NAS or clone via SSH.
@@ -214,7 +243,12 @@ In Development, the app also loads `.env` and `docker/.env` from the repo root i
 | `OLLAMA_CHAT_MODEL` | API | `llama3.2:3b` | Chat model name |
 | `USE_GROK` | API | `false` | Enable xAI Grok for advanced AI |
 | `GROK_API_KEY` | API | — | xAI API key (required if USE_GROK=true) |
-| `GROK_MODEL` | API | `grok-2-latest` | Grok model name |
+| `GROK_MODEL` | API | `grok-3` | Grok model name |
+| `USE_SYNCFUSION_AGENT_TOOLS` | API | `false` | Enable Syncfusion Document SDK agent-scan (PDF/Word/Excel/PPT) |
+| `USE_SYNCFUSION_AGENT_ORCHESTRATION` | API | `false` | Ollama tool loop over Syncfusion tools (requires agent tools + Ollama) |
+| `TIKR_AGENT_STORAGE_KEY` | API | — | Optional AES-256-GCM for agent-scan blobs on NAS |
+
+Document SDK setup: [docs/sf-document-agent-tools.md](docs/sf-document-agent-tools.md) · NAS smoke tracker: [docs/nas-agent-tools-setup.md](docs/nas-agent-tools-setup.md)
 
 ### Optional multi-user auth
 

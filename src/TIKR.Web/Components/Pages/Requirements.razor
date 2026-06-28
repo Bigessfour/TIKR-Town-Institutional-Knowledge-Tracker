@@ -64,6 +64,12 @@
 @if (!string.IsNullOrWhiteSpace(_agentMessage))
 {
     <div class="ai-suggestion-banner mb-3">
+        @if (_lastAgentResult is not null)
+        {
+            <span class="extraction-badge @RequirementWorkflowHelpers.GetExtractionBadgeCssClass(_lastAgentResult)">
+                @RequirementWorkflowHelpers.GetExtractionSourceLabel(_lastAgentResult)
+            </span>
+        }
         <strong>@_agentMessage</strong>
         <div class="banner-body">Review the pre-filled requirement below, then save or edit before filing.</div>
     </div>
@@ -168,6 +174,7 @@
     private Guid? _editingId;
     private string? _error;
     private string? _agentMessage;
+    private DocumentAgentResult? _lastAgentResult;
     private DateTime _formDueDate = DateTime.Today.AddMonths(1);
     private readonly RequirementFormModel _form = new();
     private bool _confirmDeleteVisible;
@@ -340,6 +347,7 @@
     {
         _error = null;
         _agentMessage = null;
+        _lastAgentResult = null;
         var file = e.File;
         if (file is null)
             return;
@@ -358,6 +366,7 @@
                 return;
             }
 
+            _lastAgentResult = result;
             _agentMessage = RequirementWorkflowHelpers.FormatAgentScanMessage(result);
             OpenCreateDialogFromDraft(RequirementWorkflowHelpers.ApplyAgentExtraction(result));
         }

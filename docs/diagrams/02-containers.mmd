@@ -1,0 +1,18 @@
+C4Container
+title TIKR Containers (docker-compose)
+
+Person(clerk, "Town Clerk", "Browser on clerk workstation or NAS LAN")
+
+System_Boundary(tikr_boundary, "TIKR on Synology NAS") {
+    Container(web, "TIKR.Web", "Blazor Interactive Server", ".NET 10, Syncfusion UI")
+    Container(api, "TIKR.Api", "Minimal Web API", ".NET 10, EF Core, Hybrid AI")
+    ContainerDb(db, "SQLite or PostgreSQL", "EF Core TikrDbContext", "Requirements, Documents, Knowledge, Audit")
+    Container(fs, "Local file storage", "IFileStorageService", "/data/documents, agent-scans/")
+    Container(ai, "Ollama", "ollama/ollama", "llama3.2:3b, nomic-embed-text")
+}
+
+Rel(clerk, web, "HTTPS", ":8080")
+Rel(web, api, "TIKR_API_URL", "HTTP + optional JWT")
+Rel(api, db, "Read/write", "EF Core")
+Rel(api, fs, "Upload/delete files", "Volume mount")
+Rel(api, ai, "HybridAiService, embeddings", "OLLAMA_HOST")

@@ -49,10 +49,9 @@ public class DocumentSelectionStateTests
     }
 
     [Fact]
-    public void VaultVoiceNoteSimulator_BuildsTitleAndTranscription()
+    public void VaultVoiceNoteSimulator_BuildsDefaultTitle()
     {
         var when = new DateTime(2026, 6, 28, 14, 30, 0);
         VaultVoiceNoteSimulator.BuildDefaultTitle(when).Should().Contain("Jun 28");
-        VaultVoiceNoteSimulator.BuildSimulatedTranscription(when).Should().Contain("county assessor");
     }
 }
