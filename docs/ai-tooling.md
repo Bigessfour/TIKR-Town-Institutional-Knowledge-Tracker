@@ -59,6 +59,17 @@ Configured servers:
 | `sf-blazor-mcp` | Syncfusion Blazor Assistant — UI builder, component API, layouts, theming |
 | `microsoft-learn` | Authoritative .NET 10, Blazor, EF Core, `IChatClient`, Docker docs |
 | `ollama` | Test prompts against local Ollama (`llama3.2:3b`, etc.) |
+| `tikr-rag-mcp` | **Mandatory before code** — semantic search over repo (`search_knowledge`); `refresh_index` after changes |
+
+**Setup tikr-rag-mcp:**
+
+```bash
+./scripts/setup-cursor-mcp.sh   # creates .venv, installs requests, writes .cursor/mcp.json
+ollama pull nomic-embed-text    # embedding model for index
+.venv/bin/python3 scripts/update_tikr_rag_index.py   # initial / refresh index
+```
+
+**Agent workflow:** call `search_knowledge` before implementing; run `update_tikr_rag_index.py` after large merges or doc updates. Index lives in `.rag_index/` (gitignored).
 
 **Invoke in Cursor:**
 

@@ -29,6 +29,9 @@ coverage/
 # Local RAG index (tikr-rag-mcp)
 .rag_index/
 
+# Python venv for tikr-rag-mcp
+.venv/
+
 # User-specific files
 *.rsuser
 *.suo

@@ -7,6 +7,12 @@ alwaysApply: true
 
 Before substantial work, read [AGENTS.md](../../AGENTS.md) and the active phase in [docs/incremental-plan.md](../../docs/incremental-plan.md).
 
+## RAG (required before code)
+
+1. **`tikr-rag-mcp` → `search_knowledge`** — query the repo for existing patterns, DTOs, and docs relevant to the task.
+2. If index is stale or missing, run `.venv/bin/python3 scripts/update_tikr_rag_index.py` or MCP `refresh_index`.
+3. Do not write new code until RAG results are reviewed (or note "no hits" explicitly).
+
 ## Workflow
 
 - Branch from `main` (`feature/*`, `fix/*`); do not commit directly to `main`.

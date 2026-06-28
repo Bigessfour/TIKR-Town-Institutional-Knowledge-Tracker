@@ -66,9 +66,24 @@ Versions pinned in [skills-lock.json](skills-lock.json). Priority skills: schedu
 
 ```bash
 cp .cursor/mcp.json.example .cursor/mcp.json
+./scripts/setup-cursor-mcp.sh   # writes .cursor/mcp.json with tikr-rag-mcp + .venv python3
 ```
 
-Keep ≤3–4 active MCP servers. See [docs/ai-tooling.md](docs/ai-tooling.md) for `sf-blazor-mcp`, Microsoft Learn, Ollama.
+Keep ≤4 active MCP servers. See [docs/ai-tooling.md](docs/ai-tooling.md) for `sf-blazor-mcp`, Microsoft Learn, Ollama, **tikr-rag-mcp**.
+
+## RAG (mandatory before code changes)
+
+Before **any** substantial implementation (new files, API endpoints, Blazor pages, refactors):
+
+1. Ensure Ollama is running (`OLLAMA_HOST`, default `http://localhost:11434`) with `nomic-embed-text` pulled.
+2. Call **`tikr-rag-mcp` → `search_knowledge`** with a query describing the task (patterns, paths, prior art).
+3. After merging or large local edits, run:
+   ```bash
+   .venv/bin/python3 scripts/update_tikr_rag_index.py
+   ```
+   Or MCP **`refresh_index`**.
+
+Agents must cite or apply RAG hits (file paths) in their plan — do not invent APIs or duplicate existing helpers.
 
 ## Code Conventions
 
