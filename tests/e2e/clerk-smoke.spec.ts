@@ -12,4 +12,11 @@ test.describe('TIKR clerk smoke', () => {
     await expect(page.getByRole('heading', { name: 'Requirements Manager' })).toBeVisible();
     await expect(page.getByRole('button', { name: /Print council packet/i })).toBeVisible();
   });
+
+  test('keyboard shortcut opens help dialog', async ({ page }) => {
+    await page.goto('/');
+    await page.keyboard.press('Shift+/');
+    await expect(page.getByRole('dialog', { name: 'Keyboard shortcuts' })).toBeVisible();
+    await expect(page.getByText('Go to Requirements')).toBeVisible();
+  });
 });

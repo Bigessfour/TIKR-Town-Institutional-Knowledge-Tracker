@@ -1,5 +1,6 @@
 @rendermode InteractiveServer
 @inject IJSRuntime JS
+@inject NavigationManager Navigation
 @implements IAsyncDisposable
 
 <SfDialog @bind-Visible="_visible" Width="480px" IsModal="true" ShowCloseIcon="true" Header="Keyboard shortcuts">
@@ -37,6 +38,13 @@
     {
         _visible = true;
         return InvokeAsync(StateHasChanged);
+    }
+
+    [JSInvokable]
+    public Task OnNavigateRequested(string path)
+    {
+        Navigation.NavigateTo(path);
+        return Task.CompletedTask;
     }
 
     public async ValueTask DisposeAsync()
