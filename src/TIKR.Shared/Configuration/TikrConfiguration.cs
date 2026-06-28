@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Configuration;
+using TIKR.Shared.Constants;
 
 namespace TIKR.Shared.Configuration;
 
@@ -37,4 +38,38 @@ public static class TikrConfiguration
         configuration["AI:GrokModel"]
         ?? configuration["GROK_MODEL"]
         ?? "grok-2-latest";
+
+    public static bool IsAuthEnabled(IConfiguration configuration)
+    {
+        if (bool.TryParse(configuration["TIKR_AUTH_ENABLED"], out var explicitEnabled))
+            return explicitEnabled;
+
+        var email = GetAdminBootstrapEmail(configuration);
+        var password = GetAdminBootstrapPassword(configuration);
+        return !string.IsNullOrWhiteSpace(email) && !string.IsNullOrWhiteSpace(password);
+    }
+
+    public static string? GetAdminBootstrapEmail(IConfiguration configuration) =>
+        configuration["TIKR_ADMIN_EMAIL"];
+
+    public static string? GetAdminBootstrapPassword(IConfiguration configuration) =>
+        configuration["TIKR_ADMIN_PASSWORD"];
+
+    public static string GetJwtSigningKey(IConfiguration configuration)
+    {
+        var key = configuration["TIKR_JWT_SIGNING_KEY"];
+        if (!string.IsNullOrWhiteSpace(key))
+            return key;
+
+        if (IsAuthEnabled(configuration))
+            throw new InvalidOperationException(
+                "TIKR_JWT_SIGNING_KEY is required when authentication is enabled.");
+
+        return TikrAuthDefaults.DevDisabledJwtSigningKey;
+    }
+
+    public static int GetJwtExpirationHours(IConfiguration configuration) =>
+        int.TryParse(configuration["TIKR_JWT_EXPIRATION_HOURS"], out var hours) && hours > 0
+            ? hours
+            : 8;
 }

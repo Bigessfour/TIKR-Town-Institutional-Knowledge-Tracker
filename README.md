@@ -89,7 +89,7 @@ docker compose -f docker/docker-compose.yml up --build
 dotnet test TIKR.sln --settings coverlet.runsettings --collect:"XPlat Code Coverage"
 ```
 
-See **[tests/README.md](tests/README.md)** for the coverage policy (90% target; CI floor ramps up over time). Current suite: **63 tests** across Shared, Infrastructure, Api integration, and Web (bUnit).
+See **[tests/README.md](tests/README.md)** for the coverage policy (90% target; CI floor ramps up over time). Current suite: **213 tests** across Shared, Infrastructure, Api integration, and Web (bUnit).
 
 ## Local Development (detailed)
 
@@ -159,7 +159,7 @@ docker exec -it tikr-ollama ollama pull nomic-embed-text
 2. Open **Container Manager** → **Project** → **Create**.
 3. Set path to the repo and compose file: `docker/docker-compose.yml`.
 4. Map the `tikr-data` volume to a shared folder (e.g. `/volume1/tikr/data`).
-5. Create `docker/.env` from `docker/.env.example` with your Syncfusion license key.
+5. Create `docker/.env` from `docker/.env.example` with your Syncfusion license key (and optional auth bootstrap vars — see [Environment Variables](#optional-multi-user-auth)).
 6. Deploy and pull Ollama models (see above).
 
 All data (SQLite DB + uploaded documents) persists in the `/data` volume.
@@ -215,6 +215,33 @@ In Development, the app also loads `.env` and `docker/.env` from the repo root i
 | `USE_GROK` | API | `false` | Enable xAI Grok for advanced AI |
 | `GROK_API_KEY` | API | — | xAI API key (required if USE_GROK=true) |
 | `GROK_MODEL` | API | `grok-2-latest` | Grok model name |
+
+### Optional multi-user auth
+
+Auth is **off by default** (single-clerk open access). Set all three bootstrap variables in `docker/.env` to enable login on both **tikr-api** and **tikr-web** (Compose `env_file` applies to both). Example:
+
+```bash
+TIKR_ADMIN_EMAIL=clerk@yourtown.gov
+TIKR_ADMIN_PASSWORD=your-strong-bootstrap-password
+TIKR_JWT_SIGNING_KEY=your-local-hmac-secret-at-least-32-characters
+```
+
+| Variable | Service | Description |
+|----------|---------|-------------|
+| `TIKR_ADMIN_EMAIL` | API + Web | First admin account email |
+| `TIKR_ADMIN_PASSWORD` | API + Web | Initial admin password (change after first login) |
+| `TIKR_JWT_SIGNING_KEY` | API + Web | HMAC secret for API JWTs (≥32 chars) |
+| `TIKR_AUTH_ENABLED` | API + Web | Optional override (`true` / `false`) |
+
+Flow: Blazor login → `POST /api/auth/login` → JWT in HttpOnly cookie → protected `/api/*` routes. Roles: `Admin` (user management), `Clerk` (full workflows). See [docs/architecture.md](docs/architecture.md).
+
+**Manual smoke test (auth enabled):**
+
+1. Uncomment/set bootstrap vars in `docker/.env` (use a strong password and random ≥32-char signing key).
+2. `docker compose -f docker/docker-compose.yml up --build`
+3. Open Web → redirect to `/login` → sign in with `TIKR_ADMIN_EMAIL` / `TIKR_ADMIN_PASSWORD`.
+4. Confirm `/dashboard` loads; create a requirement; check `/api/audit` shows your email as `UserId`.
+5. As Admin, open `/settings/users` → add a Clerk user → sign out → sign in as Clerk.
 
 ## Features (v1 Scaffold)
 

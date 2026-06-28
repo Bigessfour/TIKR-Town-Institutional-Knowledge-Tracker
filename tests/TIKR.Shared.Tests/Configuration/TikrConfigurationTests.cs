@@ -1,6 +1,8 @@
 using FluentAssertions;
 using Microsoft.Extensions.Configuration;
 using TIKR.Shared.Configuration;
+using TIKR.Shared.Constants;
+using TIKR.Shared.TestFixtures;
 
 namespace TIKR.Shared.Tests.Configuration;
 
@@ -128,5 +130,101 @@ public class TikrConfigurationTests
         {
             ["GROK_MODEL"] = "grok-3"
         })).Should().Be("grok-3");
+    }
+
+    [Fact]
+    public void IsAuthEnabled_TrueWhenAdminBootstrapCredsPresent()
+    {
+        TikrConfiguration.IsAuthEnabled(BuildConfig(new Dictionary<string, string?>
+        {
+            ["TIKR_ADMIN_EMAIL"] = "admin@town.gov",
+            ["TIKR_ADMIN_PASSWORD"] = TestAuthFixtures.BootstrapPassword
+        })).Should().BeTrue();
+    }
+
+    [Fact]
+    public void IsAuthEnabled_FalseWhenExplicitlyDisabled()
+    {
+        TikrConfiguration.IsAuthEnabled(BuildConfig(new Dictionary<string, string?>
+        {
+            ["TIKR_AUTH_ENABLED"] = "false",
+            ["TIKR_ADMIN_EMAIL"] = "admin@town.gov",
+            ["TIKR_ADMIN_PASSWORD"] = TestAuthFixtures.BootstrapPassword
+        })).Should().BeFalse();
+    }
+
+    [Fact]
+    public void IsAuthEnabled_FalseWhenNoCreds()
+    {
+        TikrConfiguration.IsAuthEnabled(BuildConfig([])).Should().BeFalse();
+    }
+
+    [Fact]
+    public void GetJwtSigningKey_ThrowsWhenAuthEnabledAndKeyMissing()
+    {
+        var act = () => TikrConfiguration.GetJwtSigningKey(BuildConfig(new Dictionary<string, string?>
+        {
+            ["TIKR_ADMIN_EMAIL"] = "admin@town.gov",
+            ["TIKR_ADMIN_PASSWORD"] = TestAuthFixtures.BootstrapPassword
+        }));
+
+        act.Should().Throw<InvalidOperationException>();
+    }
+
+    [Fact]
+    public void GetJwtSigningKey_ReturnsConfiguredKey()
+    {
+        TikrConfiguration.GetJwtSigningKey(BuildConfig(new Dictionary<string, string?>
+        {
+            ["TIKR_JWT_SIGNING_KEY"] = TestAuthFixtures.JwtSigningKey
+        })).Should().Be(TestAuthFixtures.JwtSigningKey);
+    }
+
+    [Fact]
+    public void GetJwtSigningKey_ReturnsDevFallbackWhenAuthDisabled()
+    {
+        TikrConfiguration.GetJwtSigningKey(BuildConfig([]))
+            .Should().Be(TikrAuthDefaults.DevDisabledJwtSigningKey);
+    }
+
+    [Fact]
+    public void GetAdminBootstrapEmail_ReturnsValue()
+    {
+        TikrConfiguration.GetAdminBootstrapEmail(BuildConfig(new Dictionary<string, string?>
+        {
+            ["TIKR_ADMIN_EMAIL"] = "clerk@town.gov"
+        })).Should().Be("clerk@town.gov");
+    }
+
+    [Fact]
+    public void GetAdminBootstrapPassword_ReturnsValue()
+    {
+        TikrConfiguration.GetAdminBootstrapPassword(BuildConfig(new Dictionary<string, string?>
+        {
+            ["TIKR_ADMIN_PASSWORD"] = TestAuthFixtures.BootstrapPassword
+        })).Should().Be(TestAuthFixtures.BootstrapPassword);
+    }
+
+    [Fact]
+    public void IsAuthEnabled_TrueWhenExplicitlyEnabled()
+    {
+        TikrConfiguration.IsAuthEnabled(BuildConfig(new Dictionary<string, string?>
+        {
+            ["TIKR_AUTH_ENABLED"] = "true"
+        })).Should().BeTrue();
+    }
+
+    [Theory]
+    [InlineData(null, 8)]
+    [InlineData("24", 24)]
+    [InlineData("0", 8)]
+    [InlineData("-1", 8)]
+    public void GetJwtExpirationHours_UsesDefaultOrOverride(string? hours, int expected)
+    {
+        var values = new Dictionary<string, string?>();
+        if (hours is not null)
+            values["TIKR_JWT_EXPIRATION_HOURS"] = hours;
+
+        TikrConfiguration.GetJwtExpirationHours(BuildConfig(values)).Should().Be(expected);
     }
 }

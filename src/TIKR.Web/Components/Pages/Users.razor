@@ -1,0 +1,121 @@
+@page "/settings/users"
+@rendermode InteractiveServer
+@attribute [Authorize(Policy = "AdminOnly")]
+@inject TikrApiClient Api
+
+<div class="page-header">
+    <h2>Users</h2>
+    <p>Manage clerk accounts for this town</p>
+</div>
+
+<div class="mb-3">
+    <SfButton CssClass="e-primary" IsPrimary="true" OnClick="OpenCreateDialog">Add user</SfButton>
+</div>
+
+@if (!string.IsNullOrWhiteSpace(_error))
+{
+    <div class="login-error mb-3">@_error</div>
+}
+
+<SfGrid DataSource="_users" TValue="UserSummaryDto" AllowPaging="true">
+    <GridColumns>
+        <GridColumn Field="@nameof(UserSummaryDto.Email)" HeaderText="Email" Width="220" />
+        <GridColumn Field="@nameof(UserSummaryDto.DisplayName)" HeaderText="Name" Width="160" />
+        <GridColumn HeaderText="Role" Width="100">
+            <Template>
+                @{
+                    var user = (UserSummaryDto)context;
+                }
+                @(user.Roles.FirstOrDefault() ?? "—")
+            </Template>
+        </GridColumn>
+        <GridColumn Field="@nameof(UserSummaryDto.IsActive)" HeaderText="Active" Width="90" DisplayAsCheckBox="true" />
+        <GridColumn HeaderText="Actions" Width="140">
+            <Template>
+                @{
+                    var user = (UserSummaryDto)context;
+                }
+                <SfButton CssClass="e-small" OnClick="@(() => ToggleActiveAsync(user))">
+                    @(user.IsActive ? "Disable" : "Enable")
+                </SfButton>
+            </Template>
+        </GridColumn>
+    </GridColumns>
+</SfGrid>
+
+<SfDialog @bind-Visible="_showDialog" Width="420px" IsModal="true" ShowCloseIcon="true" Header="Add user">
+    <DialogTemplates>
+        <Content>
+            <EditForm Model="_createModel" OnValidSubmit="CreateUserAsync">
+                <DataAnnotationsValidator />
+                <SfDataForm Model="_createModel" ColumnCount="1" Width="100%">
+                    <FormItems>
+                        <FormItem Field="@nameof(CreateUserFormModel.Email)" LabelText="Email" />
+                        <FormItem Field="@nameof(CreateUserFormModel.DisplayName)" LabelText="Display name" />
+                        <FormItem Field="@nameof(CreateUserFormModel.Password)" LabelText="Temporary password">
+                            <Template>
+                                <SfTextBox @bind-Value="_createModel.Password" Type="InputType.Password" />
+                            </Template>
+                        </FormItem>
+                        <FormItem Field="@nameof(CreateUserFormModel.Role)" LabelText="Role">
+                            <Template>
+                                <SfDropDownList TValue="string" TItem="string" DataSource="_roles" @bind-Value="_createModel.Role" />
+                            </Template>
+                        </FormItem>
+                    </FormItems>
+                </SfDataForm>
+                <div class="mt-3">
+                    <SfButton Type="ButtonType.Submit" CssClass="e-primary" IsPrimary="true">Create</SfButton>
+                </div>
+            </EditForm>
+        </Content>
+    </DialogTemplates>
+</SfDialog>
+
+@code {
+    private List<UserSummaryDto> _users = [];
+    private readonly CreateUserFormModel _createModel = new();
+    private readonly List<string> _roles = [TikrRoles.Admin, TikrRoles.Clerk];
+    private bool _showDialog;
+    private string? _error;
+
+    protected override async Task OnInitializedAsync() => await LoadUsersAsync();
+
+    private async Task LoadUsersAsync()
+    {
+        _users = await Api.GetUsersAsync();
+    }
+
+    private void OpenCreateDialog()
+    {
+        _createModel.Email = string.Empty;
+        _createModel.DisplayName = null;
+        _createModel.Password = string.Empty;
+        _createModel.Role = TikrRoles.Clerk;
+        _showDialog = true;
+    }
+
+    private async Task CreateUserAsync()
+    {
+        _error = null;
+        var created = await Api.CreateUserAsync(new CreateUserRequest(
+            _createModel.Email,
+            _createModel.Password,
+            _createModel.DisplayName,
+            _createModel.Role));
+        if (created is null)
+        {
+            _error = "Could not create user. Check email and password requirements.";
+            return;
+        }
+
+        _showDialog = false;
+        await LoadUsersAsync();
+    }
+
+    private async Task ToggleActiveAsync(UserSummaryDto user)
+    {
+        await Api.UpdateUserAsync(user.Id, new UpdateUserRequest(!user.IsActive, null, null));
+        await LoadUsersAsync();
+    }
+}

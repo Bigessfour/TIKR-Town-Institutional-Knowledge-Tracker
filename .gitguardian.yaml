@@ -1,0 +1,7 @@
+# GitGuardian / ggshield — align with .gitleaks.toml (tests + env template are placeholders).
+version: 2
+
+secret:
+  ignored_paths:
+    - tests/**
+    - docker/.env.example

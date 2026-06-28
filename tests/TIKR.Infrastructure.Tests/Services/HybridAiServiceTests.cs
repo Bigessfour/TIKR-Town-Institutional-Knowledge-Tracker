@@ -253,7 +253,7 @@ public class HybridAiServiceTests
     {
         await using var db = await TestDbContextFactory.CreateMigratedAsync();
         var grok = TestGrokServiceFactory.Create(
-            new Dictionary<string, string?> { ["USE_GROK"] = "true", ["GROK_API_KEY"] = "xai-key" },
+            new Dictionary<string, string?> { ["USE_GROK"] = "true", ["GROK_API_KEY"] = "unit-test-grok-key-not-a-real-credential" },
             new DelegatingHandlerStub(_ => new HttpResponseMessage(System.Net.HttpStatusCode.OK)
             {
                 Content = new StringContent("""{ "choices": [] }""", System.Text.Encoding.UTF8, "application/json")
@@ -270,7 +270,7 @@ public class HybridAiServiceTests
         await using var db = await TestDbContextFactory.CreateMigratedAsync();
         string? capturedBody = null;
         var grok = TestGrokServiceFactory.Create(
-            new Dictionary<string, string?> { ["USE_GROK"] = "true", ["GROK_API_KEY"] = "xai-key" },
+            new Dictionary<string, string?> { ["USE_GROK"] = "true", ["GROK_API_KEY"] = "unit-test-grok-key-not-a-real-credential" },
             new DelegatingHandlerStub(req =>
             {
                 capturedBody = req.Content!.ReadAsStringAsync().GetAwaiter().GetResult();
@@ -338,7 +338,7 @@ public class HybridAiServiceTests
             new Dictionary<string, string?>
             {
                 ["USE_GROK"] = "true",
-                ["GROK_API_KEY"] = "xai-key"
+                ["GROK_API_KEY"] = "unit-test-grok-key-not-a-real-credential"
             },
             new DelegatingHandlerStub(_ => new HttpResponseMessage(System.Net.HttpStatusCode.OK)
             {

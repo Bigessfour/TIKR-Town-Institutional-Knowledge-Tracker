@@ -16,7 +16,7 @@ public class GrokServiceTests
         var disabled = CreateService(new Dictionary<string, string?>
         {
             ["USE_GROK"] = "false",
-            ["GROK_API_KEY"] = "xai-key"
+            ["GROK_API_KEY"] = "unit-test-grok-key-not-a-real-credential"
         });
         disabled.IsEnabled.Should().BeFalse();
 
@@ -30,7 +30,7 @@ public class GrokServiceTests
         var enabled = CreateService(new Dictionary<string, string?>
         {
             ["USE_GROK"] = "true",
-            ["GROK_API_KEY"] = "xai-key"
+            ["GROK_API_KEY"] = "unit-test-grok-key-not-a-real-credential"
         });
         enabled.IsEnabled.Should().BeTrue();
     }
@@ -63,7 +63,7 @@ public class GrokServiceTests
         var sut = CreateService(new Dictionary<string, string?>
         {
             ["USE_GROK"] = "true",
-            ["GROK_API_KEY"] = "xai-key"
+            ["GROK_API_KEY"] = "unit-test-grok-key-not-a-real-credential"
         }, handler);
 
         (await sut.CompleteAsync("What is TABOR?")).Should().Be("Grok answer");
@@ -78,7 +78,7 @@ public class GrokServiceTests
         var sut = CreateService(new Dictionary<string, string?>
         {
             ["USE_GROK"] = "true",
-            ["GROK_API_KEY"] = "xai-key"
+            ["GROK_API_KEY"] = "unit-test-grok-key-not-a-real-credential"
         }, handler);
 
         (await sut.CompleteAsync("fail")).Should().BeNull();
