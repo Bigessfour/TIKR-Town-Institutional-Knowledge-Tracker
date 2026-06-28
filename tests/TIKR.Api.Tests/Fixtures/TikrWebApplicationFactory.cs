@@ -12,6 +12,7 @@ public class TikrWebApplicationFactory : WebApplicationFactory<Program>
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Testing");
+        builder.UseSetting("TIKR_AUTH_ENABLED", "false");
         builder.ConfigureAppConfiguration((_, config) =>
         {
             config.AddInMemoryCollection(new Dictionary<string, string?>
@@ -19,7 +20,8 @@ public class TikrWebApplicationFactory : WebApplicationFactory<Program>
                 ["ConnectionStrings:Default"] = $"Data Source={_dbPath}",
                 ["FileStorage:BasePath"] = _storagePath,
                 ["USE_GROK"] = "false",
-                ["OLLAMA_HOST"] = "http://127.0.0.1:1"
+                ["OLLAMA_HOST"] = "http://127.0.0.1:1",
+                ["TIKR_AUTH_ENABLED"] = "false"
             });
         });
     }

@@ -1,0 +1,85 @@
+@page "/account"
+@rendermode InteractiveServer
+@attribute [Authorize]
+@inject TikrApiClient Api
+
+<div class="page-header">
+    <h2>Account</h2>
+    <p>Change your password</p>
+</div>
+
+<SfCard>
+    <CardContent>
+        @if (!string.IsNullOrWhiteSpace(_message))
+        {
+            <div class="text-success mb-3">@_message</div>
+        }
+        @if (!string.IsNullOrWhiteSpace(_error))
+        {
+            <div class="login-error mb-3">@_error</div>
+        }
+
+        <EditForm Model="_model" OnValidSubmit="HandleChangePasswordAsync">
+            <DataAnnotationsValidator />
+            <SfDataForm Model="_model" ColumnCount="1" Width="100%">
+                <FormItems>
+                    <FormItem Field="@nameof(ChangePasswordFormModel.CurrentPassword)" LabelText="Current password">
+                        <Template>
+                            <SfTextBox @bind-Value="_model.CurrentPassword" Type="InputType.Password" />
+                        </Template>
+                    </FormItem>
+                    <FormItem Field="@nameof(ChangePasswordFormModel.NewPassword)" LabelText="New password">
+                        <Template>
+                            <SfTextBox @bind-Value="_model.NewPassword" Type="InputType.Password" />
+                        </Template>
+                    </FormItem>
+                    <FormItem Field="@nameof(ChangePasswordFormModel.ConfirmPassword)" LabelText="Confirm password">
+                        <Template>
+                            <SfTextBox @bind-Value="_model.ConfirmPassword" Type="InputType.Password" />
+                        </Template>
+                    </FormItem>
+                </FormItems>
+            </SfDataForm>
+            <div class="mt-3">
+                <SfButton Type="ButtonType.Submit" CssClass="e-primary" IsPrimary="true" Disabled="_busy">
+                    Update password
+                </SfButton>
+            </div>
+        </EditForm>
+    </CardContent>
+</SfCard>
+
+@code {
+    private readonly ChangePasswordFormModel _model = new();
+    private string? _message;
+    private string? _error;
+    private bool _busy;
+
+    private async Task HandleChangePasswordAsync()
+    {
+        _busy = true;
+        _message = null;
+        _error = null;
+        try
+        {
+            var ok = await Api.ChangePasswordAsync(new ChangePasswordRequest(
+                _model.CurrentPassword,
+                _model.NewPassword));
+            if (ok)
+            {
+                _message = "Password updated successfully.";
+                _model.CurrentPassword = string.Empty;
+                _model.NewPassword = string.Empty;
+                _model.ConfirmPassword = string.Empty;
+            }
+            else
+            {
+                _error = "Could not update password. Check your current password and try again.";
+            }
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+}

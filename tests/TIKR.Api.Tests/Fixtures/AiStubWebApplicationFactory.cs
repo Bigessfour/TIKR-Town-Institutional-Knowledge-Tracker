@@ -19,6 +19,7 @@ public sealed class AiStubWebApplicationFactory : WebApplicationFactory<Program>
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Testing");
+        builder.UseSetting("TIKR_AUTH_ENABLED", "false");
         builder.ConfigureAppConfiguration((_, config) =>
         {
             config.AddInMemoryCollection(new Dictionary<string, string?>
@@ -26,7 +27,8 @@ public sealed class AiStubWebApplicationFactory : WebApplicationFactory<Program>
                 ["ConnectionStrings:Default"] = $"Data Source={_dbPath}",
                 ["FileStorage:BasePath"] = _storagePath,
                 ["USE_GROK"] = "true",
-                ["GROK_API_KEY"] = "stub-key"
+                ["GROK_API_KEY"] = "stub-key",
+                ["TIKR_AUTH_ENABLED"] = "false"
             });
         });
 

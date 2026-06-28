@@ -1,7 +1,10 @@
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using TIKR.Infrastructure.Data;
+using TIKR.Infrastructure.Identity;
 using TIKR.Infrastructure.Services;
 using TIKR.Shared.Configuration;
 using TIKR.Shared.Interfaces;
@@ -28,6 +31,8 @@ public static class DependencyInjection
             }
         });
 
+        services.AddTikrIdentity(configuration);
+
         services.AddScoped<IAuditService, AuditService>();
         services.AddSingleton<IFileStorageService, LocalFileStorageService>();
         services.AddScoped<IHybridAiService, HybridAiService>();
@@ -47,5 +52,14 @@ public static class DependencyInjection
         var db = scope.ServiceProvider.GetRequiredService<TikrDbContext>();
         await db.Database.MigrateAsync();
         await DbSeeder.SeedAsync(db);
+
+        var configuration = scope.ServiceProvider.GetRequiredService<IConfiguration>();
+        if (TikrConfiguration.IsAuthEnabled(configuration))
+        {
+            var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+            var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+            var logger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("IdentitySeeder");
+            await IdentitySeeder.SeedAsync(db, userManager, roleManager, configuration, logger);
+        }
     }
 }

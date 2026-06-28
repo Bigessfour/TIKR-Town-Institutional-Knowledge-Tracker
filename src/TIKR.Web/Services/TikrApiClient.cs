@@ -116,4 +116,32 @@ public class TikrApiClient(HttpClient http)
             ? await response.Content.ReadFromJsonAsync<EmbedKnowledgeEntryResponse>()
             : null;
     }
+
+    public async Task<UserProfileDto?> GetProfileAsync() =>
+        await http.GetFromJsonAsync<UserProfileDto>("/api/auth/me");
+
+    public async Task<List<UserSummaryDto>> GetUsersAsync() =>
+        await http.GetFromJsonAsync<List<UserSummaryDto>>("/api/auth/users") ?? [];
+
+    public async Task<UserSummaryDto?> CreateUserAsync(CreateUserRequest request)
+    {
+        var response = await http.PostAsJsonAsync("/api/auth/users", request);
+        return response.IsSuccessStatusCode
+            ? await response.Content.ReadFromJsonAsync<UserSummaryDto>()
+            : null;
+    }
+
+    public async Task<UserSummaryDto?> UpdateUserAsync(string id, UpdateUserRequest request)
+    {
+        var response = await http.PutAsJsonAsync($"/api/auth/users/{id}", request);
+        return response.IsSuccessStatusCode
+            ? await response.Content.ReadFromJsonAsync<UserSummaryDto>()
+            : null;
+    }
+
+    public async Task<bool> ChangePasswordAsync(ChangePasswordRequest request)
+    {
+        var response = await http.PostAsJsonAsync("/api/auth/change-password", request);
+        return response.IsSuccessStatusCode;
+    }
 }

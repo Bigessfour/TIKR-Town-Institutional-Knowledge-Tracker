@@ -26,6 +26,9 @@ user-secrets.json
 # CI coverage output
 coverage/
 
+# Local RAG index (tikr-rag-mcp)
+.rag_index/
+
 # User-specific files
 *.rsuser
 *.suo

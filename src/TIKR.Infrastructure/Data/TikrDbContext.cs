@@ -1,9 +1,11 @@
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using TIKR.Infrastructure.Identity;
 using TIKR.Shared.Entities;
 
 namespace TIKR.Infrastructure.Data;
 
-public class TikrDbContext : DbContext
+public class TikrDbContext : IdentityDbContext<ApplicationUser>
 {
     public TikrDbContext(DbContextOptions<TikrDbContext> options) : base(options)
     {
@@ -16,6 +18,8 @@ public class TikrDbContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        base.OnModelCreating(modelBuilder);
+
         modelBuilder.Entity<Requirement>(entity =>
         {
             entity.HasKey(e => e.Id);

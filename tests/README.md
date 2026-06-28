@@ -8,8 +8,8 @@ TIKR targets **>90% line coverage** across unit, integration, and component test
 |---------|-------|----------|
 | `TIKR.Shared.Tests` | Pure configuration/helpers | `TikrConfiguration`, `EnvLoader` |
 | `TIKR.Infrastructure.Tests` | Services, seeding, storage | `HybridAiService`, `DbSeeder`, `LocalFileStorageService` |
-| `TIKR.Api.Tests` | HTTP integration (`WebApplicationFactory`) | Requirements CRUD, documents, AI endpoints |
-| `TIKR.Web.Tests` | bUnit + HTTP client unit tests | Settings page, `TikrApiClient` |
+| `TIKR.Api.Tests` | HTTP integration (`WebApplicationFactory`) | Requirements CRUD, documents, AI endpoints, auth |
+| `TIKR.Web.Tests` | bUnit + HTTP client unit tests | Settings page, login/users pages, `TikrApiClient` |
 
 **Planned (vNext):**
 
@@ -51,6 +51,7 @@ python3 scripts/check_coverage.py coverage
 - **FluentAssertions** for readable assertions
 - **Moq** for external dependencies (Ollama, Grok HTTP)
 - Integration tests use isolated SQLite files + temp storage (see `TikrWebApplicationFactory`)
+- **Auth:** default API factory sets `TIKR_AUTH_ENABLED=false` so existing tests stay open; use `AuthEnabledWebApplicationFactory` for JWT/login tests
 - No real Ollama/Grok calls in CI — external AI is mocked or disabled
 
 ## Adding tests
