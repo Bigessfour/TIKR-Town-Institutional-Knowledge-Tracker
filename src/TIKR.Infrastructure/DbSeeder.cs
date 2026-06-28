@@ -84,6 +84,86 @@ public static class DbSeeder
                 Recurrence = RecurrenceType.Quarterly,
                 Category = RequirementCategory.Budget,
                 IsSystemSeeded = true
+            },
+            new()
+            {
+                Id = Guid.NewGuid(),
+                Title = "Periodic Financial Report (PFR)",
+                Description = "File Periodic Financial Report with Division of Local Government per C.R.S. § 29-1-503.",
+                DueDate = new DateOnly(year, 1, 31),
+                Recurrence = RecurrenceType.Annual,
+                Category = RequirementCategory.Budget,
+                IsSystemSeeded = true
+            },
+            new()
+            {
+                Id = Guid.NewGuid(),
+                Title = "Sales Tax Return to DOR",
+                Description = "Remit municipal sales tax collections to Colorado Department of Revenue.",
+                DueDate = new DateOnly(year, DateTime.UtcNow.Month, DateTime.DaysInMonth(year, DateTime.UtcNow.Month)),
+                Recurrence = RecurrenceType.Monthly,
+                Category = RequirementCategory.Compliance,
+                IsSystemSeeded = true
+            },
+            new()
+            {
+                Id = Guid.NewGuid(),
+                Title = "Open Meetings Law Compliance Review",
+                Description = "Review posted agendas, minutes retention, and C.R.S. § 24-6-402 compliance.",
+                DueDate = new DateOnly(year, 6, 30),
+                Recurrence = RecurrenceType.Annual,
+                Category = RequirementCategory.Compliance,
+                IsSystemSeeded = true
+            },
+            new()
+            {
+                Id = Guid.NewGuid(),
+                Title = "Municipal Court Statistics Report",
+                Description = "Submit annual municipal court statistics to the Colorado Judicial Branch.",
+                DueDate = new DateOnly(year, 1, 15),
+                Recurrence = RecurrenceType.Annual,
+                Category = RequirementCategory.Compliance,
+                IsSystemSeeded = true
+            },
+            new()
+            {
+                Id = Guid.NewGuid(),
+                Title = "Board Organizational Meeting",
+                Description = "Hold organizational meeting after regular municipal election; elect officers and set meeting schedule.",
+                DueDate = new DateOnly(year, 5, 15),
+                Recurrence = RecurrenceType.Annual,
+                Category = RequirementCategory.Election,
+                IsSystemSeeded = true
+            },
+            new()
+            {
+                Id = Guid.NewGuid(),
+                Title = "Campaign Finance Filing (Local)",
+                Description = "File local candidate and committee campaign finance reports with the town clerk.",
+                DueDate = new DateOnly(year, 3, 15),
+                Recurrence = RecurrenceType.Annual,
+                Category = RequirementCategory.Election,
+                IsSystemSeeded = true
+            },
+            new()
+            {
+                Id = Guid.NewGuid(),
+                Title = "Liquor License Renewal Notice",
+                Description = "Send renewal notices and collect fees for active liquor licenses before expiration.",
+                DueDate = new DateOnly(year, 4, 1),
+                Recurrence = RecurrenceType.Annual,
+                Category = RequirementCategory.Compliance,
+                IsSystemSeeded = true
+            },
+            new()
+            {
+                Id = Guid.NewGuid(),
+                Title = "Special District Intergovernmental Agreement Review",
+                Description = "Review IGA obligations with fire, water, or metro districts; confirm billing and service terms.",
+                DueDate = new DateOnly(year, 9, 1),
+                Recurrence = RecurrenceType.Annual,
+                Category = RequirementCategory.Compliance,
+                IsSystemSeeded = true
             }
         };
 
