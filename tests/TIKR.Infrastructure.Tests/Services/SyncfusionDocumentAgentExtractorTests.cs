@@ -1,4 +1,7 @@
 using FluentAssertions;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging.Abstractions;
+using Moq;
 using TIKR.Infrastructure.Services;
 using TIKR.Shared.Interfaces;
 
@@ -10,7 +13,7 @@ public class SyncfusionDocumentAgentExtractorTests
     public async Task ExtractAsync_UsesPlainTextPathForTxtWithoutSyncfusionTools()
     {
         var storage = new NasSyncfusionDocumentStorage(new InMemoryFileStorage());
-        var sut = new SyncfusionDocumentAgentExtractor(storage);
+        var sut = CreateExtractor(storage);
         await using var content = new MemoryStream("Periodic report due March"u8.ToArray());
 
         var result = await sut.ExtractAsync(content, "report.txt");
@@ -23,20 +26,33 @@ public class SyncfusionDocumentAgentExtractorTests
     public async Task ExtractAsync_ReturnsUnsupportedMessageForUnknownExtension()
     {
         var storage = new NasSyncfusionDocumentStorage(new InMemoryFileStorage());
-        var sut = new SyncfusionDocumentAgentExtractor(storage);
+        var sut = CreateExtractor(storage);
         await using var content = new MemoryStream([0x00, 0x01, 0x02]);
 
-        var result = await sut.ExtractAsync(content, "data.xlsx");
+        var result = await sut.ExtractAsync(content, "archive.zip");
 
         result.ExtractedText.Should().Contain("unsupported type");
         result.UsedSyncfusionTools.Should().BeTrue();
     }
 
     [Fact]
+    public async Task ExtractAsync_AttemptsExcelPathForXlsx()
+    {
+        var storage = new NasSyncfusionDocumentStorage(new InMemoryFileStorage());
+        var sut = CreateExtractor(storage);
+        await using var content = new MemoryStream([0x00, 0x01, 0x02]);
+
+        var result = await sut.ExtractAsync(content, "budget.xlsx");
+
+        result.UsedSyncfusionTools.Should().BeTrue();
+        result.ExtractedText.Should().NotContain("unsupported type");
+    }
+
+    [Fact]
     public async Task ExtractAsync_ExtractsMinimalPdfWhenSyncfusionAvailable()
     {
         var storage = new NasSyncfusionDocumentStorage(new InMemoryFileStorage());
-        var sut = new SyncfusionDocumentAgentExtractor(storage);
+        var sut = CreateExtractor(storage);
         await using var content = new MemoryStream(MinimalPdfBytes);
 
         var result = await sut.ExtractAsync(content, "minimal.pdf");
@@ -69,6 +85,16 @@ public class SyncfusionDocumentAgentExtractorTests
     422
     %%EOF
     """u8.ToArray();
+
+    private static SyncfusionDocumentAgentExtractor CreateExtractor(NasSyncfusionDocumentStorage storage)
+    {
+        var config = new ConfigurationBuilder().Build();
+        var ollama = Mock.Of<IOllamaChatClientFactory>();
+        var registry = new SyncfusionDocumentAgentToolRegistry(storage);
+        var orchestrator = new SyncfusionDocumentAgentOrchestrator(
+            ollama, registry, config, NullLogger<SyncfusionDocumentAgentOrchestrator>.Instance);
+        return new SyncfusionDocumentAgentExtractor(storage, orchestrator);
+    }
 
     private sealed class InMemoryFileStorage : IFileStorageService
     {
