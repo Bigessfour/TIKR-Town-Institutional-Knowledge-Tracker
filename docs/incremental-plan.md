@@ -140,7 +140,7 @@ Repeat-safe checklist — safe to re-run anytime:
 
 - [x] CI coverage floor via `scripts/check_coverage.py` (Shared/Infra ≥90%, Api integration-tested, Web Helpers/Services ≥85%)
 - [x] Gaps filled in Api AI endpoints, Infrastructure edge cases, Web client + bUnit pages
-- [ ] Playwright E2E (required for Phase 0 ship — see below)
+- [x] Playwright E2E scaffold (`tests/e2e/`) — run manually against Docker stack
 
 **Key paths:** `tests/`, `coverlet.runsettings`
 
@@ -165,7 +165,7 @@ Repeat-safe checklist — safe to re-run anytime:
 
 ## Phase 9 — Search and documents
 
-**Status:** done (MVP core); plain-text extraction in progress; PDF/DOCX preview + IMAP deferred
+**Status:** done (MVP core); PDF/DOCX preview + IMAP deferred
 
 **Goal:** Semantic search, email ingestion, PDF preview.
 
@@ -210,69 +210,22 @@ Repeat-safe checklist — safe to re-run anytime:
 
 ---
 
-## Phase 0 — Final Gap Closure & Ship-Ready Polish (Lean & Fully Tested)
-
-**Status:** planned
-
-**Purpose:** Close every remaining item already promised in the master spec (no new features, no over-engineering).
-Goal = Deb (Town Clerk) can open the app tomorrow, complete her full morning workflow, print a council packet, hand the "If I'm Gone" export to her deputy, and feel 100% confident — all data stays on Synology, everything works offline, every promised button does exactly what the spec said.
-
-Phase 6 (Smart Components) remains **post-ship**; Phase 0 closes only gaps already promised in the original clerk spec.
-
-**Only closing existing gaps** — small, testable PRs, tests-first, zero gold-plating.
-
-### Gap Closure Checklist (already specified in original plan)
-
-- [ ] Help? icon + tooltip on literally every page and field
-- [ ] Undo button on every destructive action + 5-second toast
-- [ ] Print-friendly views for all council-packet exports
-- [ ] Theme switch (Light/Dark/High-Contrast) fully wired + persists
-- [ ] Offline indicator + "Still works – data is local on Synology" on every page
-- [ ] Live footer backup status (real timestamp from NAS)
-- [ ] Keyboard shortcuts active on all pages
-- [ ] Mobile responsiveness + touch targets verified on phone/tablet
-- [ ] Confirmation dialogs + visible audit trail on every delete/redact
-- [ ] Full Playwright E2E loop + bUnit coverage for polish items
-- [ ] Accessibility (ARIA, high-contrast, keyboard) pass
-- [ ] "Reset to Wiley Defaults", voice-note recorder, semantic toggle, progress indicators all verified
-- [ ] Synology health widget + Ollama status fully functional in Settings
-
-### Done Detector — Acceptance Criteria (Deb can use with confidence)
-
-When **ALL** of the following are true, the product is DONE and ready for Deb:
-
-1. Deb can perform her complete daily workflow using only the buttons already built (Upload → AI Agent → Requirement created → Calendar entry → Vault note → Copy for Deputy → Print Packet) with zero errors or missing steps.
-2. Every page shows the exact footer "All data stays in Wiley • Synology DS225+ • Last backed up X min ago" and it updates live.
-3. All promised UI touches (Help?, Undo, Offline banner, large buttons, red/yellow/green, "If I'm Gone") are present and work exactly as described.
-4. Full test suite (bUnit + Playwright E2E + manual smoke) passes and is attached to the final PR.
-5. Deb signs off: "I can train my deputy in 10 minutes and sleep at night knowing everything is here and backed up."
-6. Code remains lean — no extra abstractions, no unused services, no speculative future-proofing. Only what the spec required.
-
-### Implementation Rules (enforced in every PR)
-
-- Tests first → code → review → merge
-- Each PR ≤ 8 files, ≤ 2 hours work
-- Zero new features — only items already listed above
-- After final merge: `dotnet test --filter FullyTested` (`FullyTested` trait/category to be added when E2E tests land), trunk check, Synology backup verification, Deb walkthrough recorded
-
-### PR Sequence for Closure (run in order)
-
-1. "UI Polish & Consistency Sweep"
-2. "Final Test & Accessibility Pass"
-3. "Documentation & Clerk Touches"
-4. "Infrastructure Health UI Closure + Done Detector Sign-off"
-
-When these four PRs are green and Deb gives thumbs-up → TIKR is officially shipped and supported.
-
----
-
 ## Phase 0 — Final Gap Closure & Ship-Ready Polish
 
-**Status:** done (combined PR #33)
+**Status:** in progress (PR #33 merged; PR sequence 2–4 remaining)
 
 **Purpose:** Clerk-facing polish before Deb sign-off — local-first trust cues, safe deletes, accessibility, and E2E smoke.
 
-**Acceptance criteria:**
+### PR sequence
+
+| # | Slice | Status |
+|---|-------|--------|
+| 1 | UI polish + NAS footer (#33) | done |
+| 2 | Final test & accessibility pass (keyboard nav, bUnit, Playwright) | in progress |
+| 3 | Documentation & clerk touches | planned |
+| 4 | Health UI closure + Done Detector sign-off | planned |
+
+### Acceptance criteria (combined PR #33 + follow-ups)
 
 - [x] Help (`PageHelp`) on every MainLayout page (Dashboard, Calendar, Requirements, Documents, Assistant, Vault, Settings, Account, Users)
 - [x] Confirm delete dialog + 5s undo toast (Requirements, Vault; toast-only for Documents)
@@ -281,7 +234,7 @@ When these four PRs are green and Deb gives thumbs-up → TIKR is officially shi
 - [x] Theme switch (Light / Dark / High contrast) persisted in `localStorage`
 - [x] Offline banner on every page when API unreachable
 - [x] Live Synology footer (`GET /api/system/local-status`) on all pages
-- [x] Keyboard shortcuts help modal (`?`)
+- [x] Keyboard shortcuts help modal (`?`) + `g` navigation (d/r/o/v/a/s)
 - [x] Mobile touch targets (44px) and responsive sidebar
 - [x] Settings: Synology health + Ollama status card
 - [x] Playwright E2E scaffold (`tests/e2e/`) — run manually against Docker stack
@@ -302,7 +255,7 @@ When a phase completes, set **Status** to `done` and move **in progress** to the
 
 ## MVP remaining (2026-06-28)
 
-**Ship bar:** Phases **1–9 core** and **10A–10B** merged on `main` ([#27](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/27), [#30](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/30), [#31](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/31)). **Phase 0** is the clerk ship gate (polish + Playwright E2E).
+**Ship bar:** Phases **1–9 core**, **10A–10B**, and **Phase 0 PR #33** merged on `main`. Phase 0 PR sequence items 2–4 remain before Deb sign-off.
 
 ### Phases 1–9 summary
 
@@ -323,9 +276,9 @@ When a phase completes, set **Status** to `done` and move **in progress** to the
 | Phase | Item | Blocks ship? |
 |-------|------|--------------|
 | **5B** | GitHub **Settings → Actions:** read-only default `GITHUB_TOKEN` | No |
-| **9** | Plain-text `FullTextContent` on upload | done (PR pending) |
+| **9** | Plain-text `FullTextContent` on upload | done ([#32](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/32)) |
 | **9** | PDF/DOCX preview, IMAP ingestion | No (deferred) |
-| **0** | Playwright E2E + polish checklist | **Yes** |
+| **0** | Playwright E2E + polish checklist | In progress (PR #33 done) |
 
 Remaining polish, accessibility, and E2E coverage are tracked in **Phase 0** above.
 
@@ -372,7 +325,6 @@ Technical debt and UX consolidation. Safe to tackle in small PRs after #27 merge
 
 ### Suggested merge order
 
-1. Phase 9 slice: plain-text extraction on document upload (current)
-2. **Phase 0** PR sequence (polish → tests/a11y → docs → health UI sign-off)
-3. Phase 10C group A (Syncfusion AgentTools + AES storage)
-4. Phase 6 when clerk forms need Smart AI
+1. **Phase 0** PR sequence (test/a11y → docs → sign-off) — current
+2. Phase 10C group A (Syncfusion AgentTools + AES storage)
+3. Phase 6 when clerk forms need Smart AI
