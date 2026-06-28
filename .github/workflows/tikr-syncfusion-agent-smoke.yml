@@ -1,0 +1,80 @@
+name: TIKR Syncfusion Agent Smoke
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: 0 6 * * 1
+
+permissions:
+  contents: read
+
+jobs:
+  syncfusion-agent-scan:
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'workflow_dispatch' || github.repository == 'Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker' }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Configure Docker env with Syncfusion Agent Tools
+        env:
+          SYNCFUSION_LICENSE_KEY: ${{ secrets.SYNCFUSION_LICENSE_KEY }}
+        run: |
+          if [ -z "$SYNCFUSION_LICENSE_KEY" ]; then
+            echo "SYNCFUSION_LICENSE_KEY secret is not set — skipping licensed smoke."
+            exit 0
+          fi
+          cp docker/.env.example docker/.env
+          {
+            echo "USE_SYNCFUSION_AGENT_TOOLS=true"
+            echo "SYNCFUSION_LICENSE_KEY=$SYNCFUSION_LICENSE_KEY"
+          } >> docker/.env
+
+      - name: Build and start stack
+        env:
+          SYNCFUSION_LICENSE_KEY: ${{ secrets.SYNCFUSION_LICENSE_KEY }}
+        run: |
+          if [ -z "$SYNCFUSION_LICENSE_KEY" ]; then exit 0; fi
+          docker compose -f docker/docker-compose.yml build
+          docker compose -f docker/docker-compose.yml up -d
+          for i in $(seq 1 36); do
+            if curl -sf http://localhost:5000/health; then
+              echo "API ready"
+              break
+            fi
+            sleep 5
+          done
+          curl -sf http://localhost:5000/health
+
+      - name: Agent-scan PDF fixture (Syncfusion extraction)
+        env:
+          SYNCFUSION_LICENSE_KEY: ${{ secrets.SYNCFUSION_LICENSE_KEY }}
+        run: |
+          if [ -z "$SYNCFUSION_LICENSE_KEY" ]; then exit 0; fi
+          response=$(curl -sf -F "file=@tests/fixtures/agent-scan/minimal-clerk-report.pdf" \
+            http://localhost:5000/api/ai/agent-scan)
+          echo "$response" | grep -q "Wiley clerk report"
+          echo "$response" | grep -q '"usedSyncfusionTools":true'
+
+      - name: Agent-scan DOCX fixture (Syncfusion extraction)
+        env:
+          SYNCFUSION_LICENSE_KEY: ${{ secrets.SYNCFUSION_LICENSE_KEY }}
+        run: |
+          if [ -z "$SYNCFUSION_LICENSE_KEY" ]; then exit 0; fi
+          response=$(curl -sf -F "file=@tests/fixtures/agent-scan/clerk-memo.docx" \
+            http://localhost:5000/api/ai/agent-scan)
+          echo "$response" | grep -qi "Wiley clerk memo"
+          echo "$response" | grep -q '"usedSyncfusionTools":true'
+
+      - name: Tear down
+        if: always()
+        env:
+          SYNCFUSION_LICENSE_KEY: ${{ secrets.SYNCFUSION_LICENSE_KEY }}
+        run: |
+          if [ -z "$SYNCFUSION_LICENSE_KEY" ]; then exit 0; fi
+          docker compose -f docker/docker-compose.yml down

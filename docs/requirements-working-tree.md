@@ -47,9 +47,9 @@ Living checklist for Requirements Manager work. Tracks MVP (ship now) vs deferre
 | **A2** | NuGet + `NasSyncfusionDocumentStorage` (`IDocumentStorage`); `SyncfusionDocumentAgentExtractor` (PDF text, Word text, table JSON) | in progress |
 | **A3** | Microsoft Agent Framework loop: Ollama selects tools → validated JSON → requirement mapping | planned |
 | **B** | In-memory vs storage-backed `IDocumentStorage` parity with Syncfusion modes | partial (NAS Storage Mode in A2) |
-| **C** | Requirements UI: show extraction source (stub vs Syncfusion), progress indicator on scan | planned |
-| **D** | Playwright: upload PDF → agent-scan → pre-filled requirement dialog | planned |
-| **E** | Docs: NAS setup, license, `USE_SYNCFUSION_AGENT_TOOLS` runbook | partial ([sf-document-agent-tools.md](sf-document-agent-tools.md)) |
+| **C** | Requirements UI: show extraction source (stub vs Syncfusion), progress indicator on scan | partial (`UsedSyncfusionTools` on DTO; UI badge deferred) |
+| **D** | Playwright: upload → agent-scan → pre-filled requirement dialog | done (txt stub in `tests/e2e/requirements-agent-scan.spec.ts`; PDF via licensed workflow) |
+| **E** | Docs: NAS setup, license, `USE_SYNCFUSION_AGENT_TOOLS` runbook | done ([sf-document-agent-tools.md](sf-document-agent-tools.md) E2E tiers) |
 
 ### A1 checklist
 
@@ -68,8 +68,18 @@ Living checklist for Requirements Manager work. Tracks MVP (ship now) vs deferre
 - [x] License registration in `AddTikrInfrastructure` (`SYNCFUSION_LICENSE_KEY`)
 - [x] `SyncfusionDocumentAgentExtractionBackend` delegates to extractor (no throw)
 - [x] Tests: `NasSyncfusionDocumentStorageTests`
+- [x] E2E: API txt fixture test + Playwright stub spec + licensed workflow scaffold
+- [x] `DocumentAgentResult.UsedSyncfusionTools` for assertion in API/E2E
 - [ ] Manual NAS smoke: `USE_SYNCFUSION_AGENT_TOOLS=true` + PDF agent-scan
 - [ ] Merge PR
+
+### E2E proof (10C-D)
+
+- [x] Fixtures: `tests/fixtures/agent-scan/` (txt, pdf, docx)
+- [x] `DocumentAgentEndpointTests.AgentScan_ExtractsTxtFixture`
+- [x] Playwright: `tests/e2e/requirements-agent-scan.spec.ts`
+- [x] CI docker smoke: curl agent-scan txt (stub)
+- [x] Optional workflow: `.github/workflows/tikr-syncfusion-agent-smoke.yml`
 
 ### Gap vs Syncfusion product (honest)
 
@@ -123,3 +133,68 @@ Living checklist for Requirements Manager work. Tracks MVP (ship now) vs deferre
 
 - [ ] Add Syncfusion.Blazor.TreeGrid package (individual, not meta)
 - [ ] Playwright E2E clerk flows for requirements (extend `tests/e2e/`)
+
+---
+
+## Cross-repo unfinished work (2026 audit)
+
+Captured from codebase + plan review. Tracks stubs, Phase 0 closure, and non-Requirements gaps that affect clerk ship confidence. See also [incremental-plan.md](incremental-plan.md) Phase 0 and Phase 9 deferred items.
+
+### Recommended finish order (lean PRs)
+
+| Order | PR focus | Closes |
+|-------|----------|--------|
+| 1 | Phase 0 PR #2 — E2E + a11y | Playwright CI gate, `FullyTested` trait, extend smoke flows |
+| 2 | Documents download API + UI | Remove `DownloadPlaceholder` stub |
+| 3 | Documents delete undo | Toast undo parity with Requirements/Vault |
+| 4 | 10C A2 merge + NAS smoke | PDF/DOCX agent-scan; extraction source badge (10C-C) |
+| 5 | Phase 0 PR #3 — Docs | Deb handover; honest footer wording |
+| 6 | Phase 0 PR #4 — Sign-off | Done Detector checklist + recorded walkthrough |
+| Later | Voice STT, PDF preview, 10C-A3, Phase 6, Requirements Phase 2 | Post-ship / vNext |
+
+### Phase 0 closure (PRs 2–4 — [incremental-plan.md](incremental-plan.md))
+
+**Status:** PR #33 merged; items below remain before Deb sign-off.
+
+- [ ] **PR #2 — Test & accessibility:** Expand Playwright beyond 4 specs (`clerk-smoke.spec.ts`, `requirements-agent-scan.spec.ts`); wire as ship gate (dedicated workflow or CI step — today Docker smoke is `continue-on-error`)
+- [ ] **PR #2:** Add `FullyTested` trait/category + `dotnet test --filter FullyTested`
+- [ ] **PR #2:** Mobile/tablet manual verification (44px touch targets baseline shipped)
+- [ ] **PR #3 — Documentation:** Clerk handover doc + Deb walkthrough checklist
+- [ ] **PR #3:** Footer wording — today shows SQLite mtime as "Last saved"; spec said "Last backed up" (Synology Hyper Backup not wired)
+- [ ] **PR #4 — Sign-off:** Deb walkthrough recorded; Done Detector criteria signed off
+- [ ] **PR #4:** Confirm `TIKR_STORAGE_LABEL` env matches clerk NAS model (e.g. DS225+)
+
+### Stubs & placeholders in code (circle back)
+
+#### High impact — clerk-visible
+
+- [ ] **Document download** — `Documents.razor` `DownloadPlaceholder()`; `PageWorkflowHelpers.DownloadPlaceholder()` — needs `GET /api/documents/{id}/content` streaming from `IFileStorageService`
+- [ ] **PDF/DOCX preview pane** — `Documents.razor` placeholder text; defer `SfPdfViewer` or show extracted text when available
+- [ ] **Voice notes** — `Vault.razor` + `VaultVoiceNoteSimulator` — timer simulates transcription; no mic/Ollama STT yet
+- [ ] **Agent scan binary PDF/DOCX (stub path)** — `StubDocumentAgentExtractionBackend` when `USE_SYNCFUSION_AGENT_TOOLS=false` (CI default); finish via 10C A2 merge + NAS flag
+- [ ] **Documents delete — no undo** — `ConfirmDeleteAsync` shows toast without undo callback (Requirements/Vault have undo)
+- [ ] **Extraction source badge (10C-C)** — `FormatAgentScanMessage` ignores `UsedSyncfusionTools`; add Stub vs Syncfusion badge + scan progress spinner
+
+#### Medium impact — spec vs implementation
+
+- [ ] **Field-level Help?** — `PageHelp` on main pages only; not per-field
+- [ ] **Login / NotFound polish** — no `PageHelp`; NotFound minimal
+- [ ] **Non-text FullTextContent on upload** — PDF/DOCX uploads save file but `FullTextContent` null until agent-scan or Syncfusion path
+
+#### Low impact
+
+- [ ] **10C-A3** — `IAgentDocumentStorage` comment references A3 orchestration; Microsoft Agent Framework loop not wired
+- [ ] **SyncfusionDocumentAgentExtractor** — A2 code present; manual NAS smoke + merge pending (see A2 checklist above)
+
+### Phase 9 / 6 / auth deferred (not Requirements-specific)
+
+- [ ] PDF preview (`SfPdfViewer`), Rich DOCX / Spreadsheet preview
+- [ ] IMAP / forward-to-folder email ingestion
+- [ ] Phase 6 — Smart Paste, Smart TextArea, Scheduler NL recurring
+- [ ] Auth vNext — email password reset (SMTP), token refresh, read-only `Viewer` role
+- [ ] GitHub manual — Settings → Actions read-only default `GITHUB_TOKEN` (Phase 5B)
+
+### Doc drift (fix when closing Phase 0)
+
+- [ ] Mark done in **Deferred → UI** above: offline banner + Synology footer shipped in Phase 0 #33 (lines 122–123)
+- [ ] Reconcile **Deferred → Infrastructure** Playwright line (line 135) with Phase 0 PR #2 scope above

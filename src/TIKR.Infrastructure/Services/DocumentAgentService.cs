@@ -36,7 +36,8 @@ public class DocumentAgentService(
             SuggestedCategory: category,
             TablesExtractedCount: extraction.TablesExtractedCount,
             StoragePath: storagePath,
-            ProcessedLocally: true);
+            ProcessedLocally: true,
+            UsedSyncfusionTools: extraction.UsedSyncfusionTools);
     }
 
     internal static string DeriveTitle(string fileName)

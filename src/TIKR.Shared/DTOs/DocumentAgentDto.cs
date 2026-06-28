@@ -10,4 +10,5 @@ public record DocumentAgentResult(
     RequirementCategory SuggestedCategory,
     int TablesExtractedCount,
     string StoragePath,
-    bool ProcessedLocally);
+    bool ProcessedLocally,
+    bool UsedSyncfusionTools);

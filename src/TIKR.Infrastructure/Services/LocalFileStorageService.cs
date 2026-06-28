@@ -12,8 +12,18 @@ public class LocalFileStorageService(IConfiguration configuration) : IFileStorag
     {
         Directory.CreateDirectory(_basePath);
 
-        var safeName = Path.GetFileName(fileName);
-        var relativePath = Path.Combine(DateTime.UtcNow.ToString("yyyy/MM"), $"{Guid.NewGuid():N}_{safeName}");
+        var normalized = fileName.Replace('\\', '/').TrimStart('/');
+        string relativePath;
+        if (normalized.StartsWith("agent-scans/", StringComparison.Ordinal))
+        {
+            relativePath = normalized;
+        }
+        else
+        {
+            var safeName = Path.GetFileName(fileName);
+            relativePath = Path.Combine(DateTime.UtcNow.ToString("yyyy/MM"), $"{Guid.NewGuid():N}_{safeName}");
+        }
+
         var fullPath = GetFullPath(relativePath);
 
         Directory.CreateDirectory(Path.GetDirectoryName(fullPath)!);

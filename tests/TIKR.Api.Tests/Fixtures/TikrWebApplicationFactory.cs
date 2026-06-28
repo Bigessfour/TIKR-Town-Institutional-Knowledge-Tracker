@@ -21,7 +21,8 @@ public class TikrWebApplicationFactory : WebApplicationFactory<Program>
                 ["FileStorage:BasePath"] = _storagePath,
                 ["USE_GROK"] = "false",
                 ["OLLAMA_HOST"] = "http://127.0.0.1:1",
-                ["TIKR_AUTH_ENABLED"] = "false"
+                ["TIKR_AUTH_ENABLED"] = "false",
+                ["USE_SYNCFUSION_AGENT_TOOLS"] = "false"
             });
         });
     }
