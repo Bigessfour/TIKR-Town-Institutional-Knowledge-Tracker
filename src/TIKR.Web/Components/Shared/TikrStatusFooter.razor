@@ -1,0 +1,64 @@
+@rendermode InteractiveServer
+@inject TikrApiClient Api
+@inject LocalConnectionStateService Connection
+@implements IDisposable
+
+<footer class="tikr-status-footer" role="contentinfo" aria-live="polite">
+    <span class="tikr-status-footer-primary">@_primaryMessage</span>
+    <span class="tikr-status-footer-hint @(_apiOffline ? "is-offline" : "is-local")">@_connectionHint</span>
+</footer>
+
+@code {
+    private string _primaryMessage = "All data stays local on Synology NAS";
+    private string _connectionHint = "Local-first on Synology";
+    private bool _apiOffline;
+    private Timer? _timer;
+
+    protected override async Task OnInitializedAsync() => await RefreshAsync();
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (!firstRender)
+            return;
+
+        _timer = new Timer(
+            _ => _ = InvokeAsync(async () =>
+            {
+                await RefreshAsync();
+                StateHasChanged();
+            }),
+            null,
+            TimeSpan.FromMinutes(1),
+            TimeSpan.FromMinutes(1));
+    }
+
+    private async Task RefreshAsync()
+    {
+        try
+        {
+            var status = await Api.GetLocalStorageStatusAsync();
+            if (status is null)
+            {
+                _apiOffline = true;
+                Connection.SetApiOffline(true);
+                _primaryMessage = "All data stays local on Synology NAS";
+                _connectionHint = LocalStatusFooterHelper.BuildConnectionHint(true, false);
+                return;
+            }
+
+            _apiOffline = false;
+            Connection.SetApiOffline(false);
+            _primaryMessage = LocalStatusFooterHelper.BuildFooterMessage(status, DateTime.UtcNow);
+            _connectionHint = LocalStatusFooterHelper.BuildConnectionHint(false, status.OllamaAvailable);
+        }
+        catch
+        {
+            _apiOffline = true;
+            Connection.SetApiOffline(true);
+            _primaryMessage = "All data stays local on Synology NAS";
+            _connectionHint = LocalStatusFooterHelper.BuildConnectionHint(true, false);
+        }
+    }
+
+    public void Dispose() => _timer?.Dispose();
+}

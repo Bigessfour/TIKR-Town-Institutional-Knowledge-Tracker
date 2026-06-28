@@ -32,6 +32,9 @@ builder.Services.AddRazorComponents()
 
 builder.Services.AddSyncfusionBlazor();
 builder.Services.AddSingleton(new AuthSettings { IsEnabled = authEnabled });
+builder.Services.AddSingleton<LocalConnectionStateService>();
+builder.Services.AddScoped<ClerkToastService>();
+builder.Services.AddScoped<ThemeService>();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<TikrAuthenticationStateProvider>();
 builder.Services.AddScoped<AuthenticationStateProvider>(sp =>

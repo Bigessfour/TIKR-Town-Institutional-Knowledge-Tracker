@@ -15,7 +15,15 @@ TIKR targets **>90% line coverage** across unit, integration, and component test
 
 | Project | Scope |
 |---------|-------|
-| E2E (Playwright / `cursor-ide-browser`) | Clerk flows against Docker stack |
+| E2E (Playwright) | Clerk flows against Docker stack — scaffold in `tests/e2e/` |
+
+### Playwright (Phase 0)
+
+```bash
+docker compose -f docker/docker-compose.yml up --build
+cd tests/e2e && npm ci && npx playwright install chromium
+TIKR_E2E_BASE_URL=http://localhost:8080 npm test
+```
 
 ## Run locally
 

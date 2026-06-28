@@ -133,4 +133,7 @@ public static class RequirementWorkflowHelpers
 
     public static string FormatAgentScanMessage(DocumentAgentResult result) =>
         $"Processed on Synology • {result.TablesExtractedCount} table{(result.TablesExtractedCount == 1 ? "" : "s")} extracted";
+
+    public static CreateRequirementRequest ToCreateRequest(RequirementDto requirement) =>
+        new(requirement.Title, requirement.Description, requirement.DueDate, requirement.Recurrence, requirement.Category);
 }

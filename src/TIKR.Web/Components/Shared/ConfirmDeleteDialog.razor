@@ -1,0 +1,40 @@
+<SfDialog @bind-Visible="Visible" Width="420px" IsModal="true" ShowCloseIcon="true" Header="Confirm delete">
+    <DialogTemplates>
+        <Content>
+            <p>Delete <strong>@ItemName</strong>?</p>
+            <p class="confirm-audit-note">Recorded in the local audit log on your NAS.</p>
+        </Content>
+        <FooterTemplate>
+            <SfButton CssClass="tikr-action-btn" Content="Cancel" OnClick="CancelAsync" />
+            <SfButton CssClass="tikr-action-btn e-danger" IsPrimary="true" Content="Delete" OnClick="ConfirmAsync" />
+        </FooterTemplate>
+    </DialogTemplates>
+</SfDialog>
+
+@code {
+    [Parameter]
+    public bool Visible { get; set; }
+
+    [Parameter]
+    public EventCallback<bool> VisibleChanged { get; set; }
+
+    [Parameter, EditorRequired]
+    public string ItemName { get; set; } = string.Empty;
+
+    [Parameter]
+    public EventCallback OnConfirm { get; set; }
+
+    private async Task CancelAsync() => await SetVisibleAsync(false);
+
+    private async Task ConfirmAsync()
+    {
+        await SetVisibleAsync(false);
+        await OnConfirm.InvokeAsync();
+    }
+
+    private async Task SetVisibleAsync(bool visible)
+    {
+        Visible = visible;
+        await VisibleChanged.InvokeAsync(visible);
+    }
+}

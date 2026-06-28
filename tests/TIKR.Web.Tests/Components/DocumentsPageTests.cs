@@ -12,13 +12,8 @@ using TIKR.Web.Services;
 
 namespace TIKR.Web.Tests.Components;
 
-public class DocumentsPageTests : TestContext
+public class DocumentsPageTests : ClerkTestContext
 {
-    public DocumentsPageTests()
-    {
-        Services.AddSyncfusionBlazor();
-        JSInterop.Mode = JSRuntimeMode.Loose;
-    }
 
     [Fact]
     public void Documents_LoadsDocumentListFromApi()
@@ -29,6 +24,7 @@ public class DocumentsPageTests : TestContext
             new(docId, "budget-2026.pdf", "application/pdf", 1024, null, "Finance", DateTime.UtcNow)
         });
         RegisterApi(docsJson);
+        SetRendererInfo(new RendererInfo("Server", true));
 
         var cut = RenderComponent<Documents>();
         cut.WaitForAssertion(() => cut.Markup.Should().Contain("budget-2026.pdf"));

@@ -3,9 +3,14 @@
 @attribute [Authorize(Policy = "AdminOnly")]
 @inject TikrApiClient Api
 
+@using TIKR.Web.Components.Shared
+
 <div class="page-header">
-    <h2>Users</h2>
-    <p>Manage clerk accounts for this town</p>
+    <div class="page-header-main">
+        <h2>Users</h2>
+        <p>Manage clerk accounts for this town</p>
+    </div>
+    <PageHelp HelpText="Add admin or clerk accounts for multi-user towns. All accounts authenticate against the local NAS database." />
 </div>
 
 <div class="mb-3">

@@ -1,0 +1,70 @@
+@rendermode InteractiveServer
+@inject ClerkToastService Toast
+@implements IDisposable
+
+@if (_visible)
+{
+    <div class="clerk-toast" role="status" aria-live="polite">
+        <span>@_message</span>
+        @if (_undo is not null)
+        {
+            <button type="button" class="clerk-toast-undo" @onclick="UndoAsync">Undo</button>
+        }
+    </div>
+}
+
+@code {
+    private bool _visible;
+    private string _message = string.Empty;
+    private Func<Task>? _undo;
+    private CancellationTokenSource? _hideCts;
+
+    protected override void OnInitialized() => Toast.OnShow += HandleShow;
+
+    private void HandleShow(ClerkToastMessage toast)
+    {
+        _hideCts?.Cancel();
+        _hideCts?.Dispose();
+        _hideCts = new CancellationTokenSource();
+
+        _message = toast.Message;
+        _undo = toast.UndoAsync;
+        _visible = true;
+        _ = InvokeAsync(StateHasChanged);
+        _ = HideAfterDelayAsync(_hideCts.Token);
+    }
+
+    private async Task HideAfterDelayAsync(CancellationToken token)
+    {
+        try
+        {
+            await Task.Delay(ClerkToastService.DefaultDurationMs, token);
+            _visible = false;
+            _undo = null;
+            await InvokeAsync(StateHasChanged);
+        }
+        catch (OperationCanceledException)
+        {
+            // Superseded by a newer toast.
+        }
+    }
+
+    private async Task UndoAsync()
+    {
+        _hideCts?.Cancel();
+        var undo = _undo;
+        _visible = false;
+        _undo = null;
+        await InvokeAsync(StateHasChanged);
+
+        if (undo is not null)
+            await undo();
+    }
+
+    public void Dispose()
+    {
+        Toast.OnShow -= HandleShow;
+        _hideCts?.Cancel();
+        _hideCts?.Dispose();
+    }
+}

@@ -3,9 +3,11 @@
 @implements IDisposable
 @inject TikrApiClient Api
 @inject IJSRuntime JS
+@inject ClerkToastService Toast
 
 @using Syncfusion.Blazor.RichTextEditor
 @using Syncfusion.Blazor.Navigations
+@using TIKR.Web.Components.Shared
 
 <!-- Big red emotional banner -->
 <div class="vault-emergency-banner">
@@ -41,7 +43,7 @@
                                         var entry = (context as KnowledgeEntryDto)!;
                                     }
                                     <SfButton CssClass="tikr-action-btn small" Content="Edit" OnClick="@(() => SelectEntry(entry))" />
-                                    <SfButton CssClass="tikr-action-btn small danger" Content="Delete" OnClick="@(() => DeleteEntryAsync(entry))" />
+                                    <SfButton CssClass="tikr-action-btn small danger" Content="Delete" OnClick="@(() => RequestDeleteEntry(entry))" />
                                 </Template>
                             </GridColumn>
                         </GridColumns>
@@ -82,7 +84,7 @@
                                         var entry = (context as KnowledgeEntryDto)!;
                                     }
                                     <SfButton CssClass="tikr-action-btn small" Content="Edit" OnClick="@(() => SelectEntry(entry))" />
-                                    <SfButton CssClass="tikr-action-btn small danger" Content="Delete" OnClick="@(() => DeleteEntryAsync(entry))" />
+                                    <SfButton CssClass="tikr-action-btn small danger" Content="Delete" OnClick="@(() => RequestDeleteEntry(entry))" />
                                 </Template>
                             </GridColumn>
                         </GridColumns>
@@ -121,7 +123,7 @@
                                         var entry = (context as KnowledgeEntryDto)!;
                                     }
                                     <SfButton CssClass="tikr-action-btn small" Content="Edit" OnClick="@(() => SelectEntry(entry))" />
-                                    <SfButton CssClass="tikr-action-btn small danger" Content="Delete" OnClick="@(() => DeleteEntryAsync(entry))" />
+                                    <SfButton CssClass="tikr-action-btn small danger" Content="Delete" OnClick="@(() => RequestDeleteEntry(entry))" />
                                 </Template>
                             </GridColumn>
                         </GridColumns>
@@ -181,7 +183,7 @@
                                     @{
                                         var v = (context as VoiceNote)!;
                                     }
-                                    <SfButton CssClass="tikr-action-btn small danger" Content="Del" OnClick="@(() => DeleteVoiceNote(v))" />
+                                    <SfButton CssClass="tikr-action-btn small danger" Content="Del" OnClick="@(() => RequestDeleteVoiceNote(v))" />
                                 </Template>
                             </GridColumn>
                         </GridColumns>
@@ -207,7 +209,15 @@
 
 <PageHelp HelpText="This vault is your town's lifeline. Record how things really work. The 'Copy for New Clerk' button creates a single document they can take with them." />
 
+<ConfirmDeleteDialog @bind-Visible="_confirmDeleteVisible"
+                     ItemName="@_confirmDeleteLabel"
+                     OnConfirm="ConfirmDeleteAsync" />
+
 @code {
+    private bool _confirmDeleteVisible;
+    private string _confirmDeleteLabel = string.Empty;
+    private KnowledgeEntryDto? _pendingEntryDelete;
+    private VoiceNote? _pendingVoiceDelete;
     private List<KnowledgeEntryDto> _allEntries = [];
     private List<VoiceNote> VoiceNotes { get; set; } = new();
 
@@ -256,11 +266,68 @@
         EditorContent = "";
     }
 
-    private async Task DeleteEntryAsync(KnowledgeEntryDto entry)
+    private void RequestDeleteEntry(KnowledgeEntryDto entry)
     {
-        await Api.DeleteKnowledgeEntryAsync(entry.Id);
+        _pendingVoiceDelete = null;
+        _pendingEntryDelete = entry;
+        _confirmDeleteLabel = entry.Title;
+        _confirmDeleteVisible = true;
+    }
+
+    private void RequestDeleteVoiceNote(VoiceNote note)
+    {
+        _pendingEntryDelete = null;
+        _pendingVoiceDelete = note;
+        _confirmDeleteLabel = note.Title;
+        _confirmDeleteVisible = true;
+    }
+
+    private async Task ConfirmDeleteAsync()
+    {
+        if (_pendingEntryDelete is not null)
+        {
+            var entry = _pendingEntryDelete;
+            _pendingEntryDelete = null;
+            var recreate = KnowledgeWorkflowHelpers.ToCreateRequest(entry);
+            await Api.DeleteKnowledgeEntryAsync(entry.Id);
+            Toast.Show($"Deleted \"{entry.Title}\"", async () =>
+            {
+                await Api.CreateKnowledgeEntryAsync(recreate);
+                await LoadEntriesAsync();
+            });
+            await LoadEntriesAsync();
+            if (SelectedEntry?.Id == entry.Id)
+                CancelEdit();
+            return;
+        }
+
+        if (_pendingVoiceDelete is null)
+            return;
+
+        var note = _pendingVoiceDelete;
+        _pendingVoiceDelete = null;
+        var voiceRecreate = new CreateKnowledgeEntryRequest(
+            note.Title, note.Transcription, KnowledgeCategory.TribalKnowledge, _allEntries.Count);
+
+        if (note.Id != Guid.Empty)
+        {
+            try
+            {
+                await Api.DeleteKnowledgeEntryAsync(note.Id);
+            }
+            catch
+            {
+                // Best-effort UI cleanup below.
+            }
+        }
+
+        VoiceNotes.Remove(note);
+        Toast.Show($"Deleted voice note \"{note.Title}\"", async () =>
+        {
+            await Api.CreateKnowledgeEntryAsync(voiceRecreate);
+            await LoadEntriesAsync();
+        });
         await LoadEntriesAsync();
-        if (SelectedEntry?.Id == entry.Id) CancelEdit();
     }
 
     // Voice simulation
@@ -316,26 +383,10 @@
         await LoadEntriesAsync();
     }
 
-    private async Task DeleteVoiceNote(VoiceNote note)
+    private Task DeleteVoiceNote(VoiceNote note)
     {
-        // Voice notes are persisted as TribalKnowledge entries; deletion must hit
-        // the API so the underlying row goes away too (otherwise it reappears in
-        // the Tribal Knowledge tab and after page refresh).
-        if (note.Id != Guid.Empty)
-        {
-            try
-            {
-                await Api.DeleteKnowledgeEntryAsync(note.Id);
-            }
-            catch
-            {
-                // Best-effort: if the API call fails, fall through and still
-                // remove from the local list so the UI doesn't appear stuck.
-            }
-        }
-
-        VoiceNotes.Remove(note);
-        await LoadEntriesAsync();
+        RequestDeleteVoiceNote(note);
+        return Task.CompletedTask;
     }
 
     public void Dispose()

@@ -3,9 +3,14 @@
 @attribute [Authorize]
 @inject TikrApiClient Api
 
+@using TIKR.Web.Components.Shared
+
 <div class="page-header">
-    <h2>Account</h2>
-    <p>Change your password</p>
+    <div class="page-header-main">
+        <h2>Account</h2>
+        <p>Change your password</p>
+    </div>
+    <PageHelp HelpText="Update your clerk password. Credentials stay on your Synology NAS — not in the cloud." />
 </div>
 
 <SfCard>

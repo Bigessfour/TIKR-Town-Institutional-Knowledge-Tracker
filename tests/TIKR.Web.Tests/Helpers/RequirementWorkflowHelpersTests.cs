@@ -124,4 +124,20 @@ public class RequirementWorkflowHelpersTests
         RequirementWorkflowHelpers.FormatAgentScanMessage(result)
             .Should().Be("Processed on Synology • 3 tables extracted");
     }
+
+    [Fact]
+    public void ToCreateRequest_PreservesRequirementFields()
+    {
+        var req = new RequirementDto(
+            Guid.NewGuid(), "Budget filing", "Annual", Today, RecurrenceType.Annual,
+            RequirementCategory.Budget, false, false);
+
+        var request = RequirementWorkflowHelpers.ToCreateRequest(req);
+
+        request.Title.Should().Be("Budget filing");
+        request.Description.Should().Be("Annual");
+        request.DueDate.Should().Be(Today);
+        request.Recurrence.Should().Be(RecurrenceType.Annual);
+        request.Category.Should().Be(RequirementCategory.Budget);
+    }
 }

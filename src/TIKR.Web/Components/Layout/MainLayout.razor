@@ -5,8 +5,10 @@
 @inject NavigationManager Navigation
 @inject AuthenticationStateProvider AuthStateProvider
 
+<a class="tikr-skip-link" href="#main-content">Skip to main content</a>
+
 <div class="tikr-layout">
-    <nav class="tikr-sidebar">
+    <nav class="tikr-sidebar" aria-label="Main navigation">
         <div class="tikr-brand">
             <h1>TIKR</h1>
             <p>The Town Clerk's Second Brain</p>
@@ -26,6 +28,7 @@
                 </AuthorizeView>
             }
         </ul>
+        <TikrThemeSelector />
         @if (Auth.IsEnabled)
         {
             <div class="tikr-user-bar">
@@ -39,10 +42,17 @@
             </div>
         }
     </nav>
-    <main class="tikr-main">
-        @Body
+    <main class="tikr-main" id="main-content">
+        <TikrOfflineBanner />
+        <div class="tikr-main-content">
+            @Body
+        </div>
+        <TikrStatusFooter />
     </main>
 </div>
+
+<ClerkToastHost />
+<TikrKeyboardShortcuts />
 
 <div id="blazor-error-ui" data-nosnippet>
     An unhandled error has occurred.
