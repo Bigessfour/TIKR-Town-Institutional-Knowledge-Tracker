@@ -31,7 +31,7 @@ Living checklist for Requirements Manager work. Tracks MVP (ship now) vs deferre
 - [x] Requirements toolbar **AI Scan uploaded doc** + banner message (SfToast deferred — uses existing AI banner pattern)
 - [x] `RequirementWorkflowHelpers.ApplyAgentExtraction` + `FormatAgentScanMessage`
 - [x] Infrastructure, Api, Web helper, and bUnit tests
-- [ ] Merge stacked PR after #28
+- [x] Merge PR [#31](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/31) on `main`
 
 ---
 

@@ -140,7 +140,7 @@ Repeat-safe checklist — safe to re-run anytime:
 
 - [x] CI coverage floor via `scripts/check_coverage.py` (Shared/Infra ≥90%, Api integration-tested, Web Helpers/Services ≥85%)
 - [x] Gaps filled in Api AI endpoints, Infrastructure edge cases, Web client + bUnit pages
-- [ ] Playwright E2E (deferred)
+- [ ] Playwright E2E (required for Phase 0 ship — see below)
 
 **Key paths:** `tests/`, `coverlet.runsettings`
 
@@ -165,7 +165,7 @@ Repeat-safe checklist — safe to re-run anytime:
 
 ## Phase 9 — Search and documents
 
-**Status:** in progress (doc + vault RAG backend done; UI wiring + ingestion + PDF preview pending)
+**Status:** done (MVP core); plain-text extraction in progress; PDF/DOCX preview + IMAP deferred
 
 **Goal:** Semantic search, email ingestion, PDF preview.
 
@@ -185,12 +185,84 @@ Repeat-safe checklist — safe to re-run anytime:
 - [x] `TikrApiClient.SemanticSearchKnowledgeAsync` / `EmbedKnowledgeEntryAsync` helpers
 - [x] `Documents.razor` Semantic toggle wired to the new endpoint
 - [x] `Assistant.razor` prepends top-K semantically relevant **doc + vault** snippets (closes the original "hit by a bus" gap end-to-end)
+- [x] Full-text extraction for plain-text uploads (`.txt`, `.md`, `.csv` via `DocumentTextExtractionService`)
 - [ ] PDF preview (Syncfusion `SfPdfViewer` — deferred)
 - [ ] Rich DOCX editor / Spreadsheet preview (Syncfusion DocumentEditor / Spreadsheet — deferred)
-- [ ] Full-text extraction for non-text files (still stubbed; biggest backend lever remaining)
 - [ ] IMAP or forward-to-folder email ingestion scaffold
 
-**Key paths:** `src/TIKR.Infrastructure/Services/HybridAiService.cs`, `src/TIKR.Shared/Entities/Document.cs`, `src/TIKR.Shared/Entities/KnowledgeEntry.cs`, `tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceSemanticSearchTests.cs`, `tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceVaultRagTests.cs`
+**Key paths:** `src/TIKR.Infrastructure/Services/HybridAiService.cs`, `src/TIKR.Infrastructure/Services/DocumentTextExtractionService.cs`, `src/TIKR.Shared/Entities/Document.cs`, `tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceSemanticSearchTests.cs`
+
+---
+
+## Phase 10 — Requirements Manager + Document Agent
+
+**Status:** in progress (10A + 10B merged; 10C groups A–E deferred)
+
+**Goal:** `/requirements` CRUD hub + incremental NAS-local document agent without breaking MVP grid.
+
+| Slice | Status | PR |
+|-------|--------|-----|
+| **10A** Requirements grid MVP | done | [#30](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/30) |
+| **10B** MVP agent stub + AI Scan | done | [#31](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/31) |
+| **10C** AgentTools + AES storage + hooks | planned | see [requirements-working-tree.md](requirements-working-tree.md) |
+
+**Key paths:** `src/TIKR.Web/Components/Pages/Requirements.razor`, `src/TIKR.Infrastructure/Services/DocumentAgentService.cs`
+
+---
+
+## Phase 0 — Final Gap Closure & Ship-Ready Polish (Lean & Fully Tested)
+
+**Status:** planned
+
+**Purpose:** Close every remaining item already promised in the master spec (no new features, no over-engineering).
+Goal = Deb (Town Clerk) can open the app tomorrow, complete her full morning workflow, print a council packet, hand the "If I'm Gone" export to her deputy, and feel 100% confident — all data stays on Synology, everything works offline, every promised button does exactly what the spec said.
+
+Phase 6 (Smart Components) remains **post-ship**; Phase 0 closes only gaps already promised in the original clerk spec.
+
+**Only closing existing gaps** — small, testable PRs, tests-first, zero gold-plating.
+
+### Gap Closure Checklist (already specified in original plan)
+
+- [ ] Help? icon + tooltip on literally every page and field
+- [ ] Undo button on every destructive action + 5-second toast
+- [ ] Print-friendly views for all council-packet exports
+- [ ] Theme switch (Light/Dark/High-Contrast) fully wired + persists
+- [ ] Offline indicator + "Still works – data is local on Synology" on every page
+- [ ] Live footer backup status (real timestamp from NAS)
+- [ ] Keyboard shortcuts active on all pages
+- [ ] Mobile responsiveness + touch targets verified on phone/tablet
+- [ ] Confirmation dialogs + visible audit trail on every delete/redact
+- [ ] Full Playwright E2E loop + bUnit coverage for polish items
+- [ ] Accessibility (ARIA, high-contrast, keyboard) pass
+- [ ] "Reset to Wiley Defaults", voice-note recorder, semantic toggle, progress indicators all verified
+- [ ] Synology health widget + Ollama status fully functional in Settings
+
+### Done Detector — Acceptance Criteria (Deb can use with confidence)
+
+When **ALL** of the following are true, the product is DONE and ready for Deb:
+
+1. Deb can perform her complete daily workflow using only the buttons already built (Upload → AI Agent → Requirement created → Calendar entry → Vault note → Copy for Deputy → Print Packet) with zero errors or missing steps.
+2. Every page shows the exact footer "All data stays in Wiley • Synology DS225+ • Last backed up X min ago" and it updates live.
+3. All promised UI touches (Help?, Undo, Offline banner, large buttons, red/yellow/green, "If I'm Gone") are present and work exactly as described.
+4. Full test suite (bUnit + Playwright E2E + manual smoke) passes and is attached to the final PR.
+5. Deb signs off: "I can train my deputy in 10 minutes and sleep at night knowing everything is here and backed up."
+6. Code remains lean — no extra abstractions, no unused services, no speculative future-proofing. Only what the spec required.
+
+### Implementation Rules (enforced in every PR)
+
+- Tests first → code → review → merge
+- Each PR ≤ 8 files, ≤ 2 hours work
+- Zero new features — only items already listed above
+- After final merge: `dotnet test --filter FullyTested` (`FullyTested` trait/category to be added when E2E tests land), trunk check, Synology backup verification, Deb walkthrough recorded
+
+### PR Sequence for Closure (run in order)
+
+1. "UI Polish & Consistency Sweep"
+2. "Final Test & Accessibility Pass"
+3. "Documentation & Clerk Touches"
+4. "Infrastructure Health UI Closure + Done Detector Sign-off"
+
+When these four PRs are green and Deb gives thumbs-up → TIKR is officially shipped and supported.
 
 ---
 
@@ -202,24 +274,36 @@ When a phase completes, set **Status** to `done` and move **in progress** to the
 
 ## MVP remaining (2026-06-28)
 
-**Ship bar:** Phases 1–8 core criteria met on branch `feature/phase8-auth` ([PR #27](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/27)). Phase 9 RAG **backend + Assistant context** is done; remaining Phase 9 items are polish/ingestion, not blockers for a clerk demo on NAS.
+**Ship bar:** Phases **1–9 core** and **10A–10B** merged on `main` ([#27](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/27), [#30](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/30), [#31](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/31)). **Phase 0** is the clerk ship gate (polish + Playwright E2E).
+
+### Phases 1–9 summary
+
+| Phase | Status | Notes |
+|-------|--------|-------|
+| 1 Scaffold | done | |
+| 2 Tests | done | 235+ tests; coverage floors in CI |
+| 3 Syncfusion AI | done | `/assistant`, HybridAiService |
+| 4 GitHub + Trunk | done | |
+| 5 Hardening | done | 5B Actions `GITHUB_TOKEN` manual only |
+| 6 Smart Components | planned | post-ship |
+| 7 Coverage | done | Playwright → Phase 0 |
+| 8 Auth | done | optional multi-user |
+| 9 Search/docs | done (core) | RAG + semantic UI; PDF/IMAP deferred |
 
 ### Open acceptance criteria (by phase)
 
-| Phase | Item | Blocks MVP? |
-|-------|------|-------------|
-| **5B** | GitHub **Settings → Actions:** allow actions; read-only default `GITHUB_TOKEN` | No (repo hygiene) |
-| **7** | Playwright E2E against Docker stack | No (deferred) |
-| **9** | PDF preview (`SfPdfViewer`) | No (deferred) |
-| **9** | Rich DOCX / Spreadsheet preview | No (deferred) |
-| **9** | Full-text extraction for non-text uploads | Partial — improves doc search quality |
-| **9** | IMAP / forward-to-folder email ingestion | No (deferred) |
+| Phase | Item | Blocks ship? |
+|-------|------|--------------|
+| **5B** | GitHub **Settings → Actions:** read-only default `GITHUB_TOKEN` | No |
+| **9** | Plain-text `FullTextContent` on upload | done (PR pending) |
+| **9** | PDF/DOCX preview, IMAP ingestion | No (deferred) |
+| **0** | Playwright E2E + polish checklist | **Yes** |
 
-### Active CI blockers (PR #27)
+Remaining polish, accessibility, and E2E coverage are tracked in **Phase 0** above.
 
-- [x] **Shared coverage** — auth config helper tests added
-- [x] **Web coverage** — auth service + TikrApiClient auth tests added
-- [x] **GitGuardian** — test fixtures use `TestAuthFixtures` placeholders (not real credentials)
+### CI status
+
+All feature PRs through #31 merged; `main` green on **TIKR CI** + **Trunk** + **GitGuardian**.
 
 ---
 
@@ -256,11 +340,11 @@ Technical debt and UX consolidation. Safe to tackle in small PRs after #27 merge
 
 - [ ] Phase 6 — Smart Paste, Smart TextArea, Scheduler NL recurring (Syncfusion.Blazor.AI)
 - [ ] Phase 9 deferred — PDF/DOCX preview, IMAP ingestion, full-text extraction pipeline
-- [ ] Phase 7 deferred — Playwright E2E clerk flows
+- [ ] Phase 0 — Playwright E2E clerk flows + accessibility pass (see Phase 0)
 
 ### Suggested merge order
 
-1. Green **TIKR CI** + **Trunk** on [PR #27](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/27) (coverage fixes)
-2. Merge Phase 8 → `main`
-3. Phase 9 slice: full-text extraction OR PDF preview (pick one)
+1. Phase 9 slice: plain-text extraction on document upload (current)
+2. **Phase 0** PR sequence (polish → tests/a11y → docs → health UI sign-off)
+3. Phase 10C group A (Syncfusion AgentTools + AES storage)
 4. Phase 6 when clerk forms need Smart AI
