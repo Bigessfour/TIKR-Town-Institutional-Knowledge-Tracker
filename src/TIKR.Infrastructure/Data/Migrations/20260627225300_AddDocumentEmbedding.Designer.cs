@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using TIKR.Infrastructure.Data;
 
@@ -10,9 +11,11 @@ using TIKR.Infrastructure.Data;
 namespace TIKR.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(TikrDbContext))]
-    partial class TikrDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260627225300_AddDocumentEmbedding")]
+    partial class AddDocumentEmbedding
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.9");

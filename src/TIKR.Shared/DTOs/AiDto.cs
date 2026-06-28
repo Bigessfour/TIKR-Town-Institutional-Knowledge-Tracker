@@ -18,3 +18,19 @@ public record AiStatusResponse(
     bool OllamaAvailable,
     string OllamaModel,
     bool GrokEnabled);
+
+public record SemanticSearchRequest(string Query, int TopK = 3);
+
+public record SemanticSearchHit(
+    Guid DocumentId,
+    string FileName,
+    string? SuggestedFolder,
+    string? Snippet,
+    double Score);
+
+public record SemanticSearchResponse(
+    string Query,
+    int Considered,
+    IReadOnlyList<SemanticSearchHit> Hits);
+
+public record EmbedDocumentResponse(Guid DocumentId, bool Embedded, string? Reason);

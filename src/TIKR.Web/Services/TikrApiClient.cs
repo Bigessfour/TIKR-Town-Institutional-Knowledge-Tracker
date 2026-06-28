@@ -49,4 +49,20 @@ public class TikrApiClient(HttpClient http)
 
     public async Task CreateKnowledgeEntryAsync(CreateKnowledgeEntryRequest request) =>
         await http.PostAsJsonAsync("/api/knowledge", request);
+
+    public async Task<SemanticSearchResponse?> SemanticSearchDocumentsAsync(string query, int topK = 3)
+    {
+        var response = await http.PostAsJsonAsync("/api/ai/semantic-search", new SemanticSearchRequest(query, topK));
+        return response.IsSuccessStatusCode
+            ? await response.Content.ReadFromJsonAsync<SemanticSearchResponse>()
+            : null;
+    }
+
+    public async Task<EmbedDocumentResponse?> EmbedDocumentAsync(Guid documentId)
+    {
+        var response = await http.PostAsync($"/api/ai/embed-document/{documentId}", content: null);
+        return response.IsSuccessStatusCode
+            ? await response.Content.ReadFromJsonAsync<EmbedDocumentResponse>()
+            : null;
+    }
 }

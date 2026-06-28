@@ -180,11 +180,13 @@ public class HybridAiServiceTests
         GrokService grok) =>
         new(db, ollama, grok, NullLogger<HybridAiService>.Instance);
 
-    private static IOllamaChatClientFactory CreateOllamaFactory(string responseText)
+    private static IOllamaChatClientFactory CreateOllamaFactory(string responseText, Func<string, float[]?>? embedder = null)
     {
         var factory = new Mock<IOllamaChatClientFactory>();
         factory.Setup(f => f.CreateChatClient()).Returns(new StubChatClient(responseText));
         factory.SetupGet(f => f.ChatModel).Returns("test-model");
+        factory.Setup(f => f.CreateEmbeddingGenerator(It.IsAny<string>()))
+            .Returns(new StubEmbeddingGenerator(embedder ?? (_ => null)));
         return factory.Object;
     }
 
