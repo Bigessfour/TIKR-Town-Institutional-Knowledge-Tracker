@@ -28,6 +28,9 @@ builder.Services.AddRazorComponents()
 
 builder.Services.AddSyncfusionBlazor();
 
+var resourceCatalogPath = Path.Combine(builder.Environment.ContentRootPath, "Data", "colorado-clerk-resources.json");
+builder.Services.AddSingleton(ColoradoResourceCatalog.LoadFromFile(resourceCatalogPath));
+
 var apiBaseUrl = builder.Configuration["TIKR_API_URL"] ?? "http://localhost:5000";
 builder.Services.AddHttpClient<TikrApiClient>(client =>
 {
