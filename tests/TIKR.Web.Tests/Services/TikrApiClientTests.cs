@@ -236,6 +236,21 @@ public class TikrApiClientTests
     }
 
     [Fact]
+    public async Task DeleteRequirementAsync_SendsDelete()
+    {
+        HttpMethod? method = null;
+        var handler = new RecordingHandler((req, _) =>
+        {
+            method = req.Method;
+            return new HttpResponseMessage(HttpStatusCode.NoContent);
+        });
+        var sut = new TikrApiClient(new HttpClient(handler) { BaseAddress = new Uri("http://localhost/") });
+
+        await sut.DeleteRequirementAsync(Guid.NewGuid());
+        method.Should().Be(HttpMethod.Delete);
+    }
+
+    [Fact]
     public async Task GetRecentAuditAsync_AppendsLimit()
     {
         string? path = null;

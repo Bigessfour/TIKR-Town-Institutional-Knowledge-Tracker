@@ -57,6 +57,12 @@ public class TikrApiClient(HttpClient http)
     public async Task CreateRequirementAsync(CreateRequirementRequest request) =>
         await http.PostAsJsonAsync("/api/requirements", request);
 
+    public async Task DeleteRequirementAsync(Guid id)
+    {
+        var response = await http.DeleteAsync($"/api/requirements/{id}");
+        response.EnsureSuccessStatusCode();
+    }
+
     public async Task<KnowledgeEntryDto?> CreateKnowledgeEntryAsync(CreateKnowledgeEntryRequest request)
     {
         var response = await http.PostAsJsonAsync("/api/knowledge", request);

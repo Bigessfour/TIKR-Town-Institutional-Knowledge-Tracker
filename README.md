@@ -89,7 +89,7 @@ docker compose -f docker/docker-compose.yml up --build
 dotnet test TIKR.sln --settings coverlet.runsettings --collect:"XPlat Code Coverage"
 ```
 
-See **[tests/README.md](tests/README.md)** for the coverage policy (90% target; CI floor ramps up over time). Current suite: **213 tests** across Shared, Infrastructure, Api integration, and Web (bUnit).
+See **[tests/README.md](tests/README.md)** for the coverage policy (90% target; CI floor ramps up over time). Current suite: **226 tests** across Shared, Infrastructure, Api integration, and Web (bUnit).
 
 ## Local Development (detailed)
 
@@ -232,6 +232,7 @@ Flow: Blazor login → `POST /api/auth/login` → JWT in HttpOnly cookie → pro
 ## Features (v1 Scaffold)
 
 - **Deadline Calendar** — Pre-seeded Colorado municipal deadlines + custom requirements
+- **Requirements Manager** — CRUD grid at `/requirements` with urgency filters, CSV export, and bus-factor banner
 - **Document Management** — Upload, AI auto-tagging, search
 - **Knowledge Vault** — "If I'm Gone" institutional knowledge entries
 - **Hybrid AI** — Local Ollama chat on `/assistant`; Grok for "Ask Advanced AI" (API-gated)
