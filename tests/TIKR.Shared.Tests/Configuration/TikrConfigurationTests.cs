@@ -168,4 +168,61 @@ public class TikrConfigurationTests
 
         act.Should().Throw<InvalidOperationException>();
     }
+
+    [Fact]
+    public void GetJwtSigningKey_ReturnsConfiguredKey()
+    {
+        TikrConfiguration.GetJwtSigningKey(BuildConfig(new Dictionary<string, string?>
+        {
+            ["TIKR_JWT_SIGNING_KEY"] = "super-secret-signing-key-at-least-32-chars"
+        })).Should().Be("super-secret-signing-key-at-least-32-chars");
+    }
+
+    [Fact]
+    public void GetJwtSigningKey_ReturnsDevFallbackWhenAuthDisabled()
+    {
+        TikrConfiguration.GetJwtSigningKey(BuildConfig([]))
+            .Should().Be("tikr-dev-insecure-jwt-key-not-for-production");
+    }
+
+    [Fact]
+    public void GetAdminBootstrapEmail_ReturnsValue()
+    {
+        TikrConfiguration.GetAdminBootstrapEmail(BuildConfig(new Dictionary<string, string?>
+        {
+            ["TIKR_ADMIN_EMAIL"] = "clerk@town.gov"
+        })).Should().Be("clerk@town.gov");
+    }
+
+    [Fact]
+    public void GetAdminBootstrapPassword_ReturnsValue()
+    {
+        TikrConfiguration.GetAdminBootstrapPassword(BuildConfig(new Dictionary<string, string?>
+        {
+            ["TIKR_ADMIN_PASSWORD"] = "Password1!"
+        })).Should().Be("Password1!");
+    }
+
+    [Fact]
+    public void IsAuthEnabled_TrueWhenExplicitlyEnabled()
+    {
+        TikrConfiguration.IsAuthEnabled(BuildConfig(new Dictionary<string, string?>
+        {
+            ["TIKR_AUTH_ENABLED"] = "true"
+        })).Should().BeTrue();
+    }
+
+    [Theory]
+    [InlineData(null, 8)]
+    [InlineData("24", 24)]
+    [InlineData("0", 8)]
+    [InlineData("-1", 8)]
+    public void GetJwtExpirationHours_UsesDefaultOrOverride(string? hours, int expected)
+    {
+        var values = new Dictionary<string, string?>();
+        if (hours is not null)
+            values["TIKR_JWT_EXPIRATION_HOURS"] = hours;
+
+        TikrConfiguration.GetJwtExpirationHours(BuildConfig(values)).Should().Be(expected);
+    }
 }

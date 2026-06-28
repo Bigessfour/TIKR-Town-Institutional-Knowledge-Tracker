@@ -2,6 +2,7 @@ using System.Net;
 using System.Text;
 using System.Text.Json;
 using FluentAssertions;
+using TIKR.Shared.Constants;
 using TIKR.Shared.DTOs;
 using TIKR.Shared.Enums;
 using TIKR.Web.Services;
@@ -317,6 +318,93 @@ public class TikrApiClientTests
 
         var result = await sut.EmbedKnowledgeEntryAsync(entryId);
         result!.Embedded.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task GetProfileAsync_DeserializesResponse()
+    {
+        var json = JsonSerializer.Serialize(new UserProfileDto("user-1", "clerk@town.gov", "Clerk", [TikrRoles.Clerk]));
+        var (client, _) = CreateClient(json, HttpMethod.Get, "/api/auth/me");
+        var sut = new TikrApiClient(client);
+
+        var profile = await sut.GetProfileAsync();
+        profile!.Email.Should().Be("clerk@town.gov");
+    }
+
+    [Fact]
+    public async Task GetUsersAsync_DeserializesResponse()
+    {
+        var json = JsonSerializer.Serialize(new List<UserSummaryDto>
+        {
+            new("user-1", "admin@town.gov", "Admin", true, [TikrRoles.Admin])
+        });
+        var (client, _) = CreateClient(json, HttpMethod.Get, "/api/auth/users");
+        var sut = new TikrApiClient(client);
+
+        (await sut.GetUsersAsync()).Should().ContainSingle().Which.Email.Should().Be("admin@town.gov");
+    }
+
+    [Fact]
+    public async Task CreateUserAsync_ReturnsNullOnFailure()
+    {
+        var handler = new RecordingHandler((_, _) => new HttpResponseMessage(HttpStatusCode.BadRequest));
+        var sut = new TikrApiClient(new HttpClient(handler) { BaseAddress = new Uri("http://localhost/") });
+
+        var result = await sut.CreateUserAsync(new CreateUserRequest(
+            "new@town.gov", "Password1!", "New Clerk", TikrRoles.Clerk));
+
+        result.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task CreateUserAsync_DeserializesSuccess()
+    {
+        var json = JsonSerializer.Serialize(new UserSummaryDto(
+            "user-2", "new@town.gov", "New Clerk", true, [TikrRoles.Clerk]));
+        var (client, _) = CreateClient(json, HttpMethod.Post, "/api/auth/users");
+        var sut = new TikrApiClient(client);
+
+        var created = await sut.CreateUserAsync(new CreateUserRequest(
+            "new@town.gov", "Password1!", "New Clerk", TikrRoles.Clerk));
+
+        created!.Email.Should().Be("new@town.gov");
+    }
+
+    [Fact]
+    public async Task UpdateUserAsync_DeserializesSuccess()
+    {
+        var json = JsonSerializer.Serialize(new UserSummaryDto(
+            "user-2", "new@town.gov", "New Clerk", false, [TikrRoles.Clerk]));
+        var (client, _) = CreateClient(json, HttpMethod.Put, "/api/auth/users/user-2");
+        var sut = new TikrApiClient(client);
+
+        var updated = await sut.UpdateUserAsync("user-2", new UpdateUserRequest(false, null, TikrRoles.Clerk));
+        updated!.IsActive.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task ChangePasswordAsync_ReturnsTrueOnSuccess()
+    {
+        var handler = new RecordingHandler((req, _) =>
+        {
+            req.Method.Should().Be(HttpMethod.Post);
+            req.RequestUri!.PathAndQuery.Should().Be("/api/auth/change-password");
+            return new HttpResponseMessage(HttpStatusCode.NoContent);
+        });
+        var sut = new TikrApiClient(new HttpClient(handler) { BaseAddress = new Uri("http://localhost/") });
+
+        var ok = await sut.ChangePasswordAsync(new ChangePasswordRequest("OldPass1!", "NewPass1!"));
+        ok.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task ChangePasswordAsync_ReturnsFalseOnFailure()
+    {
+        var handler = new RecordingHandler((_, _) => new HttpResponseMessage(HttpStatusCode.BadRequest));
+        var sut = new TikrApiClient(new HttpClient(handler) { BaseAddress = new Uri("http://localhost/") });
+
+        var ok = await sut.ChangePasswordAsync(new ChangePasswordRequest("OldPass1!", "weak"));
+        ok.Should().BeFalse();
     }
 
     private static (HttpClient Client, RecordingHandler Handler) CreateClient(string json, HttpMethod expectedMethod, string expectedPath)

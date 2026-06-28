@@ -73,14 +73,14 @@ Living roadmap for TIKR development. Agents and contributors: read the **current
 
 ## Phase 5 — Post-push hardening
 
-**Status:** in progress (5A done; 5B manual GH settings pending; UI features largely complete via Prompts 2/4/5)
+**Status:** done (5B manual GH settings pending — Actions read-only `GITHUB_TOKEN` only open item)
 
 **Note on UI Completion (2026 analysis):** Major UI elements delivered:
 - Dashboard (Prompt 2): Urgency pills, AI summary, quick actions, grids, activity.
 - Documents (Prompt 4): Uploader, TreeView folders, Grid with search/filters, ContextMenu, Splitter preview, AI banners.
-- Knowledge Vault (Prompt 5 at /vault): Red "hit by bus" banner, SfTab (How-To/Contacts/Tribal/Voice), Accordion/Grid, RichTextEditor, voice sim, "Copy for New Clerk".
-Calendar solid. Legacy /knowledge and thin Requirements remain as cleanup items.
-AI runtime context still limited (see RAG MCP and gaps). Docker/CI support strong for shipping.
+- Knowledge Vault (Prompt 5 at `/vault`): Red "hit by a bus" banner, SfTab (How-To/Contacts/Tribal/Voice), Accordion/Grid, RichTextEditor, voice sim, "Copy for New Clerk".
+- Calendar solid. Legacy `/knowledge` redirects to `/vault`. Dedicated Requirements UI deferred pending product vision.
+- Assistant semantic doc + vault RAG context wired (Phase 9). Docker/CI support strong for shipping.
 
 ### 5A — Fix CI (code)
 
@@ -197,3 +197,70 @@ Repeat-safe checklist — safe to re-run anytime:
 ## How to update this doc
 
 When a phase completes, set **Status** to `done` and move **in progress** to the next phase. Keep acceptance criteria honest — check boxes only when verified in CI or manual test.
+
+---
+
+## MVP remaining (2026-06-28)
+
+**Ship bar:** Phases 1–8 core criteria met on branch `feature/phase8-auth` ([PR #27](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/27)). Phase 9 RAG **backend + Assistant context** is done; remaining Phase 9 items are polish/ingestion, not blockers for a clerk demo on NAS.
+
+### Open acceptance criteria (by phase)
+
+| Phase | Item | Blocks MVP? |
+|-------|------|-------------|
+| **5B** | GitHub **Settings → Actions:** allow actions; read-only default `GITHUB_TOKEN` | No (repo hygiene) |
+| **7** | Playwright E2E against Docker stack | No (deferred) |
+| **9** | PDF preview (`SfPdfViewer`) | No (deferred) |
+| **9** | Rich DOCX / Spreadsheet preview | No (deferred) |
+| **9** | Full-text extraction for non-text uploads | Partial — improves doc search quality |
+| **9** | IMAP / forward-to-folder email ingestion | No (deferred) |
+
+### Active CI blockers (PR #27)
+
+- [x] **Shared coverage** — auth config helper tests added
+- [x] **Web coverage** — auth service + TikrApiClient auth tests added
+- [ ] **GitGuardian** check on PR (investigate; may be false positive on test fixtures — Trunk gitleaks passed)
+
+---
+
+## Cleanup backlog (post–Phase 8)
+
+Technical debt and UX consolidation. Safe to tackle in small PRs after #27 merges.
+
+### Navigation and pages
+
+- [x] **Retire legacy `/knowledge` page** — replaced with redirect to `/vault`
+- [x] **Point sidebar nav to `/vault`**
+- [x] **Redirect `/knowledge` → `/vault`**
+- [ ] **Requirements page** — deferred until product vision for dedicated requirements UX (calendar embeds requirements today)
+
+### Phase 5 note carryover
+
+- [x] Reconcile Phase 5 **Status** — UI complete; 5B Actions setting remains manual
+- [x] Update Phase 5 note — RAG + vault semantic search wired; `/knowledge` redirect done
+
+### Auth follow-ups (vNext — not MVP)
+
+- [ ] Email password reset (requires SMTP on NAS)
+- [ ] Token refresh / rotation hardening
+- [ ] Read-only `Viewer` role for council read access
+- [ ] Manual auth smoke test on Docker with `docker/.env` bootstrap creds (document in README test plan)
+
+### Docs and repo hygiene
+
+- [x] README: optional multi-user auth env vars documented
+- [x] Deploy docs: shared `env_file` applies auth vars to both `tikr-api` and `tikr-web`
+- [x] `.rag_index/` — gitignored (local RAG index only)
+
+### Phase 6+ (explicitly post-MVP)
+
+- [ ] Phase 6 — Smart Paste, Smart TextArea, Scheduler NL recurring (Syncfusion.Blazor.AI)
+- [ ] Phase 9 deferred — PDF/DOCX preview, IMAP ingestion, full-text extraction pipeline
+- [ ] Phase 7 deferred — Playwright E2E clerk flows
+
+### Suggested merge order
+
+1. Green **TIKR CI** + **Trunk** on [PR #27](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/27) (coverage fixes)
+2. Merge Phase 8 → `main`
+3. Phase 9 slice: full-text extraction OR PDF preview (pick one)
+4. Phase 6 when clerk forms need Smart AI

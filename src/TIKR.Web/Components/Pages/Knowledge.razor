@@ -1,49 +1,7 @@
 @page "/knowledge"
-@rendermode InteractiveServer
-@inject TikrApiClient Api
-
-<div class="page-header">
-    <h2>Institutional Knowledge Vault</h2>
-    <p>"If I'm Gone" — how-to guides, contacts, and tribal knowledge</p>
-</div>
-
-<SfGrid DataSource="@_entries" AllowPaging="true" Height="500">
-    <GridColumns>
-        <GridColumn Field="@nameof(KnowledgeEntryDto.Title)" HeaderText="Title" Width="200"></GridColumn>
-        <GridColumn Field="@nameof(KnowledgeEntryDto.Category)" HeaderText="Category" Width="140"></GridColumn>
-        <GridColumn Field="@nameof(KnowledgeEntryDto.Content)" HeaderText="Content" Width="400"></GridColumn>
-        <GridColumn Field="@nameof(KnowledgeEntryDto.SortOrder)" HeaderText="Order" Width="80"></GridColumn>
-    </GridColumns>
-</SfGrid>
-
-<div class="mt-4">
-    <h4>Add Entry</h4>
-    <div class="mb-2">
-        <SfTextBox Placeholder="Title" @bind-Value="_newTitle"></SfTextBox>
-    </div>
-    <div class="mb-2">
-        <SfTextBox Placeholder="Content" Multiline="true" @bind-Value="_newContent"></SfTextBox>
-    </div>
-    <SfButton IsPrimary="true" Content="Save Entry" OnClick="SaveEntry"></SfButton>
-</div>
+@inject NavigationManager Navigation
 
 @code {
-    private List<KnowledgeEntryDto> _entries = [];
-    private string _newTitle = "";
-    private string _newContent = "";
-
-    protected override async Task OnInitializedAsync() =>
-        _entries = await Api.GetKnowledgeEntriesAsync();
-
-    private async Task SaveEntry()
-    {
-        if (string.IsNullOrWhiteSpace(_newTitle)) return;
-
-        await Api.CreateKnowledgeEntryAsync(new CreateKnowledgeEntryRequest(
-            _newTitle, _newContent, KnowledgeCategory.HowTo, _entries.Count));
-
-        _newTitle = "";
-        _newContent = "";
-        _entries = await Api.GetKnowledgeEntriesAsync();
-    }
+    protected override void OnInitialized() =>
+        Navigation.NavigateTo("/vault", replace: true);
 }
