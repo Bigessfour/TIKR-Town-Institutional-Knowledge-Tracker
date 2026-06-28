@@ -18,6 +18,10 @@
     <PackageReference Include="Syncfusion.Blazor.Grid" Version="33.2.15" />
     <PackageReference Include="Syncfusion.Blazor.Inputs" Version="33.2.15" />
     <PackageReference Include="Syncfusion.Blazor.InteractiveChat" Version="33.2.15" />
+    <PackageReference Include="Syncfusion.Blazor.Layouts" Version="33.2.15" />
+    <PackageReference Include="Syncfusion.Blazor.Navigations" Version="33.2.15" />
+    <PackageReference Include="Syncfusion.Blazor.Popups" Version="33.2.15" />
+    <PackageReference Include="Syncfusion.Blazor.RichTextEditor" Version="33.2.15" />
     <PackageReference Include="Syncfusion.Blazor.Schedule" Version="33.2.15" />
     <PackageReference Include="Syncfusion.Blazor.Themes" Version="33.2.15" />
   </ItemGroup>

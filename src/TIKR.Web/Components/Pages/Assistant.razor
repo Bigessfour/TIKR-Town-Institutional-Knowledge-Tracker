@@ -4,10 +4,14 @@
 @inject TikrApiClient Api
 @using Markdig
 @using Microsoft.Extensions.AI
+@using TIKR.Web.Components.Shared
 
 <div class="page-header">
-    <h2>AI Assistant</h2>
-    <p>Local Ollama for everyday questions; Grok for advanced reasoning when enabled.</p>
+    <div class="page-header-main">
+        <h2>AI Assistant</h2>
+        <p>Local Ollama for everyday questions; Grok for advanced reasoning when enabled.</p>
+    </div>
+    <PageHelp HelpText="Ask questions in plain English. Your data stays local unless you choose Ask Advanced AI." />
 </div>
 
 @if (!string.IsNullOrEmpty(_contextSummary))
@@ -104,9 +108,52 @@
 
         try
         {
-            var userMessage = string.IsNullOrWhiteSpace(_contextSummary)
+            // Phase 9 RAG: pull top-K semantically relevant docs and prepend their snippets.
+            // Best-effort: if Ollama embeddings are unavailable, response is empty and we fall through.
+            string? docContext = null;
+            try
+            {
+                var search = await Api.SemanticSearchDocumentsAsync(args.Prompt, topK: 3);
+                if (search is { Hits.Count: > 0 })
+                {
+                    docContext = string.Join("\n", search.Hits.Select(h =>
+                        $"- {h.FileName}" +
+                        (string.IsNullOrWhiteSpace(h.SuggestedFolder) ? "" : $" [{h.SuggestedFolder}]") +
+                        (string.IsNullOrWhiteSpace(h.Snippet) ? "" : $": {h.Snippet}")));
+                }
+            }
+            catch
+            {
+                docContext = null;
+            }
+
+            string? vaultContext = null;
+            try
+            {
+                var vault = await Api.SemanticSearchKnowledgeAsync(args.Prompt, topK: 3);
+                if (vault is { Hits.Count: > 0 })
+                {
+                    vaultContext = string.Join("\n", vault.Hits.Select(h =>
+                        $"- {h.Title} [{h.Category}]" +
+                        (string.IsNullOrWhiteSpace(h.Snippet) ? "" : $": {h.Snippet}")));
+                }
+            }
+            catch
+            {
+                vaultContext = null;
+            }
+
+            var contextBlocks = new List<string>();
+            if (!string.IsNullOrWhiteSpace(_contextSummary))
+                contextBlocks.Add($"Upcoming priorities:\n{_contextSummary}");
+            if (!string.IsNullOrWhiteSpace(docContext))
+                contextBlocks.Add($"Relevant documents:\n{docContext}");
+            if (!string.IsNullOrWhiteSpace(vaultContext))
+                contextBlocks.Add($"Relevant institutional knowledge:\n{vaultContext}");
+
+            var userMessage = contextBlocks.Count == 0
                 ? args.Prompt
-                : $"Upcoming priorities:\n{_contextSummary}\n\nQuestion: {args.Prompt}";
+                : string.Join("\n\n", contextBlocks) + $"\n\nQuestion: {args.Prompt}";
 
             var messages = new List<Microsoft.Extensions.AI.ChatMessage>
             {

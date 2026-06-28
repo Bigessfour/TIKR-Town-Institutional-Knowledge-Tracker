@@ -1,0 +1,359 @@
+@page "/vault"
+@rendermode InteractiveServer
+@inject TikrApiClient Api
+@inject IJSRuntime JS
+
+@using Syncfusion.Blazor.RichTextEditor
+@using Syncfusion.Blazor.Navigations
+
+<!-- Big red emotional banner -->
+<div class="vault-emergency-banner">
+    <div class="banner-icon">🚌❤️</div>
+    <div>
+        <strong>This section protects the town if I get hit by a bus ❤️</strong>
+        <p class="banner-sub">Everything a new clerk needs to keep things running. If anything happens to me, start here.</p>
+    </div>
+</div>
+
+<!-- Prominent global Copy button -->
+<SfButton CssClass="tikr-action-btn vault-copy-btn"
+          IconCss="e-icons e-copy"
+          Content="Copy Everything for New Clerk"
+          OnClick="CopyAllForNewClerkAsync" />
+
+<SfTab CssClass="vault-tabs">
+    <TabItems>
+        <!-- How-To -->
+        <TabItem>
+            <ChildContent>
+                <TabHeader Text="How-To"></TabHeader>
+            </ChildContent>
+            <ContentTemplate>
+                <div class="vault-section">
+                    <SfGrid DataSource="@HowToEntries" AllowPaging="true" PageSize="8" Height="260" AllowSorting="true">
+                        <GridColumns>
+                            <GridColumn Field="@nameof(KnowledgeEntryDto.Title)" HeaderText="Title" Width="220" />
+                            <GridColumn Field="@nameof(KnowledgeEntryDto.SortOrder)" HeaderText="Order" Width="70" />
+                            <GridColumn Width="100">
+                                <Template>
+                                    @{
+                                        var entry = (context as KnowledgeEntryDto)!;
+                                    }
+                                    <SfButton CssClass="tikr-action-btn small" Content="Edit" OnClick="@(() => SelectEntry(entry))" />
+                                    <SfButton CssClass="tikr-action-btn small danger" Content="Delete" OnClick="@(() => DeleteEntryAsync(entry))" />
+                                </Template>
+                            </GridColumn>
+                        </GridColumns>
+                    </SfGrid>
+
+                    <SfAccordion CssClass="vault-accordion">
+                        @foreach (var e in HowToEntries)
+                        {
+                            <AccordionItem>
+                                <Header>
+                                    <div class="acc-header">@e.Title</div>
+                                </Header>
+                                <Content>
+                                    <div class="acc-content" @onclick="() => SelectEntry(e)">
+                                        @(new MarkupString(TruncateForDisplay(e.Content)))
+                                    </div>
+                                </Content>
+                            </AccordionItem>
+                        }
+                    </SfAccordion>
+                </div>
+            </ContentTemplate>
+        </TabItem>
+
+        <!-- Contacts -->
+        <TabItem>
+            <ChildContent>
+                <TabHeader Text="Contacts"></TabHeader>
+            </ChildContent>
+            <ContentTemplate>
+                <div class="vault-section">
+                    <SfGrid DataSource="@ContactEntries" AllowPaging="true" PageSize="8" Height="260" AllowSorting="true">
+                        <GridColumns>
+                            <GridColumn Field="@nameof(KnowledgeEntryDto.Title)" HeaderText="Contact / Role" Width="220" />
+                            <GridColumn Width="100">
+                                <Template>
+                                    @{
+                                        var entry = (context as KnowledgeEntryDto)!;
+                                    }
+                                    <SfButton CssClass="tikr-action-btn small" Content="Edit" OnClick="@(() => SelectEntry(entry))" />
+                                    <SfButton CssClass="tikr-action-btn small danger" Content="Delete" OnClick="@(() => DeleteEntryAsync(entry))" />
+                                </Template>
+                            </GridColumn>
+                        </GridColumns>
+                    </SfGrid>
+
+                    <SfAccordion>
+                        @foreach (var e in ContactEntries)
+                        {
+                            <AccordionItem>
+                                <Header><div class="acc-header">@e.Title</div></Header>
+                                <Content>
+                                    <div class="acc-content" @onclick="() => SelectEntry(e)">
+                                        @(new MarkupString(TruncateForDisplay(e.Content)))
+                                    </div>
+                                </Content>
+                            </AccordionItem>
+                        }
+                    </SfAccordion>
+                </div>
+            </ContentTemplate>
+        </TabItem>
+
+        <!-- Tribal Knowledge -->
+        <TabItem>
+            <ChildContent>
+                <TabHeader Text="Tribal Knowledge"></TabHeader>
+            </ChildContent>
+            <ContentTemplate>
+                <div class="vault-section">
+                    <SfGrid DataSource="@TribalEntries" AllowPaging="true" PageSize="8" Height="260" AllowSorting="true">
+                        <GridColumns>
+                            <GridColumn Field="@nameof(KnowledgeEntryDto.Title)" HeaderText="Title" Width="220" />
+                            <GridColumn Width="100">
+                                <Template>
+                                    @{
+                                        var entry = (context as KnowledgeEntryDto)!;
+                                    }
+                                    <SfButton CssClass="tikr-action-btn small" Content="Edit" OnClick="@(() => SelectEntry(entry))" />
+                                    <SfButton CssClass="tikr-action-btn small danger" Content="Delete" OnClick="@(() => DeleteEntryAsync(entry))" />
+                                </Template>
+                            </GridColumn>
+                        </GridColumns>
+                    </SfGrid>
+
+                    <SfAccordion>
+                        @foreach (var e in TribalEntries)
+                        {
+                            <AccordionItem>
+                                <Header><div class="acc-header">@e.Title</div></Header>
+                                <Content>
+                                    <div class="acc-content" @onclick="() => SelectEntry(e)">
+                                        @(new MarkupString(TruncateForDisplay(e.Content)))
+                                    </div>
+                                </Content>
+                            </AccordionItem>
+                        }
+                    </SfAccordion>
+                </div>
+            </ContentTemplate>
+        </TabItem>
+
+        <!-- Voice Notes -->
+        <TabItem>
+            <ChildContent>
+                <TabHeader Text="Voice Notes"></TabHeader>
+            </ChildContent>
+            <ContentTemplate>
+                <div class="voice-section">
+                    <div class="voice-recorder">
+                        @if (!IsRecording)
+                        {
+                            <SfButton CssClass="tikr-action-btn voice-record-btn" IconCss="e-icons e-microphone" Content="Start Voice Note" OnClick="StartRecording" />
+                        }
+                        else
+                        {
+                            <SfButton CssClass="tikr-action-btn voice-stop-btn" IconCss="e-icons e-stop" Content="@($"Stop & Transcribe ({RecordingSeconds} s)")" OnClick="StopRecording" />
+                            <div class="recording-indicator">Recording... Speak clearly for the new clerk.</div>
+                        }
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(PendingTranscription))
+                    {
+                        <div class="transcription-box">
+                            <label>Transcribed note (edit if needed):</label>
+                            <SfTextBox Multiline="true" @bind-Value="PendingTranscription" Placeholder="What you said..." />
+                            <SfButton CssClass="tikr-action-btn" Content="Save as Voice Note" OnClick="SaveVoiceNoteAsync" />
+                        </div>
+                    }
+
+                    <SfGrid DataSource="@VoiceNotes" AllowPaging="true" PageSize="6" Height="220">
+                        <GridColumns>
+                            <GridColumn Field="Title" HeaderText="Title" Width="200" />
+                            <GridColumn Field="Transcription" HeaderText="Transcription" Width="280" />
+                            <GridColumn Width="80">
+                                <Template>
+                                    @{
+                                        var v = (context as VoiceNote)!;
+                                    }
+                                    <SfButton CssClass="tikr-action-btn small danger" Content="Del" OnClick="@(() => DeleteVoiceNote(v))" />
+                                </Template>
+                            </GridColumn>
+                        </GridColumns>
+                    </SfGrid>
+                </div>
+            </ContentTemplate>
+        </TabItem>
+    </TabItems>
+</SfTab>
+
+<!-- Rich editor for selected entry (shared across tabs) -->
+@if (SelectedEntry is not null)
+{
+    <div class="editor-section">
+        <h4>Editing: @SelectedEntry.Title</h4>
+        <SfRichTextEditor @bind-Value="EditorContent" Height="220px" />
+        <div class="editor-actions">
+            <SfButton CssClass="tikr-action-btn" Content="Save Changes" OnClick="SaveSelectedEntryAsync" />
+            <SfButton CssClass="tikr-action-btn" Content="Cancel" OnClick="CancelEdit" />
+        </div>
+    </div>
+}
+
+<PageHelp HelpText="This vault is your town's lifeline. Record how things really work. The 'Copy for New Clerk' button creates a single document they can take with them." />
+
+@code {
+    private List<KnowledgeEntryDto> _allEntries = [];
+    private List<VoiceNote> VoiceNotes { get; set; } = new();
+
+    private KnowledgeEntryDto? SelectedEntry;
+    private string EditorContent = "";
+
+    private bool IsRecording;
+    private int RecordingSeconds;
+    private System.Timers.Timer? _timer;
+    private string PendingTranscription = "";
+
+    private List<KnowledgeEntryDto> HowToEntries => _allEntries.Where(e => e.Category == KnowledgeCategory.HowTo).OrderBy(e => e.SortOrder).ToList();
+    private List<KnowledgeEntryDto> ContactEntries => _allEntries.Where(e => e.Category == KnowledgeCategory.Contact).OrderBy(e => e.SortOrder).ToList();
+    private List<KnowledgeEntryDto> TribalEntries => _allEntries.Where(e => e.Category == KnowledgeCategory.TribalKnowledge).OrderBy(e => e.SortOrder).ToList();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadEntriesAsync();
+    }
+
+    private async Task LoadEntriesAsync()
+    {
+        _allEntries = await Api.GetKnowledgeEntriesAsync();
+    }
+
+    private void SelectEntry(KnowledgeEntryDto entry)
+    {
+        SelectedEntry = entry;
+        EditorContent = entry.Content;
+    }
+
+    private async Task SaveSelectedEntryAsync()
+    {
+        if (SelectedEntry is null) return;
+
+        await Api.UpdateKnowledgeEntryAsync(SelectedEntry.Id, new UpdateKnowledgeEntryRequest(
+            SelectedEntry.Title, EditorContent, SelectedEntry.Category, SelectedEntry.SortOrder));
+
+        await LoadEntriesAsync();
+        CancelEdit();
+    }
+
+    private void CancelEdit()
+    {
+        SelectedEntry = null;
+        EditorContent = "";
+    }
+
+    private async Task DeleteEntryAsync(KnowledgeEntryDto entry)
+    {
+        await Api.DeleteKnowledgeEntryAsync(entry.Id);
+        await LoadEntriesAsync();
+        if (SelectedEntry?.Id == entry.Id) CancelEdit();
+    }
+
+    // Voice simulation
+    private void StartRecording()
+    {
+        IsRecording = true;
+        RecordingSeconds = 0;
+        PendingTranscription = "";
+
+        _timer?.Stop();
+        _timer = new System.Timers.Timer(1000);
+        _timer.Elapsed += (s, e) => { RecordingSeconds++; StateHasChanged(); };
+        _timer.Start();
+    }
+
+    private void StopRecording()
+    {
+        IsRecording = false;
+        _timer?.Stop();
+        _timer = null;
+
+        // Simulate transcription
+        PendingTranscription = $"[Voice Note - {DateTime.Now:HH:mm}] " +
+            "Key thing I always forget: call the county assessor before Dec 15 for mill levy. Also, the safe combination is in the red folder under 'E'. The new clerk should know the trustees meet on the second Tuesday.";
+        StateHasChanged();
+    }
+
+    private async Task SaveVoiceNoteAsync()
+    {
+        if (string.IsNullOrWhiteSpace(PendingTranscription)) return;
+
+        var title = $"Voice Note - {DateTime.Now:MMM dd}";
+        // Persist as Tribal Knowledge entry so it's durable
+        await Api.CreateKnowledgeEntryAsync(new CreateKnowledgeEntryRequest(
+            title, PendingTranscription, KnowledgeCategory.TribalKnowledge, _allEntries.Count));
+
+        // Also keep in local voice list for the tab
+        VoiceNotes.Add(new VoiceNote
+        {
+            Id = Guid.NewGuid(),
+            Title = title,
+            Transcription = PendingTranscription,
+            Timestamp = DateTime.UtcNow
+        });
+
+        PendingTranscription = "";
+        await LoadEntriesAsync();
+    }
+
+    private void DeleteVoiceNote(VoiceNote note)
+    {
+        VoiceNotes.Remove(note);
+    }
+
+    // Copy everything
+    private async Task CopyAllForNewClerkAsync()
+    {
+        var sb = new System.Text.StringBuilder();
+        sb.AppendLine("=== TIKR KNOWLEDGE VAULT - FOR THE NEW CLERK ===");
+        sb.AppendLine("If I'm gone, this has everything you need. Take care of the town.");
+        sb.AppendLine(DateTime.Now.ToString("yyyy-MM-dd HH:mm"));
+        sb.AppendLine();
+
+        sb.AppendLine("--- HOW-TO ---");
+        foreach (var e in HowToEntries)
+            sb.AppendLine($"• {e.Title}\n{e.Content}\n");
+
+        sb.AppendLine("--- CONTACTS ---");
+        foreach (var e in ContactEntries)
+            sb.AppendLine($"• {e.Title}\n{e.Content}\n");
+
+        sb.AppendLine("--- TRIBAL KNOWLEDGE ---");
+        foreach (var e in TribalEntries)
+            sb.AppendLine($"• {e.Title}\n{e.Content}\n");
+
+        sb.AppendLine("--- VOICE NOTES ---");
+        foreach (var v in VoiceNotes)
+            sb.AppendLine($"• {v.Title} ({v.Timestamp:HH:mm})\n{v.Transcription}\n");
+
+        await JS.InvokeVoidAsync("navigator.clipboard.writeText", sb.ToString());
+
+        // Show warm confirmation (simple status for now)
+        // In real app could use SfToast, here we can navigate or set temp message via existing patterns.
+        // For visibility we'll just let the user see it worked via browser.
+    }
+
+    private static string TruncateForDisplay(string content) =>
+        content.Length > 180 ? content[..177] + "..." : content;
+
+    public class VoiceNote
+    {
+        public Guid Id { get; set; }
+        public string Title { get; set; } = "";
+        public string Transcription { get; set; } = "";
+        public DateTime Timestamp { get; set; }
+    }
+}

@@ -2,48 +2,401 @@
 @rendermode InteractiveServer
 @inject TikrApiClient Api
 
+@using Syncfusion.Blazor.Layouts
+@using Syncfusion.Blazor.Navigations
+@using TIKR.Web.Components.Shared
+
 <div class="page-header">
-    <h2>Document Management</h2>
-    <p>Upload, tag, and search municipal documents</p>
+    <div class="page-header-main">
+        <h2>Document Library</h2>
+        <p>Upload, AI-tag, organize, and search municipal documents</p>
+    </div>
+    <PageHelp HelpText="Store ordinances, minutes, forms, and correspondence. AI auto-tags and suggests folders on upload. Everything stays on your local NAS." />
 </div>
 
-<SfUploader AutoUpload="true" Multiple="true">
-    <UploaderEvents ValueChange="OnUpload"></UploaderEvents>
-</SfUploader>
-
-<div class="mt-3">
-    <SfTextBox Placeholder="Search documents..." @bind-Value="_searchQuery" Input="OnSearch"></SfTextBox>
+<!-- Prominent large uploader -->
+<div class="uploader-zone">
+    <SfUploader AutoUpload="true" Multiple="true" AllowedExtensions=".pdf,.doc,.docx,.txt,.csv,.xlsx" MaxFileSize="52428800">
+        <UploaderEvents ValueChange="OnUpload"></UploaderEvents>
+    </SfUploader>
+    <div class="uploader-hint">Drag &amp; drop today's mail here or click to browse (PDF, Office, text supported)</div>
 </div>
 
-<SfGrid DataSource="@_documents" AllowPaging="true" Height="400" CssClass="mt-3">
-    <GridColumns>
-        <GridColumn Field="@nameof(DocumentDto.FileName)" HeaderText="File Name" Width="200"></GridColumn>
-        <GridColumn Field="@nameof(DocumentDto.AiTags)" HeaderText="AI Tags" Width="150"></GridColumn>
-        <GridColumn Field="@nameof(DocumentDto.SuggestedFolder)" HeaderText="Suggested Folder" Width="150"></GridColumn>
-        <GridColumn Field="@nameof(DocumentDto.FileSizeBytes)" HeaderText="Size (bytes)" Width="120"></GridColumn>
-        <GridColumn Field="@nameof(DocumentDto.UploadedAt)" HeaderText="Uploaded" Format="g" Width="160"></GridColumn>
-    </GridColumns>
-</SfGrid>
+<!-- AI banners (appear after upload + auto-tag) -->
+@if (_lastTagSuggestion is not null)
+{
+    <div class="ai-suggestion-banner">
+        <strong>AI analysis complete</strong>
+        <div class="banner-body">
+            This looks like <strong>@(_lastTagSuggestion.SuggestedFolder ?? "a general document")</strong>.
+            @if (_lastTagSuggestion.Tags?.Length > 0)
+            {
+                <span> Suggested tags: </span>
+                @foreach (var t in _lastTagSuggestion.Tags.Take(5))
+                {
+                    <span class="doc-tag">@t</span>
+                }
+            }
+        </div>
+        <div class="banner-actions">
+            <SfButton CssClass="tikr-action-btn" Content="Looks good / Accept" OnClick="AcceptSuggestion" />
+            <SfButton CssClass="tikr-action-btn" Content="Dismiss" OnClick="() => _lastTagSuggestion = null" />
+            <SfButton CssClass="tikr-action-btn" Content="Re-tag" OnClick="RetagLast" />
+        </div>
+    </div>
+}
+
+<!-- Search mode toggle + input (large, obvious) -->
+<div class="search-controls">
+    <div class="mode-toggle" role="group" aria-label="Search mode">
+        <SfButton CssClass="@(SearchMode == "full" ? "tikr-action-btn active" : "tikr-action-btn")"
+                  Content="Full-text search"
+                  OnClick="@(async () => await SetSearchMode("full"))" />
+        <SfButton CssClass="@(SearchMode == "semantic" ? "tikr-action-btn active" : "tikr-action-btn")"
+                  Content="Semantic search"
+                  OnClick="@(async () => await SetSearchMode("semantic"))" />
+    </div>
+    <SfTextBox CssClass="search-box"
+               Placeholder="@(SearchMode == "semantic" ? "Describe the document (e.g. '2025 budget resolution')" : "Search filename, tags, or content...")"
+               @bind-Value="_searchQuery"
+               Input="OnSearchInput" />
+</div>
+
+<!-- Bulk toolbar (large, appears when selection) -->
+@if (_selectedIds.Count > 0)
+{
+    <div class="bulk-toolbar">
+        <span class="bulk-count">@_selectedIds.Count selected</span>
+        <SfButton CssClass="tikr-action-btn" IconCss="e-icons e-trash" Content="Delete selected" OnClick="BulkDeleteAsync" />
+        <SfButton CssClass="tikr-action-btn" IconCss="e-icons e-reload" Content="Re-tag with AI" OnClick="BulkRetagAsync" />
+        <SfButton CssClass="tikr-action-btn" Content="Clear selection" OnClick="ClearSelection" />
+    </div>
+}
+
+<!-- Main resizable layout: Tree | Grid | Preview -->
+<SfSplitter Height="620px" Width="100%" SeparatorSize="4">
+    <SplitterPanes>
+        <!-- Left: Folder tree -->
+        <SplitterPane Size="20%" Min="160px" Max="280px">
+            <div class="folder-tree-header">Folders</div>
+            <SfTreeView TValue="FolderNode" CssClass="doc-tree" AllowMultiSelection="false">
+                <TreeViewFieldsSettings TValue="FolderNode" DataSource="@_folderNodes" Id="Id" Text="DisplayName" Child="Children" Expanded="IsExpanded" />
+                <TreeViewEvents TValue="FolderNode" NodeSelected="OnFolderSelected" />
+            </SfTreeView>
+            <div class="tree-hint">Click a folder to filter the list</div>
+        </SplitterPane>
+
+        <!-- Center: Grid -->
+        <SplitterPane>
+            <SfGrid @ref="GridRef"
+                    DataSource="@VisibleDocuments"
+                    AllowPaging="true"
+                    PageSize="12"
+                    AllowSorting="true"
+                    AllowFiltering="true"
+                    Height="520px"
+                    CssClass="doc-grid"
+                    AllowSelection="true">
+                <GridSelectionSettings Type="Syncfusion.Blazor.Grids.SelectionType.Multiple" CheckboxOnly="false" />
+                <GridColumns>
+                    <!-- Selection checkbox (reliable client state) -->
+                    <GridColumn Width="50" HeaderText="">
+                        <Template>
+                            @{
+                                var row = (context as DocumentDto)!;
+                                bool isSel = _selectedIds.Contains(row.Id);
+                            }
+                            <input type="checkbox"
+                                   checked="@isSel"
+                                   @onchange="() => ToggleSelection(row)"
+                                   aria-label="Select document" />
+                        </Template>
+                    </GridColumn>
+                    <GridColumn Field="@nameof(DocumentDto.FileName)" HeaderText="File Name" Width="220" />
+                    <GridColumn HeaderText="AI Tags" Width="160">
+                        <Template>
+                            @{
+                                var d = (context as DocumentDto)!;
+                                var tags = ParseTags(d.AiTags);
+                            }
+                            @if (tags.Length > 0)
+                            {
+                                foreach (var t in tags.Take(3))
+                                {
+                                    <span class="doc-tag">@t</span>
+                                }
+                                @if (tags.Length > 3) { <span class="doc-tag-more">+@(tags.Length-3)</span> }
+                            }
+                            else
+                            {
+                                <span class="text-muted">—</span>
+                            }
+                        </Template>
+                    </GridColumn>
+                    <GridColumn Field="@nameof(DocumentDto.SuggestedFolder)" HeaderText="Folder" Width="130" />
+                    <GridColumn Field="@nameof(DocumentDto.FileSizeBytes)" HeaderText="Size" Width="90" Format="n0" />
+                    <GridColumn Field="@nameof(DocumentDto.UploadedAt)" HeaderText="Uploaded" Width="140" Format="g" />
+                </GridColumns>
+            </SfGrid>
+        </SplitterPane>
+
+        <!-- Right: Preview pane -->
+        <SplitterPane Size="24%" Min="200px">
+            <div class="preview-pane">
+                @if (_selectedPreviewDoc is not null)
+                {
+                    var d = _selectedPreviewDoc;
+                    <h4 class="preview-title">@d.FileName</h4>
+                    <div class="preview-meta">
+                        <div><strong>Uploaded:</strong> @d.UploadedAt.ToLocalTime().ToString("g")</div>
+                        <div><strong>Size:</strong> @FormatBytes(d.FileSizeBytes)</div>
+                        @if (!string.IsNullOrWhiteSpace(d.SuggestedFolder))
+                        {
+                            <div><strong>AI Folder:</strong> @d.SuggestedFolder</div>
+                        }
+                    </div>
+
+                    <div class="preview-tags">
+                        <strong>Tags:</strong>
+                        @foreach (var t in ParseTags(d.AiTags))
+                        {
+                            <span class="doc-tag">@t</span>
+                        }
+                        @if (ParseTags(d.AiTags).Length == 0) { <span class="text-muted">None yet</span> }
+                    </div>
+
+                    <div class="preview-actions">
+                        <SfButton CssClass="tikr-action-btn" Content="Re-tag with AI" OnClick="@(async () => await RetagOne(d))" />
+                        <SfButton CssClass="tikr-action-btn" Content="Delete" OnClick="@(async () => await DeleteOneAsync(d))" />
+                        <SfButton CssClass="tikr-action-btn" Content="Download" OnClick="DownloadPlaceholder" />
+                    </div>
+
+                    <div class="preview-note">
+                        Full-text content and PDF preview will be available after Phase 9 extraction work.
+                        <!-- Syncfusion review:
+                        - Document Editor SDK (Syncfusion.Blazor.DocumentEditor): Useful for rich DOCX-like editing in Vault or Documents. Could replace/enhance SfRichTextEditor for complex entries.
+                        - PDF Tools (Syncfusion.Blazor.PdfViewer): Highly useful for previewing uploaded PDFs in Documents preview pane (replaces placeholder). Would integrate with content URL.
+                        - Spreadsheet Tools (Syncfusion.Blazor.Spreadsheet): Useful for .xlsx budget/spreadsheets in Documents. Conditional preview/edit.
+                        Note: These packages were at lower versions (e.g. ~27) vs our 33.x; not added to avoid conflict. Recommend when versions align for Phase 9.
+                        -->
+                    </div>
+                }
+                else
+                {
+                    <div class="preview-empty">Select a document in the list to see details and actions.</div>
+                }
+            </div>
+        </SplitterPane>
+    </SplitterPanes>
+</SfSplitter>
+
+<!-- Context menu (right-click on grid area) -->
+<SfContextMenu TValue="MenuItem" Target=".doc-grid .e-gridcontent" CssClass="doc-context-menu">
+    <MenuItems>
+        <MenuItem Text="Re-tag with AI" Id="cm-retag" IconCss="e-icons e-reload" />
+        <MenuItem Text="Delete" Id="cm-delete" IconCss="e-icons e-trash" />
+        <MenuItem Text="Download (placeholder)" Id="cm-download" IconCss="e-icons e-download" />
+    </MenuItems>
+    <MenuEvents TValue="MenuItem" ItemSelected="OnContextMenuSelected" />
+</SfContextMenu>
 
 @if (!string.IsNullOrEmpty(_statusMessage))
 {
-    <p class="mt-2">@_statusMessage</p>
+    <div class="status-msg mt-2">@_statusMessage</div>
 }
 
 @code {
+    [SupplyParameterFromQuery(Name = "action")]
+    public string? Action { get; set; }
+
+    private SfGrid<DocumentDto>? GridRef;
+
     private List<DocumentDto> _documents = [];
+    private HashSet<Guid> _selectedIds = new();
+    private DocumentDto? _selectedPreviewDoc;
     private string _searchQuery = "";
+    private string SearchMode { get; set; } = "full"; // "full" | "semantic"
     private string? _statusMessage;
+    private bool _showUploadBanner;
+    private TagDocumentResponse? _lastTagSuggestion;
+    private HashSet<Guid>? _semanticHitIds; // when non-null, VisibleDocuments is restricted + ordered by these
 
-    protected override async Task OnInitializedAsync() => await LoadDocuments();
+    private List<FolderNode> _folderNodes = [];
 
-    private async Task LoadDocuments() =>
-        _documents = await Api.GetDocumentsAsync(string.IsNullOrWhiteSpace(_searchQuery) ? null : _searchQuery);
+    private class FolderNode
+    {
+        public string Id { get; set; } = "";
+        public string DisplayName { get; set; } = "";
+        public string? FolderKey { get; set; } // original SuggestedFolder or null for Uncategorized
+        public bool IsExpanded { get; set; } = true;
+        public List<FolderNode> Children { get; set; } = new();
+    }
 
-    private async Task OnSearch(InputEventArgs args)
+    private IEnumerable<DocumentDto> VisibleDocuments
+    {
+        get
+        {
+            var folderFiltered = _documents.Where(d =>
+            {
+                if (string.IsNullOrEmpty(_currentFolderFilter))
+                    return true;
+                if (_currentFolderFilter == "__UNCAT__")
+                    return string.IsNullOrWhiteSpace(d.SuggestedFolder);
+                return string.Equals(d.SuggestedFolder, _currentFolderFilter, StringComparison.OrdinalIgnoreCase);
+            });
+
+            // Semantic mode: if backend returned hit IDs, show only those in semantic order.
+            if (SearchMode == "semantic" && _semanticHitIds is { Count: > 0 })
+            {
+                var hitOrder = _semanticHitIds.ToList();
+                return folderFiltered
+                    .Where(d => _semanticHitIds.Contains(d.Id))
+                    .OrderBy(d => hitOrder.IndexOf(d.Id));
+            }
+
+            return folderFiltered
+                .Where(d =>
+                {
+                    if (string.IsNullOrWhiteSpace(_searchQuery)) return true;
+                    var q = _searchQuery.Trim();
+                    bool nameMatch = d.FileName.Contains(q, StringComparison.OrdinalIgnoreCase);
+                    bool tagMatch = (d.AiTags ?? "").Contains(q, StringComparison.OrdinalIgnoreCase);
+                    bool folderMatch = (d.SuggestedFolder ?? "").Contains(q, StringComparison.OrdinalIgnoreCase);
+                    return nameMatch || tagMatch || folderMatch;
+                })
+                .OrderByDescending(d => d.UploadedAt);
+        }
+    }
+
+    private string? _currentFolderFilter; // null = All, "__UNCAT__" or the folder string
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDocumentsAsync();
+    }
+
+    protected override void OnParametersSet()
+    {
+        _showUploadBanner = string.Equals(Action, "upload", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private async Task LoadDocumentsAsync(string? query = null)
+    {
+        _documents = await Api.GetDocumentsAsync(query);
+        RebuildFolderTree();
+        ClearSelection();
+        _statusMessage = null;
+    }
+
+    private void RebuildFolderTree()
+    {
+        var groups = _documents
+            .GroupBy(d => d.SuggestedFolder?.Trim() ?? "")
+            .OrderBy(g => g.Key);
+
+        var nodes = new List<FolderNode>
+        {
+            new FolderNode
+            {
+                Id = "all",
+                DisplayName = $"All Documents ({_documents.Count})",
+                FolderKey = null
+            }
+        };
+
+        foreach (var g in groups)
+        {
+            string key = g.Key;
+            string label = string.IsNullOrEmpty(key) ? "Uncategorized" : key;
+            int count = g.Count();
+            var n = new FolderNode
+            {
+                Id = "f_" + (string.IsNullOrEmpty(key) ? "uncat" : key.GetHashCode().ToString()),
+                DisplayName = $"{label} ({count})",
+                FolderKey = string.IsNullOrEmpty(key) ? "__UNCAT__" : key
+            };
+            nodes.Add(n);
+        }
+
+        // Put Uncategorized and others under a root if desired; for simplicity use flat list under implicit root
+        _folderNodes = nodes;
+    }
+
+    private CancellationTokenSource? _semanticDebounceCts;
+
+    private async Task OnSearchInput(InputEventArgs args)
     {
         _searchQuery = args.Value?.ToString() ?? "";
-        await LoadDocuments();
+
+        if (SearchMode == "semantic")
+        {
+            await RunSemanticSearchAsync();
+        }
+        else
+        {
+            _semanticHitIds = null;
+            StateHasChanged();
+        }
+    }
+
+    private async Task SetSearchMode(string mode)
+    {
+        SearchMode = mode;
+        if (mode == "semantic" && !string.IsNullOrWhiteSpace(_searchQuery))
+        {
+            await RunSemanticSearchAsync();
+        }
+        else
+        {
+            _semanticHitIds = null;
+            StateHasChanged();
+        }
+    }
+
+    private async Task RunSemanticSearchAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_searchQuery))
+        {
+            _semanticHitIds = null;
+            StateHasChanged();
+            return;
+        }
+
+        _semanticDebounceCts?.Cancel();
+        _semanticDebounceCts = new CancellationTokenSource();
+        var token = _semanticDebounceCts.Token;
+        try
+        {
+            await Task.Delay(250, token);
+        }
+        catch (TaskCanceledException)
+        {
+            return;
+        }
+
+        try
+        {
+            var result = await Api.SemanticSearchDocumentsAsync(_searchQuery.Trim(), topK: 10);
+            if (result is null || result.Hits.Count == 0)
+            {
+                _semanticHitIds = new HashSet<Guid>();
+                _statusMessage = result is null
+                    ? "Semantic search unavailable (is Ollama running?)."
+                    : $"No semantic matches yet. {result.Considered} document(s) embedded so far.";
+            }
+            else
+            {
+                _semanticHitIds = result.Hits.Select(h => h.DocumentId).ToHashSet();
+                _statusMessage = $"Showing {result.Hits.Count} semantic match(es) from {result.Considered} embedded document(s).";
+            }
+        }
+        catch (Exception ex)
+        {
+            _statusMessage = $"Semantic search failed: {ex.Message}";
+            _semanticHitIds = new HashSet<Guid>();
+        }
+
+        StateHasChanged();
     }
 
     private async Task OnUpload(UploadChangeEventArgs args)
@@ -53,13 +406,17 @@
             if (file.File is null) continue;
 
             await using var stream = file.File.OpenReadStream(long.MaxValue);
-            var response = await Api.UploadDocumentAsync(stream, file.FileInfo.Name);
-            if (response.IsSuccessStatusCode)
+            var uploadResp = await Api.UploadDocumentAsync(stream, file.FileInfo.Name);
+
+            if (uploadResp.IsSuccessStatusCode)
             {
-                _statusMessage = $"Uploaded {file.FileInfo.Name}";
-                var doc = await response.Content.ReadFromJsonAsync<DocumentDto>();
-                if (doc is not null)
-                    await Api.TagDocumentAsync(doc.Id);
+                var created = await uploadResp.Content.ReadFromJsonAsync<DocumentDto>();
+                if (created is not null)
+                {
+                    var tagResp = await Api.TagDocumentAsync(created.Id);
+                    _lastTagSuggestion = tagResp;           // drives the banner
+                    _statusMessage = $"Uploaded and AI-analyzed: {created.FileName}";
+                }
             }
             else
             {
@@ -67,6 +424,160 @@
             }
         }
 
-        await LoadDocuments();
+        await LoadDocumentsAsync();
+    }
+
+    private void AcceptSuggestion()
+    {
+        // Data is already persisted server-side by TagDocumentAsync.
+        // Just clear the transient banner.
+        _lastTagSuggestion = null;
+        _statusMessage = "Suggestion accepted.";
+    }
+
+    private async Task RetagLast()
+    {
+        if (_lastTagSuggestion is null) return;
+        var id = _lastTagSuggestion.DocumentId;
+        _lastTagSuggestion = await Api.TagDocumentAsync(id);
+        await LoadDocumentsAsync();
+    }
+
+    private void OnFolderSelected(object args)
+    {
+        // Use only dynamic access to avoid NodeSelectEventArgs<T> generic resolution issues in this Syncfusion version
+        if (args is not null)
+        {
+            dynamic dyn = args;
+            try
+            {
+                var data = dyn.NodeData;
+                if (data is FolderNode f)
+                {
+                    _currentFolderFilter = f.FolderKey;
+                    StateHasChanged();
+                }
+                else if (data != null)
+                {
+                    StateHasChanged();
+                }
+            }
+            catch { }
+        }
+    }
+
+    private void ToggleSelection(DocumentDto doc)
+    {
+        if (_selectedIds.Contains(doc.Id))
+            _selectedIds.Remove(doc.Id);
+        else
+            _selectedIds.Add(doc.Id);
+
+        // Update preview (prefer last toggled single)
+        _selectedPreviewDoc = _documents.FirstOrDefault(d => _selectedIds.Contains(d.Id));
+
+        StateHasChanged();
+    }
+
+    private void ClearSelection()
+    {
+        _selectedIds.Clear();
+        _selectedPreviewDoc = null;
+        StateHasChanged();
+    }
+
+    private async Task BulkDeleteAsync()
+    {
+        foreach (var id in _selectedIds.ToList())
+        {
+            try { await Api.DeleteDocumentAsync(id); } catch { /* continue */ }
+        }
+        _statusMessage = $"Deleted {_selectedIds.Count} document(s).";
+        await LoadDocumentsAsync();
+        ClearSelection();
+    }
+
+    private async Task BulkRetagAsync()
+    {
+        var ids = _selectedIds.ToList();
+        foreach (var id in ids)
+        {
+            try { await Api.TagDocumentAsync(id); } catch { }
+        }
+        _statusMessage = $"Re-tagged {ids.Count} document(s).";
+        await LoadDocumentsAsync();
+    }
+
+    private async Task RetagOne(DocumentDto doc)
+    {
+        await Api.TagDocumentAsync(doc.Id);
+        await LoadDocumentsAsync();
+    }
+
+    private async Task DeleteOneAsync(DocumentDto doc)
+    {
+        await Api.DeleteDocumentAsync(doc.Id);
+        await LoadDocumentsAsync();
+        if (_selectedIds.Contains(doc.Id)) _selectedIds.Remove(doc.Id);
+        if (_selectedPreviewDoc?.Id == doc.Id) _selectedPreviewDoc = null;
+    }
+
+    private void OnContextMenuSelected(Syncfusion.Blazor.Navigations.MenuEventArgs<Syncfusion.Blazor.Navigations.MenuItem> args)
+    {
+        var targetDoc = _selectedPreviewDoc ?? _documents.FirstOrDefault(d => _selectedIds.Contains(d.Id));
+
+        if (targetDoc is null) return;
+
+        var itemId = args.Item?.Id ?? "";
+        switch (itemId)
+        {
+            case "cm-retag":
+                _ = RetagOne(targetDoc);
+                break;
+            case "cm-delete":
+                _ = DeleteOneAsync(targetDoc);
+                break;
+            case "cm-download":
+                DownloadPlaceholder();
+                break;
+        }
+    }
+
+    private void DownloadPlaceholder()
+    {
+        _statusMessage = "Download would stream the original file from NAS storage (API endpoint not yet implemented).";
+    }
+
+    private string[] ParseTags(string? raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw)) return Array.Empty<string>();
+        try
+        {
+            // It is usually a JSON array string
+            var arr = System.Text.Json.JsonSerializer.Deserialize<string[]>(raw);
+            return arr ?? new[] { raw };
+        }
+        catch
+        {
+            return raw.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        }
+    }
+
+    private static string FormatBytes(long bytes)
+    {
+        if (bytes < 1024) return $"{bytes} B";
+        if (bytes < 1024 * 1024) return $"{bytes / 1024.0:F1} KB";
+        return $"{bytes / (1024.0 * 1024):F1} MB";
+    }
+
+    private async Task LoadAfterMutation()
+    {
+        await LoadDocumentsAsync();
+    }
+
+    // Helper used by bulk/one (we will also extend the client)
+    private async Task EnsureClientDelete(Guid id)
+    {
+        // Will be replaced by proper client call after we edit TikrApiClient
     }
 }
