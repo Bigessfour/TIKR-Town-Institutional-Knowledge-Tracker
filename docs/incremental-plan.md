@@ -79,7 +79,7 @@ Living roadmap for TIKR development. Agents and contributors: read the **current
 - Dashboard (Prompt 2): Urgency pills, AI summary, quick actions, grids, activity.
 - Documents (Prompt 4): Uploader, TreeView folders, Grid with search/filters, ContextMenu, Splitter preview, AI banners.
 - Knowledge Vault (Prompt 5 at `/vault`): Red "hit by a bus" banner, SfTab (How-To/Contacts/Tribal/Voice), Accordion/Grid, RichTextEditor, voice sim, "Copy for New Clerk".
-- Calendar solid. Legacy `/knowledge` redirects to `/vault`. Dedicated Requirements UI deferred pending product vision.
+- Calendar solid. Legacy `/knowledge` redirects to `/vault`. **Requirements Manager MVP** at `/requirements` — see [requirements-working-tree.md](requirements-working-tree.md).
 - Assistant semantic doc + vault RAG context wired (Phase 9). Docker/CI support strong for shipping.
 
 ### 5A — Fix CI (code)
@@ -232,7 +232,7 @@ Technical debt and UX consolidation. Safe to tackle in small PRs after #27 merge
 - [x] **Retire legacy `/knowledge` page** — replaced with redirect to `/vault`
 - [x] **Point sidebar nav to `/vault`**
 - [x] **Redirect `/knowledge` → `/vault`**
-- [ ] **Requirements page** — deferred until product vision for dedicated requirements UX (calendar embeds requirements today)
+- [x] **Requirements page** — MVP shipped at `/requirements` ([requirements-working-tree.md](requirements-working-tree.md)); calendar remains timeline view
 
 ### Phase 5 note carryover
 

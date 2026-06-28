@@ -8,14 +8,14 @@ namespace TIKR.Infrastructure.Tests.Data;
 public class DbSeederTests
 {
     [Fact]
-    public async Task SeedAsync_InsertsSevenColoradoDeadlines()
+    public async Task SeedAsync_InsertsFifteenColoradoDeadlines()
     {
         await using var db = await TestDbContextFactory.CreateMigratedAsync();
 
         await DbSeeder.SeedAsync(db);
 
         var seeded = await db.Requirements.Where(r => r.IsSystemSeeded).ToListAsync();
-        seeded.Should().HaveCount(7);
+        seeded.Should().HaveCount(15);
         seeded.Should().OnlyContain(r => r.IsSystemSeeded);
         seeded.Select(r => r.DueDate.Year).Should().AllBeEquivalentTo(DateTime.UtcNow.Year);
     }
@@ -28,7 +28,7 @@ public class DbSeederTests
         await DbSeeder.SeedAsync(db);
         await DbSeeder.SeedAsync(db);
 
-        (await db.Requirements.CountAsync()).Should().Be(7);
+        (await db.Requirements.CountAsync()).Should().Be(15);
     }
 
     [Fact]

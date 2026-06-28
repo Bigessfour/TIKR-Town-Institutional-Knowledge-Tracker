@@ -1,0 +1,299 @@
+@page "/requirements"
+@rendermode InteractiveServer
+@inject TikrApiClient Api
+@inject IJSRuntime JS
+
+@using TIKR.Web.Components.Shared
+
+<div class="vault-emergency-banner">
+    <div class="banner-icon">📋❤️</div>
+    <div>
+        <strong>Colorado statutory deadlines — your deputy clerk needs this list</strong>
+        <p class="banner-sub">Track what must be filed, when, and with whom. If anything happens to you, this page is the compliance lifeline.</p>
+    </div>
+</div>
+
+<div class="page-header">
+    <div class="page-header-main">
+        <h2>Requirements Manager</h2>
+        <p>Colorado municipal obligations and custom deadlines</p>
+    </div>
+    <PageHelp HelpText="Manage pre-seeded Colorado deadlines and add town-specific requirements. Filter by urgency, export CSV for board packets, and mark items complete when filed." />
+</div>
+
+<div class="requirements-toolbar mb-3">
+    <SfButton CssClass="tikr-action-btn e-primary" IsPrimary="true" IconCss="e-icons e-plus" Content="Add requirement" OnClick="OpenCreateDialog" />
+    <SfButton CssClass="tikr-action-btn" IconCss="e-icons e-export" Content="Export CSV" OnClick="ExportCsvAsync" />
+</div>
+
+<div class="requirements-filters mb-3">
+    <SfTextBox CssClass="requirements-search"
+               Placeholder="Search title or description..."
+               @bind-Value="_searchText"
+               Input="OnFilterChanged" />
+    <SfDropDownList TValue="string" TItem="string"
+                    DataSource="@_categoryOptions"
+                    @bind-Value="_categoryFilterValue"
+                    Placeholder="Category"
+                    ValueChange="OnFilterChanged">
+    </SfDropDownList>
+    <SfDropDownList TValue="string" TItem="string"
+                    DataSource="@_urgencyOptions"
+                    @bind-Value="_urgencyFilterValue"
+                    Placeholder="Urgency"
+                    ValueChange="OnFilterChanged">
+    </SfDropDownList>
+    <label class="requirements-completed-toggle">
+        <input type="checkbox" @bind="_includeCompleted" @bind:after="OnFilterChangedAsync" />
+        Show completed
+    </label>
+</div>
+
+@if (!string.IsNullOrWhiteSpace(_error))
+{
+    <div class="login-error mb-3">@_error</div>
+}
+
+<SfGrid DataSource="@VisibleRequirements" AllowPaging="true" PageSize="12" AllowSorting="true" Height="520">
+    <GridColumns>
+        <GridColumn Field="@nameof(RequirementDto.Title)" HeaderText="Requirement" Width="240" />
+        <GridColumn HeaderText="Urgency" Width="110">
+            <Template>
+                @{
+                    var row = (RequirementDto)context;
+                    var urgency = RequirementWorkflowHelpers.GetUrgency(row);
+                }
+                <span class="urgency-badge @RequirementWorkflowHelpers.GetUrgencyCssClass(urgency)">
+                    @RequirementWorkflowHelpers.GetUrgencyLabel(urgency)
+                </span>
+            </Template>
+        </GridColumn>
+        <GridColumn Field="@nameof(RequirementDto.DueDate)" HeaderText="Due Date" Format="d" Width="120" />
+        <GridColumn Field="@nameof(RequirementDto.Category)" HeaderText="Category" Width="120" />
+        <GridColumn Field="@nameof(RequirementDto.Recurrence)" HeaderText="Recurrence" Width="110" />
+        <GridColumn Field="@nameof(RequirementDto.IsSystemSeeded)" HeaderText="CO Default" DisplayAsCheckBox="true" Width="100" />
+        <GridColumn Field="@nameof(RequirementDto.IsCompleted)" HeaderText="Done" DisplayAsCheckBox="true" Width="80" />
+        <GridColumn HeaderText="Actions" Width="180">
+            <Template>
+                @{
+                    var item = (RequirementDto)context;
+                }
+                <SfButton CssClass="tikr-action-btn small" Content="Edit" OnClick="@(() => OpenEditDialog(item))" />
+                @if (!item.IsSystemSeeded)
+                {
+                    <SfButton CssClass="tikr-action-btn small danger" Content="Delete" OnClick="@(() => DeleteAsync(item))" />
+                }
+            </Template>
+        </GridColumn>
+    </GridColumns>
+</SfGrid>
+
+<SfDialog @bind-Visible="_showDialog" Width="480px" IsModal="true" ShowCloseIcon="true" Header="@(_editingId is null ? "Add requirement" : "Edit requirement")">
+    <DialogTemplates>
+        <Content>
+            <EditForm Model="_form" OnValidSubmit="SaveAsync">
+                <DataAnnotationsValidator />
+                <SfDataForm Model="_form" ColumnCount="1" Width="100%">
+                    <FormItems>
+                        <FormItem Field="@nameof(RequirementFormModel.Title)" LabelText="Title" />
+                        <FormItem Field="@nameof(RequirementFormModel.Description)" LabelText="Description">
+                            <Template>
+                                <SfTextBox Multiline="true" @bind-Value="_form.Description" Placeholder="Notes, statute cite, filing instructions..." />
+                            </Template>
+                        </FormItem>
+                        <FormItem Field="@nameof(RequirementFormModel.DueDate)" LabelText="Due date">
+                            <Template>
+                                <input type="date" class="e-input" @bind="_formDueDate" @bind:format="yyyy-MM-dd" />
+                            </Template>
+                        </FormItem>
+                        <FormItem Field="@nameof(RequirementFormModel.Recurrence)" LabelText="Recurrence">
+                            <Template>
+                                <SfDropDownList TValue="RecurrenceType" TItem="RecurrenceType"
+                                                DataSource="@_recurrenceValues"
+                                                @bind-Value="_form.Recurrence" />
+                            </Template>
+                        </FormItem>
+                        <FormItem Field="@nameof(RequirementFormModel.Category)" LabelText="Category">
+                            <Template>
+                                <SfDropDownList TValue="RequirementCategory" TItem="RequirementCategory"
+                                                DataSource="@_categoryValues"
+                                                @bind-Value="_form.Category" />
+                            </Template>
+                        </FormItem>
+                        @if (_editingId is not null)
+                        {
+                            <FormItem Field="@nameof(RequirementFormModel.IsCompleted)" LabelText="Completed">
+                                <Template>
+                                    <SfCheckBox @bind-Checked="_form.IsCompleted" Label="Mark as filed / complete" />
+                                </Template>
+                            </FormItem>
+                        }
+                    </FormItems>
+                </SfDataForm>
+                <div class="mt-3">
+                    <SfButton Type="ButtonType.Submit" CssClass="e-primary" IsPrimary="true">Save</SfButton>
+                    <SfButton CssClass="tikr-action-btn" OnClick="CloseDialog">Cancel</SfButton>
+                </div>
+            </EditForm>
+        </Content>
+    </DialogTemplates>
+</SfDialog>
+
+@code {
+    private List<RequirementDto> _requirements = [];
+    private string _searchText = string.Empty;
+    private string _categoryFilterValue = "All";
+    private string _urgencyFilterValue = "All";
+    private bool _includeCompleted;
+    private bool _showDialog;
+    private Guid? _editingId;
+    private string? _error;
+    private DateTime _formDueDate = DateTime.Today.AddMonths(1);
+    private readonly RequirementFormModel _form = new();
+
+    private readonly List<string> _categoryOptions = ["All", .. Enum.GetNames<RequirementCategory>()];
+    private readonly List<string> _urgencyOptions = ["All", "Overdue", "High", "Medium", "Low", "Done"];
+    private readonly List<RecurrenceType> _recurrenceValues = Enum.GetValues<RecurrenceType>().ToList();
+    private readonly List<RequirementCategory> _categoryValues = Enum.GetValues<RequirementCategory>().ToList();
+
+    private IEnumerable<RequirementDto> VisibleRequirements =>
+        RequirementWorkflowHelpers.FilterRequirements(
+            _requirements,
+            _searchText,
+            ParseCategoryFilter(_categoryFilterValue),
+            ParseUrgencyFilter(_urgencyFilterValue),
+            _includeCompleted);
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _error = null;
+        try
+        {
+            _requirements = await Api.GetRequirementsAsync();
+        }
+        catch
+        {
+            _requirements = [];
+            _error = "Could not load requirements. Is the API running?";
+        }
+    }
+
+    private static RequirementCategory? ParseCategoryFilter(string value) =>
+        value == "All" || !Enum.TryParse<RequirementCategory>(value, out var category) ? null : category;
+
+    private static RequirementUrgency? ParseUrgencyFilter(string value) => value switch
+    {
+        "Overdue" => RequirementUrgency.Overdue,
+        "High" => RequirementUrgency.High,
+        "Medium" => RequirementUrgency.Medium,
+        "Low" => RequirementUrgency.Low,
+        "Done" => RequirementUrgency.Completed,
+        _ => null
+    };
+
+    private void OnFilterChanged(InputEventArgs _) => StateHasChanged();
+
+    private Task OnFilterChangedAsync() => InvokeAsync(StateHasChanged);
+
+    private void OpenCreateDialog()
+    {
+        _editingId = null;
+        _error = null;
+        _form.Title = string.Empty;
+        _form.Description = null;
+        _form.Recurrence = RecurrenceType.Annual;
+        _form.Category = RequirementCategory.Custom;
+        _form.IsCompleted = false;
+        _formDueDate = DateTime.Today.AddMonths(1);
+        _showDialog = true;
+    }
+
+    private void OpenEditDialog(RequirementDto item)
+    {
+        _editingId = item.Id;
+        _error = null;
+        _form.Title = item.Title;
+        _form.Description = item.Description;
+        _form.Recurrence = item.Recurrence;
+        _form.Category = item.Category;
+        _form.IsCompleted = item.IsCompleted;
+        _formDueDate = item.DueDate.ToDateTime(TimeOnly.MinValue);
+        _showDialog = true;
+    }
+
+    private void CloseDialog() => _showDialog = false;
+
+    private async Task SaveAsync()
+    {
+        _error = null;
+        var dueDate = DateOnly.FromDateTime(_formDueDate);
+
+        try
+        {
+            if (_editingId is null)
+            {
+                await Api.CreateRequirementAsync(new CreateRequirementRequest(
+                    _form.Title,
+                    _form.Description,
+                    dueDate,
+                    _form.Recurrence,
+                    _form.Category));
+            }
+            else
+            {
+                await Api.UpdateRequirementAsync(_editingId.Value, new UpdateRequirementRequest(
+                    _form.Title,
+                    _form.Description,
+                    dueDate,
+                    _form.Recurrence,
+                    _form.Category,
+                    _form.IsCompleted));
+            }
+
+            _showDialog = false;
+            await LoadAsync();
+        }
+        catch
+        {
+            _error = "Could not save requirement. Check your entries and try again.";
+        }
+    }
+
+    private async Task DeleteAsync(RequirementDto item)
+    {
+        _error = null;
+        try
+        {
+            await Api.DeleteRequirementAsync(item.Id);
+            await LoadAsync();
+        }
+        catch
+        {
+            _error = "Could not delete requirement. System-seeded Colorado defaults cannot be removed.";
+        }
+    }
+
+    private async Task ExportCsvAsync()
+    {
+        var csv = RequirementWorkflowHelpers.BuildCsv(VisibleRequirements);
+        var fileName = $"tikr-requirements-{DateTime.UtcNow:yyyy-MM-dd}.csv";
+        await JS.InvokeVoidAsync(
+            "eval",
+            $"(() => {{ const a = document.createElement('a'); a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent({System.Text.Json.JsonSerializer.Serialize(csv)}); a.download = {System.Text.Json.JsonSerializer.Serialize(fileName)}; a.click(); }})()");
+    }
+
+    private sealed class RequirementFormModel
+    {
+        [System.ComponentModel.DataAnnotations.Required]
+        [System.ComponentModel.DataAnnotations.MinLength(2)]
+        public string Title { get; set; } = string.Empty;
+
+        public string? Description { get; set; }
+        public RecurrenceType Recurrence { get; set; } = RecurrenceType.Annual;
+        public RequirementCategory Category { get; set; } = RequirementCategory.Custom;
+        public bool IsCompleted { get; set; }
+        public DateOnly DueDate { get; set; }
+    }
+}
