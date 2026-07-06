@@ -27,7 +27,7 @@
     <PackageReference Include="Syncfusion.Blazor.Popups" Version="33.2.15" />
     <PackageReference Include="Syncfusion.Blazor.RichTextEditor" Version="33.2.15" />
     <PackageReference Include="Syncfusion.Blazor.Schedule" Version="33.2.15" />
-    <PackageReference Include="Syncfusion.Blazor.Themes" Version="33.2.15" />
+    <PackageReference Include="Syncfusion.Blazor.Themes" Version="34.1.29" />
   </ItemGroup>
 
   <ItemGroup>
