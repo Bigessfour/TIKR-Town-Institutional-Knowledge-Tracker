@@ -1,12 +1,21 @@
 name: Ollama CI Diagnosis
 
 on:
-  workflow_run:
-    workflows:
-      - TIKR CI
-      - Trunk
-    types:
-      - completed
+  workflow_call:
+    inputs:
+      run_id:
+        description: GitHub Actions run id for the failed workflow
+        required: true
+        type: string
+      workflow_name:
+        description: Display name of the failed workflow
+        required: true
+        type: string
+      model:
+        description: Ollama model
+        required: false
+        type: string
+        default: llama3.2:3b
   workflow_dispatch:
     inputs:
       run_id:
@@ -25,14 +34,11 @@ permissions:
   pull-requests: write
 
 concurrency:
-  group: ollama-ci-diagnosis-${{ github.event.workflow_run.id || github.event.inputs.run_id }}
+  group: ollama-ci-diagnosis-${{ inputs.run_id || github.event.inputs.run_id }}
   cancel-in-progress: true
 
 jobs:
   ai-diagnosis:
-    if: >-
-      github.event_name == 'workflow_dispatch' ||
-      github.event.workflow_run.conclusion == 'failure'
     runs-on: ubuntu-latest
 
     steps:
@@ -41,12 +47,14 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+          if [ "${{ github.event_name }}" = "workflow_call" ]; then
+            RUN_ID="${{ inputs.run_id }}"
+            MODEL="${{ inputs.model }}"
+            WORKFLOW_NAME="${{ inputs.workflow_name }}"
+          else
             RUN_ID="${{ github.event.inputs.run_id }}"
             MODEL="${{ github.event.inputs.model }}"
-          else
-            RUN_ID="${{ github.event.workflow_run.id }}"
-            MODEL="llama3.2:3b"
+            WORKFLOW_NAME=""
           fi
 
           if [ -z "$RUN_ID" ]; then
@@ -58,7 +66,9 @@ jobs:
           HEAD_SHA=$(echo "$RUN_JSON" | jq -r '.head_sha')
           HEAD_BRANCH=$(echo "$RUN_JSON" | jq -r '.head_branch // "unknown"')
           RUN_URL=$(echo "$RUN_JSON" | jq -r '.html_url')
-          WORKFLOW_NAME=$(echo "$RUN_JSON" | jq -r '.name')
+          if [ -z "$WORKFLOW_NAME" ]; then
+            WORKFLOW_NAME=$(echo "$RUN_JSON" | jq -r '.name')
+          fi
           EVENT=$(echo "$RUN_JSON" | jq -r '.event')
           CONCLUSION=$(echo "$RUN_JSON" | jq -r '.conclusion // "unknown"')
 
@@ -121,16 +131,14 @@ jobs:
           retention-days: 30
 
       - name: Comment diagnosis on PR
-        if: >-
-          steps.meta.outputs.event == 'pull_request' &&
-          steps.meta.outputs.conclusion == 'failure'
+        if: steps.meta.outputs.conclusion == 'failure'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           PR_NUMBER=$(gh api "repos/${{ github.repository }}/commits/${{ steps.meta.outputs.head_sha }}/pulls" \
-            --jq '.[0].number' 2>/dev/null || true)
+            --jq '[.[] | select(.state == "open")][0].number' 2>/dev/null || true)
           if [ -z "$PR_NUMBER" ] || [ "$PR_NUMBER" = "null" ]; then
-            echo "No open PR for SHA ${{ steps.meta.outputs.head_sha }} — skipping comment."
+            echo "No open PR for SHA ${{ steps.meta.outputs.head_sha }} — feedback is in job Summary and artifacts only."
             exit 0
           fi
 
