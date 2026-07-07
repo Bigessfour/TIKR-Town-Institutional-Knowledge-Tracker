@@ -105,6 +105,36 @@ build_context_file() {
   echo "$context_file"
 }
 
+write_github_step_summary() {
+  local summary_path="${GITHUB_STEP_SUMMARY:-}"
+  if [ -z "$summary_path" ]; then
+    return 0
+  fi
+
+  {
+    echo "## Ollama CI Diagnosis"
+    echo ""
+    echo "| Field | Value |"
+    echo "|-------|-------|"
+    echo "| Model | \`${MODEL}\` |"
+    echo "| Workflow | ${FAILED_WORKFLOW_NAME:-unknown} |"
+    echo "| Failed run | [${RUN_ID:-unknown}](${FAILED_RUN_URL:-#}) |"
+    echo "| SHA | \`${FAILED_HEAD_SHA:-unknown}\` |"
+    echo ""
+    echo "### Triage"
+    echo '```'
+    head -n 30 "$OUTPUT_DIR/01-triage.txt" 2>/dev/null || echo "unavailable"
+    echo '```'
+    echo ""
+    echo "### Immediate fix"
+    echo '```'
+    sed -n '/IMMEDIATE_FIX:/,/VERIFY_LOCALLY:/p' "$OUTPUT_DIR/02-fix-plan.txt" 2>/dev/null | head -n 20 || echo "unavailable"
+    echo '```'
+    echo ""
+    echo "Download artifact \`ollama-ci-diagnosis-${RUN_ID}\` for full reports."
+  } >>"$summary_path"
+}
+
 write_summary() {
   local summary_file="$OUTPUT_DIR/SUMMARY.md"
   {
@@ -202,6 +232,7 @@ EOF
   run_prompt "02-fix-plan" "$fix_prompt"
   run_prompt "03-feedback-loop" "$loop_prompt"
   write_summary
+  write_github_step_summary
 
   log "Diagnosis complete — artifacts in $OUTPUT_DIR"
 }
