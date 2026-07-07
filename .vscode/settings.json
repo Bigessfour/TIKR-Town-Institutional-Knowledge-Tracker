@@ -4,15 +4,35 @@
   "containers.environment": {
     "COMPOSE_FILE": "docker/docker-compose.yml"
   },
-  "docker.lsp.experimental.vulnerabilityDiagnostics": true,
+  "csharp.analysis.exclude": [
+    "**/bin/**",
+    "**/obj/**"
+  ],
+  "docker.lsp.experimental.vulnerabilityDiagnostics": false,
+  "dotnet.defaultSolution": "TIKR.sln",
   "files.associations": {
     "docker-compose*.yml": "compose",
     "docker-compose*.yaml": "compose"
   },
-  "search.exclude": {
-    "**/bin": true,
-    "**/obj": true,
+  "files.exclude": {
+    "**/.rag_index": true,
     "**/.venv": true,
-    "**/.rag_index": true
+    "**/bin": true,
+    "**/coverage": true,
+    "**/obj": true
+  },
+  "files.watcherExclude": {
+    "**/.rag_index/**": true,
+    "**/.venv/**": true,
+    "**/bin/**": true,
+    "**/coverage/**": true,
+    "**/obj/**": true
+  },
+  "search.exclude": {
+    "**/.rag_index": true,
+    "**/.venv": true,
+    "**/bin": true,
+    "**/coverage": true,
+    "**/obj": true
   }
 }
