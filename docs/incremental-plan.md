@@ -120,6 +120,7 @@ Repeat-safe checklist — safe to re-run anytime:
 - **AWS/Amazon Q auth cleanup:** Removed from Cursor settings.json (amazonQ.* and aws.* keys) to prevent startup hangs.
 - **Operation proof logging:** Enhancements and debug configs verified.
 - **MCP:** grok_com_github active; clean .cursor/mcp.json to tikr-rag-mcp + sf-blazor-mcp + ollama + grok_com_github (limit 4). Full move-in completed (see below).
+- **RAG Index:** Rebuilt successfully with 956 files processed, 19,782 chunks (via .venv/bin/python3 scripts/update_tikr_rag_index.py).
 
 ### Agent Development Environment (for Cursor + Grok Build)
 
@@ -267,6 +268,7 @@ Update this section when env changes.
 - [x] bUnit coverage for footer, toast, helpers
 - [x] Skip link + `:focus-visible` accessibility baseline
 - [x] Agent Dev Env + move-in complete (MCP, RAG, skills, rules, debug launch with external browser)
+- [x] RAG index rebuilt (956 files, 19,782 chunks)
 
 **Env vars:** `TIKR_TOWN_NAME` (default Wiley), `TIKR_STORAGE_LABEL` (default Synology NAS)
 
@@ -282,7 +284,7 @@ When a phase completes, set **Status** to `done` and move **in progress** to the
 
 ## MVP remaining (2026-07-07)
 
-**Ship bar:** Phases **1–9 core**, **10A–10B**, **10C A1+A2** ([#35](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/35)), and **Phase 0 PR #33–#34** on `main`. **10C-D** ([#36](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/36)) + Phase 0 PRs 3–4 remain before full Deb sign-off. Agent move-in and dev tooling (launch/debug, RAG/MCP) complete.
+**Ship bar:** Phases **1–9 core**, **10A–10B**, **10C A1+A2** ([#35](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/35)), and **Phase 0 PR #33–#34** on `main`. **10C-D** ([#36](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/36)) + Phase 0 PRs 3–4 remain before full Deb sign-off. Agent move-in and dev tooling (launch/debug, RAG/MCP) complete. RAG index built.
 
 ### Phases 1–9 summary
 
@@ -322,7 +324,7 @@ Technical debt and UX consolidation. Safe to tackle in small PRs after #27 merge
 ### Navigation and pages
 
 - [x] **Retire legacy `/knowledge` page** — replaced with redirect to `/vault`
-- [x] **Point sidebar nav to `/vault`**
+- [x] **Point sidebar nav to `/vault`** 
 - [x] **Redirect `/knowledge` → `/vault`**
 - [x] **Requirements page** — MVP shipped at `/requirements` ([requirements-working-tree.md](requirements-working-tree.md)); calendar remains timeline view
 
@@ -366,10 +368,27 @@ Technical debt and UX consolidation. Safe to tackle in small PRs after #27 merge
 
 ### Recommended items added:
 - Agent Development Environment subsection (MCP ≤4, RAG mandatory, skills, rules, Ollama, workflow).
-- Recent Updates section covering dev experience (external browser debug with API waiter, fixed ports 8080/5000, TIKR profiles, run-tikr-local.sh), AWS/AmazonQ cleanup from Cursor settings, operation proof logging, MCP (grok_com_github active).
+- Recent Updates section covering dev experience (external browser debug with API waiter, fixed ports 8080/5000, TIKR profiles, run-tikr-local.sh), AWS/AmazonQ cleanup from Cursor settings, operation proof logging, MCP (grok_com_github active), RAG index rebuild (956 files, 19,782 chunks).
 - Updated MVP remaining and Phase 0 with agent tooling and move-in notes.
-- Next actions tied to todos (sync, verify RAG, Phase 0 completion: Playwright CI gate, docs/handover, sign-off).
+- Next actions tied to todos (sync local, verify RAG, Phase 0 completion: Playwright CI gate, docs/handover, sign-off).
 
 Track via todo_write. Always cite RAG hits before changes.
 
 Update this section with future agent env changes.
+
+---
+
+## Current Next Task for Development (from todos + plan)
+
+**Pulled from todo list (as of 2026-07-07):**
+- Complete Phase 0 remaining items:
+  - Implement Playwright E2E as required CI gate in `.github/workflows/ci.yml` (run e2e specs against docker, add `FullyTested` trait filter, remove `continue-on-error`).
+  - Phase 0 PR #3: Documentation & clerk touches / handover.
+  - Phase 0 PR #4: Health UI closure + Done Detector sign-off.
+- Verify RAG index (post-build) and test `search_knowledge` + `refresh_index`.
+- Sync local repo (`git fetch origin && git pull --rebase origin/main`).
+- Update plan with completion of above.
+
+Reference full todo list for tracking (env setup, repo-sync, plan-update, verify-rag, etc.).
+
+**Immediate recommendation:** Start with Playwright CI gate update and local sync + RAG verification using the now-built index.
