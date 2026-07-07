@@ -116,8 +116,8 @@ Repeat-safe checklist — safe to re-run anytime:
 
 ## Recent Updates (Agent Dev Env, Debug, Move-in - 2026-07)
 
-- **Dev Experience:** External Chromium browser launch via .vscode/launch.json compound + preLaunch waiters for API readiness (5000/health), fixed ports 8080/5000, TIKR-* profiles, scripts/run-tikr-local.sh, tuned light logging for debug (TIKR.* at Info, Microsoft at Warning).
-- **AWS/Amazon Q auth cleanup:** Removed from Cursor settings.json (amazonQ.* and aws.* keys) to prevent startup hangs.
+- **Dev Experience:** External Chromium browser launch via .vscode/launch.json compound + preLaunch waiters for API readiness (5000/health), fixed ports 8080/5000, `TIKR-*` profiles, scripts/run-tikr-local.sh, tuned light logging for debug (`TIKR.*` at Info, Microsoft at Warning).
+- **AWS/Amazon Q auth cleanup:** Removed from Cursor settings.json (`amazonQ.*` and `aws.*` keys) to prevent startup hangs.
 - **Operation proof logging:** Enhancements and debug configs verified.
 - **MCP:** grok_com_github active; clean .cursor/mcp.json to tikr-rag-mcp + sf-blazor-mcp + ollama + grok_com_github (limit 4). Full move-in completed (see below).
 - **RAG Index:** Rebuilt successfully with 956 files processed, 19,782 chunks (via .venv/bin/python3 scripts/update_tikr_rag_index.py).
@@ -366,7 +366,7 @@ Technical debt and UX consolidation. Safe to tackle in small PRs after #27 merge
 
 **Status:** completed (see move-in commands and verification).
 
-### Recommended items added:
+### Recommended items added
 - Agent Development Environment subsection (MCP ≤4, RAG mandatory, skills, rules, Ollama, workflow).
 - Recent Updates section covering dev experience (external browser debug with API waiter, fixed ports 8080/5000, TIKR profiles, run-tikr-local.sh), AWS/AmazonQ cleanup from Cursor settings, operation proof logging, MCP (grok_com_github active), RAG index rebuild (956 files, 19,782 chunks).
 - Updated MVP remaining and Phase 0 with agent tooling and move-in notes.
