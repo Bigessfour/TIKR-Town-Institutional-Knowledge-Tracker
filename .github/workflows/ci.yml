@@ -50,6 +50,7 @@ jobs:
       - name: Docker Build & Smoke Test
         # Requires Docker on ubuntu-latest. Copies placeholder env; no real secrets in CI.
         # May fail on GH rate limits or Docker daemon issues — investigate logs if red.
+        # On failure, Ollama CI Diagnosis workflow analyzes logs automatically.
         continue-on-error: true
         run: |
           cp docker/.env.example docker/.env
@@ -69,3 +70,27 @@ jobs:
           echo "$response" | grep -q "Wiley periodic report due Q1 2026"
           echo "$response" | grep -q '"usedSyncfusionTools":false'
           docker compose -f docker/docker-compose.yml down
+
+      - name: Capture failure snapshot
+        if: failure()
+        run: |
+          mkdir -p failure-context
+          {
+            echo "workflow=TIKR CI"
+            echo "run_id=${{ github.run_id }}"
+            echo "run_url=${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            echo "sha=${{ github.sha }}"
+            echo "ref=${{ github.ref }}"
+            echo "event=${{ github.event_name }}"
+          } > failure-context/meta.txt
+          dotnet --info > failure-context/dotnet-info.txt 2>&1 || true
+          dotnet test TIKR.sln --no-build --configuration Release --verbosity normal \
+            > failure-context/last-test-output.txt 2>&1 || true
+
+      - name: Upload failure snapshot
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-failure-snapshot-${{ github.run_id }}
+          path: failure-context/
+          retention-days: 14
