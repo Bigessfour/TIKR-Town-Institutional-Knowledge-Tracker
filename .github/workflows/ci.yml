@@ -117,14 +117,22 @@ jobs:
             exit 1
           fi
 
+          # Plain-text fixtures always use stub extraction (UsedSyncfusionTools: false),
+          # even when USE_SYNCFUSION_AGENT_TOOLS=true — verify licensed Syncfusion via PDF.
+          echo "$response" | grep -q '"usedSyncfusionTools":false' || {
+            echo "::error::Expected usedSyncfusionTools:false for plain-text agent-scan fixture"
+            exit 1
+          }
+
           if [ -n "${SYNCFUSION_LICENSE_KEY}" ]; then
-            echo "$response" | grep -q '"usedSyncfusionTools":true' || {
-              echo "::error::Expected usedSyncfusionTools:true when SYNCFUSION_LICENSE_KEY is set"
+            pdf_response=$(curl -sf -F "file=@tests/fixtures/agent-scan/minimal-clerk-report.pdf" \
+              http://localhost:5000/api/ai/agent-scan || echo '{"error":"curl failed"}')
+            echo "$pdf_response" | grep -q "Wiley clerk report" || {
+              echo "::error::Licensed PDF agent-scan smoke failed to extract expected text"
               exit 1
             }
-          else
-            echo "$response" | grep -q '"usedSyncfusionTools":false' || {
-              echo "::error::Expected usedSyncfusionTools:false without license key"
+            echo "$pdf_response" | grep -q '"usedSyncfusionTools":true' || {
+              echo "::error::Expected usedSyncfusionTools:true for PDF when SYNCFUSION_LICENSE_KEY is set"
               exit 1
             }
           fi
