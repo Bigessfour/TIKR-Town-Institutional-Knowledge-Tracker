@@ -21,7 +21,7 @@ Fixtures for agent-scan live in **`tests/fixtures/agent-scan/`** (shared by API 
 
 Licensed Syncfusion PDF/DOCX tests (`Category=SyncfusionLicensed`) skip when `SYNCFUSION_LICENSE_KEY` is unset. Run locally with the key set, or via **TIKR Syncfusion Agent Smoke** workflow.
 
-Licensed Grok tests (`Category=GrokLicensed`) skip when `GROK_API_KEY` / `XAI_API_KEY` is unset. Default model is **`grok-3`** (xAI returns HTTP 400 for deprecated `grok-2-latest`).
+Licensed Grok tests (`Category=GrokLicensed`) skip when `GROK_API_KEY` / `XAI_API_KEY` is unset. Default model is **`grok-4.3`** (xAI current chat default; older `grok-3` / `grok-2-latest` may return HTTP 400).
 
 **macOS Passwords → env (recommended):** one command writes gitignored `docker/.env` and user-secrets:
 
