@@ -2,7 +2,7 @@
 <!-- Do NOT edit manually. Lightweight function tracker for proof + minimal viable. -->
 
 # Function Inventory — TIKR
-Generated: 2026-07-08T15:15:07.210223+00:00
+Generated: 2026-07-08T15:30:20.921262+00:00
 
 **Summary:** 525 tracked functions | 516 with proof | 9 without proof
 Focus on the ones without proof for your key paths.
