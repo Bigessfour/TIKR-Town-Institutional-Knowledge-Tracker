@@ -38,6 +38,7 @@ if (builder.Environment.IsDevelopment())
 builder.Configuration.AddEnvironmentVariables();
 
 builder.Services.AddTikrInfrastructure(builder.Configuration);
+builder.Services.AddProblemDetails();
 builder.Services.AddOpenApi();
 builder.Services.AddCors(options =>
 {
@@ -124,23 +125,9 @@ api.MapGet("/requirements/{id:guid}", async (Guid id, TikrDbContext db) =>
     return Results.Ok(CouncilPacketEndpoints.MapRequirement(item, links.GetValueOrDefault(item.Id, [])));
 });
 
-api.MapPost("/requirements", async (CreateRequirementRequest request, TikrDbContext db, IAuditService audit, ICurrentUserService currentUser) =>
+api.MapPost("/requirements", async (CreateRequirementRequest request, TikrDbContext db, IAuditService audit, ICurrentUserService currentUser, IRequirementService requirementService) =>
 {
-    var entity = new Requirement
-    {
-        Id = Guid.NewGuid(),
-        Title = request.Title,
-        Description = request.Description,
-        DueDate = request.DueDate,
-        Recurrence = request.Recurrence,
-        Category = request.Category,
-        CreatedAt = DateTime.UtcNow,
-        UpdatedAt = DateTime.UtcNow
-    };
-
-    db.Requirements.Add(entity);
-    await audit.LogAsync("Create", nameof(Requirement), entity.Id, entity.Title, currentUser.UserId);
-    await db.SaveChangesAsync();
+    var entity = await requirementService.CreateAsync(request, audit, currentUser);
     return Results.Created(
         $"/api/requirements/{entity.Id}",
         CouncilPacketEndpoints.MapRequirement(entity, []));
@@ -194,35 +181,35 @@ api.MapDelete("/requirements/{id:guid}/documents/{documentId:guid}", async (
     return Results.NoContent();
 });
 
-api.MapPut("/requirements/{id:guid}", async (Guid id, UpdateRequirementRequest request, TikrDbContext db, IAuditService audit, ICurrentUserService currentUser) =>
+api.MapPut("/requirements/{id:guid}", async (Guid id, UpdateRequirementRequest request, TikrDbContext db, IAuditService audit, ICurrentUserService currentUser, IRequirementService requirementService) =>
 {
-    var entity = await db.Requirements.FindAsync(id);
-    if (entity is null) return Results.NotFound();
-
-    entity.Title = request.Title;
-    entity.Description = request.Description;
-    entity.DueDate = request.DueDate;
-    entity.Recurrence = request.Recurrence;
-    entity.Category = request.Category;
-    entity.IsCompleted = request.IsCompleted;
-    entity.UpdatedAt = DateTime.UtcNow;
-
-    await audit.LogAsync("Update", nameof(Requirement), entity.Id, entity.Title, currentUser.UserId);
-    var links = await CouncilPacketEndpoints.LoadRequirementLinksAsync(db);
-    await db.SaveChangesAsync();
-    return Results.Ok(CouncilPacketEndpoints.MapRequirement(entity, links.GetValueOrDefault(entity.Id, [])));
+    try
+    {
+        var entity = await requirementService.UpdateAsync(id, request, audit, currentUser);
+        var links = await CouncilPacketEndpoints.LoadRequirementLinksAsync(db);
+        return Results.Ok(CouncilPacketEndpoints.MapRequirement(entity, links.GetValueOrDefault(entity.Id, [])));
+    }
+    catch (KeyNotFoundException)
+    {
+        return Results.NotFound();
+    }
 });
 
-api.MapDelete("/requirements/{id:guid}", async (Guid id, TikrDbContext db, IAuditService audit, ICurrentUserService currentUser) =>
+api.MapDelete("/requirements/{id:guid}", async (Guid id, TikrDbContext db, IAuditService audit, ICurrentUserService currentUser, IRequirementService requirementService) =>
 {
-    var entity = await db.Requirements.FindAsync(id);
-    if (entity is null) return Results.NotFound();
-    if (entity.IsSystemSeeded) return Results.BadRequest("System-seeded requirements cannot be deleted.");
-
-    db.Requirements.Remove(entity);
-    await audit.LogAsync("Delete", nameof(Requirement), id, entity.Title, currentUser.UserId);
-    await db.SaveChangesAsync();
-    return Results.NoContent();
+    try
+    {
+        await requirementService.DeleteAsync(id, audit, currentUser);
+        return Results.NoContent();
+    }
+    catch (KeyNotFoundException)
+    {
+        return Results.NotFound();
+    }
+    catch (InvalidOperationException ex)
+    {
+        return Results.BadRequest(ex.Message);
+    }
 });
 
 // Documents
@@ -241,7 +228,7 @@ api.MapGet("/documents", async (TikrDbContext db, string? q) =>
     return items.Select(MapDocument).ToList();
 });
 
-api.MapPost("/documents", async (HttpRequest request, TikrDbContext db, IFileStorageService storage, IAuditService audit, ICurrentUserService currentUser) =>
+api.MapPost("/documents", async (HttpRequest request, IFileStorageService storage, IAuditService audit, ICurrentUserService currentUser, IDocumentService documentService) =>
 {
     if (!request.HasFormContentType)
         return Results.BadRequest("Expected multipart form data.");
@@ -252,14 +239,17 @@ api.MapPost("/documents", async (HttpRequest request, TikrDbContext db, IFileSto
     if (file.Length > 100 * 1024 * 1024) return Results.BadRequest("File too large (max 100MB).");
     if (string.IsNullOrWhiteSpace(file.FileName)) return Results.BadRequest("Invalid filename.");
 
-    var (entity, _, _) = await PrepareDocumentUploadAsync(file, storage);
-
-    using var tx = await db.Database.BeginTransactionAsync();
-    db.Documents.Add(entity);
-    await audit.LogAsync("Upload", nameof(Document), entity.Id, entity.FileName, currentUser.UserId);
-    await db.SaveChangesAsync();
-    await tx.CommitAsync();
-    return Results.Created($"/api/documents/{entity.Id}", MapDocument(entity));
+    // Delegate to centralized DocumentService (thin endpoint)
+    try
+    {
+        await using var fileStream = file.OpenReadStream();
+        var entity = await documentService.UploadAsync(fileStream, file.FileName, file.ContentType, file.Length, storage, audit, currentUser);
+        return Results.Created($"/api/documents/{entity.Id}", MapDocument(entity));
+    }
+    catch (ArgumentException ex)
+    {
+        return Results.BadRequest(ex.Message);  // or Results.Problem for better
+    }
 });
 
 api.MapGet("/documents/{id:guid}/content", async (Guid id, TikrDbContext db, IFileStorageService storage) =>
@@ -498,56 +488,36 @@ api.MapGet("/knowledge", async (TikrDbContext db) =>
     return items.Select(MapKnowledge).ToList();
 });
 
-api.MapPost("/knowledge", async (CreateKnowledgeEntryRequest request, TikrDbContext db, IAuditService audit, IHybridAiService ai, ICurrentUserService currentUser) =>
+api.MapPost("/knowledge", async (CreateKnowledgeEntryRequest request, TikrDbContext db, IAuditService audit, IHybridAiService ai, ICurrentUserService currentUser, IKnowledgeService knowledgeService) =>
 {
-    var entity = new KnowledgeEntry
-    {
-        Id = Guid.NewGuid(),
-        Title = request.Title,
-        Content = request.Content,
-        Category = request.Category,
-        SortOrder = request.SortOrder,
-        CreatedAt = DateTime.UtcNow,
-        UpdatedAt = DateTime.UtcNow
-    };
-
-    db.KnowledgeEntries.Add(entity);
-    await audit.LogAsync("Create", nameof(KnowledgeEntry), entity.Id, entity.Title, currentUser.UserId);
-
-    _ = await ai.EmbedKnowledgeEntryAsync(entity.Id);
-
-    await db.SaveChangesAsync();
+    var entity = await knowledgeService.CreateAsync(request, audit, ai, currentUser);
     return Results.Created($"/api/knowledge/{entity.Id}", MapKnowledge(entity));
 });
 
-api.MapPut("/knowledge/{id:guid}", async (Guid id, UpdateKnowledgeEntryRequest request, TikrDbContext db, IAuditService audit, IHybridAiService ai, ICurrentUserService currentUser) =>
+api.MapPut("/knowledge/{id:guid}", async (Guid id, UpdateKnowledgeEntryRequest request, TikrDbContext db, IAuditService audit, IHybridAiService ai, ICurrentUserService currentUser, IKnowledgeService knowledgeService) =>
 {
-    var entity = await db.KnowledgeEntries.FindAsync(id);
-    if (entity is null) return Results.NotFound();
-
-    entity.Title = request.Title;
-    entity.Content = request.Content;
-    entity.Category = request.Category;
-    entity.SortOrder = request.SortOrder;
-    entity.UpdatedAt = DateTime.UtcNow;
-
-    await audit.LogAsync("Update", nameof(KnowledgeEntry), entity.Id, entity.Title, currentUser.UserId);
-
-    _ = await ai.EmbedKnowledgeEntryAsync(entity.Id);
-
-    await db.SaveChangesAsync();
-    return Results.Ok(MapKnowledge(entity));
+    try
+    {
+        var entity = await knowledgeService.UpdateAsync(id, request, audit, ai, currentUser);
+        return Results.Ok(MapKnowledge(entity));
+    }
+    catch (KeyNotFoundException)
+    {
+        return Results.NotFound();
+    }
 });
 
-api.MapDelete("/knowledge/{id:guid}", async (Guid id, TikrDbContext db, IAuditService audit, ICurrentUserService currentUser) =>
+api.MapDelete("/knowledge/{id:guid}", async (Guid id, TikrDbContext db, IAuditService audit, ICurrentUserService currentUser, IKnowledgeService knowledgeService) =>
 {
-    var entity = await db.KnowledgeEntries.FindAsync(id);
-    if (entity is null) return Results.NotFound();
-
-    db.KnowledgeEntries.Remove(entity);
-    await audit.LogAsync("Delete", nameof(KnowledgeEntry), id, entity.Title, currentUser.UserId);
-    await db.SaveChangesAsync();
-    return Results.NoContent();
+    try
+    {
+        await knowledgeService.DeleteAsync(id, audit, currentUser);
+        return Results.NoContent();
+    }
+    catch (KeyNotFoundException)
+    {
+        return Results.NotFound();
+    }
 });
 
 // Audit log (read-only)
@@ -676,41 +646,4 @@ static bool TryGetSqlitePath(string? connectionString, out string path)
     return !string.IsNullOrWhiteSpace(path);
 }
 
-// Extracted document upload orchestration (addresses scattered logic in endpoint).
-// Keeps storage + text extraction + entity creation centralized here for testability.
-static async Task<(Document Entity, string? FullText, string StoragePath)> PrepareDocumentUploadAsync(
-    IFormFile file,
-    IFileStorageService storage,
-    CancellationToken ct = default)
-{
-    string storagePath;
-    string? fullText = null;
-
-    if (DocumentTextExtractionService.CanExtract(file.FileName))
-    {
-        await using var buffer = new MemoryStream();
-        await file.CopyToAsync(buffer, ct);
-        buffer.Position = 0;
-        fullText = await DocumentTextExtractionService.TryExtractAsync(buffer, file.FileName, ct);
-        buffer.Position = 0;
-        storagePath = await storage.SaveAsync(buffer, file.FileName, ct);
-    }
-    else
-    {
-        await using var stream = file.OpenReadStream();
-        storagePath = await storage.SaveAsync(stream, file.FileName, ct);
-    }
-
-    var entity = new Document
-    {
-        Id = Guid.NewGuid(),
-        FileName = file.FileName,
-        StoragePath = storagePath,
-        ContentType = file.ContentType,
-        FileSizeBytes = file.Length,
-        FullTextContent = fullText,
-        UploadedAt = DateTime.UtcNow,
-        UpdatedAt = DateTime.UtcNow
-    };
-    return (entity, fullText, storagePath);
-}
+// NOTE: Upload orchestration moved to DocumentService (final cleanup for centralization/testability).

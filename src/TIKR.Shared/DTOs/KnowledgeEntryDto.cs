@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using TIKR.Shared.Enums;
 
 namespace TIKR.Shared.DTOs;
@@ -10,13 +11,13 @@ public record KnowledgeEntryDto(
     int SortOrder);
 
 public record CreateKnowledgeEntryRequest(
-    string Title,
-    string Content,
+    [Required, MaxLength(500)] string Title,
+    [Required] string Content,
     KnowledgeCategory Category,
     int SortOrder);
 
 public record UpdateKnowledgeEntryRequest(
-    string Title,
-    string Content,
+    [Required, MaxLength(500)] string Title,
+    [Required] string Content,
     KnowledgeCategory Category,
     int SortOrder);

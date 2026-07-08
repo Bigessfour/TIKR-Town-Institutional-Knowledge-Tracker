@@ -49,6 +49,9 @@ public static class DependencyInjection
                 ? sp.GetRequiredService<SyncfusionDocumentAgentExtractionBackend>()
                 : sp.GetRequiredService<StubDocumentAgentExtractionBackend>());
         services.AddScoped<IDocumentAgentService, DocumentAgentService>();
+        services.AddScoped<IDocumentService, DocumentService>();
+        services.AddScoped<IRequirementService, RequirementService>();
+        services.AddScoped<IKnowledgeService, KnowledgeService>();
         services.AddSyncfusionDocumentGeneration();
         services.AddHttpClient<GrokService>();
 
