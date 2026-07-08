@@ -15,6 +15,7 @@
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.14.0" />
     <PackageReference Include="OllamaSharp" Version="5.4.25" />
     <PackageReference Include="Syncfusion.Blazor.Buttons" Version="34.1.29" />
+    <PackageReference Include="Syncfusion.Blazor.Calendars" Version="34.1.29" />
     <PackageReference Include="Syncfusion.Blazor.Cards" Version="34.1.29" />
     <PackageReference Include="Syncfusion.Blazor.Core" Version="34.1.29" />
     <PackageReference Include="Syncfusion.Blazor.DataForm" Version="34.1.29" />

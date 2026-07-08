@@ -14,7 +14,7 @@ test.describe('Requirements AI Scan', () => {
     await expect(page.getByRole('heading', { name: 'Requirements Manager' })).toBeVisible();
     await page.waitForFunction(() => typeof (window as unknown as { sfBlazor?: unknown }).sfBlazor !== 'undefined');
 
-    await page.locator('.requirements-agent-upload input[type="file"]').setInputFiles(txtFixture);
+    await page.locator('.requirements-agent-upload input[type="file"]').first().setInputFiles(txtFixture);
 
     await expect(page.locator('.ai-suggestion-banner')).toBeVisible({ timeout: 30_000 });
     await expect(page.locator('.e-dialog')).toBeVisible();

@@ -1,5 +1,6 @@
 using FluentAssertions;
 using TIKR.Shared.DTOs;
+using TIKR.Shared.Enums;
 using TIKR.Web.Helpers;
 
 namespace TIKR.Web.Tests.Helpers;
@@ -49,9 +50,25 @@ public class DocumentSelectionStateTests
     }
 
     [Fact]
-    public void VaultVoiceNoteSimulator_BuildsDefaultTitle()
+    public void VaultVoiceNoteMapper_IdentifiesAndMapsVoiceNotes()
+    {
+        var voice = new KnowledgeEntryDto(
+            Guid.NewGuid(),
+            VaultVoiceNoteSimulator.BuildDefaultTitle(new DateTime(2026, 6, 28)),
+            "transcription text",
+            KnowledgeCategory.TribalKnowledge,
+            1);
+
+        VaultVoiceNoteMapper.IsVoiceNote(voice).Should().BeTrue();
+        var note = VaultVoiceNoteMapper.ToVoiceNote(voice);
+        note.Transcription.Should().Be("transcription text");
+    }
+
+    [Fact]
+    public void VaultVoiceNoteSimulator_BuildsTitleAndTranscription()
     {
         var when = new DateTime(2026, 6, 28, 14, 30, 0);
         VaultVoiceNoteSimulator.BuildDefaultTitle(when).Should().Contain("Jun 28");
+        VaultVoiceNoteSimulator.BuildSimulatedTranscription(when).Should().Contain("county assessor");
     }
 }
