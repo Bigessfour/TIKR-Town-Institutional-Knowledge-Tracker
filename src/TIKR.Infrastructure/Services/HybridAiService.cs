@@ -196,6 +196,32 @@ public class HybridAiService(
             ? request.Prompt
             : $"Context:\n{request.Context}\n\nQuestion:\n{request.Prompt}";
 
+        // Validate Ollama first per requirements. Use local unless unavailable or prompt context requires advanced/Grok reasoning.
+        bool ollamaAvailable = false;
+        try
+        {
+            ollamaAvailable = await ollamaFactory.IsAvailableAsync(cancellationToken);
+        }
+        catch { /* best effort */ }
+
+        bool preferGrokByContext = ShouldPreferGrokForPrompt(prompt);
+
+        if (!ollamaAvailable || (preferGrokByContext && grokService.IsEnabled))
+        {
+            if (grokService.IsEnabled)
+            {
+                var grokAnswer = await grokService.CompleteAsync(prompt, cancellationToken: cancellationToken);
+                if (!string.IsNullOrWhiteSpace(grokAnswer))
+                    return new AskAdvancedResponse(grokAnswer, UsedGrok: true);
+            }
+        }
+
+        // Prefer local (validated) first
+        var localAnswer = await GetLocalCompletionAsync(prompt, cancellationToken);
+        if (!string.IsNullOrWhiteSpace(localAnswer))
+            return new AskAdvancedResponse(localAnswer, UsedGrok: false);
+
+        // Fallback to Grok if local failed and Grok enabled (even if not preferred by context)
         if (grokService.IsEnabled)
         {
             var grokAnswer = await grokService.CompleteAsync(prompt, cancellationToken: cancellationToken);
@@ -203,10 +229,21 @@ public class HybridAiService(
                 return new AskAdvancedResponse(grokAnswer, UsedGrok: true);
         }
 
-        var localAnswer = await GetLocalCompletionAsync(prompt, cancellationToken)
-            ?? "Unable to get a response. Check Ollama connectivity or enable USE_GROK with a valid GROK_API_KEY.";
+        return new AskAdvancedResponse("Unable to get a response. Check Ollama connectivity (or enable USE_GROK with a valid GROK_API_KEY).", UsedGrok: false);
+    }
 
-        return new AskAdvancedResponse(localAnswer, UsedGrok: false);
+    private static bool ShouldPreferGrokForPrompt(string prompt)
+    {
+        if (string.IsNullOrWhiteSpace(prompt)) return false;
+        var p = prompt.ToLowerInvariant();
+        // Context-dependent: trigger Grok for explicit advanced/complex reasoning prompts
+        return p.Contains("grok") ||
+               p.Contains("advanced") ||
+               p.Contains("complex reasoning") ||
+               p.Contains("deep analysis") ||
+               p.Contains("detailed step") ||
+               (p.Contains("step by step") && p.Length > 80) ||
+               p.Contains("thorough explanation");
     }
 
     public async Task<AiStatusResponse> GetStatusAsync(CancellationToken cancellationToken = default)
@@ -232,9 +269,20 @@ public class HybridAiService(
 
     private static string ExtractJson(string text)
     {
-        var start = text.IndexOf('{');
-        var end = text.LastIndexOf('}');
-        return start >= 0 && end > start ? text[start..(end + 1)] : text;
+        if (string.IsNullOrWhiteSpace(text)) return text;
+        // Strip common markdown code fences for robustness
+        var cleaned = text.Trim();
+        if (cleaned.StartsWith("```", StringComparison.Ordinal))
+        {
+            var firstNl = cleaned.IndexOf('\n');
+            if (firstNl > 0) cleaned = cleaned[(firstNl + 1)..];
+            var lastFence = cleaned.LastIndexOf("```", StringComparison.Ordinal);
+            if (lastFence > 0) cleaned = cleaned[..lastFence];
+            cleaned = cleaned.Trim();
+        }
+        var start = cleaned.IndexOf('{');
+        var end = cleaned.LastIndexOf('}');
+        return start >= 0 && end > start ? cleaned[start..(end + 1)] : cleaned;
     }
 
     private async Task<float[]?> TryGenerateEmbeddingAsync(string text, CancellationToken cancellationToken)

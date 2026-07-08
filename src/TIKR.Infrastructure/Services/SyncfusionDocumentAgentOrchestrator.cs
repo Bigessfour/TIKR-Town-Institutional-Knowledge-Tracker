@@ -93,7 +93,7 @@ public sealed class SyncfusionDocumentAgentOrchestrator(
          Use tool output verbatim in extractedText. Do not invent deadlines or obligations not present in the document.
          """;
 
-    internal static AgentExtractionResult? ParseOrchestrationResult(string responseText, string originalFileName)
+    public static AgentExtractionResult? ParseOrchestrationResult(string responseText, string originalFileName)
     {
         if (string.IsNullOrWhiteSpace(responseText))
             return null;
@@ -126,8 +126,18 @@ public sealed class SyncfusionDocumentAgentOrchestrator(
 
     private static string ExtractJson(string text)
     {
-        var start = text.IndexOf('{');
-        var end = text.LastIndexOf('}');
-        return start >= 0 && end > start ? text[start..(end + 1)] : text;
+        if (string.IsNullOrWhiteSpace(text)) return text;
+        var cleaned = text.Trim();
+        if (cleaned.StartsWith("```", StringComparison.Ordinal))
+        {
+            var firstNl = cleaned.IndexOf('\n');
+            if (firstNl > 0) cleaned = cleaned[(firstNl + 1)..];
+            var lastFence = cleaned.LastIndexOf("```", StringComparison.Ordinal);
+            if (lastFence > 0) cleaned = cleaned[..lastFence];
+            cleaned = cleaned.Trim();
+        }
+        var start = cleaned.IndexOf('{');
+        var end = cleaned.LastIndexOf('}');
+        return start >= 0 && end > start ? cleaned[start..(end + 1)] : cleaned;
     }
 }

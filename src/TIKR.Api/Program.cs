@@ -139,8 +139,8 @@ api.MapPost("/requirements", async (CreateRequirementRequest request, TikrDbCont
     };
 
     db.Requirements.Add(entity);
-    await db.SaveChangesAsync();
     await audit.LogAsync("Create", nameof(Requirement), entity.Id, entity.Title, currentUser.UserId);
+    await db.SaveChangesAsync();
     return Results.Created(
         $"/api/requirements/{entity.Id}",
         CouncilPacketEndpoints.MapRequirement(entity, []));
@@ -170,10 +170,9 @@ api.MapPost("/requirements/{id:guid}/documents", async (
             DocumentId = request.DocumentId,
             LinkedAt = DateTime.UtcNow
         });
+        await audit.LogAsync("Link", nameof(Requirement), id, document.FileName, currentUser.UserId);
         await db.SaveChangesAsync();
     }
-
-    await audit.LogAsync("Link", nameof(Requirement), id, document.FileName, currentUser.UserId);
     var links = await CouncilPacketEndpoints.LoadRequirementLinksAsync(db);
     return Results.Ok(CouncilPacketEndpoints.MapRequirement(requirement, links.GetValueOrDefault(id, [])));
 });
@@ -190,8 +189,8 @@ api.MapDelete("/requirements/{id:guid}/documents/{documentId:guid}", async (
         return Results.NotFound();
 
     db.RequirementDocuments.Remove(link);
-    await db.SaveChangesAsync();
     await audit.LogAsync("Unlink", nameof(Requirement), id, documentId.ToString(), currentUser.UserId);
+    await db.SaveChangesAsync();
     return Results.NoContent();
 });
 
@@ -208,9 +207,9 @@ api.MapPut("/requirements/{id:guid}", async (Guid id, UpdateRequirementRequest r
     entity.IsCompleted = request.IsCompleted;
     entity.UpdatedAt = DateTime.UtcNow;
 
-    await db.SaveChangesAsync();
     await audit.LogAsync("Update", nameof(Requirement), entity.Id, entity.Title, currentUser.UserId);
     var links = await CouncilPacketEndpoints.LoadRequirementLinksAsync(db);
+    await db.SaveChangesAsync();
     return Results.Ok(CouncilPacketEndpoints.MapRequirement(entity, links.GetValueOrDefault(entity.Id, [])));
 });
 
@@ -221,8 +220,8 @@ api.MapDelete("/requirements/{id:guid}", async (Guid id, TikrDbContext db, IAudi
     if (entity.IsSystemSeeded) return Results.BadRequest("System-seeded requirements cannot be deleted.");
 
     db.Requirements.Remove(entity);
-    await db.SaveChangesAsync();
     await audit.LogAsync("Delete", nameof(Requirement), id, entity.Title, currentUser.UserId);
+    await db.SaveChangesAsync();
     return Results.NoContent();
 });
 
@@ -250,40 +249,16 @@ api.MapPost("/documents", async (HttpRequest request, TikrDbContext db, IFileSto
     var form = await request.ReadFormAsync();
     var file = form.Files.FirstOrDefault();
     if (file is null) return Results.BadRequest("No file uploaded.");
+    if (file.Length > 100 * 1024 * 1024) return Results.BadRequest("File too large (max 100MB).");
+    if (string.IsNullOrWhiteSpace(file.FileName)) return Results.BadRequest("Invalid filename.");
 
-    string storagePath;
-    string? fullText = null;
+    var (entity, _, _) = await PrepareDocumentUploadAsync(file, storage);
 
-    if (DocumentTextExtractionService.CanExtract(file.FileName))
-    {
-        await using var buffer = new MemoryStream();
-        await file.CopyToAsync(buffer);
-        buffer.Position = 0;
-        fullText = await DocumentTextExtractionService.TryExtractAsync(buffer, file.FileName);
-        buffer.Position = 0;
-        storagePath = await storage.SaveAsync(buffer, file.FileName);
-    }
-    else
-    {
-        await using var stream = file.OpenReadStream();
-        storagePath = await storage.SaveAsync(stream, file.FileName);
-    }
-
-    var entity = new Document
-    {
-        Id = Guid.NewGuid(),
-        FileName = file.FileName,
-        StoragePath = storagePath,
-        ContentType = file.ContentType,
-        FileSizeBytes = file.Length,
-        FullTextContent = fullText,
-        UploadedAt = DateTime.UtcNow,
-        UpdatedAt = DateTime.UtcNow
-    };
-
+    using var tx = await db.Database.BeginTransactionAsync();
     db.Documents.Add(entity);
-    await db.SaveChangesAsync();
     await audit.LogAsync("Upload", nameof(Document), entity.Id, entity.FileName, currentUser.UserId);
+    await db.SaveChangesAsync();
+    await tx.CommitAsync();
     return Results.Created($"/api/documents/{entity.Id}", MapDocument(entity));
 });
 
@@ -303,8 +278,8 @@ api.MapDelete("/documents/{id:guid}", async (Guid id, TikrDbContext db, IFileSto
 
     await storage.DeleteAsync(entity.StoragePath);
     db.Documents.Remove(entity);
-    await db.SaveChangesAsync();
     await audit.LogAsync("Delete", nameof(Document), id, entity.FileName, currentUser.UserId);
+    await db.SaveChangesAsync();
     return Results.NoContent();
 });
 
@@ -460,6 +435,7 @@ api.MapPost("/documents/convert/word-to-pdf", async (HttpRequest request, IDocum
     var file = request.Form.Files.FirstOrDefault();
     if (file is null || file.Length == 0)
         return Results.BadRequest("No file uploaded.");
+    if (file.Length > 50 * 1024 * 1024) return Results.BadRequest("File too large (max 50MB for conversion).");
 
     try
     {
@@ -536,11 +512,11 @@ api.MapPost("/knowledge", async (CreateKnowledgeEntryRequest request, TikrDbCont
     };
 
     db.KnowledgeEntries.Add(entity);
-    await db.SaveChangesAsync();
     await audit.LogAsync("Create", nameof(KnowledgeEntry), entity.Id, entity.Title, currentUser.UserId);
 
     _ = await ai.EmbedKnowledgeEntryAsync(entity.Id);
 
+    await db.SaveChangesAsync();
     return Results.Created($"/api/knowledge/{entity.Id}", MapKnowledge(entity));
 });
 
@@ -555,11 +531,11 @@ api.MapPut("/knowledge/{id:guid}", async (Guid id, UpdateKnowledgeEntryRequest r
     entity.SortOrder = request.SortOrder;
     entity.UpdatedAt = DateTime.UtcNow;
 
-    await db.SaveChangesAsync();
     await audit.LogAsync("Update", nameof(KnowledgeEntry), entity.Id, entity.Title, currentUser.UserId);
 
     _ = await ai.EmbedKnowledgeEntryAsync(entity.Id);
 
+    await db.SaveChangesAsync();
     return Results.Ok(MapKnowledge(entity));
 });
 
@@ -569,8 +545,8 @@ api.MapDelete("/knowledge/{id:guid}", async (Guid id, TikrDbContext db, IAuditSe
     if (entity is null) return Results.NotFound();
 
     db.KnowledgeEntries.Remove(entity);
-    await db.SaveChangesAsync();
     await audit.LogAsync("Delete", nameof(KnowledgeEntry), id, entity.Title, currentUser.UserId);
+    await db.SaveChangesAsync();
     return Results.NoContent();
 });
 
@@ -636,6 +612,8 @@ api.MapPost("/ai/agent-scan", async (HttpRequest request, IDocumentAgentService 
     var file = request.Form.Files.FirstOrDefault();
     if (file is null || file.Length == 0)
         return Results.BadRequest("No file uploaded.");
+    if (file.Length > 100 * 1024 * 1024) return Results.BadRequest("File too large (max 100MB).");
+    if (string.IsNullOrWhiteSpace(file.FileName)) return Results.BadRequest("Invalid filename.");
 
     await using var stream = file.OpenReadStream();
     var result = await agent.ProcessUploadAsync(stream, file.FileName);
@@ -696,4 +674,43 @@ static bool TryGetSqlitePath(string? connectionString, out string path)
 
     path = value.Trim('"');
     return !string.IsNullOrWhiteSpace(path);
+}
+
+// Extracted document upload orchestration (addresses scattered logic in endpoint).
+// Keeps storage + text extraction + entity creation centralized here for testability.
+static async Task<(Document Entity, string? FullText, string StoragePath)> PrepareDocumentUploadAsync(
+    IFormFile file,
+    IFileStorageService storage,
+    CancellationToken ct = default)
+{
+    string storagePath;
+    string? fullText = null;
+
+    if (DocumentTextExtractionService.CanExtract(file.FileName))
+    {
+        await using var buffer = new MemoryStream();
+        await file.CopyToAsync(buffer, ct);
+        buffer.Position = 0;
+        fullText = await DocumentTextExtractionService.TryExtractAsync(buffer, file.FileName, ct);
+        buffer.Position = 0;
+        storagePath = await storage.SaveAsync(buffer, file.FileName, ct);
+    }
+    else
+    {
+        await using var stream = file.OpenReadStream();
+        storagePath = await storage.SaveAsync(stream, file.FileName, ct);
+    }
+
+    var entity = new Document
+    {
+        Id = Guid.NewGuid(),
+        FileName = file.FileName,
+        StoragePath = storagePath,
+        ContentType = file.ContentType,
+        FileSizeBytes = file.Length,
+        FullTextContent = fullText,
+        UploadedAt = DateTime.UtcNow,
+        UpdatedAt = DateTime.UtcNow
+    };
+    return (entity, fullText, storagePath);
 }

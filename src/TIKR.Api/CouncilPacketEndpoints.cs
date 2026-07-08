@@ -45,6 +45,8 @@ internal static class CouncilPacketEndpoints
             var packetRequest = new CreateCouncilPacketRequest(town, packetDate, logoPath, requirements);
             var files = await generator.GenerateCouncilPacketAsync(packetRequest);
 
+            using var tx = await db.Database.BeginTransactionAsync();
+
             logger.LogInformation("Saving council packet PDF to NAS storage ({Bytes} bytes)", files.PdfContent.Length);
             var pdfEntity = await PersistGeneratedDocumentAsync(
                 db, storage, files.PdfContent, files.PdfFileName, "application/pdf");
@@ -54,7 +56,6 @@ internal static class CouncilPacketEndpoints
                 db, storage, files.DocxContent, files.DocxFileName,
                 "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
 
-            await db.SaveChangesAsync();
             await audit.LogAsync(
                 "Generate",
                 nameof(Document),
@@ -67,6 +68,9 @@ internal static class CouncilPacketEndpoints
                 docxEntity.Id,
                 $"Council packet DOCX {docxEntity.FileName}",
                 currentUser.UserId);
+
+            await db.SaveChangesAsync();
+            await tx.CommitAsync();
 
             logger.LogInformation(
                 "Council packet saved: PDF {PdfId}, DOCX {DocxId}",
