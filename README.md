@@ -1,7 +1,6 @@
 # TIKR – Town Institutional Knowledge Tracker
 
 [![TIKR CI](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/actions/workflows/ci.yml/badge.svg)](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/actions/workflows/ci.yml)
-[![TIKR CI](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/actions/workflows/ci.yml/badge.svg)](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/actions/workflows/ci.yml)
 
 **The Town Clerk's Second Brain**
 
