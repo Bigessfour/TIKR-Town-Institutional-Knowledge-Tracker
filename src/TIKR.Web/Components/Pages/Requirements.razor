@@ -26,10 +26,15 @@
     <SfButton CssClass="tikr-action-btn e-primary" IsPrimary="true" IconCss="e-icons e-plus" Content="Add requirement" OnClick="OpenCreateDialog" />
     <SfButton CssClass="tikr-action-btn" IconCss="e-icons e-export" Content="Export CSV" OnClick="ExportCsvAsync" />
     <SfButton CssClass="tikr-action-btn" IconCss="e-icons e-print" Content="Print council packet" OnClick="PrintPacketAsync" />
-    <label class="e-btn tikr-action-btn requirements-agent-upload">
-        AI Scan uploaded doc
-        <InputFile OnChange="OnAgentFileSelectedAsync" accept=".pdf,.doc,.docx,.txt,.csv" />
-    </label>
+    <div class="requirements-agent-upload">
+        <SfUploader AutoUpload="true"
+                    MaxFileCount="1"
+                    AllowedExtensions=".pdf,.doc,.docx,.txt,.csv"
+                    MaxFileSize="52428800">
+            <UploaderEvents ValueChange="OnAgentUploadAsync" />
+        </SfUploader>
+        <span class="requirements-agent-hint">AI Scan uploaded doc</span>
+    </div>
 </div>
 
 <div class="requirements-filters mb-3">
@@ -131,7 +136,10 @@ else if (!string.IsNullOrWhiteSpace(_agentMessage))
                         </FormItem>
                         <FormItem Field="@nameof(RequirementFormModel.DueDate)" LabelText="Due date">
                             <Template>
-                                <input type="date" class="e-input" @bind="_formDueDate" @bind:format="yyyy-MM-dd" />
+                                <SfDatePicker TValue="DateTime?"
+                                              @bind-Value="_formDueDate"
+                                              Format="d"
+                                              Placeholder="Select due date" />
                             </Template>
                         </FormItem>
                         <FormItem Field="@nameof(RequirementFormModel.Recurrence)" LabelText="Recurrence">
@@ -183,7 +191,7 @@ else if (!string.IsNullOrWhiteSpace(_agentMessage))
     private string? _agentMessage;
     private bool _agentScanning;
     private DocumentAgentResult? _lastAgentResult;
-    private DateTime _formDueDate = DateTime.Today.AddMonths(1);
+    private DateTime? _formDueDate = DateTime.Today.AddMonths(1);
     private readonly RequirementFormModel _form = new();
     private bool _confirmDeleteVisible;
     private RequirementDto? _pendingDelete;
@@ -266,7 +274,7 @@ else if (!string.IsNullOrWhiteSpace(_agentMessage))
     private async Task SaveAsync()
     {
         _error = null;
-        var dueDate = DateOnly.FromDateTime(_formDueDate);
+        var dueDate = DateOnly.FromDateTime(_formDueDate ?? DateTime.Today);
 
         try
         {
@@ -351,12 +359,13 @@ else if (!string.IsNullOrWhiteSpace(_agentMessage))
             $"(() => {{ const a = document.createElement('a'); a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent({System.Text.Json.JsonSerializer.Serialize(csv)}); a.download = {System.Text.Json.JsonSerializer.Serialize(fileName)}; a.click(); }})()");
     }
 
-    private async Task OnAgentFileSelectedAsync(InputFileChangeEventArgs e)
+    private async Task OnAgentUploadAsync(UploadChangeEventArgs args)
     {
         _error = null;
         _agentMessage = null;
         _lastAgentResult = null;
-        var file = e.File;
+
+        var file = args.Files.FirstOrDefault()?.File;
         if (file is null)
             return;
 

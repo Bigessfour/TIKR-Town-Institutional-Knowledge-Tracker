@@ -98,9 +98,7 @@
                     AllowSorting="true"
                     AllowFiltering="true"
                     Height="520px"
-                    CssClass="doc-grid"
-                    AllowSelection="true">
-                <GridSelectionSettings Type="Syncfusion.Blazor.Grids.SelectionType.Multiple" CheckboxOnly="false" />
+                    CssClass="doc-grid">
                 <GridColumns>
                     <!-- Selection checkbox (reliable client state) -->
                     <GridColumn Width="50" HeaderText="">
@@ -171,7 +169,10 @@
                     <div class="preview-actions">
                         <SfButton CssClass="tikr-action-btn" Content="Re-tag with AI" OnClick="@(async () => await RetagOne(d))" />
                         <SfButton CssClass="tikr-action-btn" Content="Delete" OnClick="@(() => RequestDelete(d))" />
-                        <SfButton CssClass="tikr-action-btn" Content="Download" OnClick="@(async () => await DownloadDocumentAsync(d))" />
+                        <SfButton CssClass="tikr-action-btn"
+                                  Content="@(_downloadingDocId == d.Id ? "Downloading…" : "Download")"
+                                  Disabled="@(_downloadingDocId == d.Id)"
+                                  OnClick="@(async () => await DownloadDocumentAsync(d))" />
                     </div>
 
                     @if (IsPdf(d) && !string.IsNullOrEmpty(_pdfPreviewUrl) && _pdfPreviewDocId == d.Id)
@@ -247,6 +248,7 @@
     private string? _pdfPreviewUrl;
     private Guid? _pdfPreviewDocId;
     private bool _previewLoading;
+    private Guid? _downloadingDocId;
 
     private List<DocumentLibraryLogic.FolderNode> _folderNodes = [];
 
@@ -469,19 +471,36 @@
 
     private async Task DownloadDocumentAsync(DocumentDto doc)
     {
-        var bytes = await Api.GetDocumentContentAsync(doc.Id);
-        if (bytes is null || bytes.Length == 0)
-        {
-            _statusMessage = DocumentUiMessages.DownloadFailed();
-            return;
-        }
+        const long largeFileThresholdBytes = 52_428_800;
 
-        await JS.InvokeVoidAsync(
-            "tikrDownload.downloadFromBytes",
-            doc.FileName,
-            doc.ContentType ?? "application/octet-stream",
-            bytes);
-        _statusMessage = $"Downloaded {doc.FileName} from NAS storage.";
+        if (doc.FileSizeBytes > largeFileThresholdBytes)
+            _statusMessage = DocumentUiMessages.DownloadLargeFileWarning(doc.FileName, doc.FileSizeBytes);
+
+        _downloadingDocId = doc.Id;
+        _statusMessage = DocumentUiMessages.DownloadInProgress(doc.FileName);
+        StateHasChanged();
+
+        try
+        {
+            var bytes = await Api.GetDocumentContentAsync(doc.Id);
+            if (bytes is null || bytes.Length == 0)
+            {
+                _statusMessage = DocumentUiMessages.DownloadFailed(doc.FileName);
+                return;
+            }
+
+            await JS.InvokeVoidAsync(
+                "tikrDownload.downloadFromBytes",
+                doc.FileName,
+                doc.ContentType ?? "application/octet-stream",
+                bytes);
+            _statusMessage = DocumentUiMessages.DownloadSuccess(doc.FileName);
+        }
+        finally
+        {
+            _downloadingDocId = null;
+            StateHasChanged();
+        }
     }
 
     private void ClearSelection()

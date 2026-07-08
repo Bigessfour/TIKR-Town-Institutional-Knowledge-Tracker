@@ -1,6 +1,8 @@
 @page "/calendar"
 @rendermode InteractiveServer
+@implements IDisposable
 @inject TikrApiClient Api
+@inject NavigationManager Navigation
 
 @using TIKR.Web.Components.Shared
 
@@ -9,7 +11,7 @@
         <h2>Deadline Calendar</h2>
         <p>Colorado municipal deadlines and custom requirements</p>
     </div>
-    <PageHelp HelpText="Read-only timeline of statutory and custom due dates. Edit items on Requirements; filing status syncs here automatically." />
+    <PageHelp HelpText="Read-only timeline of statutory and custom due dates. Edit items on Requirements; returning here refreshes from the NAS database." />
 </div>
 
 <SfSchedule TValue="CalendarEvent" Height="650px" Readonly="true">
@@ -43,6 +45,27 @@
 
     protected override async Task OnInitializedAsync()
     {
+        Navigation.LocationChanged += OnLocationChanged;
+        await LoadAsync();
+    }
+
+    private async void OnLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        if (!IsCalendarRoute(e.Location))
+            return;
+
+        await InvokeAsync(async () =>
+        {
+            await LoadAsync();
+            StateHasChanged();
+        });
+    }
+
+    private static bool IsCalendarRoute(string location) =>
+        location.Contains("/calendar", StringComparison.OrdinalIgnoreCase);
+
+    private async Task LoadAsync()
+    {
         _requirements = await Api.GetRequirementsAsync();
         _events = _requirements.Select(r => new CalendarEvent
         {
@@ -53,6 +76,8 @@
             EndTime = r.DueDate.ToDateTime(TimeOnly.MinValue).AddHours(1)
         }).ToList();
     }
+
+    public void Dispose() => Navigation.LocationChanged -= OnLocationChanged;
 
     public class CalendarEvent
     {

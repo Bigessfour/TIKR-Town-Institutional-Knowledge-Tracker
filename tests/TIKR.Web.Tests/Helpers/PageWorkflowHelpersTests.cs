@@ -75,7 +75,9 @@ public class PageWorkflowHelpersTests
         DocumentUiMessages.BulkDelete(3).Should().Contain("3");
         DocumentUiMessages.BulkRetag(2).Should().Contain("Re-tagged");
         DocumentUiMessages.SuggestionAccepted().Should().Contain("accepted");
-        DocumentUiMessages.DownloadFailed().Should().Contain("Download failed");
+        DocumentUiMessages.DownloadSuccess("a.pdf").Should().Contain("a.pdf");
+        DocumentUiMessages.DownloadFailed("a.pdf").Should().Contain("a.pdf");
+        DocumentUiMessages.DownloadInProgress("a.pdf").Should().Contain("Downloading");
         DocumentUiMessages.SemanticSearchFailed("timeout").Should().Contain("timeout");
     }
 }
