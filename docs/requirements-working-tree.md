@@ -2,15 +2,15 @@
 
 Living checklist for Requirements Manager work. Tracks MVP (ship now) vs deferred Phase 2+.
 
-**Updated:** 2026-06-28 — honest snapshot of `main` vs active branch.
+**Updated:** 2026-07-08 — post-#48 Playwright CI gate merge.
 
 ## Where we are
 
 | Layer | Truth |
 |-------|--------|
-| **`main`** | 10A, 10B, 10C **A1+A2** merged ([#35](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/35)). **275 tests**. Syncfusion PDF/Word extraction wired behind `USE_SYNCFUSION_AGENT_TOOLS=true` (not exercised in default CI). No `UsedSyncfusionTools` on DTO yet. Playwright: `clerk-smoke.spec.ts` only. |
-| **Active branch** | `feature/phase10c-e2e-proof` → open **[PR #36](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/36)** (10C-D E2E proof). Adds fixtures, API test, Playwright agent-scan spec, docker smoke curl, licensed workflow scaffold, `UsedSyncfusionTools`. **277 tests** when merged. |
-| **Next after #36** | Manual NAS smoke (licensed PDF), 10C-C UI badge, 10C-A3 Ollama orchestration, Phase 0 docs/sign-off. |
+| **`main`** | 10A–10C A1+A2+A3+D merged; Phase 0 #33–#34 + Playwright CI gate [#48](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/48). **296+ tests**. Licensed agent-scan smoke in CI when `SYNCFUSION_LICENSE_KEY` set; plain-text stub path always available. Playwright E2E blocking in **TIKR CI**. |
+| **Active branch** | None required for ship gate — Phase 0 PRs 3–4 (docs + sign-off) next. |
+| **Next** | Phase 0 PR #3 (Deb handover docs), PR #4 (recorded walkthrough), manual NAS licensed PDF smoke optional. |
 
 **Repo reality**
 
@@ -123,7 +123,7 @@ Code complete on branch; **not on `main` until merged.**
 - [ ] "AI Fill Gaps" button (Ollama suggest similar CO requirements)
 - [ ] "Test Submit" action
 - [x] Print Packet export (basic print shipped in Phase 0 [#33](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/33))
-- [x] Offline mode indicator / Synology NAS badge (Phase 0 [#33](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/33))
+- [x] Offline mode indicator / Synology NAS badge (Phase 0 [#33](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/33)) — shipped on `main`
 
 ### Integrations
 
@@ -136,7 +136,7 @@ Code complete on branch; **not on `main` until merged.**
 ### Infrastructure
 
 - [ ] Add Syncfusion.Blazor.TreeGrid package (individual, not meta)
-- [ ] Playwright E2E clerk flows — `clerk-smoke.spec.ts` on `main`; `requirements-agent-scan.spec.ts` in PR #36; neither wired as required CI gate yet
+- [x] Playwright E2E clerk flows — `clerk-smoke.spec.ts` + `requirements-agent-scan.spec.ts` blocking in **TIKR CI** ([#48](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/48))
 
 ---
 
@@ -162,7 +162,8 @@ Captured from codebase + plan review. Tracks stubs, Phase 0 closure, and non-Req
 **Status:** [#33](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/33) + [#34](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/34) merged on `main`. PRs 3–4 remain before Deb sign-off.
 
 - [x] **PR #2 — partial ([#34](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/34)):** Keyboard nav, bUnit polish tests, plan cleanup
-- [ ] **PR #2 — remaining:** Playwright as required CI gate (docker smoke still `continue-on-error`); `FullyTested` trait + `dotnet test --filter FullyTested`; mobile/tablet manual pass
+- [x] **PR #2 — Playwright CI gate ([#48](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/48)):** Blocking E2E in **TIKR CI**; licensed PDF agent-scan assertion fixed
+- [ ] **PR #2 — deferred:** `FullyTested` trait CI filter; mobile/tablet manual pass
 - [ ] **PR #3 — Documentation:** Clerk handover doc + Deb walkthrough checklist
 - [ ] **PR #3:** Footer wording — SQLite mtime shown as "Last saved"; spec wanted "Last backed up" (Hyper Backup not wired)
 - [ ] **PR #4 — Sign-off:** Deb walkthrough recorded; Done Detector criteria signed off
@@ -177,7 +178,7 @@ Captured from codebase + plan review. Tracks stubs, Phase 0 closure, and non-Req
 - [ ] **Voice notes** — `Vault.razor` + `VaultVoiceNoteSimulator` — timer simulates transcription; no mic/Ollama STT yet
 - [ ] **Agent scan PDF/DOCX (stub path)** — **By design** when `USE_SYNCFUSION_AGENT_TOOLS=false` (CI/default docker). Plain `.txt` works. Licensed PDF/Word on `main` via Syncfusion when flag + key set; proof pending NAS smoke / PR #36 merge + licensed workflow
 - [ ] **Documents delete — no undo** — `ConfirmDeleteAsync` shows toast without undo callback (Requirements/Vault have undo)
-- [ ] **Extraction source badge (10C-C)** — `FormatAgentScanMessage` ignores `UsedSyncfusionTools` (field lands with PR #36); UI badge not built
+- [x] **Extraction source badge (10C-C)** — `FormatAgentScanMessage` + badge in `Requirements.razor` (`extraction-badge-syncfusion` / stub)
 
 #### Medium impact — spec vs implementation
 

@@ -240,7 +240,7 @@ Update this section when env changes.
 
 ## Phase 0 — Final Gap Closure & Ship-Ready Polish
 
-**Status:** in progress ([#33](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/33) + [#34](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/34) merged; PR sequence 3–4 remaining). Move-in and dev tooling complete (2026-07).
+**Status:** in progress ([#33](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/33) + [#34](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/34) + Playwright CI gate [#48](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/48) merged; PR sequence 3–4 remaining). Move-in and dev tooling complete (2026-07).
 
 **Purpose:** Clerk-facing polish before Deb sign-off — local-first trust cues, safe deletes, accessibility, and E2E smoke.
 
@@ -249,7 +249,7 @@ Update this section when env changes.
 | # | Slice | Status |
 |---|-------|--------|
 | 1 | UI polish + NAS footer (#33) | done |
-| 2 | Test & accessibility pass (#34) | **partial** — keyboard nav + bUnit merged; Playwright CI gate in [#48](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/48) (rebased); `FullyTested` CI filter deferred until coverage targets pass with subset |
+| 2 | Test & accessibility pass (#34 + #48) | **done** — keyboard nav + bUnit + blocking Playwright E2E in CI; `FullyTested` CI filter deferred until coverage targets pass with subset |
 | 3 | Documentation & clerk touches | planned |
 | 4 | Health UI closure + Done Detector sign-off | planned |
 
@@ -265,7 +265,7 @@ Update this section when env changes.
 - [x] Keyboard shortcuts help modal (`?`) + `g` navigation (d/r/o/v/a/s)
 - [x] Mobile touch targets (44px) and responsive sidebar
 - [x] Settings: Synology health + Ollama status card
-- [x] Playwright E2E scaffold (`tests/e2e/`) — run manually against Docker stack
+- [x] Playwright E2E required CI gate (`tests/e2e/` against Docker stack in **TIKR CI** — [#48](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/48))
 - [x] bUnit coverage for footer, toast, helpers
 - [x] Skip link + `:focus-visible` accessibility baseline
 - [x] Agent Dev Env + move-in complete (MCP, RAG, skills, rules, debug launch with external browser)
@@ -291,7 +291,7 @@ When inventory is clean, use `./scripts/done-detector.sh` + complete the Project
 
 ## MVP remaining (2026-07-07)
 
-**Ship bar:** Phases **1–9 core**, **10A–10B**, **10C A1+A2** ([#35](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/35)), and **Phase 0 PR #33–#34** on `main`. **10C-D** ([#36](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/36)) + Phase 0 PRs 3–4 remain before full Deb sign-off. Agent move-in and dev tooling (launch/debug, RAG/MCP) complete. RAG index built.
+**Ship bar:** Phases **1–9 core**, **10A–10B**, **10C A1+A2** ([#35](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/35)), and **Phase 0 PR #33–#34 + #48** on `main`. **10C-D** ([#36](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/36)) + Phase 0 PRs 3–4 remain before full Deb sign-off. Agent move-in and dev tooling (launch/debug, RAG/MCP) complete.
 
 ### Phases 1–9 summary
 
@@ -314,13 +314,13 @@ When inventory is clean, use `./scripts/done-detector.sh` + complete the Project
 | **5B** | GitHub **Settings → Actions:** read-only default `GITHUB_TOKEN` | No |
 | **9** | Plain-text `FullTextContent` on upload | done ([#32](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/32)) |
 | **9** | PDF/DOCX preview, IMAP ingestion | No (deferred) |
-| **0** | Playwright E2E + polish checklist | In progress (PR #33 done) |
+| **0** | Playwright E2E + polish checklist | **partial** — E2E CI gate done ([#48](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/48)); PRs 3–4 (docs + sign-off) remain |
 
 Remaining polish, accessibility, E2E coverage, and agent tooling are tracked in **Phase 0** above.
 
 ### CI status
 
-All feature PRs through #31 merged; `main` green on **TIKR CI** + **Trunk** + **GitGuardian**.
+`main` green on **TIKR CI** (build, test, coverage, Docker smoke, Playwright E2E) + **Trunk** + **GitGuardian** — latest gate [#48](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/48) merged 2026-07-08.
 
 ---
 
@@ -387,15 +387,11 @@ Update this section with future agent env changes.
 
 ## Current Next Task for Development (from todos + plan)
 
-**Pulled from todo list (as of 2026-07-07):**
-- Complete Phase 0 remaining items:
-  - Implement Playwright E2E as required CI gate in `.github/workflows/ci.yml` (run e2e specs against docker, add `FullyTested` trait filter, remove `continue-on-error`).
-  - Phase 0 PR #3: Documentation & clerk touches / handover.
-  - Phase 0 PR #4: Health UI closure + Done Detector sign-off.
-- Verify RAG index (post-build) and test `search_knowledge` + `refresh_index`.
-- Sync local repo (`git fetch origin && git pull --rebase origin/main`).
-- Update plan with completion of above.
+**Pulled from todo list (as of 2026-07-08):**
+- [x] Playwright E2E required CI gate ([#48](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/48) merged)
+- [x] Sync local repo to `main`
+- [ ] Rebuild RAG index after merge (`scripts/update_tikr_rag_index.py`)
+- [ ] Phase 0 PR #3: Documentation & clerk touches / handover ([demo-deb.md](demo-deb.md) checklist)
+- [ ] Phase 0 PR #4: Health UI closure + Done Detector sign-off (recorded Deb walkthrough)
 
-Reference full todo list for tracking (env setup, repo-sync, plan-update, verify-rag, etc.).
-
-**Immediate recommendation:** Start with Playwright CI gate update and local sync + RAG verification using the now-built index.
+**Immediate recommendation:** Reindex RAG, run Done Detector verification (`dotnet test`, `FullyTested` filter, `trunk check`), then open Phase 0 PR #3 (docs/handover).
