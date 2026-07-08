@@ -3,7 +3,7 @@
 # Fetches failed workflow logs, runs structured prompts, writes artifacts under outputs/.
 set -euo pipefail
 
-MODEL="${OLLAMA_MODEL:-llama3.2:3b}"
+MODEL="${OLLAMA_MODEL:-qwen2.5:7b}"
 OUTPUT_DIR="${OUTPUT_DIR:-outputs}"
 MAX_LOG_CHARS="${MAX_LOG_CHARS:-24000}"
 RUN_ID="${1:-}"
@@ -52,6 +52,7 @@ PY
 fetch_failed_logs() {
   local run_id="$1"
   local out_file="$OUTPUT_DIR/failed-workflow-logs.txt"
+  local snapshot_dir="$OUTPUT_DIR/failure-snapshot"
 
   if [ -z "$run_id" ]; then
     echo "No workflow run id supplied." >"$out_file"
@@ -66,9 +67,70 @@ fetch_failed_logs() {
     gh run view "$run_id" --log >"$out_file" 2>>"$OUTPUT_DIR/gh-fetch-errors.txt" || true
   fi
 
+  # Best-effort: download the structured failure snapshot emitted by build-and-test (or trunk)
+  mkdir -p "$snapshot_dir"
+  downloaded=false
+  for name in "ci-failure-snapshot-${run_id}" "ci-failure-snapshot" "ci-failure-snapshot-trunk-${run_id}"; do
+    if gh run download "$run_id" -n "$name" --dir "$snapshot_dir" 2>>"$OUTPUT_DIR/gh-fetch-errors.txt"; then
+      log "Downloaded snapshot $name into $snapshot_dir"
+      cat "$snapshot_dir"/* 2>/dev/null | head -c 8000 >> "$out_file" || true
+      downloaded=true
+      break
+    fi
+  done
+  if [ "$downloaded" = false ]; then
+    log "No ci-failure-snapshot* artifact available (or download failed) — will rely on job metadata + prefilter"
+  fi
+
+  # Additional structured signal: list failed jobs/steps via API (even if body logs missing)
+  {
+    echo ""
+    echo "=== JOB/STEP METADATA (from GH API, resilient to log fetch) ==="
+    gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${run_id}/jobs" \
+      --jq '.jobs[] | select(.conclusion=="failure") | {job: .name, steps: [.steps[] | select(.conclusion=="failure") | {step: .name, number: .number, conclusion: .conclusion}]}' 2>/dev/null || echo "(job metadata unavailable)"
+  } >> "$out_file" || true
+
   if [ ! -s "$out_file" ]; then
     echo "No logs retrieved for run $run_id. Check permissions (actions: read) and run id." >"$out_file"
   fi
+}
+
+# Pre-filter logs for high-signal lines (coverage, errors, format, trunk) to help when full logs are huge or missing bodies.
+prefilter_logs() {
+  local raw="$OUTPUT_DIR/failed-workflow-logs.txt"
+  local filtered="$OUTPUT_DIR/high-signal-logs.txt"
+  if [ ! -f "$raw" ]; then
+    echo "no raw logs" > "$filtered"
+    return 0
+  fi
+  # Extract lines with strong signals + surrounding context via grep -B/-A where available
+  python3 - "$raw" "$filtered" <<'PY'
+import sys, re
+from pathlib import Path
+raw = Path(sys.argv[1]).read_text(errors="replace")
+outp = Path(sys.argv[2])
+signals = re.compile(r'(?i)(error|fail|exception|coverage|threshold|dotnet format|verify-no-changes|trunk|exit code|FAIL|error:|at |in .*cs:line)', re.M)
+lines = raw.splitlines()
+kept = []
+for i, line in enumerate(lines):
+    if signals.search(line):
+        # include a little context
+        for j in range(max(0, i-1), min(len(lines), i+2)):
+            kept.append(lines[j])
+        kept.append("---")
+if not kept:
+    kept = ["(no high-signal lines matched; full logs may be empty or only headers)"]
+# Dedup consecutive dups lightly
+result = []
+prev = None
+for l in kept:
+    if l != prev:
+        result.append(l)
+    prev = l
+outp.write_text("\n".join(result[:400]) + "\n", encoding="utf-8")
+print(f"prefiltered {len(result)} high-signal lines")
+PY
+  log "High-signal prefilter written: $filtered ($(wc -c <"$filtered" | tr -d ' ') bytes)"
 }
 
 run_prompt() {
@@ -99,8 +161,28 @@ build_context_file() {
     echo "Event: ${FAILED_EVENT:-unknown}"
     echo "Conclusion: ${FAILED_CONCLUSION:-unknown}"
     echo ""
-    echo "=== Failed step logs (truncated) ==="
+    echo "=== TIKR CI STRUCTURE NOTE ==="
+    echo "Primary gates: build-and-test (coverage verify via scripts/check_coverage.py, docker+e2e) + trunk-check (dotnet format + trunk)."
+    echo "Ollama diagnosis runs only on failure(). Structured failure snapshots (if present) and job metadata are appended to logs."
+    echo ""
+    if [ -f "$OUTPUT_DIR/high-signal-logs.txt" ]; then
+      echo "=== HIGH-SIGNAL PREFILTERED LINES (errors/coverage/format) ==="
+      cat "$OUTPUT_DIR/high-signal-logs.txt"
+      echo ""
+    fi
+    echo "=== Failed step logs (truncated; may include appended snapshot) ==="
     truncate_logs "$OUTPUT_DIR/failed-workflow-logs.txt" "$MAX_LOG_CHARS"
+    echo ""
+    echo "=== FAILURE SNAPSHOT ARTIFACT (if downloaded) ==="
+    if ls "$OUTPUT_DIR/failure-snapshot/"* >/dev/null 2>&1; then
+      for f in "$OUTPUT_DIR/failure-snapshot/"*; do
+        echo "--- $(basename "$f") ---"
+        head -c 4000 "$f" || true
+        echo ""
+      done
+    else
+      echo "(no snapshot files)"
+    fi
   } >"$context_file"
   echo "$context_file"
 }
@@ -153,9 +235,9 @@ write_summary() {
     echo "- [03-feedback-loop.txt](./03-feedback-loop.txt) — validation and prevention"
     echo ""
     echo "## Recommended model"
-    echo "- **Default:** \`llama3.2:3b\` — TIKR standard; best balance of log comprehension and runner RAM (~2GB)."
-    echo "- **Fast triage:** \`llama3.2:1b\` — quicker runs when only a one-line error is needed."
-    echo "- **Deep analysis:** \`qwen2.5:3b\` — stronger stack-trace reasoning; slower pull on cold runners."
+    echo "- **Default:** \`qwen2.5:7b\` — better reasoning for logs, coverage thresholds, and .NET stack traces. ~4.5-5.5 GB on GH ubuntu-latest (7 GB RAM); use OLLAMA_MODEL override if tight."
+    echo "- **Fast/low-RAM fallback:** \`llama3.2:3b\` — TIKR runtime default; ~2 GB."
+    echo "- **Speed:** \`llama3.2:1b\` — one-line triage only."
   } >"$summary_file"
 }
 
@@ -167,20 +249,34 @@ main() {
   ollama pull "$MODEL"
 
   fetch_failed_logs "$RUN_ID"
+  prefilter_logs
   local context
   context="$(build_context_file)"
   log "Context written to $context"
 
   local triage_prompt fix_prompt loop_prompt
   triage_prompt=$(cat <<EOF
-You are a senior DevOps engineer triaging a failed GitHub Actions workflow for a .NET 10 Blazor project (TIKR).
+You are a senior DevOps engineer triaging a failed GitHub Actions workflow for TIKR (local-first .NET 10 Blazor Interactive Server + Minimal API + EF Core/SQLite, Syncfusion, Trunk + dotnet format, Docker on NAS).
 
-Analyze ONLY the logs below. Respond in this exact structure:
+TIKR-SPECIFIC CONTEXT:
+- CI structure (see .github/workflows/ci.yml): build-and-test runs restore/build/test --collect XPlat coverage, "Verify per-assembly coverage thresholds" (python3 scripts/check_coverage.py), Docker smoke + E2E; trunk-check runs "dotnet format TIKR.sln --verify-no-changes" + trunk-io action.
+- Coverage targets (scripts/check_coverage.py): TIKR.Shared 83%, Infrastructure/Api 90%, Web 85% (testable Helpers/Services only; DTOs pre-excluded).
+- Common past failures: coverage 0.1% under threshold (e.g. 82.9 vs 83 after Dto exclusion), dotnet format FINALNEWLINE or CHARSET on .cs/migrations, gh log fetch "No logs" due to timing/permissions, docker wait or agent-scan smoke, E2E playwright.
+- Always prefer root cause in code/config/CI steps over "logs unavailable".
+
+CRITICAL INSTRUCTION — HANDLE MISSING / EMPTY / TRUNCATED LOGS:
+If "failed-workflow-logs.txt" or the logs section shows only "No logs retrieved...", fetch errors, empty output, or is heavily truncated:
+- DO NOT stop and report only the log-fetch problem as the diagnosis.
+- Use ALL signals: metadata (job names, workflow, conclusion, SHA, branch), known TIKR CI steps above, any "failure-context/" or snapshot contents referenced in context, step ordering, and prior patterns.
+- Explicitly note "logs unavailable or limited — best-effort triage from CI structure + metadata + TIKR patterns".
+- Still fill FAILING_JOB / FAILING_STEP (infer from step names like "Verify per-assembly..." or "dotnet format" if evident) and give ROOT_CAUSE + fix.
+
+Respond in this exact structure:
 
 FAILING_JOB:
 FAILING_STEP:
 ERROR_SIGNATURE: (one line — the key error message or exit code)
-ROOT_CAUSE: (2-3 sentences)
+ROOT_CAUSE: (2-3 sentences; cite TIKR pattern if logs missing)
 CONFIDENCE: low|medium|high
 
 Logs and metadata:
@@ -189,9 +285,13 @@ EOF
 )
 
   fix_prompt=$(cat <<EOF
-You are fixing a failed TIKR CI workflow (.NET 10, EF Core, Docker, Trunk lint).
+You are fixing a failed TIKR CI workflow (.NET 10 Blazor + API + EF, Trunk, Docker smoke).
+
+TIKR-SPECIFIC: Fix must be compatible with AGENTS.md (run "dotnet test TIKR.sln --configuration Release" + "trunk check --all" locally before PR). Prefer edits to scripts/check_coverage.py, .cs files for format, ci.yml steps, or threshold comments. Coverage often fixed by DTO exclusion or tiny target tweak.
 
 Using the triage below and the same logs, produce an actionable fix plan.
+
+CRITICAL: If logs were missing in triage, base IMMEDIATE_FIX on the inferred failing step from metadata + TIKR patterns (e.g. "coverage verify just under" → inspect check_coverage output + recent DTO changes; "format" → run dotnet format locally and commit).
 
 TRIAGE:
 $(cat "$OUTPUT_DIR/01-triage.txt" 2>/dev/null || echo "unavailable")
@@ -211,7 +311,11 @@ EOF
   loop_prompt=$(cat <<EOF
 You are improving the CI feedback loop for TIKR (.NET 10, GitHub Actions, Ollama on NAS).
 
+TIKR-SPECIFIC: The goal of this tool is to make "done detector" (see docs/action-items.md Project-Level Done Detector gate) reliable — agents and humans need fast, accurate diagnosis even when gh log fetch is incomplete.
+
 Given the triage and fix plan, recommend how to detect and fix this class of failure faster next time.
+
+CRITICAL: When logs were missing, recommend concrete artifact or pre-filter improvements (emit structured failure-*.txt from coverage/format steps; download prior-job artifacts in ollama job; pre-grep for ERROR/FAIL/coverage lines in fetch_failed_logs).
 
 TRIAGE:
 $(cat "$OUTPUT_DIR/01-triage.txt" 2>/dev/null || echo "unavailable")
