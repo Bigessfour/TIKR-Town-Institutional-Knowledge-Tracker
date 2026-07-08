@@ -159,6 +159,21 @@ html[data-theme="dark"] {
     color-scheme: dark;
 }
 
+html[data-theme="dark"] .tikr-sidebar {
+    background: #1e293b;
+    color: #e2e8f0;
+}
+
+html[data-theme="dark"] .tikr-nav a {
+    color: rgba(226, 232, 240, 0.85);
+}
+
+html[data-theme="dark"] .tikr-nav a:hover,
+html[data-theme="dark"] .tikr-nav a.active {
+    background: rgba(226, 232, 240, 0.15);
+    color: #e2e8f0;
+}
+
 html[data-theme="dark"] .tikr-main {
     background: #0f172a;
     color: #e2e8f0;
@@ -198,6 +213,91 @@ html[data-theme="high-contrast"] .tikr-status-footer-hint.is-local {
 html[data-theme="high-contrast"] :focus-visible {
     outline: 3px solid #000;
     outline-offset: 2px;
+}
+
+/* Ensure side panel (tikr-sidebar) text remains readable across all themes.
+   Base sidebar styles are in MainLayout.razor.css; these provide theme-specific overrides
+   and Syncfusion control compatibility (theme CSS swap via #syncfusion-theme link). */
+html[data-theme="light"] .tikr-sidebar {
+    background: #1e3a5f;
+    color: #fff;
+}
+
+html[data-theme="light"] .tikr-nav a {
+    color: rgba(255, 255, 255, 0.85);
+}
+
+html[data-theme="light"] .tikr-nav a:hover,
+html[data-theme="light"] .tikr-nav a.active {
+    background: rgba(255, 255, 255, 0.15);
+    color: #fff;
+}
+
+html[data-theme="dark"] .tikr-brand h1,
+html[data-theme="dark"] .tikr-brand p,
+html[data-theme="dark"] .tikr-user-email,
+html[data-theme="dark"] .tikr-logout,
+html[data-theme="dark"] .tikr-account-link,
+html[data-theme="dark"] .tikr-theme-bar label {
+    color: #e2e8f0;
+}
+
+html[data-theme="dark"] .tikr-theme-bar select {
+    background: rgba(0, 0, 0, 0.35);
+    color: #e2e8f0;
+    border-color: rgba(226, 232, 240, 0.3);
+}
+
+html[data-theme="high-contrast"] .tikr-brand h1,
+html[data-theme="high-contrast"] .tikr-brand p,
+html[data-theme="high-contrast"] .tikr-user-email,
+html[data-theme="high-contrast"] .tikr-logout,
+html[data-theme="high-contrast"] .tikr-account-link,
+html[data-theme="high-contrast"] .tikr-theme-bar label {
+    color: #fff;
+}
+
+html[data-theme="high-contrast"] .tikr-theme-bar select {
+    background: #111;
+    color: #fff;
+    border-color: #fff;
+    font-weight: 700;
+}
+
+html[data-theme="dark"] .tikr-user-bar {
+    border-color: rgba(226, 232, 240, 0.2);
+}
+
+html[data-theme="high-contrast"] .tikr-user-bar {
+    border-color: #fff;
+}
+
+/* Theme-aware assistant container (prevents unreadable white bg on dark/high when Syncfusion theme active) */
+html[data-theme="dark"] .assistant-container,
+html[data-theme="dark"] .SfAIAssistView {
+    background: #1e293b;
+    color: #e2e8f0;
+    border-color: #334155;
+}
+
+html[data-theme="high-contrast"] .assistant-container,
+html[data-theme="high-contrast"] .SfAIAssistView {
+    background: #fff;
+    color: #000;
+    border-color: #000;
+}
+
+/* Additional Syncfusion panel/control text safety inside sidebar or dark contexts */
+html[data-theme="dark"] .tikr-sidebar .e-list-item,
+html[data-theme="dark"] .tikr-sidebar .e-link,
+html[data-theme="dark"] .tikr-sidebar [class*="e-"] {
+    color: inherit;
+}
+
+html[data-theme="high-contrast"] .tikr-sidebar .e-list-item,
+html[data-theme="high-contrast"] .tikr-sidebar .e-link,
+html[data-theme="high-contrast"] .tikr-sidebar [class*="e-"] {
+    color: inherit;
 }
 
 @media (max-width: 768px) {
@@ -291,4 +391,51 @@ html[data-theme="high-contrast"] :focus-visible {
     margin-top: 0.5rem;
     font-size: 0.9rem;
     color: var(--bs-secondary-color, #6c757d);
+}
+
+/* Production-ready styling for the default Blazor circuit error banner (bottom-left).
+   Keep it visible for real problems but make it calm, professional, and non-alarming.
+   Also styles the local ErrorBoundary recovery UI used around AI + heavy Syncfusion areas. */
+#blazor-error-ui {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    z-index: 100000;
+    padding: 0.35rem 0.75rem;
+    background: #f8d7da;
+    color: #721c24;
+    border-top: 1px solid #f5c6cb;
+    font-size: 0.8rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+#blazor-error-ui .tikr-error-banner-text {
+    font-weight: 500;
+}
+
+#blazor-error-ui a.reload {
+    color: #721c24;
+    text-decoration: underline;
+}
+
+.tikr-error-boundary {
+    padding: 1rem;
+    background: #fff3cd;
+    border: 1px solid #ffeeba;
+    border-radius: 6px;
+    color: #856404;
+    font-size: 0.9rem;
+}
+
+.tikr-error-boundary button {
+    margin-left: 0.5rem;
+    padding: 0.25rem 0.6rem;
+    border: 1px solid #856404;
+    background: transparent;
+    color: #856404;
+    border-radius: 4px;
+    cursor: pointer;
+    font: inherit;
 }

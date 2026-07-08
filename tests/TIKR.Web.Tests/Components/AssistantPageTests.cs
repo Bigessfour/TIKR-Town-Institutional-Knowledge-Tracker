@@ -90,6 +90,21 @@ public class AssistantPageTests : TestContext
         cut.WaitForAssertion(() => cut.Markup.Should().Contain("Budget due"));
     }
 
+    [Fact]
+    public async Task Assistant_MainChatPrompt_ReceivesStreamedResponse()
+    {
+        RegisterApi();
+        var cut = RenderComponent<Assistant>();
+
+        var method = cut.Instance.GetType().GetMethod("OnPromptRequested", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+        var args = new Syncfusion.Blazor.InteractiveChat.AssistViewPromptRequestedEventArgs { Prompt = "What is the budget?" };
+        var task = (Task)method.Invoke(cut.Instance, new object[] { args });
+        await cut.InvokeAsync(async () => await task);
+
+        // Stub yields "stub stream"; we set args.Response to the Markdown HTML containing it
+        args.Response.Should().Contain("stub stream");
+    }
+
     private void RegisterApi(string? prioritiesJson = null)
     {
         prioritiesJson ??= "[]";

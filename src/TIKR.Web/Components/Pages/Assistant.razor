@@ -63,7 +63,7 @@
         border: 1px solid #dee2e6;
         border-radius: 8px;
         overflow: hidden;
-        background: #fff;
+        /* Background now controlled by data-theme rules in tikr-clerk-polish.css for Syncfusion + side panel consistency */
     }
 </style>
 
@@ -102,13 +102,49 @@
         _streamingCts = new CancellationTokenSource();
         var token = _streamingCts.Token;
 
-        args.Response = "<div>";
         var markdownBuilder = new System.Text.StringBuilder();
 
+        // Outer protection: the handler must never throw uncaught exceptions to the Blazor
+        // circuit, otherwise the "An unhandled error has occurred. Reload" banner appears.
         try
         {
-            // Phase 9 RAG: pull top-K semantically relevant docs and prepend their snippets.
-            // Best-effort: if Ollama embeddings are unavailable, response is empty and we fall through.
+            // Production safety: the @ref may not be populated yet when the prompt event fires,
+            // or the view may be disposed (e.g. during reconnect after browser reload).
+            if (_assistView is null)
+            {
+                args.Response = "<p class='text-warning'>Assistant view not ready. Please try again or reload.</p>";
+                return;
+            }
+
+            // Initialize the response so the SfAIAssistView knows to render an assistant message for this prompt.
+            args.Response = string.Empty;
+
+            // Validate Ollama first. Fallback to Grok (via advanced) depending on prompt context or availability.
+            bool useLocal = true;
+            try
+            {
+                var status = await Api.GetAiStatusAsync();
+                bool ollamaOk = status?.OllamaAvailable ?? false;
+                bool preferGrok = ShouldPreferGrokForPrompt(args.Prompt);
+                useLocal = ollamaOk && !preferGrok;
+            }
+            catch
+            {
+                useLocal = true; // best effort, try local streaming
+            }
+
+            if (!useLocal)
+            {
+                // Fallback path
+                var fallbackResult = await Api.AskAdvancedAsync(args.Prompt, _contextSummary);
+                var fallbackText = fallbackResult?.Answer ?? "Advanced AI fallback unavailable.";
+                var fallbackHtml = Markdown.ToHtml(fallbackText);
+                args.Response = fallbackHtml;
+                await SafeUpdateResponseAsync(fallbackHtml);
+                return;
+            }
+
+            // RAG context (best effort)
             string? docContext = null;
             try
             {
@@ -121,10 +157,7 @@
                         (string.IsNullOrWhiteSpace(h.Snippet) ? "" : $": {h.Snippet}")));
                 }
             }
-            catch
-            {
-                docContext = null;
-            }
+            catch { docContext = null; }
 
             string? vaultContext = null;
             try
@@ -137,10 +170,7 @@
                         (string.IsNullOrWhiteSpace(h.Snippet) ? "" : $": {h.Snippet}")));
                 }
             }
-            catch
-            {
-                vaultContext = null;
-            }
+            catch { vaultContext = null; }
 
             var contextBlocks = new List<string>();
             if (!string.IsNullOrWhiteSpace(_contextSummary))
@@ -162,24 +192,67 @@
 
             await foreach (var update in ChatClient.GetStreamingResponseAsync(messages, cancellationToken: token))
             {
-                if (string.IsNullOrEmpty(update.Text))
-                    continue;
-
+                if (string.IsNullOrEmpty(update.Text)) continue;
                 markdownBuilder.Append(update.Text);
                 var html = Markdown.ToHtml(markdownBuilder.ToString());
-                await _assistView!.UpdateResponseAsync(html);
+                args.Response = html;  // ensure the view knows this is the response for the prompt
+                await SafeUpdateResponseAsync(html);
             }
         }
         catch (OperationCanceledException)
         {
-            await _assistView!.UpdateResponseAsync("<p><em>Response stopped.</em></p>");
+            var stopped = "<p><em>Response stopped.</em></p>";
+            args.Response = stopped;
+            await SafeUpdateResponseAsync(stopped);
         }
         catch (Exception ex)
         {
-            await _assistView!.UpdateResponseAsync($"<p class='text-danger'>Local AI unavailable: {ex.Message}. Is Ollama running?</p>");
+            try
+            {
+                var fb = await Api.AskAdvancedAsync(args.Prompt, _contextSummary);
+                var fbHtml = Markdown.ToHtml(fb?.Answer ?? $"Local AI unavailable: {ex.Message}. Is Ollama running?");
+                args.Response = fbHtml;
+                await SafeUpdateResponseAsync(fbHtml);
+            }
+            catch
+            {
+                var err = $"<p class='text-danger'>Local AI unavailable: {ex.Message}. Is Ollama running? Grok fallback also failed.</p>";
+                args.Response = err;
+                await SafeUpdateResponseAsync(err);
+            }
         }
+    }
 
-        await _assistView!.UpdateResponseAsync("</div>");
+    /// <summary>
+    /// Safely update the AI assist view response. Swallows exceptions to prevent
+    /// unhandled errors from reaching the Blazor circuit (which shows the "An unhandled error has occurred. Reload" banner).
+    /// The view may be in a transient state after reconnect, stop, or dispose.
+    /// </summary>
+    private async Task SafeUpdateResponseAsync(string content)
+    {
+        if (_assistView is null) return;
+        try
+        {
+            await _assistView.UpdateResponseAsync(content);
+        }
+        catch
+        {
+            // Intentionally swallow. Logging here would be ideal but we avoid
+            // any risk of secondary exceptions.
+        }
+    }
+
+    private static bool ShouldPreferGrokForPrompt(string prompt)
+    {
+        if (string.IsNullOrWhiteSpace(prompt)) return false;
+        var p = prompt.ToLowerInvariant();
+        return p.Contains("grok") ||
+               p.Contains("advanced") ||
+               p.Contains("complex reasoning") ||
+               p.Contains("deep analysis") ||
+               p.Contains("detailed step") ||
+               (p.Contains("step by step") && p.Length > 80) ||
+               p.Contains("thorough explanation");
     }
 
     private void OnResponseStopped(ResponseStoppedEventArgs args) =>

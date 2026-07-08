@@ -2,10 +2,18 @@
 <!-- Do NOT edit manually. Lightweight function tracker for proof + minimal viable. -->
 
 # Function Inventory — TIKR
-Generated: 2026-07-08T21:20:26.161847+00:00
+Generated: 2026-07-08T21:39:56.571257+00:00
 
-**Summary:** 546 tracked functions | 546 with proof | 0 without proof
+**Summary:** 549 tracked functions | 547 with proof | 2 without proof
 Focus on the ones without proof for your key paths.
+
+## Functions without proof (review these)
+- Core Service: KnowledgeService.CreateAsync @ src/TIKR.Infrastructure/Services/KnowledgeService.cs:13
+- Core Service: RequirementService.CreateAsync @ src/TIKR.Infrastructure/Services/RequirementService.cs:13
+
+Note: Many items here are internal static helpers or simple services.
+They may be sufficiently covered by higher-level endpoint or E2E tests.
+Use this list to decide where to add focused proof or document coverage.
 
 ## Detected Packages & Major Components
 - ★ Microsoft.Extensions.AI (10.7.0) — TIKR.Infrastructure.csproj
@@ -66,10 +74,10 @@ SfAIAssistView, SfAccordion, SfButton, SfCard, SfCheckBox, SfContextMenu, SfData
 | AI Tool / Orchestrator | AgentScanPdfFixture.CreateMinimalClerkReportPdf | src/TIKR.SyncfusionDocuments/AgentScanPdfFixture.cs:14 | tests/TIKR.Api.Tests/Endpoints/DocumentAgentSyncfusionLicens... | has logic |
 | AI Tool / Orchestrator | AgentScanPdfFixture.EnsureMinimalClerkReportPdfAsync | src/TIKR.SyncfusionDocuments/AgentScanPdfFixture.cs:30 | tests/TIKR.Api.Tests/Endpoints/DocumentAgentSyncfusionLicens... | has logic |
 | API Endpoint | AuthEndpoints.MapAuthEndpoints | src/TIKR.Api/AuthEndpoints.cs:11 | tests/TIKR.Api.Tests/Endpoints/AuthEndpointTests.cs | has logic |
-| API Endpoint | CouncilPacketEndpoints.BuildCouncilPacketRequirementsAsync | src/TIKR.Api/CouncilPacketEndpoints.cs:119 | tests/TIKR.Api.Tests/Endpoints/CouncilPacketEndpointTests.cs... | has logic |
+| API Endpoint | CouncilPacketEndpoints.BuildCouncilPacketRequirementsAsync | src/TIKR.Api/CouncilPacketEndpoints.cs:120 | tests/TIKR.Api.Tests/Endpoints/CouncilPacketEndpointTests.cs... | has logic |
 | API Endpoint | CouncilPacketEndpoints.GenerateCouncilPacketAsync | src/TIKR.Api/CouncilPacketEndpoints.cs:15 | tests/TIKR.Api.Tests/Endpoints/CouncilPacketEndpointTests.cs... | has logic |
-| API Endpoint | CouncilPacketEndpoints.LoadRequirementLinksAsync | src/TIKR.Api/CouncilPacketEndpoints.cs:102 | tests/TIKR.Api.Tests/Endpoints/CouncilPacketEndpointTests.cs... | has logic |
-| API Endpoint | CouncilPacketEndpoints.MapRequirement | src/TIKR.Api/CouncilPacketEndpoints.cs:150 | tests/TIKR.Api.Tests/Endpoints/CouncilPacketEndpointTests.cs... | has logic |
+| API Endpoint | CouncilPacketEndpoints.LoadRequirementLinksAsync | src/TIKR.Api/CouncilPacketEndpoints.cs:103 | tests/TIKR.Api.Tests/Endpoints/CouncilPacketEndpointTests.cs... | has logic |
+| API Endpoint | CouncilPacketEndpoints.MapRequirement | src/TIKR.Api/CouncilPacketEndpoints.cs:151 | tests/TIKR.Api.Tests/Endpoints/CouncilPacketEndpointTests.cs... | has logic |
 | API Endpoint | TikrApiClient.AskAdvancedAsync | src/TIKR.Web/Services/TikrApiClient.cs:56 | tests/TIKR.Web.Tests/Components/VaultPageTests.cs, tests/TIK... | has logic |
 | API Endpoint | TikrApiClient.ChangePasswordAsync | src/TIKR.Web/Services/TikrApiClient.cs:169 | tests/TIKR.Web.Tests/Components/VaultPageTests.cs, tests/TIK... | has logic |
 | API Endpoint | TikrApiClient.ConvertExcelToPdfAsync | src/TIKR.Web/Services/TikrApiClient.cs:239 | tests/TIKR.Web.Tests/Components/VaultPageTests.cs, tests/TIK... | small body |
@@ -217,8 +225,9 @@ SfAIAssistView, SfAccordion, SfButton, SfCard, SfCheckBox, SfContextMenu, SfData
 | Core Service | AgentStorageCrypto.Decrypt | src/TIKR.Infrastructure/Services/AgentStorageCrypto.cs:33 | tests/TIKR.Infrastructure.Tests/Services/AgentStorageCryptoT... | has logic |
 | Core Service | AgentStorageCrypto.Encrypt | src/TIKR.Infrastructure/Services/AgentStorageCrypto.cs:14 | tests/TIKR.Infrastructure.Tests/Services/AgentStorageCryptoT... | has logic |
 | Core Service | AgentStorageCrypto.TryParseKey | src/TIKR.Infrastructure/Services/AgentStorageCrypto.cs:51 | tests/TIKR.Infrastructure.Tests/Services/AgentStorageCryptoT... | has logic |
-| Core Service | AuditService.LogAsync | src/TIKR.Infrastructure/Services/AuditService.cs:10 | tests/TIKR.Infrastructure.Tests/Services/AuditServiceTests.c... | small body |
-| Core Service | DocumentAgentService.ProcessUploadAsync | src/TIKR.Infrastructure/Services/DocumentAgentService.cs:16 | tests/TIKR.Infrastructure.Tests/Services/DocumentAgentServic... | has logic |
+| Core Service | AuditService.LogAsync | src/TIKR.Infrastructure/Services/AuditService.cs:10 | tests/TIKR.Infrastructure.Tests/Services/AuditServiceTests.c... | has logic |
+| Core Service | DocumentAgentService.ProcessUploadAsync | src/TIKR.Infrastructure/Services/DocumentAgentService.cs:18 | tests/TIKR.Infrastructure.Tests/Services/DocumentAgentServic... | has logic |
+| Core Service | DocumentService.UploadAsync | src/TIKR.Infrastructure/Services/DocumentService.cs:14 | tests/TIKR.Infrastructure.Tests/Services/DocumentAgentServic... | has logic |
 | Core Service | DocumentTextExtractionService.CanExtract | src/TIKR.Infrastructure/Services/DocumentTextExtractionService.cs:16 | tests/TIKR.Infrastructure.Tests/Services/DocumentTextExtract... | has logic |
 | Core Service | GrokService.CompleteAsync | src/TIKR.Infrastructure/Services/GrokService.cs:15 | tests/TIKR.Infrastructure.Tests/Services/GrokServiceTests.cs... | has logic |
 | Core Service | HybridAiService.AskAdvancedAsync | src/TIKR.Infrastructure/Services/HybridAiService.cs:192 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceTest... | small body |
@@ -229,6 +238,7 @@ SfAIAssistView, SfAccordion, SfButton, SfCard, SfCheckBox, SfContextMenu, SfData
 | Core Service | HybridAiService.SemanticSearchDocumentsAsync | src/TIKR.Infrastructure/Services/HybridAiService.cs:81 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceTest... | has logic |
 | Core Service | HybridAiService.SemanticSearchKnowledgeAsync | src/TIKR.Infrastructure/Services/HybridAiService.cs:129 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceTest... | small body |
 | Core Service | HybridAiService.TagDocumentAsync | src/TIKR.Infrastructure/Services/HybridAiService.cs:18 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceTest... | small body |
+| Core Service | KnowledgeService.CreateAsync | src/TIKR.Infrastructure/Services/KnowledgeService.cs:13 | NO PROOF FOUND | has logic |
 | Core Service | LocalFileStorageService.DeleteAsync | src/TIKR.Infrastructure/Services/LocalFileStorageService.cs:43 | tests/TIKR.Api.Tests/Endpoints/RequirementsEndpointTests.cs,... | has logic |
 | Core Service | LocalFileStorageService.GetFullPath | src/TIKR.Infrastructure/Services/LocalFileStorageService.cs:52 | tests/TIKR.Api.Tests/Endpoints/DocumentAgentSyncfusionLicens... | small body |
 | Core Service | LocalFileStorageService.OpenReadAsync | src/TIKR.Infrastructure/Services/LocalFileStorageService.cs:36 | tests/TIKR.Infrastructure.Tests/Services/LocalFileStorageSer... | has logic |
@@ -240,15 +250,16 @@ SfAIAssistView, SfAccordion, SfButton, SfCard, SfCheckBox, SfContextMenu, SfData
 | Core Service | OllamaChatClientFactory.CreateChatClient | src/TIKR.Infrastructure/Services/OllamaChatClientFactory.cs:16 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceVaul... | small body |
 | Core Service | OllamaChatClientFactory.CreateEmbeddingGenerator | src/TIKR.Infrastructure/Services/OllamaChatClientFactory.cs:19 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceVaul... | has logic |
 | Core Service | OllamaChatClientFactory.IsAvailableAsync | src/TIKR.Infrastructure/Services/OllamaChatClientFactory.cs:22 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceVaul... | has logic |
+| Core Service | RequirementService.CreateAsync | src/TIKR.Infrastructure/Services/RequirementService.cs:13 | NO PROOF FOUND | has logic |
 | Core Service | StubDocumentAgentExtractionBackend.ExtractAsync | src/TIKR.Infrastructure/Services/StubDocumentAgentExtractionBackend.cs:11 | tests/TIKR.Infrastructure.Tests/Services/StubDocumentAgentEx... | has logic |
 | Core Service | SyncfusionDocumentAgentExtractionBackend.ExtractAsync | src/TIKR.Infrastructure/Services/SyncfusionDocumentAgentExtractionBackend.cs:7 | tests/TIKR.Infrastructure.Tests/Services/SyncfusionDocumentA... | small body |
 | Core Service | SyncfusionDocumentAgentExtractor.ExtractAsync | src/TIKR.Infrastructure/Services/SyncfusionDocumentAgentExtractor.cs:40 | tests/TIKR.Infrastructure.Tests/Services/SyncfusionDocumentA... | has logic |
 | Core Service | SyncfusionDocumentAgentOrchestrator.TryExtractAsync | src/TIKR.Infrastructure/Services/SyncfusionDocumentAgentOrchestrator.cs:22 | tests/TIKR.Infrastructure.Tests/Services/SyncfusionDocumentA... | has logic |
 | Core Service | SyncfusionDocumentAgentToolRegistry.GetFunctions | src/TIKR.Infrastructure/Services/SyncfusionDocumentAgentToolRegistry.cs:33 | tests/TIKR.Infrastructure.Tests/Services/SyncfusionDocumentA... | small body |
 | Core Service | SyncfusionDocumentGenerationService.ConvertExcelToPdfAsync | src/TIKR.SyncfusionDocuments/SyncfusionDocumentGenerationService.cs:250 | tests/TIKR.SyncfusionDocuments.Tests/SyncfusionDocumentGener... | has logic |
-| Core Service | SyncfusionDocumentGenerationService.ConvertImageToPdfAsync | src/TIKR.SyncfusionDocuments/SyncfusionDocumentGenerationService.cs:476 | tests/TIKR.SyncfusionDocuments.Tests/SyncfusionDocumentGener... | small body |
+| Core Service | SyncfusionDocumentGenerationService.ConvertImageToPdfAsync | src/TIKR.SyncfusionDocuments/SyncfusionDocumentGenerationService.cs:480 | tests/TIKR.SyncfusionDocuments.Tests/SyncfusionDocumentGener... | has logic |
 | Core Service | SyncfusionDocumentGenerationService.ConvertWordToPdfAsync | src/TIKR.SyncfusionDocuments/SyncfusionDocumentGenerationService.cs:203 | tests/TIKR.SyncfusionDocuments.Tests/SyncfusionDocumentGener... | has logic |
-| Core Service | SyncfusionDocumentGenerationService.CreateAgentArchivePdfAsync | src/TIKR.SyncfusionDocuments/SyncfusionDocumentGenerationService.cs:438 | tests/TIKR.SyncfusionDocuments.Tests/SyncfusionDocumentGener... | small body |
+| Core Service | SyncfusionDocumentGenerationService.CreateAgentArchivePdfAsync | src/TIKR.SyncfusionDocuments/SyncfusionDocumentGenerationService.cs:438 | tests/TIKR.SyncfusionDocuments.Tests/SyncfusionDocumentGener... | has logic |
 | Core Service | SyncfusionDocumentGenerationService.GenerateClerkMemoDocxAsync | src/TIKR.SyncfusionDocuments/SyncfusionDocumentGenerationService.cs:121 | tests/TIKR.SyncfusionDocuments.Tests/SyncfusionDocumentGener... | has logic |
 | Core Service | SyncfusionDocumentGenerationService.GenerateComplianceReportXlsxAsync | src/TIKR.SyncfusionDocuments/SyncfusionDocumentGenerationService.cs:152 | tests/TIKR.SyncfusionDocuments.Tests/SyncfusionDocumentGener... | has logic |
 | Core Service | SyncfusionDocumentGenerationService.GenerateCouncilAgendaPdfAsync | src/TIKR.SyncfusionDocuments/SyncfusionDocumentGenerationService.cs:27 | tests/TIKR.SyncfusionDocuments.Tests/SyncfusionDocumentGener... | has logic |
@@ -425,7 +436,7 @@ SfAIAssistView, SfAccordion, SfButton, SfCard, SfCheckBox, SfContextMenu, SfData
 | Other Public | TikrDbContextFactory.CreateDbContext | src/TIKR.Infrastructure/Data/TikrDbContextFactory.cs:8 | tests/TIKR.Infrastructure.Tests/Data/DbSeederTests.cs | small body |
 | Other Public | DbSeeder.SeedAsync | src/TIKR.Infrastructure/DbSeeder.cs:10 | tests/TIKR.Infrastructure.Tests/Data/DbSeederTests.cs, tests... | has logic |
 | Other Public | DependencyInjection.AddTikrInfrastructure | src/TIKR.Infrastructure/DependencyInjection.cs:17 | tests/TIKR.Web.Tests/Components/SettingsPageTests.cs, tests/... | has logic |
-| Other Public | DependencyInjection.InitializeDatabaseAsync | src/TIKR.Infrastructure/DependencyInjection.cs:62 | tests/TIKR.Web.Tests/Components/SettingsPageTests.cs, tests/... | has logic |
+| Other Public | DependencyInjection.InitializeDatabaseAsync | src/TIKR.Infrastructure/DependencyInjection.cs:65 | tests/TIKR.Web.Tests/Components/SettingsPageTests.cs, tests/... | has logic |
 | Other Public | IdentitySeeder.SeedAsync | src/TIKR.Infrastructure/Identity/IdentitySeeder.cs:13 | tests/TIKR.Infrastructure.Tests/Identity/IdentitySeederTests... | has logic |
 | Other Public | EnvLoader.LoadDevelopmentEnv | src/TIKR.Shared/Configuration/EnvLoader.cs:9 | tests/TIKR.Shared.Tests/Configuration/EnvLoaderTests.cs | has logic |
 | Other Public | TikrConfiguration.GetChatModel | src/TIKR.Shared/Configuration/TikrConfiguration.cs:20 | tests/TIKR.Shared.Tests/Configuration/TikrConfigurationTests... | has logic |

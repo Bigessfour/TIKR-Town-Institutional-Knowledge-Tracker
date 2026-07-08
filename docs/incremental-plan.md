@@ -46,8 +46,8 @@ Living roadmap for TIKR development. Agents and contributors: read the **current
 
 **Acceptance criteria:**
 
-- `/assistant` page with `SfAIAssistView` + `IChatClient` → Ollama
-- Hybrid AI in API (`HybridAiService`, Grok gated)
+- `/assistant` page with `SfAIAssistView` + `IChatClient` → Ollama (validate first, Grok fallback on context/availability)
+- Hybrid AI in API (`HybridAiService`, Ollama first then Grok fallback by prompt context)
 - `docs/ai-tooling.md`, `.cursor/mcp.json.example`
 
 **Key paths:** `src/TIKR.Web/Components/Pages/Assistant.razor`, `docs/ai-tooling.md`
@@ -233,8 +233,9 @@ Update this section when env changes.
 | **10C-D** E2E proof (fixtures, Playwright, licensed workflow) | done on `main` | [#36](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/36) |
 | **10C A3** Ollama + Microsoft.Extensions.AI function loop over Storage Mode tools | done | `SyncfusionDocumentAgentOrchestrator`, `USE_SYNCFUSION_AGENT_ORCHESTRATION` |
 | **10C-F** Clerk document tool coverage (PDF ops, Word, Excel, PPT, Office→PDF registry + deterministic paths) | done | `SyncfusionDocumentAgentToolRegistry`, `feature/phase10c-document-tool-coverage` |
+| **10C-G (Grok Heavy rec)** Agent scan PDF archive: clean tagged PDF copy + "AI Processed - [Date] - TIKR Vault" stamp + dual (orig + processed) NAS storage + structured tables -> Requirement fields | **in progress / implemented** (core changes + tests + trackers) | Extend DocumentAgentService + CreateAgentArchivePdfAsync in SyncfusionDocuments; updated OnAgentUploadAsync + Apply, DTOs. RAG + inventory used for visibility on tiny functions. See action-items for proofs. |
 
-**Key paths:** `src/TIKR.Web/Components/Pages/Requirements.razor`, `src/TIKR.Infrastructure/Services/DocumentAgentService.cs`
+**Key paths:** `src/TIKR.Web/Components/Pages/Requirements.razor`, `src/TIKR.Infrastructure/Services/DocumentAgentService.cs`, `src/TIKR.SyncfusionDocuments/*`, `src/TIKR.Shared/DTOs/DocumentAgentDto.cs`
 
 ---
 
@@ -251,7 +252,8 @@ Update this section when env changes.
 | 1 | UI polish + NAS footer (#33) | done |
 | 2 | Test & accessibility pass (#34 + #48) | **done** — keyboard nav + bUnit + blocking Playwright E2E in CI; `FullyTested` CI filter deferred until coverage targets pass with subset |
 | 3 | Documentation & clerk touches | planned |
-| 4 | Health UI closure + Done Detector sign-off | planned |
+| 4 | Health UI closure + Done Detector sign-off | in progress (Layer 1+2 gates executed locally; awaiting recorded walkthrough) |
+| Vault Export | Generate Complete Handover Package (PDF) | done (last feature - project complete) |
 
 ### Acceptance criteria (combined PR #33 + follow-ups)
 
@@ -259,7 +261,7 @@ Update this section when env changes.
 - [x] Confirm delete dialog + 5s undo toast (Requirements, Vault; toast-only for Documents)
 - [x] Audit note on delete + recent audit list on Settings
 - [x] Print-friendly council packet export on Requirements (`Print council packet` + print CSS)
-- [x] Theme switch (Light / Dark / High contrast) persisted in `localStorage`
+- [x] Theme switch (Light / Dark / High contrast) persisted in `localStorage`; Syncfusion theme CSS link swap + side panel CSS + body attr for full control readability (via sf-blazor-mcp informed config). Production hardened (guards, ErrorBoundary) to eliminate runtime error banner on switch.
 - [x] Offline banner on every page when API unreachable
 - [x] Live Synology footer (`GET /api/system/local-status`) on all pages
 - [x] Keyboard shortcuts help modal (`?`) + `g` navigation (d/r/o/v/a/s)
@@ -390,8 +392,9 @@ Update this section with future agent env changes.
 **Pulled from todo list (as of 2026-07-08):**
 - [x] Playwright E2E required CI gate ([#48](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/48) merged)
 - [x] Sync local repo to `main`
-- [ ] Rebuild RAG index after merge (`scripts/update_tikr_rag_index.py`)
+- [x] Rebuild RAG index (`scripts/update_tikr_rag_index.py`)
+- [x] Done Detector Layer 1 (function inventory → 0 without proof) + Layer 2 gate progress (action-items.md updated, tests/lint green, see scripts/done-detector.sh)
 - [ ] Phase 0 PR #3: Documentation & clerk touches / handover ([demo-deb.md](demo-deb.md) checklist)
-- [ ] Phase 0 PR #4: Health UI closure + Done Detector sign-off (recorded Deb walkthrough)
+- [ ] Phase 0 PR #4: Health UI closure + Done Detector sign-off (recorded Deb walkthrough + final gate checks)
 
-**Immediate recommendation:** Reindex RAG, run Done Detector verification (`dotnet test`, `FullyTested` filter, `trunk check`), then open Phase 0 PR #3 (docs/handover).
+**Immediate recommendation:** RAG + Done Detector run complete (inventory clean, tests green, trunk clean). Proceed to PR #3 docs/handover then PR #4 sign-off with Deb.

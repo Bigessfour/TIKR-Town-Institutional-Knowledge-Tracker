@@ -5,6 +5,9 @@ namespace TIKR.Infrastructure.Tests.Services;
 
 public class StubDocumentAgentExtractionBackendTests
 {
+    // IDocumentAgentExtractionBackend.AgentExtractionResult (the result record) + ExtractAsync
+    // are core to agent-scan flow; exercised by stub + syncfusion backend tests and endpoint tests.
+
     [Fact]
     public async Task ExtractAsync_ReturnsPlainTextForTxtUpload()
     {

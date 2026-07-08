@@ -522,3 +522,7 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
+
+
+# APM dependencies
+apm_modules/

@@ -17,11 +17,15 @@
     </div>
 </div>
 
-<!-- Prominent global Copy button -->
+<!-- Prominent global Copy button + Handover PDF (last feature) -->
 <SfButton CssClass="tikr-action-btn vault-copy-btn"
           IconCss="e-icons e-copy"
           Content="Copy Everything for New Clerk"
           OnClick="CopyAllForNewClerkAsync" />
+<SfButton CssClass="tikr-action-btn"
+          IconCss="e-icons e-export-pdf"
+          Content="Generate Complete Handover Package"
+          OnClick="GenerateHandoverPackageAsync" />
 
 <SfTab CssClass="vault-tabs">
     <TabItems>
@@ -364,6 +368,31 @@
         // Show warm confirmation (simple status for now)
         // In real app could use SfToast, here we can navigate or set temp message via existing patterns.
         // For visibility we'll just let the user see it worked via browser.
+    }
+
+    private async Task GenerateHandoverPackageAsync()
+    {
+        try
+        {
+            var bytes = await Api.GenerateHandoverPackageAsync();
+            if (bytes == null || bytes.Length == 0)
+            {
+                Toast.Show("Failed to generate handover package (check Syncfusion license).");
+                return;
+            }
+
+            await JS.InvokeVoidAsync(
+                "tikrDownload.downloadFromBytes",
+                $"TIKR-Complete-Handover-Package-{DateTime.Now:yyyy-MM-dd}.pdf",
+                "application/pdf",
+                bytes);
+
+            Toast.Show("Complete Handover Package downloaded. Use bookmarks/TOC for navigation.");
+        }
+        catch (Exception ex)
+        {
+            Toast.Show($"Handover generation failed: {ex.Message}");
+        }
     }
 
 }

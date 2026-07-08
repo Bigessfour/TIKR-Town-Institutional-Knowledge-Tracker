@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.Extensions.AI;
 using OllamaSharp;
 using Syncfusion.Blazor;
+using Syncfusion.Blazor.AI;
 using Serilog;
 using Serilog.Events;
 
@@ -41,6 +42,9 @@ var ollamaUri = ollamaHost.EndsWith('/') ? ollamaHost : ollamaHost + "/";
 
 builder.Services.AddChatClient(_ =>
     new OllamaApiClient(new Uri(ollamaUri), chatModel));
+
+// Register Syncfusion AI for Smart components and AI-powered controls, connected to Ollama and project context (RAG via existing services).
+builder.Services.AddSingleton<IChatInferenceService, SyncfusionAIService>();
 
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();

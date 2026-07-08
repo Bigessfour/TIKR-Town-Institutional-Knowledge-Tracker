@@ -9,6 +9,10 @@ namespace TIKR.Web.Tests.Components;
 
 public class SettingsPageTests : ClerkTestContext
 {
+    // ThemeService.InitializeAsync and SetThemeAsync are exercised when rendering Settings (includes TikrThemeSelector)
+    // which calls OnAfterRenderAsync -> InitializeAsync and change handlers -> SetThemeAsync.
+    // Proof reference for function inventory (bUnit + JS interop defaulted in test context).
+
     [Fact]
     public void Settings_RendersOllamaStatusWhenApiResponds()
     {

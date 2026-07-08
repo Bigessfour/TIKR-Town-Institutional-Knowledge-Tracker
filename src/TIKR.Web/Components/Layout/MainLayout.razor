@@ -45,7 +45,20 @@
     <main class="tikr-main" id="main-content">
         <TikrOfflineBanner />
         <div class="tikr-main-content">
-            @Body
+            @* Production safety: wrap the primary content area (heavy Syncfusion usage + AI assistant)
+               in an ErrorBoundary so individual component crashes (theme, streaming ref timing, etc.)
+               do not always collapse the whole circuit and show the scary reload banner. *@
+            <ErrorBoundary>
+                <ChildContent>
+                    @Body
+                </ChildContent>
+                <ErrorContent Context="ex">
+                    <div class="tikr-error-boundary">
+                        <p>Something went wrong in this section.</p>
+                        <button @onclick="() => { /* simple recover by re-render */ StateHasChanged(); }">Try again</button>
+                    </div>
+                </ErrorContent>
+            </ErrorBoundary>
         </div>
         <TikrStatusFooter />
     </main>
@@ -54,9 +67,11 @@
 <ClerkToastHost />
 <TikrKeyboardShortcuts />
 
+@* The default Blazor error UI. We style it to be calmer and less alarming in production.
+   Real errors should be logged via Serilog and fixed. This is a last-resort circuit breaker. *@
 <div id="blazor-error-ui" data-nosnippet>
-    An unhandled error has occurred.
-    <a href="." class="reload">Reload</a>
+    <span class="tikr-error-banner-text">An unexpected error occurred. </span>
+    <a href="." class="reload">Reload the page</a>
     <span class="dismiss">🗙</span>
 </div>
 

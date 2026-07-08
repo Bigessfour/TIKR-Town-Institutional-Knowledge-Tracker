@@ -42,10 +42,30 @@ public record DocumentGenerationResponse(
     GeneratedDocumentDownloadDto? Document,
     string? ErrorMessage);
 
+/// <summary>
+/// Result from on-demand Document SDK text/tables extraction for a stored document.
+/// Used by Documents.razor "Extract Text/Tables to Vault" feature.
+/// </summary>
+public record DocumentTextExtractResult(string? ExtractedText, int TablesExtractedCount);
+
 public record CouncilPacketLinkedDocument(
     Guid DocumentId,
     string FileName,
     string? Summary);
+
+/// <summary>
+/// Request for generating the complete Vault Handover Package PDF.
+/// Data is collected server-side for one-click generation.
+/// </summary>
+public record HandoverPackageRequest(
+    string TownName,
+    DateTime GeneratedAt,
+    IReadOnlyList<KnowledgeEntryDto> KnowledgeEntries,
+    IReadOnlyList<RequirementDto> Requirements,
+    IReadOnlyList<DocumentDto> Documents,
+    IReadOnlyList<CalendarSnapshotItem> CalendarSnapshot);
+
+public record CalendarSnapshotItem(string Title, DateOnly DueDate, string? Category);
 
 public record CouncilPacketRequirementItem(
     Guid Id,

@@ -108,9 +108,16 @@ Business AI logic (tagging, audit, Grok gating) stays in `TIKR.Api` `HybridAiSer
 - `Markdig` — markdown in chat responses
 - `Microsoft.Extensions.AI` + `OllamaSharp` — local Ollama via `IChatClient`
 
-**Note on Syncfusion Ollama integration (reviewed from official docs):**  
-Syncfusion provides `Syncfusion.Blazor.AI` + `IChatInferenceService` / `SyncfusionAIService` wrapper for Smart AI features (Smart Paste, Smart TextArea, data restructuring in TreeGrid/Grid, etc.). See https://blazor.syncfusion.com/documentation/smart-ai-solutions/ai/ollama.  
-TIKR currently uses lower-level direct `IChatClient` injection for the custom RAG-aware assistant (sufficient for `SfAIAssistView` + streaming + context prepending). Add the AI package + `AddChatClient` + `AddSingleton<IChatInferenceService, SyncfusionAIService>()` only when adopting Syncfusion Smart components.
+**Note on Syncfusion Ollama integration (reviewed from official docs):**
+Syncfusion provides `Syncfusion.Blazor.AI` + `IChatInferenceService` / `SyncfusionAIService` wrapper for Smart AI features (Smart Paste, Smart TextArea, data restructuring in TreeGrid/Grid, etc.). See https://blazor.syncfusion.com/documentation/smart-ai-solutions/ai/ollama.
+TIKR currently uses lower-level direct `IChatClient` injection for the custom RAG-aware assistant (sufficient for `SfAIAssistView` + streaming + context prepending).
+
+**Syncfusion.Blazor.AI implemented (2026-07-08)**: Package added to TIKR.Web.csproj. In Program.cs (after AddChatClient for Ollama):
+```csharp
+// Register for Smart AI-powered controls, connected to project (shared Ollama; use IChatInferenceService with TIKR context like RAG hits/_contextSummary for Smart components).
+builder.Services.AddSingleton<IChatInferenceService, SyncfusionAIService>();
+```
+This enables Smart features (e.g. SmartTextArea in forms/Vault) with project awareness. Current custom RAG remains for streaming control. See Ollama docs for GenerateResponseAsync usage with context.
 
 ### Configuration
 

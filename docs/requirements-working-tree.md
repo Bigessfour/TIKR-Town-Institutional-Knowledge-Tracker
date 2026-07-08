@@ -177,6 +177,7 @@ Captured from codebase + plan review. Tracks stubs, Phase 0 closure, and non-Req
 - [ ] **PDF/DOCX preview pane** — `Documents.razor` placeholder text; defer `SfPdfViewer` or show extracted text when available
 - [ ] **Voice notes** — `Vault.razor` + `VaultVoiceNoteSimulator` — timer simulates transcription; no mic/Ollama STT yet
 - [ ] **Agent scan PDF/DOCX (stub path)** — **By design** when `USE_SYNCFUSION_AGENT_TOOLS=false` (CI/default docker). Plain `.txt` works. Licensed PDF/Word on `main` via Syncfusion when flag + key set; proof pending NAS smoke / PR #36 merge + licensed workflow
+- [ ] **Agent scan archive + stamp (Grok Heavy rec)** — Planned 10C-G: post-extract clean tagged PDF (orig + processed dual store on NAS), "AI Processed - [Date] - TIKR Vault" stamp, structured tables to form fields. See incremental-plan.md and action-items.md.
 - [ ] **Documents delete — no undo** — `ConfirmDeleteAsync` shows toast without undo callback (Requirements/Vault have undo)
 - [x] **Extraction source badge (10C-C)** — `FormatAgentScanMessage` + badge in `Requirements.razor` (`extraction-badge-syncfusion` / stub)
 

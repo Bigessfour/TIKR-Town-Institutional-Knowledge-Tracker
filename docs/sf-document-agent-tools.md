@@ -21,7 +21,7 @@ Per [Syncfusion license registration](https://help.syncfusion.com/common/essenti
 ```csharp
 var app = builder.Build();
 SyncfusionDocumentLicense.RegisterFromConfiguration(app.Configuration); // Api
-// Web: SyncfusionLicenseProvider.RegisterLicense(TikrConfiguration.GetSyncfusionLicenseKey(app.Configuration)!);
+Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense(TikrConfiguration.GetSyncfusionLicenseKey(app.Configuration)!); // Web (Blazor components)
 ```
 
 ## Environment

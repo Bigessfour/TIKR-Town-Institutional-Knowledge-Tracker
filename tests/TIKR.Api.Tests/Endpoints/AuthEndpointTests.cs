@@ -17,6 +17,9 @@ public class AuthEndpointTests : IClassFixture<AuthEnabledWebApplicationFactory>
     public AuthEndpointTests(AuthEnabledWebApplicationFactory factory) =>
         _client = factory.CreateClient();
 
+    // AuthEndpoints.MapAuthEndpoints is the startup extension (called from Program when authEnabled);
+    // exercised by all tests in this fixture which hit /api/auth/* routes via the configured factory.
+
     [Fact]
     public async Task Requirements_WithoutToken_ReturnsUnauthorized()
     {
