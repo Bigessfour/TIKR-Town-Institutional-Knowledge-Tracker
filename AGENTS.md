@@ -124,7 +124,7 @@ cp docker/.env.example docker/.env   # then edit locally
 | [docs/ai-tooling.md](docs/ai-tooling.md) | MCP, skills, runtime AI |
 | [docs/architecture.md](docs/architecture.md) | System design |
 | [.github/workflows/ci.yml](.github/workflows/ci.yml) | Build, test, Docker smoke |
-| [.github/workflows/trunk-check.yaml](.github/workflows/trunk-check.yaml) | Lint + secret scan |
+| [.github/workflows/ci.yml](.github/workflows/ci.yml) | Build, test, Trunk lint, Ollama failure triage |
 | [docs/dependabot-policy.md](docs/dependabot-policy.md) | Dependabot PR handling |
 | [.github/SECURITY.md](.github/SECURITY.md) | Vulnerability reporting |
 | [.cursor/rules/tikr.mdc](.cursor/rules/tikr.mdc) | Always-on Cursor rule |

@@ -1,3 +1,5 @@
+# Weekly licensed Syncfusion agent smoke (manual or Monday 06:00 UTC).
+# Skips cleanly when SYNCFUSION_LICENSE_KEY is unset.
 name: TIKR Syncfusion Agent Smoke
 
 on:
@@ -86,3 +88,19 @@ jobs:
         run: |
           if [ -z "$SYNCFUSION_LICENSE_KEY" ]; then exit 0; fi
           docker compose -f docker/docker-compose.yml down
+
+  ollama-diagnosis:
+    needs: syncfusion-agent-scan
+    if: failure()
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      pull-requests: write
+
+    steps:
+      - name: Run Ollama failure diagnosis
+        uses: ./.github/actions/ollama-ci-diagnosis
+        with:
+          run_id: ${{ github.run_id }}
+          workflow_name: TIKR Syncfusion Agent Smoke
