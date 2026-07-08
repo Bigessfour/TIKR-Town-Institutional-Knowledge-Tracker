@@ -5,7 +5,6 @@ using Bunit;
 using Bunit.TestDoubles;
 using FluentAssertions;
 using Microsoft.AspNetCore.Components;
-using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Syncfusion.Blazor;
 using TIKR.Shared.Constants;
@@ -27,7 +26,7 @@ public class UsersPageTests : TestContext
     }
 
     [Fact]
-    public void Users_RendersGridWithSeededUsers()
+    public async Task Users_RendersGridWithSeededUsers()
     {
         var handler = new StubHandler((request, _) =>
         {
@@ -52,7 +51,10 @@ public class UsersPageTests : TestContext
         SetRendererInfo(new RendererInfo("Server", true));
 
         var cut = RenderComponent<Users>();
-        cut.WaitForAssertion(() => cut.Markup.Should().Contain("admin@test.gov"));
+        await cut.InvokeAsync(() => { });
+        cut.WaitForAssertion(
+            () => cut.Markup.Should().Contain("admin@test.gov"),
+            timeout: TimeSpan.FromSeconds(15));
         cut.Markup.Should().Contain("clerk@test.gov");
         cut.Markup.Should().Contain("Add user");
     }

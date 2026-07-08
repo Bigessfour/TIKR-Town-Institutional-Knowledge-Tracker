@@ -14,6 +14,12 @@ services:
       - tikr-data:/data
     depends_on:
       - ollama
+    healthcheck:
+      test: [CMD, curl, -f, http://localhost:8080/health]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 15s
     restart: unless-stopped
 
   tikr-web:
@@ -25,10 +31,19 @@ services:
       - .env
     environment:
       - TIKR_API_URL=http://tikr-api:8080
+      - TIKR_DATA_PROTECTION_PATH=/data/.dpkeys
     ports:
       - 8080:8080
+    volumes:
+      - tikr-data:/data
     depends_on:
       - tikr-api
+    healthcheck:
+      test: [CMD, curl, -f, http://localhost:8080/]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
     restart: unless-stopped
 
   ollama:
