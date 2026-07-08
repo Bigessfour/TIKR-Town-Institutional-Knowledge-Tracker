@@ -130,6 +130,8 @@ write_github_step_summary() {
     echo '```'
     sed -n '/IMMEDIATE_FIX:/,/VERIFY_LOCALLY:/p' "$OUTPUT_DIR/02-fix-plan.txt" 2>/dev/null | head -n 20 || echo "unavailable"
     echo '```'
+    echo ""
+    echo "Download artifact \`ollama-ci-diagnosis-${RUN_ID}\` for full reports."
   } >>"$summary_path"
 }
 
