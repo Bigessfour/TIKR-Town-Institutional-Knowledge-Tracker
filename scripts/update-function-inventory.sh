@@ -25,6 +25,8 @@ PERSONAL_PY="$HOME/.cursor/skills/function-inventory/scripts/update-function-inv
 if [[ -x "$PERSONAL_PY" ]] || [[ -f "$PERSONAL_PY" && -x "$(command -v python3)" ]]; then
   echo "[function-inventory] Using personal Python lightweight tracker..."
   python3 "$PERSONAL_PY" . --output "docs/function-inventory.generated.md"
+  echo ""
+  echo "Tip: when the summary shows 0 without proof, run ./scripts/done-detector.sh for the final system gate."
   exit $?
 fi
 

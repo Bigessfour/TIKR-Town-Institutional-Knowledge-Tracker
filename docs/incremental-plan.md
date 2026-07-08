@@ -275,6 +275,8 @@ Update this section when env changes.
 
 **Key paths:** `src/TIKR.Web/Components/Shared/`, `src/TIKR.Web/wwwroot/css/tikr-clerk-polish.css`, `tests/e2e/`, `.cursor/`, `scripts/`
 
+**Done Detector note:** Layer 1 (function inventory clean) + Layer 2 (Project-Level Done Detector checklist in action-items.md + `scripts/done-detector.sh`) is the final sign-off gate for Phase 0 / PR #4. See AGENTS.md and action-items.md.
+
 ---
 
 ## How to update this doc
@@ -282,6 +284,8 @@ Update this section when env changes.
 When a phase completes, set **Status** to `done` and move **in progress** to the next phase. Keep acceptance criteria honest — check boxes only when verified in CI or manual test.
 
 **Function inventory (hybrid):** After significant endpoint/page/service/AI tool work, run `./scripts/update-function-inventory.sh`, then curate status/verification in `docs/action-items.md` and tree in `docs/function-tree.md`. See AGENTS.md for the agent rule. Rebuild RAG index after edits.
+
+When inventory is clean, use `./scripts/done-detector.sh` + complete the Project-Level Done Detector gate in action-items.md before declaring done.
 
 ---
 

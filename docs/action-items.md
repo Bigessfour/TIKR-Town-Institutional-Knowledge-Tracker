@@ -123,8 +123,52 @@ See generated inventory + interfaces in TIKR.Shared.
 
 - Always keep generated header comment intact.
 - Prefer small PRs; link relevant diagram (05*) and test when touching a workflow.
-- Before sign-off / Done Detector: re-run script, ensure action-items + tree reflect reality, RAG index current.
+- Before sign-off / Done Detector: re-run script + `./scripts/done-detector.sh`, ensure action-items + tree reflect reality (including Project-Level gate), RAG index current.
 - Related living docs: incremental-plan.md, requirements-working-tree.md (Requirements-specific), diagrams/.
+
+---
+
+## Project-Level Done Detector / Release Readiness Gate
+
+**IMPORTANT:** Review and complete this gate **only after** the function inventory is fully clean (Summary shows "0 without proof" at the top of `docs/function-inventory.generated.md`).
+
+This is the final system-level verification layer. Individual functions proven (Layer 1) + this gate (Layer 2) = confident release / phase done.
+
+### Checklist
+
+- [ ] Function inventory clean: run `./scripts/update-function-inventory.sh` (or Python directly) → **0 without proof**. Then run `./scripts/done-detector.sh` for combined check.
+- [ ] Full test suite green:
+  ```bash
+  dotnet test TIKR.sln --configuration Release
+  ```
+- [ ] Critical clerk workflows verified end-to-end:
+  - AI Scan flow (Requirements → agent extraction → prefill)
+  - Semantic search + RAG context in Assistant and Documents
+  - Council packet / document generation + NAS persist + audit
+  - Requirements CRUD + links + print/export
+  - Document upload/tag/embed + download
+  - Vault knowledge + "if I'm gone" content complete
+  **Verification:** manual smoke + relevant `tests/e2e/*.spec.ts` + docker compose
+- [ ] Docker / local / NAS smoke tests:
+  ```bash
+  docker compose -f docker/docker-compose.yml up --build
+  # then: curl health, agent-scan fixture, web pages
+  ```
+- [ ] Key documentation current: AGENTS.md, incremental-plan.md, action-items.md, architecture/diagrams, function-tree.md
+- [ ] "If I'm gone" / bus-factor coverage complete (see Vault + requirements-working-tree)
+- [ ] No critical open action items (all high/medium in this file resolved or documented)
+- [ ] RAG index refreshed:
+  ```bash
+  .venv/bin/python3 scripts/update_tikr_rag_index.py
+  ```
+- [ ] Lint + style clean:
+  ```bash
+  trunk check --all
+  dotnet format TIKR.sln
+  ```
+- [ ] PR / branch ready: green CI (TIKR CI + Trunk), no secrets, docs updated
+
+Once all checked, a phase or the project can be declared "done" with high confidence.
 
 ---
 

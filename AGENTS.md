@@ -136,6 +136,12 @@ Agents must cite or apply RAG hits (file paths) in their plan — do not invent 
 - Before claiming any slice, page, or phase is "done", run the scanner. Look at the summary and the without-proof list. Make sure the functions your change depends on have proof.
 - This is your lightweight "peace of mind" tool — it surfaces the ~30 potential gaps so one small unproven detail doesn't break the whole project. Use it for confidence, not bureaucracy. Prefer a single focused test that proves the behavior.
 
+**Two-layer Done Detector approach:**
+- **Layer 1 (Function level):** Use the inventory to track and prove individual functions (proof of function + minimal viable code). Only move on when relevant functions have evidence.
+- **Layer 2 (Project / Release level):** Once Layer 1 is clean for the scope (0 without proof), complete the **Project-Level Done Detector / Release Readiness Gate** checklist in `docs/action-items.md`.
+
+Agents must help complete **both layers** before recommending that a phase or the overall project is "done". The final gate covers system-level items (tests green, critical workflows, smoke tests, docs, bus-factor coverage, no critical opens, etc.).
+
 After large edits also refresh RAG as usual:
 `.venv/bin/python3 scripts/update_tikr_rag_index.py`
 
@@ -160,6 +166,10 @@ cp docker/.env.example docker/.env   # then edit locally
 # After changes to functions (endpoints, pages, services, AI tools):
 python3 ~/.cursor/skills/function-inventory/scripts/update-function-inventory.py
 # Then curate action-items.md with proof of function for the changed items.
+
+# When function inventory is clean (0 without proof), run the final gate:
+./scripts/done-detector.sh
+# (completes Layer 1 checks + reminds you to finish the Project-Level checklist)
 ```
 
 ## Related Files
