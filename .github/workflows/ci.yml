@@ -203,6 +203,8 @@ jobs:
       pull-requests: write
 
     steps:
+      - uses: actions/checkout@v4
+
       - name: Run Ollama failure diagnosis
         uses: ./.github/actions/ollama-ci-diagnosis
         with:
