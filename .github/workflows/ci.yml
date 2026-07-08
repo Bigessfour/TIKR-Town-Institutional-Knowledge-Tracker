@@ -57,6 +57,8 @@ jobs:
 
       - name: Verify per-assembly coverage thresholds
         run: python3 scripts/check_coverage.py coverage
+        # On failure, the subsequent "Capture failure snapshot" (if: failure()) will emit structured info.
+        # We also write a dedicated file there for high-signal to ollama.
 
       - name: Docker Build, Smoke Test & E2E Gate
         env:
@@ -174,6 +176,17 @@ jobs:
           dotnet test TIKR.sln --no-build --configuration Release --verbosity normal \
             > failure-context/last-test-output.txt 2>&1 || true
 
+          # Emit small structured artifact for ollama diagnosis (resilient when gh logs are empty)
+          python3 scripts/check_coverage.py coverage > failure-context/coverage-raw.txt 2>&1 || true
+          if grep -qi 'FAIL\|coverage' failure-context/coverage-raw.txt 2>/dev/null; then
+            {
+              echo "failure_type=coverage-threshold"
+              echo "script=scripts/check_coverage.py"
+              tail -30 failure-context/coverage-raw.txt | sed 's/^/detail: /'
+            } > failure-context/coverage-failure.txt
+          fi
+          ls -l failure-context/ || true
+
       - name: Upload failure snapshot
         if: failure()
         uses: actions/upload-artifact@v4
@@ -197,9 +210,40 @@ jobs:
 
       - name: Verify dotnet format
         run: dotnet format TIKR.sln --verify-no-changes
+        # Failure capture (rich diff + reason) happens in the "Capture trunk/format..." step below (if: failure())
 
       - name: Trunk Code Quality
         uses: trunk-io/trunk-action@v1
+
+      - name: Capture trunk/format failure snapshot
+        if: failure()
+        run: |
+          mkdir -p failure-context
+          {
+            echo "workflow=TIKR CI / trunk-check"
+            echo "run_id=${{ github.run_id }}"
+            echo "trunk_failed=true"
+          } > failure-context/meta.txt || true
+
+          # Rich structured format failure info for ollama (when full logs missing)
+          {
+            echo "failure_type=dotnet-format"
+            echo "command=dotnet format TIKR.sln --verify-no-changes"
+            echo "common_issues=FINALNEWLINE or CHARSET (migrations, .cs files without trailing newline)"
+            echo "advice=run 'dotnet format TIKR.sln' locally and commit the result"
+            git diff --name-only HEAD 2>/dev/null | head -10 || true
+            # If any local mods from previous (rare on verify), show
+          } > failure-context/format-failure.txt || true
+
+          ls -l failure-context/ || true
+
+      - name: Upload trunk/format failure snapshot
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-failure-snapshot-trunk-${{ github.run_id }}
+          path: failure-context/
+          retention-days: 14
 
   ollama-diagnosis:
     needs: [build-and-test, trunk-check]

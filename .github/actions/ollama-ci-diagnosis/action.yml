@@ -9,9 +9,9 @@ inputs:
     required: false
     default: ""
   model:
-    description: Ollama model
+    description: Ollama model (default qwen2.5:7b for better triage; override for RAM or speed)
     required: false
-    default: llama3.2:3b
+    default: qwen2.5:7b
 
 runs:
   using: composite
