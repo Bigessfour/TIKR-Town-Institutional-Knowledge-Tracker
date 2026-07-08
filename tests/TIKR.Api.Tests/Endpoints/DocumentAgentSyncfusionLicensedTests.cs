@@ -1,6 +1,7 @@
 using System.Net.Http.Json;
 using FluentAssertions;
 using TIKR.Api.Tests.Fixtures;
+using TIKR.SyncfusionDocuments;
 using TIKR.Shared.DTOs;
 
 namespace TIKR.Api.Tests.Endpoints;

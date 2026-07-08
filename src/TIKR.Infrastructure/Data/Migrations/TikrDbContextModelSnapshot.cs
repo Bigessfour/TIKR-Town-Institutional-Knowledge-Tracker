@@ -376,6 +376,24 @@ namespace TIKR.Infrastructure.Data.Migrations
                     b.ToTable("Requirements");
                 });
 
+            modelBuilder.Entity("TIKR.Shared.Entities.RequirementDocument", b =>
+                {
+                    b.Property<Guid>("RequirementId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("DocumentId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("LinkedAt")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("RequirementId", "DocumentId");
+
+                    b.HasIndex("DocumentId");
+
+                    b.ToTable("RequirementDocuments");
+                });
+
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
                 {
                     b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole", null)
@@ -425,6 +443,25 @@ namespace TIKR.Infrastructure.Data.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("TIKR.Shared.Entities.RequirementDocument", b =>
+                {
+                    b.HasOne("TIKR.Shared.Entities.Document", "Document")
+                        .WithMany()
+                        .HasForeignKey("DocumentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("TIKR.Shared.Entities.Requirement", "Requirement")
+                        .WithMany()
+                        .HasForeignKey("RequirementId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Document");
+
+                    b.Navigation("Requirement");
                 });
 #pragma warning restore 612, 618
         }

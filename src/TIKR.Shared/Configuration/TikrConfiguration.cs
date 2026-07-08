@@ -37,7 +37,7 @@ public static class TikrConfiguration
     public static string GetGrokModel(IConfiguration configuration) =>
         configuration["AI:GrokModel"]
         ?? configuration["GROK_MODEL"]
-        ?? "grok-3";
+        ?? "grok-4.3";
 
     public static bool IsAuthEnabled(IConfiguration configuration)
     {

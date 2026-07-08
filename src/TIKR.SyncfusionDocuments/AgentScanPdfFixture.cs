@@ -3,12 +3,12 @@ using Syncfusion.Licensing;
 using Syncfusion.Pdf;
 using Syncfusion.Pdf.Graphics;
 
-namespace TIKR.Api.Tests.Fixtures;
+namespace TIKR.SyncfusionDocuments;
 
 /// <summary>
 /// Builds a Syncfusion-valid PDF for licensed agent-scan tests (hand-crafted PDF bytes fail parser validation).
 /// </summary>
-internal static class AgentScanPdfFixture
+public static class AgentScanPdfFixture
 {
     public const string ExpectedText = "Wiley clerk report";
 

@@ -133,12 +133,12 @@ public class TikrConfigurationTests
     public void GetGrokModel_UsesDefaultsAndOverrides()
     {
         TikrConfiguration.GetGrokModel(BuildConfig([]))
-            .Should().Be("grok-3");
+            .Should().Be("grok-4.3");
 
         TikrConfiguration.GetGrokModel(BuildConfig(new Dictionary<string, string?>
         {
-            ["GROK_MODEL"] = "grok-3"
-        })).Should().Be("grok-3");
+            ["GROK_MODEL"] = "grok-4.3"
+        })).Should().Be("grok-4.3");
     }
 
     [Fact]

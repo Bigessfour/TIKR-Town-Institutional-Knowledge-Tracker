@@ -80,4 +80,32 @@ public static class DocumentUiMessages
     public static string DownloadLargeFileWarning(string fileName, long sizeBytes) =>
         $"{fileName} is {DisplayFormat.FormatBytes(sizeBytes)} — download may take a while on Synology.";
     public static string SemanticSearchFailed(string message) => $"Semantic search failed: {message}";
+
+    public static string GenerationInProgress(string label) => $"Generating {label} on NAS…";
+
+    public static string GenerationSuccess(string fileName) => $"Downloaded {fileName}.";
+
+    public static string GenerationFailed(string? message) =>
+        string.IsNullOrWhiteSpace(message)
+            ? "Could not generate document. Check API and Syncfusion license on Settings."
+            : message;
+
+    public static string ConvertToPdfInProgress(string fileName) => $"Converting {fileName} to PDF…";
+
+    public static string ConvertToPdfSuccess(string fileName) => $"Downloaded PDF converted from {fileName}.";
+
+    public static string CouncilPacketBuilding() =>
+        "Building council packet (cover page, deadlines table, linked documents)…";
+
+    public static string CouncilPacketSaving() =>
+        "Saving PDF and DOCX to Synology NAS storage…";
+
+    public static string CouncilPacketSuccess(string pdfName, string docxName) =>
+        $"Council packet saved to NAS: {pdfName} and {docxName}.";
+
+    public static bool CanConvertToPdf(string fileName)
+    {
+        var extension = Path.GetExtension(fileName).ToLowerInvariant();
+        return extension is ".doc" or ".docx" or ".xls" or ".xlsx";
+    }
 }

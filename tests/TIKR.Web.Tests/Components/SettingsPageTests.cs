@@ -25,6 +25,10 @@ public class SettingsPageTests : ClerkTestContext
                     """
                     {"townName":"Wiley","storageLabel":"Synology NAS","dataLastModifiedUtc":"2026-06-28T11:48:00Z","ollamaAvailable":true}
                     """,
+                "/api/system/document-sdk-status" =>
+                    """
+                    {"licenseKeyConfigured":true,"licenseProbePassed":true,"licenseProbeDetail":null,"agentToolsEnabled":true,"orchestrationEnabled":false}
+                    """,
                 "/api/audit" => "[]",
                 _ => "[]"
             };
@@ -41,6 +45,7 @@ public class SettingsPageTests : ClerkTestContext
         cut.WaitForAssertion(() => cut.Markup.Should().Contain("Connected"));
         cut.Markup.Should().Contain("llama3.2:3b");
         cut.Markup.Should().Contain("Wiley");
+        cut.Markup.Should().Contain("Syncfusion Document SDK");
         cut.Markup.Should().Contain("/assistant");
     }
 

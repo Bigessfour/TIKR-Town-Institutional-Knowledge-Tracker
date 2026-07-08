@@ -6,6 +6,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\TIKR.Infrastructure\TIKR.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\TIKR.SyncfusionDocuments\TIKR.SyncfusionDocuments.csproj" />
     <ProjectReference Include="..\..\src\TIKR.Shared\TIKR.Shared.csproj" />
   </ItemGroup>
 

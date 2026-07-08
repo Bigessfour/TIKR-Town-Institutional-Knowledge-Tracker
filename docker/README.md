@@ -2,6 +2,15 @@
 
 ## Quick start
 
+**macOS (Passwords app):** sync secrets into gitignored `docker/.env` without committing the key:
+
+```bash
+./scripts/setup-local-secrets.sh
+docker compose -f docker/docker-compose.yml --env-file docker/.env up --build -d
+```
+
+**Other platforms:** copy the template and edit locally:
+
 ```bash
 cp docker/.env.example docker/.env   # add SYNCFUSION_LICENSE_KEY
 docker compose -f docker/docker-compose.yml --env-file docker/.env up --build -d
@@ -73,6 +82,7 @@ Workspace settings live in [`.vscode/settings.json`](../.vscode/settings.json).
 - **TIKR: Docker Compose Logs**
 - **TIKR: Pull Ollama models (container)** — after full stack with `tikr-ollama`
 - **TIKR: Pull Ollama models (host)** — when using host Ollama override
+- **TIKR: Sync secrets from Passwords** — macOS Keychain → `docker/.env` + user-secrets
 
 **Docker DX build debug:** Run and Debug → *Docker DX: Build API* or *Build Web* (requires Docker Desktop 4.46+ and Buildx 0.29+). Set breakpoints on `RUN` lines in `docker/Dockerfile.*`.
 

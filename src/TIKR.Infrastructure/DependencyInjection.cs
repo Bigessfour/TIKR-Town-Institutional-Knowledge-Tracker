@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging;
 using TIKR.Infrastructure.Data;
 using TIKR.Infrastructure.Identity;
 using TIKR.Infrastructure.Services;
+using TIKR.SyncfusionDocuments;
 using TIKR.Shared.Configuration;
 using TIKR.Shared.Interfaces;
 
@@ -48,6 +49,7 @@ public static class DependencyInjection
                 ? sp.GetRequiredService<SyncfusionDocumentAgentExtractionBackend>()
                 : sp.GetRequiredService<StubDocumentAgentExtractionBackend>());
         services.AddScoped<IDocumentAgentService, DocumentAgentService>();
+        services.AddSyncfusionDocumentGeneration();
         services.AddHttpClient<GrokService>();
 
         services.AddSingleton<IOllamaChatClientFactory>(_ =>

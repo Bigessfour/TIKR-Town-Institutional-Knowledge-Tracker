@@ -34,7 +34,7 @@ public class TikrApiClientTests
         var json = JsonSerializer.Serialize(new List<RequirementDto>
         {
             new(id, "Budget", null, DateOnly.FromDateTime(DateTime.UtcNow), RecurrenceType.Annual,
-                RequirementCategory.Budget, true, false)
+                RequirementCategory.Budget, true, false, [])
         });
         var (client, _) = CreateClient(json, HttpMethod.Get, "/api/requirements");
         var sut = new TikrApiClient(client);
@@ -49,7 +49,7 @@ public class TikrApiClientTests
         var id = Guid.NewGuid();
         var json = JsonSerializer.Serialize(
             new RequirementDto(id, "One", null, DateOnly.FromDateTime(DateTime.UtcNow), RecurrenceType.None,
-                RequirementCategory.Custom, false, false));
+                RequirementCategory.Custom, false, false, []));
         var (client, _) = CreateClient(json, HttpMethod.Get, $"/api/requirements/{id}");
         var sut = new TikrApiClient(client);
 
@@ -449,6 +449,52 @@ public class TikrApiClientTests
 
         var ok = await sut.ChangePasswordAsync(new ChangePasswordRequest(TestAuthFixtures.BootstrapPassword, "weak"));
         ok.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task GenerateCouncilAgendaPdfAsync_ReturnsDownloadOnSuccess()
+    {
+        HttpMethod? method = null;
+        string? path = null;
+        var handler = new RecordingHandler((req, _) =>
+        {
+            method = req.Method;
+            path = req.RequestUri!.PathAndQuery;
+            var response = new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new ByteArrayContent("%PDF-1.4"u8.ToArray())
+            };
+            response.Content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/pdf");
+            response.Content.Headers.ContentDisposition = new System.Net.Http.Headers.ContentDispositionHeaderValue("attachment")
+            {
+                FileName = "council-agenda-2026-07-08.pdf"
+            };
+            return response;
+        });
+        var sut = new TikrApiClient(new HttpClient(handler) { BaseAddress = new Uri("http://localhost/") });
+
+        var result = await sut.GenerateCouncilAgendaPdfAsync();
+
+        method.Should().Be(HttpMethod.Post);
+        path.Should().Be("/api/documents/generate/council-agenda");
+        result.Document.Should().NotBeNull();
+        result.Document!.FileName.Should().EndWith(".pdf");
+        result.ErrorMessage.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task GenerateCouncilAgendaPdfAsync_ReturnsErrorWhenUnlicensed()
+    {
+        var handler = new RecordingHandler((_, _) => new HttpResponseMessage(HttpStatusCode.ServiceUnavailable)
+        {
+            Content = new StringContent("""{"error":"SYNCFUSION_LICENSE_KEY is required"}""", Encoding.UTF8, "application/json")
+        });
+        var sut = new TikrApiClient(new HttpClient(handler) { BaseAddress = new Uri("http://localhost/") });
+
+        var result = await sut.GenerateCouncilAgendaPdfAsync();
+
+        result.Document.Should().BeNull();
+        result.ErrorMessage.Should().Contain("SYNCFUSION_LICENSE_KEY");
     }
 
     [Fact]

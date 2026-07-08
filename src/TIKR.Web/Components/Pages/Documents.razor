@@ -8,6 +8,7 @@
 @using Syncfusion.Blazor.Layouts
 @using Syncfusion.Blazor.Navigations
 @using TIKR.Web.Components.Shared
+@using TIKR.Web.Helpers
 
 <div class="page-header">
     <div class="page-header-main">
@@ -173,6 +174,13 @@
                                   Content="@(_downloadingDocId == d.Id ? "Downloading…" : "Download")"
                                   Disabled="@(_downloadingDocId == d.Id)"
                                   OnClick="@(async () => await DownloadDocumentAsync(d))" />
+                        @if (DocumentUiMessages.CanConvertToPdf(d.FileName))
+                        {
+                            <SfButton CssClass="tikr-action-btn"
+                                      Content="@(_convertingDocId == d.Id ? "Converting…" : "Convert to PDF")"
+                                      Disabled="@(_convertingDocId == d.Id)"
+                                      OnClick="@(async () => await ConvertDocumentToPdfAsync(d))" />
+                        }
                     </div>
 
                     @if (IsPdf(d) && !string.IsNullOrEmpty(_pdfPreviewUrl) && _pdfPreviewDocId == d.Id)
@@ -212,6 +220,7 @@
         <MenuItem Text="Re-tag with AI" Id="cm-retag" IconCss="e-icons e-reload" />
         <MenuItem Text="Delete" Id="cm-delete" IconCss="e-icons e-trash" />
         <MenuItem Text="Download" Id="cm-download" IconCss="e-icons e-download" />
+        <MenuItem Text="Convert to PDF" Id="cm-convert-pdf" IconCss="e-icons e-export-pdf" />
     </MenuItems>
     <MenuEvents TValue="MenuItem" ItemSelected="OnContextMenuSelected" />
 </SfContextMenu>
@@ -249,6 +258,7 @@
     private Guid? _pdfPreviewDocId;
     private bool _previewLoading;
     private Guid? _downloadingDocId;
+    private Guid? _convertingDocId;
 
     private List<DocumentLibraryLogic.FolderNode> _folderNodes = [];
 
@@ -469,6 +479,39 @@
     private static bool HasTextPreview(DocumentDto doc) =>
         !string.IsNullOrWhiteSpace(doc.FullTextContent);
 
+    private async Task ConvertDocumentToPdfAsync(DocumentDto doc)
+    {
+        if (!DocumentUiMessages.CanConvertToPdf(doc.FileName))
+            return;
+
+        _convertingDocId = doc.Id;
+        _statusMessage = DocumentUiMessages.ConvertToPdfInProgress(doc.FileName);
+        StateHasChanged();
+
+        try
+        {
+            var result = await Api.ConvertStoredDocumentToPdfAsync(doc.Id, doc.FileName);
+            if (result.Document is null)
+            {
+                _statusMessage = DocumentUiMessages.GenerationFailed(result.ErrorMessage);
+                return;
+            }
+
+            await JS.InvokeVoidAsync(
+                "tikrDownload.downloadFromBytes",
+                result.Document.FileName,
+                result.Document.ContentType,
+                result.Document.Content);
+            _statusMessage = DocumentUiMessages.ConvertToPdfSuccess(doc.FileName);
+            Toast.Show(DocumentUiMessages.GenerationSuccess(result.Document.FileName));
+        }
+        finally
+        {
+            _convertingDocId = null;
+            StateHasChanged();
+        }
+    }
+
     private async Task DownloadDocumentAsync(DocumentDto doc)
     {
         const long largeFileThresholdBytes = 52_428_800;
@@ -592,6 +635,10 @@
             case "cm-download":
                 if (targetDoc is not null)
                     await DownloadDocumentAsync(targetDoc);
+                break;
+            case "cm-convert-pdf":
+                if (targetDoc is not null && DocumentUiMessages.CanConvertToPdf(targetDoc.FileName))
+                    await ConvertDocumentToPdfAsync(targetDoc);
                 break;
         }
     }

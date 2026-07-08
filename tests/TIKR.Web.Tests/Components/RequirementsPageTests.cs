@@ -23,7 +23,7 @@ public class RequirementsPageTests : ClerkTestContext
         var json = JsonSerializer.Serialize(new List<RequirementDto>
         {
             new(Guid.NewGuid(), "Mill Levy Certification", "Certify levy", new DateOnly(2026, 12, 15),
-                RecurrenceType.Annual, RequirementCategory.MillLevy, true, false)
+                RecurrenceType.Annual, RequirementCategory.MillLevy, true, false, [])
         });
         RegisterApi(json);
         SetRendererInfo(new RendererInfo("Server", true));
@@ -47,6 +47,20 @@ public class RequirementsPageTests : ClerkTestContext
     }
 
     [Fact]
+    public void Requirements_RendersDocumentGenerationActions()
+    {
+        RegisterApi("[]");
+        SetRendererInfo(new RendererInfo("Server", true));
+
+        var cut = RenderComponent<Requirements>();
+
+        cut.Markup.Should().Contain("Council packet");
+        cut.Markup.Should().Contain("Agenda PDF");
+        cut.Markup.Should().Contain("Compliance Excel");
+        cut.Markup.Should().Contain("Meeting minutes");
+    }
+
+    [Fact]
     public async Task Requirements_UsesSfDatePickerWhenDialogOpen()
     {
         RegisterApi("[]");
@@ -61,9 +75,21 @@ public class RequirementsPageTests : ClerkTestContext
 
     private void RegisterApi(string json)
     {
-        var handler = new StubHandler((_, _) => new HttpResponseMessage(HttpStatusCode.OK)
+        var handler = new StubHandler((req, _) =>
         {
-            Content = new StringContent(json, Encoding.UTF8, "application/json")
+            var path = req.RequestUri!.AbsolutePath;
+            var body = path switch
+            {
+                "/api/system/local-status" =>
+                    """
+                    {"townName":"Wiley","storageLabel":"Synology NAS","dataLastModifiedUtc":null,"ollamaAvailable":true}
+                    """,
+                _ => json
+            };
+            return new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(body, Encoding.UTF8, "application/json")
+            };
         });
         Services.AddSingleton(new TikrApiClient(new HttpClient(handler) { BaseAddress = new Uri("http://localhost/") }));
     }
