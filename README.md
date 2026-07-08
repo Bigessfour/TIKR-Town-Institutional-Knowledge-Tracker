@@ -60,7 +60,7 @@ cp docker/.env.example docker/.env
 # Edit docker/.env with your keys (Syncfusion license, optional Grok key)
 ```
 
-For local `dotnet run` without Docker, use [user secrets](#local-development-user-secrets--recommended) or place keys in `docker/.env` (loaded in Development via `DotNetEnv`).
+For local `dotnet run` without Docker, use [user secrets](#local-development-user-secrets) or place keys in `docker/.env` (loaded in Development via `DotNetEnv`).
 
 ### 2. Local development
 
