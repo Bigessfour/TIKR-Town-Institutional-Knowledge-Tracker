@@ -1,3 +1,5 @@
+using System.Net;
+using System.Text.Json;
 using TIKR.Shared.DTOs;
 using TIKR.Shared.Entities;
 
@@ -179,5 +181,91 @@ public class TikrApiClient(HttpClient http)
         return response.IsSuccessStatusCode
             ? await response.Content.ReadFromJsonAsync<DocumentAgentResult>()
             : null;
+    }
+
+    public Task<DocumentGenerationResponse> GenerateCouncilAgendaPdfAsync(CouncilAgendaRequest? request = null) =>
+        PostGeneratedDocumentAsync("/api/documents/generate/council-agenda", request);
+
+    public Task<DocumentGenerationResponse> GenerateComplianceReportXlsxAsync(ComplianceReportRequest? request = null) =>
+        PostGeneratedDocumentAsync("/api/documents/generate/compliance-report", request);
+
+    public Task<DocumentGenerationResponse> GenerateMeetingMinutesDocxAsync(MeetingMinutesRequest request) =>
+        PostGeneratedDocumentAsync("/api/documents/generate/meeting-minutes", request);
+
+    public Task<DocumentGenerationResponse> GenerateClerkMemoDocxAsync(ClerkMemoRequest request) =>
+        PostGeneratedDocumentAsync("/api/documents/generate/clerk-memo", request);
+
+    public async Task<DocumentGenerationResponse> ConvertWordToPdfAsync(Stream wordContent, string fileName)
+    {
+        using var multipart = new MultipartFormDataContent();
+        multipart.Add(new StreamContent(wordContent), "file", fileName);
+        return await ParseGenerationResponseAsync(await http.PostAsync("/api/documents/convert/word-to-pdf", multipart));
+    }
+
+    public async Task<DocumentGenerationResponse> ConvertExcelToPdfAsync(Stream excelContent, string fileName)
+    {
+        using var multipart = new MultipartFormDataContent();
+        multipart.Add(new StreamContent(excelContent), "file", fileName);
+        return await ParseGenerationResponseAsync(await http.PostAsync("/api/documents/convert/excel-to-pdf", multipart));
+    }
+
+    public async Task<DocumentGenerationResponse> ConvertStoredDocumentToPdfAsync(Guid documentId, string fileName)
+    {
+        var bytes = await GetDocumentContentAsync(documentId);
+        if (bytes is null || bytes.Length == 0)
+            return new DocumentGenerationResponse(null, $"Could not read {fileName} from NAS storage.");
+
+        await using var stream = new MemoryStream(bytes);
+        var extension = Path.GetExtension(fileName).ToLowerInvariant();
+        return extension is ".xls" or ".xlsx"
+            ? await ConvertExcelToPdfAsync(stream, fileName)
+            : await ConvertWordToPdfAsync(stream, fileName);
+    }
+
+    private Task<DocumentGenerationResponse> PostGeneratedDocumentAsync<T>(string path, T? body) =>
+        ParseGenerationResponseAsync(http.PostAsJsonAsync(path, body));
+
+    private static async Task<DocumentGenerationResponse> ParseGenerationResponseAsync(Task<HttpResponseMessage> responseTask)
+    {
+        var response = await responseTask;
+        return await ParseGenerationResponseAsync(response);
+    }
+
+    private static async Task<DocumentGenerationResponse> ParseGenerationResponseAsync(HttpResponseMessage response)
+    {
+        if (!response.IsSuccessStatusCode)
+        {
+            var error = await TryReadGenerationErrorAsync(response);
+            return new DocumentGenerationResponse(null, error);
+        }
+
+        var bytes = await response.Content.ReadAsByteArrayAsync();
+        var disposition = response.Content.Headers.ContentDisposition;
+        var fileName = disposition?.FileNameStar
+            ?? disposition?.FileName?.Trim('"')
+            ?? "generated-document.bin";
+        var contentType = response.Content.Headers.ContentType?.MediaType ?? "application/octet-stream";
+        return new DocumentGenerationResponse(new GeneratedDocumentDownloadDto(bytes, fileName, contentType), null);
+    }
+
+    private static async Task<string> TryReadGenerationErrorAsync(HttpResponseMessage response)
+    {
+        if (response.Content.Headers.ContentType?.MediaType?.Contains("json", StringComparison.OrdinalIgnoreCase) == true)
+        {
+            try
+            {
+                var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+                if (body.TryGetProperty("error", out var error) && error.GetString() is { } message)
+                    return message;
+            }
+            catch
+            {
+                // Fall through to default message.
+            }
+        }
+
+        return response.StatusCode == HttpStatusCode.ServiceUnavailable
+            ? "Syncfusion Document SDK is not licensed. Set SYNCFUSION_LICENSE_KEY on the API container."
+            : $"Document generation failed ({(int)response.StatusCode}).";
     }
 }

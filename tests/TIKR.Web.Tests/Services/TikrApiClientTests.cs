@@ -452,6 +452,52 @@ public class TikrApiClientTests
     }
 
     [Fact]
+    public async Task GenerateCouncilAgendaPdfAsync_ReturnsDownloadOnSuccess()
+    {
+        HttpMethod? method = null;
+        string? path = null;
+        var handler = new RecordingHandler((req, _) =>
+        {
+            method = req.Method;
+            path = req.RequestUri!.PathAndQuery;
+            var response = new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new ByteArrayContent("%PDF-1.4"u8.ToArray())
+            };
+            response.Content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/pdf");
+            response.Content.Headers.ContentDisposition = new System.Net.Http.Headers.ContentDispositionHeaderValue("attachment")
+            {
+                FileName = "council-agenda-2026-07-08.pdf"
+            };
+            return response;
+        });
+        var sut = new TikrApiClient(new HttpClient(handler) { BaseAddress = new Uri("http://localhost/") });
+
+        var result = await sut.GenerateCouncilAgendaPdfAsync();
+
+        method.Should().Be(HttpMethod.Post);
+        path.Should().Be("/api/documents/generate/council-agenda");
+        result.Document.Should().NotBeNull();
+        result.Document!.FileName.Should().EndWith(".pdf");
+        result.ErrorMessage.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task GenerateCouncilAgendaPdfAsync_ReturnsErrorWhenUnlicensed()
+    {
+        var handler = new RecordingHandler((_, _) => new HttpResponseMessage(HttpStatusCode.ServiceUnavailable)
+        {
+            Content = new StringContent("""{"error":"SYNCFUSION_LICENSE_KEY is required"}""", Encoding.UTF8, "application/json")
+        });
+        var sut = new TikrApiClient(new HttpClient(handler) { BaseAddress = new Uri("http://localhost/") });
+
+        var result = await sut.GenerateCouncilAgendaPdfAsync();
+
+        result.Document.Should().BeNull();
+        result.ErrorMessage.Should().Contain("SYNCFUSION_LICENSE_KEY");
+    }
+
+    [Fact]
     public async Task ScanDocumentWithAgentAsync_PostsMultipart()
     {
         var json = JsonSerializer.Serialize(new DocumentAgentResult(

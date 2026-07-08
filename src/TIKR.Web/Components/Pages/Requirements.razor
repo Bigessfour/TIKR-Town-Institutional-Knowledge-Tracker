@@ -4,7 +4,9 @@
 @inject IJSRuntime JS
 @inject ClerkToastService Toast
 
+@using TIKR.Shared.DTOs
 @using TIKR.Web.Components.Shared
+@using TIKR.Web.Helpers
 
 <div class="vault-emergency-banner">
     <div class="banner-icon">📋❤️</div>
@@ -19,12 +21,15 @@
         <h2>Requirements Manager</h2>
         <p>Colorado municipal obligations and custom deadlines</p>
     </div>
-    <PageHelp HelpText="Manage pre-seeded Colorado deadlines and add town-specific requirements. Filter by urgency, export CSV for board packets, and mark items complete when filed." />
+    <PageHelp HelpText="Manage pre-seeded Colorado deadlines and add town-specific requirements. Export council agenda PDF, compliance Excel, or meeting minutes when Syncfusion Document SDK is licensed (see Settings)." />
 </div>
 
 <div class="requirements-toolbar mb-3">
     <SfButton CssClass="tikr-action-btn e-primary" IsPrimary="true" IconCss="e-icons e-plus" Content="Add requirement" OnClick="OpenCreateDialog" />
     <SfButton CssClass="tikr-action-btn" IconCss="e-icons e-export" Content="Export CSV" OnClick="ExportCsvAsync" />
+    <SfButton CssClass="tikr-action-btn" IconCss="e-icons e-export-pdf" Content="@AgendaPdfButtonLabel" Disabled="@(_generating is not null)" OnClick="DownloadAgendaPdfAsync" />
+    <SfButton CssClass="tikr-action-btn" IconCss="e-icons e-export-excel" Content="@ComplianceExcelButtonLabel" Disabled="@(_generating is not null)" OnClick="DownloadComplianceReportAsync" />
+    <SfButton CssClass="tikr-action-btn" IconCss="e-icons e-description" Content="Meeting minutes" OnClick="OpenMinutesDialog" />
     <SfButton CssClass="tikr-action-btn" IconCss="e-icons e-print" Content="Print council packet" OnClick="PrintPacketAsync" />
     <div class="requirements-agent-upload">
         <SfUploader AutoUpload="true"
@@ -175,6 +180,37 @@ else if (!string.IsNullOrWhiteSpace(_agentMessage))
     </DialogTemplates>
 </SfDialog>
 
+<SfDialog @bind-Visible="_minutesDialogVisible" Width="520px" IsModal="true" ShowCloseIcon="true" Header="Generate meeting minutes">
+    <DialogTemplates>
+        <Content>
+            <div class="mb-2">
+                <label class="form-label">Meeting date</label>
+                <SfDatePicker TValue="DateTime?" @bind-Value="_minutesMeetingDate" Format="d" Placeholder="Select meeting date" />
+            </div>
+            <div class="mb-2">
+                <label class="form-label">Board name</label>
+                <SfTextBox @bind-Value="_minutesBoardName" Placeholder="Board of Trustees" />
+            </div>
+            <div class="mb-2">
+                <label class="form-label">Attendees (one per line)</label>
+                <SfTextBox Multiline="true" @bind-Value="_minutesAttendeesText" Placeholder="Mayor&#10;Clerk&#10;Trustee" />
+            </div>
+            <div class="mb-2">
+                <label class="form-label">Agenda items (one per line)</label>
+                <SfTextBox Multiline="true" @bind-Value="_minutesAgendaText" Placeholder="Call to order&#10;Budget hearing" />
+            </div>
+            <div class="mb-2">
+                <label class="form-label">Minutes notes</label>
+                <SfTextBox Multiline="true" @bind-Value="_minutesNotes" Placeholder="Motions, votes, and discussion…" />
+            </div>
+            <div class="mt-3">
+                <SfButton CssClass="e-primary tikr-action-btn" IsPrimary="true" Content="@MinutesGenerateButtonLabel" Disabled="@(_generating is not null)" OnClick="DownloadMeetingMinutesAsync" />
+                <SfButton CssClass="tikr-action-btn" Content="Cancel" OnClick="CloseMinutesDialog" />
+            </div>
+        </Content>
+    </DialogTemplates>
+</SfDialog>
+
 <ConfirmDeleteDialog @bind-Visible="_confirmDeleteVisible"
                      ItemName="@(_pendingDelete?.Title ?? "this item")"
                      OnConfirm="ConfirmDeleteAsync" />
@@ -195,6 +231,18 @@ else if (!string.IsNullOrWhiteSpace(_agentMessage))
     private readonly RequirementFormModel _form = new();
     private bool _confirmDeleteVisible;
     private RequirementDto? _pendingDelete;
+    private string _townName = "Wiley";
+    private string? _generating;
+    private bool _minutesDialogVisible;
+    private DateTime? _minutesMeetingDate = DateTime.Today;
+    private string _minutesBoardName = "Board of Trustees";
+    private string? _minutesAttendeesText;
+    private string? _minutesAgendaText;
+    private string? _minutesNotes;
+
+    private string AgendaPdfButtonLabel => _generating == "agenda" ? "Generating PDF…" : "Agenda PDF";
+    private string ComplianceExcelButtonLabel => _generating == "compliance" ? "Generating Excel…" : "Compliance Excel";
+    private string MinutesGenerateButtonLabel => _generating == "minutes" ? "Generating…" : "Download DOCX";
 
     private readonly List<string> _categoryOptions = ["All", .. Enum.GetNames<RequirementCategory>()];
     private readonly List<string> _urgencyOptions = ["All", "Overdue", "High", "Medium", "Low", "Done"];
@@ -216,6 +264,10 @@ else if (!string.IsNullOrWhiteSpace(_agentMessage))
         _error = null;
         try
         {
+            var localStatus = await Api.GetLocalStorageStatusAsync();
+            if (!string.IsNullOrWhiteSpace(localStatus?.TownName))
+                _townName = localStatus.TownName;
+
             _requirements = await Api.GetRequirementsAsync();
         }
         catch
@@ -357,6 +409,106 @@ else if (!string.IsNullOrWhiteSpace(_agentMessage))
         await JS.InvokeVoidAsync(
             "eval",
             $"(() => {{ const a = document.createElement('a'); a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent({System.Text.Json.JsonSerializer.Serialize(csv)}); a.download = {System.Text.Json.JsonSerializer.Serialize(fileName)}; a.click(); }})()");
+    }
+
+    private async Task DownloadAgendaPdfAsync()
+    {
+        _error = null;
+        _generating = "agenda";
+        try
+        {
+            var result = await Api.GenerateCouncilAgendaPdfAsync(
+                new CouncilAgendaRequest(_townName, DateOnly.FromDateTime(DateTime.UtcNow), []));
+            await HandleGeneratedDownloadAsync(result, "council agenda PDF");
+        }
+        finally
+        {
+            _generating = null;
+        }
+    }
+
+    private async Task DownloadComplianceReportAsync()
+    {
+        _error = null;
+        _generating = "compliance";
+        try
+        {
+            var result = await Api.GenerateComplianceReportXlsxAsync(
+                new ComplianceReportRequest(_townName, DateOnly.FromDateTime(DateTime.UtcNow), []));
+            await HandleGeneratedDownloadAsync(result, "compliance report");
+        }
+        finally
+        {
+            _generating = null;
+        }
+    }
+
+    private void OpenMinutesDialog()
+    {
+        _minutesAgendaText ??= string.Join(
+            Environment.NewLine,
+            VisibleRequirements.Take(12).Select(r => r.Title));
+        _minutesDialogVisible = true;
+    }
+
+    private void CloseMinutesDialog() => _minutesDialogVisible = false;
+
+    private async Task DownloadMeetingMinutesAsync()
+    {
+        _error = null;
+        _generating = "minutes";
+        try
+        {
+            var meetingDate = _minutesMeetingDate.HasValue
+                ? DateOnly.FromDateTime(_minutesMeetingDate.Value)
+                : DateOnly.FromDateTime(DateTime.UtcNow);
+
+            var request = new MeetingMinutesRequest(
+                _townName,
+                meetingDate,
+                string.IsNullOrWhiteSpace(_minutesBoardName) ? null : _minutesBoardName.Trim(),
+                SplitLines(_minutesAttendeesText),
+                SplitLines(_minutesAgendaText),
+                string.IsNullOrWhiteSpace(_minutesNotes) ? null : _minutesNotes.Trim());
+
+            var result = await Api.GenerateMeetingMinutesDocxAsync(request);
+            if (await HandleGeneratedDownloadAsync(result, "meeting minutes"))
+                _minutesDialogVisible = false;
+        }
+        finally
+        {
+            _generating = null;
+        }
+    }
+
+    private async Task<bool> HandleGeneratedDownloadAsync(DocumentGenerationResponse result, string label)
+    {
+        if (result.Document is null)
+        {
+            _error = DocumentUiMessages.GenerationFailed(result.ErrorMessage);
+            return false;
+        }
+
+        await JS.InvokeVoidAsync(
+            "tikrDownload.downloadFromBytes",
+            result.Document.FileName,
+            result.Document.ContentType,
+            result.Document.Content);
+        Toast.Show(DocumentUiMessages.GenerationSuccess(result.Document.FileName));
+        return true;
+    }
+
+    private static IReadOnlyList<string>? SplitLines(string? text)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+            return null;
+
+        var lines = text
+            .Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Where(line => !string.IsNullOrWhiteSpace(line))
+            .ToList();
+
+        return lines.Count == 0 ? null : lines;
     }
 
     private async Task OnAgentUploadAsync(UploadChangeEventArgs args)

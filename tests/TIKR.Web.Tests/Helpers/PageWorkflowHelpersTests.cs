@@ -79,5 +79,8 @@ public class PageWorkflowHelpersTests
         DocumentUiMessages.DownloadFailed("a.pdf").Should().Contain("a.pdf");
         DocumentUiMessages.DownloadInProgress("a.pdf").Should().Contain("Downloading");
         DocumentUiMessages.SemanticSearchFailed("timeout").Should().Contain("timeout");
+        DocumentUiMessages.GenerationFailed(null).Should().Contain("Syncfusion");
+        DocumentUiMessages.CanConvertToPdf("memo.docx").Should().BeTrue();
+        DocumentUiMessages.CanConvertToPdf("budget.pdf").Should().BeFalse();
     }
 }

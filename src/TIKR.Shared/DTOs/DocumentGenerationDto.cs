@@ -35,3 +35,9 @@ public record ComplianceReportRequest(
     string TownName,
     DateOnly ReportDate,
     IReadOnlyList<ComplianceReportRow> Rows);
+
+public record GeneratedDocumentDownloadDto(byte[] Content, string FileName, string ContentType);
+
+public record DocumentGenerationResponse(
+    GeneratedDocumentDownloadDto? Document,
+    string? ErrorMessage);
