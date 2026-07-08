@@ -45,6 +45,8 @@ Help design, implement, and document TIKR: Blazor Interactive Server UI, Minimal
 
 Never commit: `docker/.env`, `.cursor/mcp.json`, `**/appsettings.Development.json`, key files (`*.pem`, `*.key`). CI runs gitleaks via Trunk.
 
+**macOS local setup:** `./scripts/setup-local-secrets.sh` reads Passwords → `docker/.env` + user-secrets (never prints or commits keys). Syncfusion only: `./scripts/sync-syncfusion-license-key.sh --all`.
+
 Templates: `docker/.env.example`, `.cursor/mcp.json.example`. See [docs/ai-tooling.md](docs/ai-tooling.md).
 
 ## Syncfusion
@@ -98,6 +100,53 @@ Agents must cite or apply RAG hits (file paths) in their plan — do not invent 
 - Run tests after API or Infrastructure changes.
 - Keep EF migrations in `src/TIKR.Infrastructure/Data/Migrations/` committed (not gitignored).
 
+### Function Inventory — Solo Superpower (lightweight function tracker)
+
+**Intent:** Track individual functions so the whole project works reliably. Every important function must have **proof of function** (a test or verification that exercises it) and should use the **minimal code** required to do its job. This prevents one small unproven detail from silently breaking the overall system and gives real peace of mind without engineering the project into the ground.
+
+**What counts as a trackable function (for TIKR):**
+- Public API endpoints / handlers (Program.cs Map*, endpoint classes)
+- Blazor page/component logic (Pages/*.razor + @code methods, major Shared components)
+- Core service public methods (HybridAiService, DocumentAgentService, Orchestrators, etc.)
+- AI tools / function-calling registrations
+- Workflow helpers that are part of clerk value paths
+
+**After you create or modify a trackable function:**
+
+1. Run the personal Python scanner (preferred):
+   ```bash
+   python3 ~/.cursor/skills/function-inventory/scripts/update-function-inventory.py
+   ```
+   (Or simply `./scripts/update-function-inventory.sh` — it delegates.)
+
+2. Look at the top of the generated inventory:
+   - **Summary line**: X tracked | Y with proof | Z without proof
+   - The short "**Functions without proof (review these)**" list (usually ~30 items).
+
+3. Curate `docs/action-items.md`:
+   - Reference the specific function (e.g. `HybridAiService.TagDocumentAsync` or the mapper methods).
+   - Record the actual proof (test name + file, or the manual verification you did).
+   - Note the "Minimal Impl Signal".
+   - Only add tasks/checkboxes for the ones that matter to your clerk workflows. You do **not** need to prove every internal helper.
+
+4. Update `docs/function-tree.md` only when the major areas or flows change.
+
+**Rules:**
+- The `.generated.md` file is **never edited by hand**.
+- Before claiming any slice, page, or phase is "done", run the scanner. Look at the summary and the without-proof list. Make sure the functions your change depends on have proof.
+- This is your lightweight "peace of mind" tool — it surfaces the ~30 potential gaps so one small unproven detail doesn't break the whole project. Use it for confidence, not bureaucracy. Prefer a single focused test that proves the behavior.
+
+**Two-layer Done Detector approach:**
+- **Layer 1 (Function level):** Use the inventory to track and prove individual functions (proof of function + minimal viable code). Only move on when relevant functions have evidence.
+- **Layer 2 (Project / Release level):** Once Layer 1 is clean for the scope (0 without proof), complete the **Project-Level Done Detector / Release Readiness Gate** checklist in `docs/action-items.md`.
+
+Agents must help complete **both layers** before recommending that a phase or the overall project is "done". The final gate covers system-level items (tests green, critical workflows, smoke tests, docs, bus-factor coverage, no critical opens, etc.).
+
+After large edits also refresh RAG as usual:
+`.venv/bin/python3 scripts/update_tikr_rag_index.py`
+
+See also the personal skill at `~/.cursor/skills/function-inventory/SKILL.md` for the full solo workflow.
+
 ## Avoid
 
 - Cloud-only dependencies for core clerk workflows (local-first is the product).
@@ -113,6 +162,14 @@ dotnet format TIKR.sln
 trunk check --all
 docker compose -f docker/docker-compose.yml up --build
 cp docker/.env.example docker/.env   # then edit locally
+
+# After changes to functions (endpoints, pages, services, AI tools):
+python3 ~/.cursor/skills/function-inventory/scripts/update-function-inventory.py
+# Then curate action-items.md with proof of function for the changed items.
+
+# When function inventory is clean (0 without proof), run the final gate:
+./scripts/done-detector.sh
+# (completes Layer 1 checks + reminds you to finish the Project-Level checklist)
 ```
 
 ## Related Files
@@ -123,6 +180,11 @@ cp docker/.env.example docker/.env   # then edit locally
 | [docs/incremental-plan.md](docs/incremental-plan.md) | Phased roadmap |
 | [docs/ai-tooling.md](docs/ai-tooling.md) | MCP, skills, runtime AI |
 | [docs/architecture.md](docs/architecture.md) | System design |
+| [docs/action-items.md](docs/action-items.md) | Human+agent overlay (status, verification, checkboxes) |
+| [docs/function-inventory.generated.md](docs/function-inventory.generated.md) | Auto-generated inventory (run script to refresh) |
+| [docs/function-tree.md](docs/function-tree.md) | Maintained visual Mermaid function tree |
+| [scripts/update-function-inventory.sh](scripts/update-function-inventory.sh) | Legacy bash scanner (project specific) |
+| `~/.cursor/skills/function-inventory/scripts/update-function-inventory.py` | Personal Python lightweight function tracker (preferred) |
 | [.github/workflows/ci.yml](.github/workflows/ci.yml) | Build, test, Docker smoke |
 | [.github/workflows/ci.yml](.github/workflows/ci.yml) | Build, test, Trunk lint, Ollama failure triage |
 | [docs/dependabot-policy.md](docs/dependabot-policy.md) | Dependabot PR handling |

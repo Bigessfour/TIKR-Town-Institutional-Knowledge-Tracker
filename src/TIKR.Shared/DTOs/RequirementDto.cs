@@ -2,6 +2,8 @@ using TIKR.Shared.Enums;
 
 namespace TIKR.Shared.DTOs;
 
+public record RequirementLinkedDocumentDto(Guid DocumentId, string FileName, string? Summary);
+
 public record RequirementDto(
     Guid Id,
     string Title,
@@ -10,7 +12,10 @@ public record RequirementDto(
     RecurrenceType Recurrence,
     RequirementCategory Category,
     bool IsSystemSeeded,
-    bool IsCompleted);
+    bool IsCompleted,
+    IReadOnlyList<RequirementLinkedDocumentDto> LinkedDocuments);
+
+public record LinkRequirementDocumentRequest(Guid DocumentId);
 
 public record CreateRequirementRequest(
     string Title,

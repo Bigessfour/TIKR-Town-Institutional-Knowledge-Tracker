@@ -3,10 +3,12 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+# shellcheck source=lib/env-file.sh
+source "$ROOT/scripts/lib/env-file.sh"
 
 usage() {
   cat <<'EOF'
-Usage: sync-grok-key.sh [--export] [--user-secrets]
+Usage: sync-grok-key.sh [options]
 
 Reads XAI_API_KEY from macOS Keychain (Passwords app) and maps it to TIKR GROK_API_KEY.
 
@@ -17,16 +19,21 @@ Keychain item (generic password) — any of these work:
 
 Options:
   --export        Print export lines (GROK_API_KEY, USE_GROK, GROK_MODEL)
-  --user-secrets  Also write to TIKR.Api dotnet user-secrets
+  --user-secrets  Write to TIKR.Api dotnet user-secrets
+  --docker-env    Merge into gitignored docker/.env
+  --all           --docker-env --user-secrets
 EOF
 }
 
 EXPORT=false
 USER_SECRETS=false
+DOCKER_ENV=false
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --export) EXPORT=true; shift ;;
     --user-secrets) USER_SECRETS=true; shift ;;
+    --docker-env) DOCKER_ENV=true; shift ;;
+    --all) DOCKER_ENV=true; USER_SECRETS=true; shift ;;
     -h|--help) usage; exit 0 ;;
     *) echo "Unknown option: $1" >&2; usage >&2; exit 1 ;;
   esac
@@ -81,17 +88,25 @@ if [[ "$EXPORT" == true ]]; then
   printf 'export GROK_API_KEY=%q\n' "$KEY"
   printf 'export XAI_API_KEY=%q\n' "$KEY"
   printf 'export USE_GROK=true\n'
-  printf 'export GROK_MODEL=grok-3\n'
+  printf 'export GROK_MODEL=grok-4.3\n'
 fi
 
 if [[ "$USER_SECRETS" == true ]]; then
-  (cd "$ROOT/src/TIKR.Api" && dotnet user-secrets set "GROK_API_KEY" "$KEY")
-  (cd "$ROOT/src/TIKR.Api" && dotnet user-secrets set "USE_GROK" "true")
-  (cd "$ROOT/src/TIKR.Api" && dotnet user-secrets set "GROK_MODEL" "grok-3")
+  (cd "$ROOT/src/TIKR.Api" && dotnet user-secrets set "GROK_API_KEY" "$KEY" >/dev/null)
+  (cd "$ROOT/src/TIKR.Api" && dotnet user-secrets set "USE_GROK" "true" >/dev/null)
+  (cd "$ROOT/src/TIKR.Api" && dotnet user-secrets set "GROK_MODEL" "grok-4.3" >/dev/null)
   echo "Wrote GROK_API_KEY to TIKR.Api user-secrets (${#KEY} chars)."
 fi
 
-if [[ "$EXPORT" == false && "$USER_SECRETS" == false ]]; then
+if [[ "$DOCKER_ENV" == true ]]; then
+  env_file="$(ensure_docker_env_file "$ROOT")"
+  env_file_upsert "$env_file" "GROK_API_KEY" "$KEY"
+  env_file_upsert "$env_file" "USE_GROK" "true"
+  env_file_upsert "$env_file" "GROK_MODEL" "grok-4.3"
+  echo "Merged GROK_API_KEY into $env_file (${#KEY} chars)."
+fi
+
+if [[ "$EXPORT" == false && "$USER_SECRETS" == false && "$DOCKER_ENV" == false ]]; then
   echo "Found XAI/Grok API key in Keychain (${#KEY} chars)."
-  echo "Run with --export or --user-secrets to apply."
+  echo "Run with --all to apply to docker/.env and user-secrets."
 fi

@@ -30,3 +30,7 @@ Individual packages only — do not add meta `Syncfusion.Blazor` alongside `Sync
 ## Code
 
 Minimal diffs; match `.editorconfig`; reuse Shared DTOs and Infrastructure services. Commit EF Core files under `src/TIKR.Infrastructure/Data/`.
+
+## Function Inventory
+
+After public endpoints / pages / core services / AI tools change: run `./scripts/update-function-inventory.sh`, curate `docs/action-items.md`, and update `docs/function-tree.md` if needed (see AGENTS.md for exact rule).

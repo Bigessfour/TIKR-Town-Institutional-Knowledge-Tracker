@@ -83,6 +83,19 @@
         "panel": "shared"
       },
       "problemMatcher": []
+    },
+    {
+      "label": "TIKR: Sync secrets from Passwords",
+      "type": "shell",
+      "command": "./scripts/setup-local-secrets.sh",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "problemMatcher": []
     }
   ]
 }

@@ -118,7 +118,7 @@ return new AskAdvancedResponse(localAnswer, UsedGrok: false);
 |----------|-------|--------|
 | `USE_GROK` | `docker/.env` → **tikr-api** | `GrokService.IsEnabled` |
 | `GROK_API_KEY` | same | Required when enabled |
-| `GROK_MODEL` | same | Default `grok-3` |
+| `GROK_MODEL` | same | Default `grok-4.3` |
 | `OLLAMA_HOST` | same | `http://ollama:11434` (Docker) or `http://host.docker.internal:11434` (Mac host Ollama) |
 | `OLLAMA_CHAT_MODEL` | same | Default `llama3.2:3b` |
 

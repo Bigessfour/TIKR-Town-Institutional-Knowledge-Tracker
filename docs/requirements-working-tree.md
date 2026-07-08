@@ -130,7 +130,7 @@ Code complete on branch; **not on `main` until merged.**
 - [ ] VaultService.AddSuccessorNote() from requirements
 - [ ] CalendarService.CreateRecurringEvent() / calendar highlight from grid row
 - [ ] AI Validate ("Does this match CO Periodic Report rules?")
-- [ ] Export Council Packet (formatted for agenda — beyond basic CSV)
+- [x] Export Council Packet (Syncfusion DOCX+tagged PDF, NAS persist, Requirements UI)
 - [ ] ClerkHeader reuse, UrgencyBadge component extraction
 
 ### Infrastructure

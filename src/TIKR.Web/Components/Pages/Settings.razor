@@ -2,6 +2,7 @@
 @rendermode InteractiveServer
 @inject TikrApiClient Api
 
+@using TIKR.Shared.DTOs
 @using TIKR.Shared.Entities
 @using TIKR.Web.Components.Shared
 @using TIKR.Web.Helpers
@@ -27,6 +28,23 @@
             <p><strong>Storage:</strong> @_localStatus.StorageLabel</p>
             <p><strong>Database:</strong> @LocalStatusFooterHelper.FormatLastSaved(_localStatus.DataLastModifiedUtc, DateTime.UtcNow)</p>
             <p><strong>Ollama:</strong> @(_localStatus.OllamaAvailable ? "Ready on NAS" : "Offline — local AI features pause until Ollama returns")</p>
+        }
+    </CardContent>
+</SfCard>
+
+<SfCard CssClass="mb-3">
+    <CardHeader Title="Syncfusion Document SDK" />
+    <CardContent>
+        @if (_documentSdkStatus is null)
+        {
+            <p>Unable to reach API.</p>
+        }
+        else
+        {
+            <p><strong>License key:</strong> @(_documentSdkStatus.LicenseKeyConfigured ? "Configured" : "Not set — add SYNCFUSION_LICENSE_KEY to docker/.env or user-secrets")</p>
+            <p><strong>License probe:</strong> @DocumentSdkStatusLabel(_documentSdkStatus)</p>
+            <p><strong>Agent tools (PDF/Word/Excel/PPT scan):</strong> @(_documentSdkStatus.AgentToolsEnabled ? "Enabled" : "Disabled — set USE_SYNCFUSION_AGENT_TOOLS=true on API")</p>
+            <p><strong>Ollama orchestration:</strong> @(_documentSdkStatus.OrchestrationEnabled ? "Enabled" : "Disabled")</p>
         }
     </CardContent>
 </SfCard>
@@ -76,6 +94,7 @@
 @code {
     private AiStatusResponse? _status;
     private LocalStorageStatusDto? _localStatus;
+    private DocumentSdkStatusDto? _documentSdkStatus;
     private List<AuditLog> _audit = [];
 
     protected override async Task OnInitializedAsync()
@@ -84,13 +103,28 @@
         {
             _status = await Api.GetAiStatusAsync();
             _localStatus = await Api.GetLocalStorageStatusAsync();
+            _documentSdkStatus = await Api.GetDocumentSdkStatusAsync();
             _audit = await Api.GetRecentAuditAsync(8);
         }
         catch
         {
             _status = null;
             _localStatus = null;
+            _documentSdkStatus = null;
             _audit = [];
         }
+    }
+
+    private static string DocumentSdkStatusLabel(DocumentSdkStatusDto status)
+    {
+        if (!status.LicenseKeyConfigured)
+            return "Skipped — no license key";
+
+        if (status.LicenseProbePassed)
+            return "Valid — Document SDK PDF probe succeeded";
+
+        return string.IsNullOrWhiteSpace(status.LicenseProbeDetail)
+            ? "Failed — check SYNCFUSION_LICENSE_KEY"
+            : $"Failed — {status.LicenseProbeDetail}";
     }
 }
