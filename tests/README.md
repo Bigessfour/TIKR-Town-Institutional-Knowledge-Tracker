@@ -23,14 +23,18 @@ Licensed Syncfusion PDF/DOCX tests (`Category=SyncfusionLicensed`) skip when `SY
 
 Licensed Grok tests (`Category=GrokLicensed`) skip when `GROK_API_KEY` / `XAI_API_KEY` is unset. Default model is **`grok-3`** (xAI returns HTTP 400 for deprecated `grok-2-latest`).
 
-Keychain helpers (macOS Passwords):
+**macOS Passwords → env (recommended):** one command writes gitignored `docker/.env` and user-secrets:
+
+```bash
+./scripts/setup-local-secrets.sh
+dotnet test tests/TIKR.Api.Tests/TIKR.Api.Tests.csproj --filter "Category=SyncfusionLicensed|Category=GrokLicensed"
+```
+
+Per-key scripts (shell export for a single terminal session):
 
 ```bash
 ./scripts/sync-syncfusion-license-key.sh --export   # SYNCFUSION_LICENSE_KEY
 ./scripts/sync-grok-key.sh --export                 # GROK_API_KEY from XAI_API_KEY
-```
-
-```bash
 eval "$(./scripts/sync-syncfusion-license-key.sh --export)"
 eval "$(./scripts/sync-grok-key.sh --export)"
 dotnet test tests/TIKR.Api.Tests/TIKR.Api.Tests.csproj --filter "Category=SyncfusionLicensed|Category=GrokLicensed"

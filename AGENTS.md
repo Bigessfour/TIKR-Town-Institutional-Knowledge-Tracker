@@ -45,6 +45,8 @@ Help design, implement, and document TIKR: Blazor Interactive Server UI, Minimal
 
 Never commit: `docker/.env`, `.cursor/mcp.json`, `**/appsettings.Development.json`, key files (`*.pem`, `*.key`). CI runs gitleaks via Trunk.
 
+**macOS local setup:** `./scripts/setup-local-secrets.sh` reads Passwords → `docker/.env` + user-secrets (never prints or commits keys). Syncfusion only: `./scripts/sync-syncfusion-license-key.sh --all`.
+
 Templates: `docker/.env.example`, `.cursor/mcp.json.example`. See [docs/ai-tooling.md](docs/ai-tooling.md).
 
 ## Syncfusion

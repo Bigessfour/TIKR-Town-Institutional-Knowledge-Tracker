@@ -13,6 +13,8 @@ TIKR uses AI in two layers: **developer-time** tools in Cursor (skills + MCP) an
 
 **Important:** `SYNCFUSION_LICENSE_KEY` (Community License for running components) is different from `SYNCFUSION_API_KEY` (MCP developer tools from your [Syncfusion account](https://www.syncfusion.com/account)).
 
+**macOS:** store keys in the Passwords app, then run `./scripts/setup-local-secrets.sh` to merge them into gitignored `docker/.env` and dotnet user-secrets. The scripts never log secret values.
+
 ---
 
 ## Part A — Developer-time (Cursor IDE)

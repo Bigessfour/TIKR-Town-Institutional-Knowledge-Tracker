@@ -100,11 +100,16 @@ cd TIKR-Town-Institutional-Knowledge-Tracker
 dotnet restore
 ```
 
-### 2. Set Syncfusion license (optional for dev, required to remove trial banner)
+### 2. Sync secrets from macOS Passwords (recommended on Mac)
+
+Store your Syncfusion license in the **Passwords** app (generic password; see `scripts/sync-syncfusion-license-key.sh --help` for accepted labels). Then sync into gitignored `docker/.env` and dotnet user-secrets — the key is never committed:
 
 ```bash
-export SYNCFUSION_LICENSE_KEY="your-license-key"
+./scripts/setup-local-secrets.sh
+# Document SDK agent tools: ./scripts/setup-local-secrets.sh --enable-agent-tools
 ```
+
+Manual fallback: `cp docker/.env.example docker/.env` and edit, or `export SYNCFUSION_LICENSE_KEY="your-license-key"`.
 
 ### 3. Start Ollama (if not using Docker)
 
@@ -135,8 +140,8 @@ dotnet run
 From the repo root:
 
 ```bash
-export SYNCFUSION_LICENSE_KEY="your-license-key"   # optional
-docker compose -f docker/docker-compose.yml up --build
+./scripts/setup-local-secrets.sh   # macOS: Passwords → docker/.env (once)
+docker compose -f docker/docker-compose.yml --env-file docker/.env up --build
 ```
 
 | Service | URL |
@@ -196,19 +201,32 @@ All data (SQLite DB + uploaded documents) persists in the `/data` volume.
 
 Never commit real keys to GitHub. Use the layered approach below.
 
+### macOS Passwords → local env (recommended)
+
+Keep secrets in the **Passwords** app; sync into gitignored stores with one command:
+
+```bash
+./scripts/setup-local-secrets.sh
+# Optional: --enable-agent-tools, --skip-grok, --skip-mcp
+```
+
+This writes `SYNCFUSION_LICENSE_KEY` to `docker/.env` and TIKR.Api/TIKR.Web user-secrets, plus optional `GROK_API_KEY` and MCP `SYNCFUSION_API_KEY`. Re-run after updating Passwords.
+
+Syncfusion only: `./scripts/sync-syncfusion-license-key.sh --all`
+
 ### Docker / Synology
 
 ```bash
 cp docker/.env.example docker/.env
-# Edit docker/.env with your real keys
-docker compose -f docker/docker-compose.yml up --build
+# Edit docker/.env with your real keys (or run setup-local-secrets.sh on Mac)
+docker compose -f docker/docker-compose.yml --env-file docker/.env up --build
 ```
 
 Compose loads `docker/.env` automatically via `env_file`.
 
-### Local development (user secrets — recommended)
+### Local development (user secrets)
 
-ASP.NET loads user secrets automatically in Development when `UserSecretsId` is set:
+`setup-local-secrets.sh` populates user-secrets automatically. Manual alternative:
 
 ```bash
 cd src/TIKR.Api
