@@ -9,6 +9,26 @@ using TIKR.Shared.Constants;
 using TIKR.Shared.DTOs;
 using TIKR.Shared.Entities;
 using TIKR.Shared.Interfaces;
+using Serilog;
+using Serilog.Events;
+
+// Operational structured logging via Serilog (console + rolling file to /data/logs/tikr-*.log).
+// Captures detailed runtime info for observability, debugging, and proof of operation.
+// Verbosity: Debug (Microsoft overrides to reduce noise).
+try { Directory.CreateDirectory("/data/logs"); } catch { }
+Log.Logger = new LoggerConfiguration()
+    .MinimumLevel.Debug()
+    .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
+    .MinimumLevel.Override("Microsoft.AspNetCore", LogEventLevel.Warning)
+    .MinimumLevel.Override("Microsoft.EntityFrameworkCore", LogEventLevel.Warning)
+    .Enrich.FromLogContext()
+    .Enrich.WithProperty("Application", "TIKR")
+    .WriteTo.Console()
+    .WriteTo.File("/data/logs/tikr-.log",
+        rollingInterval: RollingInterval.Day,
+        retainedFileCountLimit: 14,
+        outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception}")
+    .CreateBootstrapLogger();
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -25,7 +45,21 @@ builder.Services.AddCors(options =>
         policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod());
 });
 
+// Serilog host integration for structured logging
+builder.Host.UseSerilog();
+
 var app = builder.Build();
+
+var logger = app.Services.GetRequiredService<ILogger<Program>>();
+var docSdkKey = TikrConfiguration.GetSyncfusionLicenseKey(app.Configuration);
+if (!string.IsNullOrWhiteSpace(docSdkKey))
+{
+    logger.LogInformation("Syncfusion license key found for Document SDK (length: {Length})", docSdkKey.Length);
+}
+else
+{
+    logger.LogWarning("No Syncfusion license key found for Document SDK in configuration");
+}
 
 SyncfusionDocumentLicense.RegisterFromConfiguration(app.Configuration);
 
@@ -43,6 +77,9 @@ if (authEnabled)
 }
 
 app.UseCors();
+
+// Request logging via Serilog for observability (HTTP, headers, timing)
+app.UseSerilogRequestLogging();
 
 if (authEnabled)
     app.MapAuthEndpoints();
@@ -271,6 +308,64 @@ api.MapDelete("/documents/{id:guid}", async (Guid id, TikrDbContext db, IFileSto
     return Results.NoContent();
 });
 
+// Vault Complete Handover Package (last feature - searchable PDF with TOC/bookmarks using Document SDK)
+api.MapGet("/vault/handover-package", async (IConfiguration config, TikrDbContext db, IDocumentGenerationService generator) =>
+{
+    try
+    {
+        var town = config["TIKR_TOWN_NAME"] ?? "Wiley";
+        var knowledge = await db.KnowledgeEntries.OrderBy(k => k.SortOrder).ThenBy(k => k.Title).ToListAsync();
+        var requirements = await db.Requirements.OrderBy(r => r.DueDate).ToListAsync();
+        var documents = await db.Documents.OrderByDescending(d => d.UploadedAt).ToListAsync();
+
+        // Calendar snapshot: upcoming active requirements
+        var calendarSnapshot = requirements
+            .Where(r => !r.IsCompleted)
+            .OrderBy(r => r.DueDate)
+            .Take(25)
+            .Select(r => new CalendarSnapshotItem(r.Title, r.DueDate, r.Category.ToString()))
+            .ToList();
+
+        var req = new HandoverPackageRequest(
+            town,
+            DateTime.UtcNow,
+            knowledge.Select(MapKnowledge).ToList(),
+            requirements.Select(r => new RequirementDto(r.Id, r.Title, r.Description, r.DueDate, r.Recurrence, r.Category, r.IsSystemSeeded, r.IsCompleted, new List<RequirementLinkedDocumentDto>())).ToList(),
+            documents.Select(MapDocument).ToList(),
+            calendarSnapshot);
+
+        var result = await generator.GenerateHandoverPackagePdfAsync(req);
+        var fileName = $"TIKR-Complete-Handover-Package-{DateTime.UtcNow:yyyy-MM-dd}.pdf";
+        return Results.File(result.Content, result.ContentType, fileName);
+    }
+    catch (InvalidOperationException ex)
+    {
+        return Results.Json(new { error = ex.Message }, statusCode: StatusCodes.Status503ServiceUnavailable);
+    }
+});
+
+// On-demand extract using Document SDK (for "Extract Text/Tables to Vault" in Documents.razor)
+api.MapGet("/documents/{id:guid}/extract", async (Guid id, TikrDbContext db, IFileStorageService storage, IDocumentAgentExtractionBackend extractor) =>
+{
+    var entity = await db.Documents.FindAsync(id);
+    if (entity is null) return Results.NotFound();
+
+    try
+    {
+        var stream = await storage.OpenReadAsync(entity.StoragePath);
+        await using var buffer = new MemoryStream();
+        await stream.CopyToAsync(buffer);
+        buffer.Position = 0;
+
+        var result = await extractor.ExtractAsync(buffer, entity.FileName);
+        return Results.Ok(new DocumentTextExtractResult(result.ExtractedText, result.TablesExtractedCount));
+    }
+    catch (Exception ex)
+    {
+        return Results.Json(new { error = ex.Message }, statusCode: StatusCodes.Status500InternalServerError);
+    }
+});
+
 var generate = api.MapGroup("/documents/generate");
 generate.MapPost("/council-agenda", async (CouncilAgendaRequest? request, IConfiguration config, TikrDbContext db, IDocumentGenerationService generator) =>
 {
@@ -391,6 +486,27 @@ api.MapPost("/documents/convert/excel-to-pdf", async (HttpRequest request, IDocu
     {
         await using var stream = file.OpenReadStream();
         var result = await generator.ConvertExcelToPdfAsync(stream, file.FileName);
+        return Results.File(result.Content, result.ContentType, result.FileName);
+    }
+    catch (InvalidOperationException ex)
+    {
+        return Results.Json(new { error = ex.Message }, statusCode: StatusCodes.Status503ServiceUnavailable);
+    }
+});
+
+api.MapPost("/documents/convert/image-to-pdf", async (HttpRequest request, IDocumentGenerationService generator) =>
+{
+    if (!request.HasFormContentType)
+        return Results.BadRequest("Expected multipart form data.");
+
+    var file = request.Form.Files.FirstOrDefault();
+    if (file is null || file.Length == 0)
+        return Results.BadRequest("No file uploaded.");
+
+    try
+    {
+        await using var stream = file.OpenReadStream();
+        var result = await generator.ConvertImageToPdfAsync(stream, file.FileName);
         return Results.File(result.Content, result.ContentType, result.FileName);
     }
     catch (InvalidOperationException ex)
@@ -525,6 +641,8 @@ api.MapPost("/ai/agent-scan", async (HttpRequest request, IDocumentAgentService 
     var result = await agent.ProcessUploadAsync(stream, file.FileName);
     return Results.Ok(result);
 });
+
+app.Lifetime.ApplicationStopped.Register(Log.CloseAndFlush);
 
 app.Run();
 
