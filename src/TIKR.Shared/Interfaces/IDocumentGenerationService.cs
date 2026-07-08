@@ -33,4 +33,8 @@ public interface IDocumentGenerationService
         Stream excelContent,
         string fileName,
         CancellationToken cancellationToken = default);
+
+    Task<CouncilPacketGeneratedFiles> GenerateCouncilPacketAsync(
+        CreateCouncilPacketRequest request,
+        CancellationToken cancellationToken = default);
 }

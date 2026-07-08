@@ -41,3 +41,41 @@ public record GeneratedDocumentDownloadDto(byte[] Content, string FileName, stri
 public record DocumentGenerationResponse(
     GeneratedDocumentDownloadDto? Document,
     string? ErrorMessage);
+
+public record CouncilPacketLinkedDocument(
+    Guid DocumentId,
+    string FileName,
+    string? Summary);
+
+public record CouncilPacketRequirementItem(
+    Guid Id,
+    string Title,
+    string? Description,
+    DateOnly DueDate,
+    string Category,
+    string Status,
+    string Urgency,
+    bool IsCompleted,
+    IReadOnlyList<CouncilPacketLinkedDocument> LinkedDocuments);
+
+public record CreateCouncilPacketRequest(
+    string TownName,
+    DateOnly PacketDate,
+    string? LogoPath,
+    IReadOnlyList<CouncilPacketRequirementItem> Requirements);
+
+public record CouncilPacketGeneratedFiles(
+    byte[] PdfContent,
+    string PdfFileName,
+    byte[] DocxContent,
+    string DocxFileName);
+
+public record CouncilPacketStoredFileDto(
+    Guid DocumentId,
+    string FileName,
+    string DownloadUrl);
+
+public record CouncilPacketResponse(
+    CouncilPacketStoredFileDto? Pdf,
+    CouncilPacketStoredFileDto? Docx,
+    string? ErrorMessage);

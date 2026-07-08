@@ -15,7 +15,7 @@ public class RequirementWorkflowHelpersTests
     public void GetUrgency_ReturnsCompleted_WhenMarkedDone()
     {
         var req = new RequirementDto(Guid.NewGuid(), "Done item", null, Today, RecurrenceType.Annual,
-            RequirementCategory.Custom, false, true);
+            RequirementCategory.Custom, false, true, []);
 
         RequirementWorkflowHelpers.GetUrgency(req, Today).Should().Be(RequirementUrgency.Completed);
     }
@@ -30,7 +30,7 @@ public class RequirementWorkflowHelpersTests
     public void GetUrgency_MapsDayWindows(int dayOffset, RequirementUrgency expected)
     {
         var req = new RequirementDto(Guid.NewGuid(), "Item", null, Today.AddDays(dayOffset),
-            RecurrenceType.Annual, RequirementCategory.Custom, false, false);
+            RecurrenceType.Annual, RequirementCategory.Custom, false, false, []);
 
         RequirementWorkflowHelpers.GetUrgency(req, Today).Should().Be(expected);
     }
@@ -48,11 +48,11 @@ public class RequirementWorkflowHelpersTests
         var items = new List<RequirementDto>
         {
             new(Guid.NewGuid(), "Budget report", "Annual filing", Today.AddDays(5), RecurrenceType.Annual,
-                RequirementCategory.Budget, true, false),
+                RequirementCategory.Budget, true, false, []),
             new(Guid.NewGuid(), "Custom task", "Internal", Today.AddDays(60), RecurrenceType.None,
-                RequirementCategory.Custom, false, false),
+                RequirementCategory.Custom, false, false, []),
             new(Guid.NewGuid(), "Old filing", null, Today.AddDays(-3), RecurrenceType.Annual,
-                RequirementCategory.Compliance, true, false)
+                RequirementCategory.Compliance, true, false, [])
         };
 
         var filtered = RequirementWorkflowHelpers.FilterRequirements(
@@ -71,8 +71,8 @@ public class RequirementWorkflowHelpersTests
     {
         var items = new List<RequirementDto>
         {
-            new(Guid.NewGuid(), "Open", null, Today, RecurrenceType.Annual, RequirementCategory.Custom, false, false),
-            new(Guid.NewGuid(), "Closed", null, Today, RecurrenceType.Annual, RequirementCategory.Custom, false, true)
+            new(Guid.NewGuid(), "Open", null, Today, RecurrenceType.Annual, RequirementCategory.Custom, false, false, []),
+            new(Guid.NewGuid(), "Closed", null, Today, RecurrenceType.Annual, RequirementCategory.Custom, false, true, [])
         };
 
         RequirementWorkflowHelpers.FilterRequirements(items, null, null, null, includeCompleted: false, Today)
@@ -85,7 +85,7 @@ public class RequirementWorkflowHelpersTests
         var items = new List<RequirementDto>
         {
             new(Guid.NewGuid(), "Report, annual", "Desc \"quoted\"", Today, RecurrenceType.Annual,
-                RequirementCategory.Budget, true, false)
+                RequirementCategory.Budget, true, false, [])
         };
 
         var csv = RequirementWorkflowHelpers.BuildCsv(items, Today);
@@ -144,7 +144,7 @@ public class RequirementWorkflowHelpersTests
     {
         var req = new RequirementDto(
             Guid.NewGuid(), "Budget filing", "Annual", Today, RecurrenceType.Annual,
-            RequirementCategory.Budget, false, false);
+            RequirementCategory.Budget, false, false, []);
 
         var request = RequirementWorkflowHelpers.ToCreateRequest(req);
 

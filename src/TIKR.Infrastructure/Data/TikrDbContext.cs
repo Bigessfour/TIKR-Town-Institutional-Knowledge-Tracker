@@ -15,6 +15,7 @@ public class TikrDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<Document> Documents => Set<Document>();
     public DbSet<KnowledgeEntry> KnowledgeEntries => Set<KnowledgeEntry>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
+    public DbSet<RequirementDocument> RequirementDocuments => Set<RequirementDocument>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -44,6 +45,19 @@ public class TikrDbContext : IdentityDbContext<ApplicationUser>
         {
             entity.HasKey(e => e.Id);
             entity.HasIndex(e => e.Timestamp);
+        });
+
+        modelBuilder.Entity<RequirementDocument>(entity =>
+        {
+            entity.HasKey(e => new { e.RequirementId, e.DocumentId });
+            entity.HasOne(e => e.Requirement)
+                .WithMany()
+                .HasForeignKey(e => e.RequirementId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.Document)
+                .WithMany()
+                .HasForeignKey(e => e.DocumentId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }

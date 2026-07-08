@@ -15,6 +15,7 @@
     <PackageReference Include="HarfBuzzSharp.NativeAssets.Linux" Version="8.3.1.2" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.0.9" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.9" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.9" />
     <PackageReference Include="SkiaSharp.NativeAssets.Linux" Version="3.119.1" />
     <PackageReference Include="Syncfusion.DocIO.Net.Core" Version="33.2.15" />
     <PackageReference Include="Syncfusion.DocIORenderer.Net.Core" Version="33.2.15" />
@@ -26,6 +27,10 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="TIKR.Infrastructure.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="Assets\town-logo.png" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

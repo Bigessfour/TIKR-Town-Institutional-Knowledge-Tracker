@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using Syncfusion.DocIO;
 using Syncfusion.DocIO.DLS;
 using Syncfusion.DocIORenderer;
@@ -17,7 +18,9 @@ namespace TIKR.SyncfusionDocuments;
 /// Syncfusion Document SDK generation for Colorado municipal clerk workflows.
 /// Uses in-memory streams (stateless API) per Syncfusion Storage Mode guidance for NAS backends.
 /// </summary>
-public sealed class SyncfusionDocumentGenerationService(IConfiguration configuration) : IDocumentGenerationService
+public sealed class SyncfusionDocumentGenerationService(
+    IConfiguration configuration,
+    ILogger<SyncfusionDocumentGenerationService> logger) : IDocumentGenerationService
 {
     private const float PdfMargin = 40f;
     private const float PdfLineHeight = 16f;
@@ -213,6 +216,36 @@ public sealed class SyncfusionDocumentGenerationService(IConfiguration configura
 
         var outputName = Path.ChangeExtension(Path.GetFileName(fileName), ".pdf");
         return Task.FromResult(SavePdf(pdfDocument, outputName));
+    }
+
+    public Task<CouncilPacketGeneratedFiles> GenerateCouncilPacketAsync(
+        CreateCouncilPacketRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(request.TownName);
+        if (request.Requirements.Count == 0)
+            throw new ArgumentException("At least one requirement is required for a council packet.", nameof(request));
+
+        EnsureLicenseConfigured();
+        logger.LogInformation(
+            "Generating council packet for {Town} with {Count} requirements",
+            request.TownName,
+            request.Requirements.Count);
+
+        try
+        {
+            var files = CouncilPacketGenerator.Build(request, cancellationToken);
+            logger.LogInformation(
+                "Council packet generated: PDF {PdfBytes} bytes, DOCX {DocxBytes} bytes",
+                files.PdfContent.Length,
+                files.DocxContent.Length);
+            return Task.FromResult(files);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Council packet generation failed for {Town}", request.TownName);
+            throw;
+        }
     }
 
     public Task<GeneratedDocumentResult> ConvertExcelToPdfAsync(

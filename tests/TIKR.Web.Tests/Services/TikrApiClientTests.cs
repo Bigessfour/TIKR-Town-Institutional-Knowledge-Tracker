@@ -34,7 +34,7 @@ public class TikrApiClientTests
         var json = JsonSerializer.Serialize(new List<RequirementDto>
         {
             new(id, "Budget", null, DateOnly.FromDateTime(DateTime.UtcNow), RecurrenceType.Annual,
-                RequirementCategory.Budget, true, false)
+                RequirementCategory.Budget, true, false, [])
         });
         var (client, _) = CreateClient(json, HttpMethod.Get, "/api/requirements");
         var sut = new TikrApiClient(client);
@@ -49,7 +49,7 @@ public class TikrApiClientTests
         var id = Guid.NewGuid();
         var json = JsonSerializer.Serialize(
             new RequirementDto(id, "One", null, DateOnly.FromDateTime(DateTime.UtcNow), RecurrenceType.None,
-                RequirementCategory.Custom, false, false));
+                RequirementCategory.Custom, false, false, []));
         var (client, _) = CreateClient(json, HttpMethod.Get, $"/api/requirements/{id}");
         var sut = new TikrApiClient(client);
 

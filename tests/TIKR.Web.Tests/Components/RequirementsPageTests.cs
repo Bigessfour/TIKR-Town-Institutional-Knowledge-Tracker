@@ -23,7 +23,7 @@ public class RequirementsPageTests : ClerkTestContext
         var json = JsonSerializer.Serialize(new List<RequirementDto>
         {
             new(Guid.NewGuid(), "Mill Levy Certification", "Certify levy", new DateOnly(2026, 12, 15),
-                RecurrenceType.Annual, RequirementCategory.MillLevy, true, false)
+                RecurrenceType.Annual, RequirementCategory.MillLevy, true, false, [])
         });
         RegisterApi(json);
         SetRendererInfo(new RendererInfo("Server", true));
@@ -54,6 +54,7 @@ public class RequirementsPageTests : ClerkTestContext
 
         var cut = RenderComponent<Requirements>();
 
+        cut.Markup.Should().Contain("Council packet");
         cut.Markup.Should().Contain("Agenda PDF");
         cut.Markup.Should().Contain("Compliance Excel");
         cut.Markup.Should().Contain("Meeting minutes");

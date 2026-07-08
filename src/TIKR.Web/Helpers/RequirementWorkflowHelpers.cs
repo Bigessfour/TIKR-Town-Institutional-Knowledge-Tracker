@@ -1,47 +1,17 @@
 using System.Text;
 using TIKR.Shared.DTOs;
 using TIKR.Shared.Enums;
+using TIKR.Shared.Helpers;
 
 namespace TIKR.Web.Helpers;
 
-public enum RequirementUrgency
-{
-    Overdue,
-    High,
-    Medium,
-    Low,
-    Completed
-}
-
 public static class RequirementWorkflowHelpers
 {
-    public static RequirementUrgency GetUrgency(RequirementDto requirement, DateOnly? referenceDate = null)
-    {
-        if (requirement.IsCompleted)
-            return RequirementUrgency.Completed;
+    public static RequirementUrgency GetUrgency(RequirementDto requirement, DateOnly? referenceDate = null) =>
+        RequirementUrgencyHelper.GetUrgency(requirement, referenceDate);
 
-        var today = referenceDate ?? DateOnly.FromDateTime(DateTime.UtcNow);
-        var daysUntil = requirement.DueDate.DayNumber - today.DayNumber;
-
-        if (daysUntil < 0)
-            return RequirementUrgency.Overdue;
-        if (daysUntil <= 14)
-            return RequirementUrgency.High;
-        if (daysUntil <= 30)
-            return RequirementUrgency.Medium;
-
-        return RequirementUrgency.Low;
-    }
-
-    public static string GetUrgencyLabel(RequirementUrgency urgency) => urgency switch
-    {
-        RequirementUrgency.Overdue => "Overdue",
-        RequirementUrgency.High => "High",
-        RequirementUrgency.Medium => "Medium",
-        RequirementUrgency.Low => "Low",
-        RequirementUrgency.Completed => "Done",
-        _ => "Low"
-    };
+    public static string GetUrgencyLabel(RequirementUrgency urgency) =>
+        RequirementUrgencyHelper.GetLabel(urgency);
 
     public static string GetUrgencyCssClass(RequirementUrgency urgency) => urgency switch
     {

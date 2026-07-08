@@ -186,6 +186,34 @@ public class TikrApiClient(HttpClient http)
     public Task<DocumentGenerationResponse> GenerateCouncilAgendaPdfAsync(CouncilAgendaRequest? request = null) =>
         PostGeneratedDocumentAsync("/api/documents/generate/council-agenda", request);
 
+    public async Task<CouncilPacketResponse> GenerateCouncilPacketAsync(CreateCouncilPacketRequest? request = null)
+    {
+        var response = await http.PostAsJsonAsync("/api/documents/generate/council-packet", request);
+        if (response.IsSuccessStatusCode)
+            return await response.Content.ReadFromJsonAsync<CouncilPacketResponse>()
+                ?? new CouncilPacketResponse(null, null, "Empty council packet response.");
+
+        if (response.Content.Headers.ContentType?.MediaType?.Contains("json", StringComparison.OrdinalIgnoreCase) == true)
+        {
+            var body = await response.Content.ReadFromJsonAsync<CouncilPacketResponse>();
+            if (body is not null)
+                return body;
+        }
+
+        var error = await TryReadGenerationErrorAsync(response);
+        return new CouncilPacketResponse(null, null, error);
+    }
+
+    public async Task<RequirementDto?> LinkRequirementDocumentAsync(Guid requirementId, Guid documentId)
+    {
+        var response = await http.PostAsJsonAsync(
+            $"/api/requirements/{requirementId}/documents",
+            new LinkRequirementDocumentRequest(documentId));
+        return response.IsSuccessStatusCode
+            ? await response.Content.ReadFromJsonAsync<RequirementDto>()
+            : null;
+    }
+
     public Task<DocumentGenerationResponse> GenerateComplianceReportXlsxAsync(ComplianceReportRequest? request = null) =>
         PostGeneratedDocumentAsync("/api/documents/generate/compliance-report", request);
 

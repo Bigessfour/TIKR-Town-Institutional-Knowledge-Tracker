@@ -73,13 +73,18 @@ api.MapGet("/system/document-sdk-status", (IConfiguration config) =>
 api.MapGet("/requirements", async (TikrDbContext db) =>
 {
     var items = await db.Requirements.OrderBy(r => r.DueDate).ToListAsync();
-    return items.Select(MapRequirement).ToList();
+    var links = await CouncilPacketEndpoints.LoadRequirementLinksAsync(db);
+    return items.Select(r => CouncilPacketEndpoints.MapRequirement(r, links.GetValueOrDefault(r.Id, []))).ToList();
 });
 
 api.MapGet("/requirements/{id:guid}", async (Guid id, TikrDbContext db) =>
 {
     var item = await db.Requirements.FindAsync(id);
-    return item is null ? Results.NotFound() : Results.Ok(MapRequirement(item));
+    if (item is null)
+        return Results.NotFound();
+
+    var links = await CouncilPacketEndpoints.LoadRequirementLinksAsync(db);
+    return Results.Ok(CouncilPacketEndpoints.MapRequirement(item, links.GetValueOrDefault(item.Id, [])));
 });
 
 api.MapPost("/requirements", async (CreateRequirementRequest request, TikrDbContext db, IAuditService audit, ICurrentUserService currentUser) =>
@@ -99,7 +104,58 @@ api.MapPost("/requirements", async (CreateRequirementRequest request, TikrDbCont
     db.Requirements.Add(entity);
     await db.SaveChangesAsync();
     await audit.LogAsync("Create", nameof(Requirement), entity.Id, entity.Title, currentUser.UserId);
-    return Results.Created($"/api/requirements/{entity.Id}", MapRequirement(entity));
+    return Results.Created(
+        $"/api/requirements/{entity.Id}",
+        CouncilPacketEndpoints.MapRequirement(entity, []));
+});
+
+api.MapPost("/requirements/{id:guid}/documents", async (
+    Guid id,
+    LinkRequirementDocumentRequest request,
+    TikrDbContext db,
+    IAuditService audit,
+    ICurrentUserService currentUser) =>
+{
+    var requirement = await db.Requirements.FindAsync(id);
+    if (requirement is null)
+        return Results.NotFound();
+
+    var document = await db.Documents.FindAsync(request.DocumentId);
+    if (document is null)
+        return Results.NotFound(new { error = "Document not found." });
+
+    var existing = await db.RequirementDocuments.FindAsync(id, request.DocumentId);
+    if (existing is null)
+    {
+        db.RequirementDocuments.Add(new RequirementDocument
+        {
+            RequirementId = id,
+            DocumentId = request.DocumentId,
+            LinkedAt = DateTime.UtcNow
+        });
+        await db.SaveChangesAsync();
+    }
+
+    await audit.LogAsync("Link", nameof(Requirement), id, document.FileName, currentUser.UserId);
+    var links = await CouncilPacketEndpoints.LoadRequirementLinksAsync(db);
+    return Results.Ok(CouncilPacketEndpoints.MapRequirement(requirement, links.GetValueOrDefault(id, [])));
+});
+
+api.MapDelete("/requirements/{id:guid}/documents/{documentId:guid}", async (
+    Guid id,
+    Guid documentId,
+    TikrDbContext db,
+    IAuditService audit,
+    ICurrentUserService currentUser) =>
+{
+    var link = await db.RequirementDocuments.FindAsync(id, documentId);
+    if (link is null)
+        return Results.NotFound();
+
+    db.RequirementDocuments.Remove(link);
+    await db.SaveChangesAsync();
+    await audit.LogAsync("Unlink", nameof(Requirement), id, documentId.ToString(), currentUser.UserId);
+    return Results.NoContent();
 });
 
 api.MapPut("/requirements/{id:guid}", async (Guid id, UpdateRequirementRequest request, TikrDbContext db, IAuditService audit, ICurrentUserService currentUser) =>
@@ -117,7 +173,8 @@ api.MapPut("/requirements/{id:guid}", async (Guid id, UpdateRequirementRequest r
 
     await db.SaveChangesAsync();
     await audit.LogAsync("Update", nameof(Requirement), entity.Id, entity.Title, currentUser.UserId);
-    return Results.Ok(MapRequirement(entity));
+    var links = await CouncilPacketEndpoints.LoadRequirementLinksAsync(db);
+    return Results.Ok(CouncilPacketEndpoints.MapRequirement(entity, links.GetValueOrDefault(entity.Id, [])));
 });
 
 api.MapDelete("/requirements/{id:guid}", async (Guid id, TikrDbContext db, IAuditService audit, ICurrentUserService currentUser) =>
@@ -260,6 +317,25 @@ generate.MapPost("/clerk-memo", async (ClerkMemoRequest request, IDocumentGenera
         return Results.Json(new { error = ex.Message }, statusCode: StatusCodes.Status503ServiceUnavailable);
     }
 });
+
+generate.MapPost("/council-packet", async (
+    CreateCouncilPacketRequest? request,
+    IConfiguration config,
+    TikrDbContext db,
+    IDocumentGenerationService generator,
+    IFileStorageService storage,
+    IAuditService audit,
+    ICurrentUserService currentUser,
+    ILogger<Program> logger) =>
+    await CouncilPacketEndpoints.GenerateCouncilPacketAsync(
+        request,
+        config,
+        db,
+        generator,
+        storage,
+        audit,
+        currentUser,
+        logger));
 
 generate.MapPost("/compliance-report", async (ComplianceReportRequest? request, IConfiguration config, TikrDbContext db, IDocumentGenerationService generator) =>
 {
@@ -451,9 +527,6 @@ api.MapPost("/ai/agent-scan", async (HttpRequest request, IDocumentAgentService 
 });
 
 app.Run();
-
-static RequirementDto MapRequirement(Requirement r) =>
-    new(r.Id, r.Title, r.Description, r.DueDate, r.Recurrence, r.Category, r.IsSystemSeeded, r.IsCompleted);
 
 static DocumentDto MapDocument(Document d) =>
     new(d.Id, d.FileName, d.ContentType, d.FileSizeBytes, d.AiTags, d.SuggestedFolder, d.UploadedAt, d.FullTextContent);

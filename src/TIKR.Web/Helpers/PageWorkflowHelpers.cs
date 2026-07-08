@@ -94,6 +94,15 @@ public static class DocumentUiMessages
 
     public static string ConvertToPdfSuccess(string fileName) => $"Downloaded PDF converted from {fileName}.";
 
+    public static string CouncilPacketBuilding() =>
+        "Building council packet (cover page, deadlines table, linked documents)…";
+
+    public static string CouncilPacketSaving() =>
+        "Saving PDF and DOCX to Synology NAS storage…";
+
+    public static string CouncilPacketSuccess(string pdfName, string docxName) =>
+        $"Council packet saved to NAS: {pdfName} and {docxName}.";
+
     public static bool CanConvertToPdf(string fileName)
     {
         var extension = Path.GetExtension(fileName).ToLowerInvariant();

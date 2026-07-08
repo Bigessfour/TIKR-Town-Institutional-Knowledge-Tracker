@@ -28,7 +28,7 @@ public class CalendarPageTests : TestContext
         var json = JsonSerializer.Serialize(new List<RequirementDto>
         {
             new(id, "Mill Levy Certification", "Certify levy", new DateOnly(2026, 12, 15),
-                RecurrenceType.Annual, RequirementCategory.MillLevy, true, false)
+                RecurrenceType.Annual, RequirementCategory.MillLevy, true, false, [])
         });
         RegisterApi(json);
         SetRendererInfo(new RendererInfo("Server", true));
