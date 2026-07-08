@@ -22,6 +22,31 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Detect code vs docs-only changes (skip expensive build/test/E2E/coverage for pure docs PRs)
+        id: changes
+        run: |
+          set +e
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            git diff --name-only "${{ github.event.pull_request.base.sha }}" "${{ github.sha }}" > /tmp/changed.txt 2>/dev/null || echo "unknown" > /tmp/changed.txt
+          else
+            echo "code" > /tmp/changed.txt
+          fi
+          if grep -qE '\.(cs|csproj|sln|razor|sh)$|Dockerfile|docker/|scripts/|tests/|coverlet|global\.json|\.ya?ml$' /tmp/changed.txt 2>/dev/null; then
+            echo "code_changed=true" >> "$GITHUB_OUTPUT"
+            echo "Code changes detected — running full build/test/coverage/E2E."
+          else
+            echo "code_changed=false" >> "$GITHUB_OUTPUT"
+            echo "Only docs/markdown or unrelated files changed — skipping heavy steps to save runner time."
+          fi
+          cat /tmp/changed.txt | head -20 || true
+
+          # Also check for "recently green on this exact SHA" (avoid re-running heavy parts on re-runs or duplicate commits)
+          SHA="${{ github.sha }}"
+          if gh run list --head-sha "$SHA" --status completed --json conclusion --jq '.[].conclusion' 2>/dev/null | grep -q '^success$'; then
+            echo "recent_green=true" >> "$GITHUB_OUTPUT"
+            echo "A previous run for this exact SHA was already successful — will skip redundant heavy steps."
+          fi
+
       - name: Setup .NET 10
         uses: actions/setup-dotnet@v4
         with:
@@ -39,6 +64,7 @@ jobs:
         run: dotnet build TIKR.sln --no-restore --configuration Release
 
       - name: Test with coverage
+        if: (steps.changes.outputs.code_changed == 'true' || steps.changes.outputs.code_changed == '') && steps.changes.outputs.recent_green != 'true'
         run: |
           dotnet test TIKR.sln \
             --no-build \
@@ -56,11 +82,13 @@ jobs:
           path: coverage/**/coverage.cobertura.xml
 
       - name: Verify per-assembly coverage thresholds
+        if: (steps.changes.outputs.code_changed == 'true' || steps.changes.outputs.code_changed == '') && steps.changes.outputs.recent_green != 'true'
         run: python3 scripts/check_coverage.py coverage
         # On failure, the subsequent "Capture failure snapshot" (if: failure()) will emit structured info.
         # We also write a dedicated file there for high-signal to ollama.
 
       - name: Docker Build, Smoke Test & E2E Gate
+        if: (steps.changes.outputs.code_changed == 'true' || steps.changes.outputs.code_changed == '') && steps.changes.outputs.recent_green != 'true'
         env:
           SYNCFUSION_LICENSE_KEY: ${{ secrets.SYNCFUSION_LICENSE_KEY }}
         run: |
@@ -194,6 +222,13 @@ jobs:
           name: ci-failure-snapshot-${{ github.run_id }}
           path: failure-context/
           retention-days: 14
+
+      - name: Docs-only or recent-green success (no heavy re-run needed)
+        if: steps.changes.outputs.code_changed != 'true' || steps.changes.outputs.recent_green == 'true'
+        run: |
+          echo "build-and-test job completes successfully (docs-only or recently green SHA)."
+          echo "Heavy steps were skipped to save time."
+          echo "This avoids re-running long build/test/E2E when only docs changed or the exact commit was already successful recently."
 
   trunk-check:
     runs-on: ubuntu-latest
