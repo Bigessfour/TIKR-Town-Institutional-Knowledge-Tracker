@@ -16,7 +16,7 @@ builder.Configuration.AddEnvironmentVariables();
 
 var authEnabled = TikrConfiguration.IsAuthEnabled(builder.Configuration);
 
-var syncfusionLicense = builder.Configuration["SYNCFUSION_LICENSE_KEY"];
+var syncfusionLicense = TikrConfiguration.GetSyncfusionLicenseKey(builder.Configuration);
 if (!string.IsNullOrWhiteSpace(syncfusionLicense))
     Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense(syncfusionLicense);
 

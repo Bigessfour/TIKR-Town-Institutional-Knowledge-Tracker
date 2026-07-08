@@ -26,6 +26,8 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
+SyncfusionDocumentLicense.RegisterFromConfiguration(app.Configuration);
+
 var authEnabled = TikrConfiguration.IsAuthEnabled(app.Configuration);
 
 await app.Services.InitializeDatabaseAsync();
@@ -62,6 +64,9 @@ api.MapGet("/system/local-status", async (IConfiguration config, IHybridAiServic
     var aiStatus = await ai.GetStatusAsync();
     return Results.Ok(new LocalStorageStatusDto(town, storageLabel, dataModified, aiStatus.OllamaAvailable));
 });
+
+api.MapGet("/system/document-sdk-status", (IConfiguration config) =>
+    Results.Ok(SyncfusionDocumentLicense.GetStatus(config)));
 
 // Requirements
 api.MapGet("/requirements", async (TikrDbContext db) =>
