@@ -29,6 +29,10 @@
     <PackageReference Include="Syncfusion.Blazor.RichTextEditor" Version="34.1.29" />
     <PackageReference Include="Syncfusion.Blazor.Schedule" Version="34.1.29" />
     <PackageReference Include="Syncfusion.Blazor.Themes" Version="34.1.29" />
+    <PackageReference Include="Syncfusion.Blazor.AI" Version="34.1.29" />
+    <!-- Structured logging for runtime visibility and operational proof -->
+    <PackageReference Include="Serilog.AspNetCore" Version="8.0.3" />
+    <PackageReference Include="Serilog.Sinks.File" Version="6.0.0" />
   </ItemGroup>
 
   <ItemGroup>

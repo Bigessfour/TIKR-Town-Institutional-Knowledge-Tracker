@@ -596,6 +596,15 @@ else if (!string.IsNullOrWhiteSpace(_agentMessage))
 
             _lastAgentResult = result;
             _agentMessage = RequirementWorkflowHelpers.FormatAgentScanMessage(result);
+
+            // Updated flow for Grok Heavy agent archive extension:
+            // dual storage paths are now in result (OriginalStoragePath / ProcessedStoragePath).
+            // We surface archive info in the banner for clerk visibility.
+            if (!string.IsNullOrWhiteSpace(result.ProcessedStoragePath))
+            {
+                _agentMessage += " • Archive PDF stored";
+            }
+
             OpenCreateDialogFromDraft(RequirementWorkflowHelpers.ApplyAgentExtraction(result));
         }
         catch

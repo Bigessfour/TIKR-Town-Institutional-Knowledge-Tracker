@@ -11,7 +11,15 @@ public static class SyncfusionDocumentLicense
     {
         var licenseKey = TikrConfiguration.GetSyncfusionLicenseKey(configuration);
         if (!string.IsNullOrWhiteSpace(licenseKey))
+        {
+            // Diag log - will be picked up by host logger
+            Console.WriteLine($"[SyncfusionDocumentLicense] Registering Document SDK key (length: {licenseKey.Length})");
             SyncfusionLicenseProvider.RegisterLicense(licenseKey);
+        }
+        else
+        {
+            Console.WriteLine("[SyncfusionDocumentLicense] No Document SDK license key configured");
+        }
     }
 
     public static DocumentSdkStatusDto GetStatus(Microsoft.Extensions.Configuration.IConfiguration configuration)

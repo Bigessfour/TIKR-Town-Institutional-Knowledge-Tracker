@@ -223,6 +223,13 @@ public class TikrApiClient(HttpClient http)
     public Task<DocumentGenerationResponse> GenerateClerkMemoDocxAsync(ClerkMemoRequest request) =>
         PostGeneratedDocumentAsync("/api/documents/generate/clerk-memo", request);
 
+    public async Task<byte[]?> GenerateHandoverPackageAsync()
+    {
+        var response = await http.GetAsync("/api/vault/handover-package");
+        if (!response.IsSuccessStatusCode) return null;
+        return await response.Content.ReadAsByteArrayAsync();
+    }
+
     public async Task<DocumentGenerationResponse> ConvertWordToPdfAsync(Stream wordContent, string fileName)
     {
         using var multipart = new MultipartFormDataContent();
@@ -237,6 +244,13 @@ public class TikrApiClient(HttpClient http)
         return await ParseGenerationResponseAsync(await http.PostAsync("/api/documents/convert/excel-to-pdf", multipart));
     }
 
+    public async Task<DocumentGenerationResponse> ConvertImageToPdfAsync(Stream imageContent, string fileName)
+    {
+        using var multipart = new MultipartFormDataContent();
+        multipart.Add(new StreamContent(imageContent), "file", fileName);
+        return await ParseGenerationResponseAsync(await http.PostAsync("/api/documents/convert/image-to-pdf", multipart));
+    }
+
     public async Task<DocumentGenerationResponse> ConvertStoredDocumentToPdfAsync(Guid documentId, string fileName)
     {
         var bytes = await GetDocumentContentAsync(documentId);
@@ -245,9 +259,21 @@ public class TikrApiClient(HttpClient http)
 
         await using var stream = new MemoryStream(bytes);
         var extension = Path.GetExtension(fileName).ToLowerInvariant();
-        return extension is ".xls" or ".xlsx"
-            ? await ConvertExcelToPdfAsync(stream, fileName)
-            : await ConvertWordToPdfAsync(stream, fileName);
+        if (extension is ".doc" or ".docx")
+            return await ConvertWordToPdfAsync(stream, fileName);
+        if (extension is ".xls" or ".xlsx" or ".csv")
+            return await ConvertExcelToPdfAsync(stream, fileName);
+        if (extension is ".png" or ".jpg" or ".jpeg" or ".gif" or ".bmp" or ".tiff" or ".tif")
+            return await ConvertImageToPdfAsync(stream, fileName);
+        if (extension == ".pdf")
+            return new DocumentGenerationResponse(new GeneratedDocumentDownloadDto(bytes, Path.ChangeExtension(fileName, ".pdf") ?? fileName, "application/pdf"), null);
+
+        return new DocumentGenerationResponse(null, $"Cannot convert {fileName} to PDF (unsupported type).");
+    }
+
+    public async Task<DocumentTextExtractResult?> ExtractTextTablesAsync(Guid documentId)
+    {
+        return await http.GetFromJsonAsync<DocumentTextExtractResult>($"/api/documents/{documentId}/extract");
     }
 
     private Task<DocumentGenerationResponse> PostGeneratedDocumentAsync<T>(string path, T? body) =>

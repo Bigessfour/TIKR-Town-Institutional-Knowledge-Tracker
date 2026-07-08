@@ -7,6 +7,8 @@
 
 @using Syncfusion.Blazor.Layouts
 @using Syncfusion.Blazor.Navigations
+@using TIKR.Shared.DTOs
+@using TIKR.Shared.Enums
 @using TIKR.Web.Components.Shared
 @using TIKR.Web.Helpers
 
@@ -20,7 +22,7 @@
 
 <!-- Prominent large uploader -->
 <div class="uploader-zone">
-    <SfUploader AutoUpload="true" Multiple="true" AllowedExtensions=".pdf,.doc,.docx,.txt,.csv,.xlsx" MaxFileSize="52428800">
+    <SfUploader AutoUpload="true" Multiple="true" AllowedExtensions=".pdf,.doc,.docx,.txt,.csv,.xlsx,.png,.jpg,.jpeg,.gif,.bmp,.tiff" MaxFileSize="52428800">
         <UploaderEvents ValueChange="OnUpload"></UploaderEvents>
     </SfUploader>
     <div class="uploader-hint">Drag &amp; drop today's mail here or click to browse (PDF, Office, text supported)</div>
@@ -181,9 +183,12 @@
                                       Disabled="@(_convertingDocId == d.Id)"
                                       OnClick="@(async () => await ConvertDocumentToPdfAsync(d))" />
                         }
+                        <SfButton CssClass="tikr-action-btn"
+                                  Content="Extract Text/Tables to Vault"
+                                  OnClick="@(async () => await ExtractToVaultAsync(d))" />
                     </div>
 
-                    @if (IsPdf(d) && !string.IsNullOrEmpty(_pdfPreviewUrl) && _pdfPreviewDocId == d.Id)
+                    @if (!string.IsNullOrEmpty(_pdfPreviewUrl) && _pdfPreviewDocId == d.Id)
                     {
                         <div class="preview-pdf">
                             <SfPdfViewer2 DocumentPath="@_pdfPreviewUrl" Height="360px" Width="100%" EnableDownload="false" EnablePrint="false" />
@@ -196,7 +201,7 @@
                             <pre class="preview-text-body">@d.FullTextContent</pre>
                         </div>
                     }
-                    else if (IsPdf(d) && _previewLoading)
+                    else if (_previewLoading)
                     {
                         <div class="preview-note">Loading PDF preview…</div>
                     }
@@ -221,6 +226,7 @@
         <MenuItem Text="Delete" Id="cm-delete" IconCss="e-icons e-trash" />
         <MenuItem Text="Download" Id="cm-download" IconCss="e-icons e-download" />
         <MenuItem Text="Convert to PDF" Id="cm-convert-pdf" IconCss="e-icons e-export-pdf" />
+        <MenuItem Text="Extract Text/Tables to Vault" Id="cm-extract-vault" IconCss="e-icons e-description" />
     </MenuItems>
     <MenuEvents TValue="MenuItem" ItemSelected="OnContextMenuSelected" />
 </SfContextMenu>
@@ -433,7 +439,7 @@
         await RevokePdfPreviewAsync();
         _selection.Toggle(doc, _documents);
 
-        if (_selection.SelectedPreview is { } preview && IsPdf(preview))
+        if (_selection.SelectedPreview is { } preview)
             await LoadPdfPreviewAsync(preview);
 
         StateHasChanged();
@@ -446,15 +452,40 @@
 
         try
         {
-            var bytes = await Api.GetDocumentContentAsync(doc.Id);
-            if (bytes is null || bytes.Length == 0)
-                return;
+            byte[] bytes;
+            string contentTypeForBlob = "application/pdf";
 
-            _pdfPreviewUrl = await JS.InvokeAsync<string>(
-                "tikrDownload.createBlobUrl",
-                bytes,
-                doc.ContentType ?? "application/pdf");
-            _pdfPreviewDocId = doc.Id;
+            if (IsPdf(doc))
+            {
+                bytes = await Api.GetDocumentContentAsync(doc.Id) ?? [];
+            }
+            else if (DocumentUiMessages.CanConvertToPdf(doc.FileName))
+            {
+                var conv = await Api.ConvertStoredDocumentToPdfAsync(doc.Id, doc.FileName);
+                if (conv?.Document?.Content != null && conv.Document.Content.Length > 0)
+                {
+                    bytes = conv.Document.Content;
+                }
+                else
+                {
+                    bytes = await Api.GetDocumentContentAsync(doc.Id) ?? [];
+                    contentTypeForBlob = doc.ContentType ?? "application/octet-stream";
+                }
+            }
+            else
+            {
+                bytes = await Api.GetDocumentContentAsync(doc.Id) ?? [];
+                contentTypeForBlob = doc.ContentType ?? "application/octet-stream";
+            }
+
+            if (bytes.Length > 0)
+            {
+                _pdfPreviewUrl = await JS.InvokeAsync<string>(
+                    "tikrDownload.createBlobUrl",
+                    bytes,
+                    contentTypeForBlob);
+                _pdfPreviewDocId = doc.Id;
+            }
         }
         finally
         {
@@ -508,6 +539,44 @@
         finally
         {
             _convertingDocId = null;
+            StateHasChanged();
+        }
+    }
+
+    private async Task ExtractToVaultAsync(DocumentDto doc)
+    {
+        _statusMessage = DocumentUiMessages.ExtractToVaultInProgress(doc.FileName);
+        StateHasChanged();
+
+        try
+        {
+            var extract = await Api.ExtractTextTablesAsync(doc.Id);
+            var sb = new System.Text.StringBuilder();
+            sb.AppendLine($"Source document: {doc.FileName}");
+            sb.AppendLine($"Extracted: {DateTime.Now:g}");
+            sb.AppendLine();
+            sb.AppendLine(extract?.ExtractedText ?? "(no extractable text)");
+            if (extract != null && extract.TablesExtractedCount > 0)
+            {
+                sb.AppendLine();
+                sb.AppendLine($"[{extract.TablesExtractedCount} table(s) were detected — see original document for structured data]");
+            }
+
+            await Api.CreateKnowledgeEntryAsync(new CreateKnowledgeEntryRequest(
+                $"Extracted from {doc.FileName}",
+                sb.ToString(),
+                KnowledgeCategory.TribalKnowledge,
+                0));
+
+            _statusMessage = DocumentUiMessages.ExtractToVaultSuccess(doc.FileName);
+            Toast.Show("Text/tables added to Knowledge Vault");
+        }
+        catch (Exception ex)
+        {
+            _statusMessage = $"Extract failed: {ex.Message}";
+        }
+        finally
+        {
             StateHasChanged();
         }
     }
@@ -639,6 +708,10 @@
             case "cm-convert-pdf":
                 if (targetDoc is not null && DocumentUiMessages.CanConvertToPdf(targetDoc.FileName))
                     await ConvertDocumentToPdfAsync(targetDoc);
+                break;
+            case "cm-extract-vault":
+                if (targetDoc is not null)
+                    await ExtractToVaultAsync(targetDoc);
                 break;
         }
     }

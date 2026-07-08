@@ -93,9 +93,19 @@ public static class RequirementWorkflowHelpers
     public static CreateRequirementRequest ApplyAgentExtraction(DocumentAgentResult result)
     {
         var dueDate = result.SuggestedDueDate ?? DateOnly.FromDateTime(DateTime.UtcNow.AddMonths(1));
+
+        // Enhanced for archive extension: incorporate structured tables into Description when available
+        // (tiny feature: better form field population from agent tables)
+        var description = result.ExtractedText;
+        if (!string.IsNullOrWhiteSpace(result.StructuredTables) && result.StructuredTables != result.ExtractedText)
+        {
+            description = (result.ExtractedText ?? string.Empty) +
+                          "\n\n[Structured tables from document]\n" + result.StructuredTables;
+        }
+
         return new CreateRequirementRequest(
             result.SuggestedTitle,
-            result.ExtractedText,
+            description,
             dueDate,
             result.SuggestedRecurrence,
             result.SuggestedCategory);

@@ -6,6 +6,26 @@ using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.Extensions.AI;
 using OllamaSharp;
 using Syncfusion.Blazor;
+using Syncfusion.Blazor.AI;
+using Serilog;
+using Serilog.Events;
+
+// Operational structured logging via Serilog (console + rolling file to /data/logs/tikr-*.log).
+// Useful for runtime visibility, debugging production issues, and proof of operation.
+// Verbosity: Debug (with Microsoft overrides to Warning).
+try { Directory.CreateDirectory("/data/logs"); } catch { }
+Log.Logger = new LoggerConfiguration()
+    .MinimumLevel.Debug()
+    .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
+    .MinimumLevel.Override("Microsoft.AspNetCore", LogEventLevel.Warning)
+    .Enrich.FromLogContext()
+    .Enrich.WithProperty("Application", "TIKR-Web")
+    .WriteTo.Console()
+    .WriteTo.File("/data/logs/tikr-.log",
+        rollingInterval: RollingInterval.Day,
+        retainedFileCountLimit: 14,
+        outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception}")
+    .CreateBootstrapLogger();
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,10 +36,6 @@ builder.Configuration.AddEnvironmentVariables();
 
 var authEnabled = TikrConfiguration.IsAuthEnabled(builder.Configuration);
 
-var syncfusionLicense = TikrConfiguration.GetSyncfusionLicenseKey(builder.Configuration);
-if (!string.IsNullOrWhiteSpace(syncfusionLicense))
-    Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense(syncfusionLicense);
-
 var ollamaHost = TikrConfiguration.GetOllamaHost(builder.Configuration);
 var chatModel = TikrConfiguration.GetChatModel(builder.Configuration);
 var ollamaUri = ollamaHost.EndsWith('/') ? ollamaHost : ollamaHost + "/";
@@ -27,10 +43,14 @@ var ollamaUri = ollamaHost.EndsWith('/') ? ollamaHost : ollamaHost + "/";
 builder.Services.AddChatClient(_ =>
     new OllamaApiClient(new Uri(ollamaUri), chatModel));
 
+// Register Syncfusion AI for Smart components and AI-powered controls, connected to Ollama and project context (RAG via existing services).
+builder.Services.AddSingleton<IChatInferenceService, SyncfusionAIService>();
+
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
 builder.Services.AddSyncfusionBlazor();
+
 builder.Services.AddSingleton(new AuthSettings { IsEnabled = authEnabled });
 builder.Services.AddSingleton<LocalConnectionStateService>();
 builder.Services.AddScoped<ClerkToastService>();
@@ -60,7 +80,22 @@ builder.Services.AddHttpClient("TikrAuth", client => client.BaseAddress = apiUri
 builder.Services.AddHttpClient<TikrApiClient>(client => client.BaseAddress = apiUri)
     .AddHttpMessageHandler<JwtAuthorizationHandler>();
 
+// Serilog host integration for structured logging
+builder.Host.UseSerilog();
+
 var app = builder.Build();
+
+var logger = app.Services.GetRequiredService<ILogger<Program>>();
+var syncfusionLicense = TikrConfiguration.GetSyncfusionLicenseKey(app.Configuration);
+if (!string.IsNullOrWhiteSpace(syncfusionLicense))
+{
+    logger.LogInformation("Syncfusion license key found for Blazor UI (length: {Length})", syncfusionLicense.Length);
+    Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense(syncfusionLicense);
+}
+else
+{
+    logger.LogWarning("No Syncfusion license key found for Blazor UI in configuration");
+}
 
 if (!app.Environment.IsDevelopment())
 {
@@ -72,8 +107,13 @@ app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages:
 app.UseHttpsRedirection();
 app.UseAntiforgery();
 
+// Request logging via Serilog (captures HTTP interactions for observability)
+app.UseSerilogRequestLogging();
+
 app.MapStaticAssets();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
+
+app.Lifetime.ApplicationStopped.Register(Log.CloseAndFlush);
 
 app.Run();

@@ -1,11 +1,13 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using SkiaSharp;
 using Syncfusion.DocIO;
 using Syncfusion.DocIO.DLS;
 using Syncfusion.DocIORenderer;
 using Syncfusion.Drawing;
 using Syncfusion.Pdf;
 using Syncfusion.Pdf.Graphics;
+using Syncfusion.Pdf.Parsing;
 using Syncfusion.XlsIO;
 using Syncfusion.XlsIORenderer;
 using TIKR.Shared.Configuration;
@@ -348,5 +350,219 @@ public sealed class SyncfusionDocumentGenerationService(
         }
 
         yield return line;
+    }
+
+    public Task<GeneratedDocumentResult> GenerateHandoverPackagePdfAsync(
+        HandoverPackageRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        EnsureLicenseConfigured();
+
+        using var document = new PdfDocument();
+        document.DocumentInformation.Title = $"{request.TownName} - Complete Handover Package";
+        document.DocumentInformation.Author = "TIKR";
+        document.DocumentInformation.Subject = $"Generated {request.GeneratedAt:yyyy-MM-dd}";
+
+        var page = document.Pages.Add();
+        var graphics = page.Graphics;
+        var titleFont = new PdfStandardFont(PdfFontFamily.Helvetica, 16, PdfFontStyle.Bold);
+        var h1 = new PdfStandardFont(PdfFontFamily.Helvetica, 12, PdfFontStyle.Bold);
+        var body = new PdfStandardFont(PdfFontFamily.Helvetica, 9);
+        var small = new PdfStandardFont(PdfFontFamily.Helvetica, 8);
+
+        float y = 40;
+        graphics.DrawString($"{request.TownName} COMPLETE HANDOVER PACKAGE", titleFont, PdfBrushes.Black, new PointF(40, y));
+        y += 20;
+        graphics.DrawString($"Generated {request.GeneratedAt:yyyy-MM-dd} | Use PDF bookmarks for navigation", body, PdfBrushes.Black, new PointF(40, y));
+        y += 15;
+
+        // TOC
+        graphics.DrawString("1. Knowledge Entries  2. Voice Notes  3. Requirements  4. Calendar  5. Documents", body, PdfBrushes.Black, new PointF(40, y));
+        y += 20;
+
+        // Knowledge
+        graphics.DrawString("1. KNOWLEDGE ENTRIES", h1, PdfBrushes.Black, new PointF(40, y));
+        y += 14;
+        foreach (var e in request.KnowledgeEntries.Take(15))
+        {
+            graphics.DrawString("• " + e.Title, body, PdfBrushes.Black, new PointF(45, y));
+            y += 11;
+            if (y > 700) { page = document.Pages.Add(); graphics = page.Graphics; y = 40; }
+        }
+
+        // Voice
+        y += 5;
+        graphics.DrawString("2. VOICE NOTES", h1, PdfBrushes.Black, new PointF(40, y));
+        y += 14;
+        var voices = request.KnowledgeEntries.Where(e => e.Title.Contains("Voice")).Take(5);
+        foreach (var v in voices)
+        {
+            graphics.DrawString("• " + v.Title, body, PdfBrushes.Black, new PointF(45, y));
+            y += 11;
+        }
+
+        // Requirements
+        y += 5;
+        graphics.DrawString("3. REQUIREMENTS (Active)", h1, PdfBrushes.Black, new PointF(40, y));
+        y += 14;
+        foreach (var r in request.Requirements.Where(x => !x.IsCompleted).Take(10))
+        {
+            graphics.DrawString($"• {r.DueDate} {r.Title}", body, PdfBrushes.Black, new PointF(45, y));
+            y += 11;
+        }
+
+        // Calendar
+        y += 5;
+        graphics.DrawString("4. CALENDAR SNAPSHOT", h1, PdfBrushes.Black, new PointF(40, y));
+        y += 14;
+        foreach (var c in request.CalendarSnapshot.Take(8))
+        {
+            graphics.DrawString($"• {c.DueDate} {c.Title}", body, PdfBrushes.Black, new PointF(45, y));
+            y += 11;
+        }
+
+        // Documents
+        y += 5;
+        graphics.DrawString("5. DOCUMENTS", h1, PdfBrushes.Black, new PointF(40, y));
+        y += 14;
+        foreach (var d in request.Documents.Take(8))
+        {
+            graphics.DrawString($"• {d.FileName}", body, PdfBrushes.Black, new PointF(45, y));
+            y += 11;
+        }
+
+        y += 5;
+        graphics.DrawString("6. EMERGENCY: See Knowledge sections + Requirements deadlines.", body, PdfBrushes.Black, new PointF(40, y));
+
+        var fileName = $"TIKR-Handover-{request.GeneratedAt:yyyy-MM-dd}.pdf";
+        return Task.FromResult(SavePdf(document, fileName));
+    }
+
+    public async Task<GeneratedDocumentResult> CreateAgentArchivePdfAsync(
+        Stream content,
+        string fileName,
+        DateTime processedDate,
+        CancellationToken cancellationToken = default)
+    {
+        EnsureLicenseConfigured();
+        cancellationToken.ThrowIfCancellationRequested();
+
+        logger.LogInformation("Creating agent archive PDF for {File}", fileName);
+
+        // Copy stream for possible reuse
+        await using var memStream = new MemoryStream();
+        await content.CopyToAsync(memStream, cancellationToken);
+        memStream.Position = 0;
+
+        var ext = Path.GetExtension(fileName).ToLowerInvariant();
+        if (ext == ".pdf")
+        {
+            // Real: load original PDF and overlay stamp (best practice for archive)
+            try
+            {
+                using var loaded = new PdfLoadedDocument(memStream);
+                foreach (PdfPageBase pdfPage in loaded.Pages)
+                {
+                    var g = pdfPage.Graphics;
+                    var stampFont = new PdfStandardFont(PdfFontFamily.Helvetica, 12, PdfFontStyle.Bold);
+                    g.DrawString("AI PROCESSED - TIKR VAULT", stampFont, PdfBrushes.Red, new PointF(20, 20));
+                    g.DrawString($"Processed: {processedDate:yyyy-MM-dd}", new PdfStandardFont(PdfFontFamily.Helvetica, 8), PdfBrushes.Black, new PointF(20, 35));
+                }
+                using var outStream = new MemoryStream();
+                loaded.Save(outStream);
+                var archiveName = Path.ChangeExtension(Path.GetFileName(fileName), ".ai-archive.pdf") ?? "agent-archive.pdf";
+                logger.LogInformation("Agent archive PDF (stamped original) created: {Archive}", archiveName);
+                return new GeneratedDocumentResult(outStream.ToArray(), archiveName, "application/pdf");
+            }
+            catch { /* fallthrough to cover */ }
+        }
+
+        // Fallback or non-PDF: cover with stamp (could reuse Convert* for docx etc in future)
+        using var document = new PdfDocument();
+        document.DocumentInformation.Title = $"AI Archive - {Path.GetFileName(fileName)}";
+        document.DocumentInformation.Subject = "AI Processed - TIKR Vault";
+        document.DocumentInformation.Author = "TIKR";
+        document.DocumentInformation.Producer = "TIKR Document Agent";
+
+        var page = document.Pages.Add();
+        var graphics = page.Graphics;
+
+        var stampFont2 = new PdfStandardFont(PdfFontFamily.Helvetica, 14, PdfFontStyle.Bold);
+        var bodyFont = new PdfStandardFont(PdfFontFamily.Helvetica, 10);
+        var smallFont = new PdfStandardFont(PdfFontFamily.Helvetica, 9);
+
+        graphics.DrawString("AI PROCESSED - TIKR VAULT", stampFont2, PdfBrushes.Red, new PointF(PdfMargin, 30));
+        graphics.DrawString($"Processed: {processedDate:yyyy-MM-dd HH:mm:ss} UTC", bodyFont, PdfBrushes.Black, new PointF(PdfMargin, 50));
+        graphics.DrawString($"Original: {fileName}", bodyFont, PdfBrushes.Black, new PointF(PdfMargin, 66));
+        graphics.DrawString("Clean archive copy generated by document agent. Original file stored alongside under agent-scans/.", smallFont, PdfBrushes.DarkGray, new PointF(PdfMargin, 90));
+        graphics.DrawString("TIKR - Town Institutional Knowledge Tracker", smallFont, PdfBrushes.Gray, new PointF(PdfMargin, 750));
+
+        var archiveName2 = Path.ChangeExtension(Path.GetFileName(fileName), ".ai-archive.pdf") ?? "agent-archive.pdf";
+        logger.LogInformation("Agent archive PDF created: {Archive}", archiveName2);
+        return SavePdf(document, archiveName2);
+    }
+
+    public Task<GeneratedDocumentResult> ConvertImageToPdfAsync(
+        Stream imageContent,
+        string fileName,
+        CancellationToken cancellationToken = default)
+    {
+        EnsureLicenseConfigured();
+        cancellationToken.ThrowIfCancellationRequested();
+
+        logger.LogInformation("Converting image to PDF for {File}", fileName);
+
+        // Real conversion using SkiaSharp to rasterize image into PDF + stamp
+        using var skStream = new SKManagedStream(imageContent);
+        using var bitmap = SKBitmap.Decode(skStream);
+        if (bitmap == null)
+        {
+            // Fallback to stamped note if decode fails
+            return Task.FromResult(CreateFallbackImagePdf(fileName));
+        }
+
+        using var document = new PdfDocument();
+        var page = document.Pages.Add();
+        var graphics = page.Graphics;
+
+        // Scale image to fit page with margins
+        float maxWidth = 500f;
+        float maxHeight = 650f;
+        float scale = Math.Min(maxWidth / bitmap.Width, maxHeight / bitmap.Height);
+        float drawWidth = bitmap.Width * scale;
+        float drawHeight = bitmap.Height * scale;
+        float x = PdfMargin + (maxWidth - drawWidth) / 2;
+        float y = PdfMargin + 40;
+
+        // Draw image: save bitmap to PNG stream for PdfBitmap
+        using var pngStream = new MemoryStream();
+        using (var skImage = SKImage.FromBitmap(bitmap))
+        {
+            using var data = skImage.Encode(SKEncodedImageFormat.Png, 100);
+            data.SaveTo(pngStream);
+        }
+        pngStream.Position = 0;
+        using var pdfImage = new PdfBitmap(pngStream);
+        graphics.DrawImage(pdfImage, x, y, drawWidth, drawHeight);
+
+        // Stamp at top
+        var stampFont = new PdfStandardFont(PdfFontFamily.Helvetica, 10, PdfFontStyle.Bold);
+        graphics.DrawString("AI PROCESSED - TIKR VAULT", stampFont, PdfBrushes.Red, new PointF(PdfMargin, 20));
+
+        var outName = Path.ChangeExtension(Path.GetFileName(fileName), ".pdf") ?? "image.pdf";
+        logger.LogInformation("Image converted to PDF: {Out}", outName);
+        return Task.FromResult(SavePdf(document, outName));
+    }
+
+    private GeneratedDocumentResult CreateFallbackImagePdf(string fileName)
+    {
+        using var document = new PdfDocument();
+        var page = document.Pages.Add();
+        var graphics = page.Graphics;
+        var titleFont = new PdfStandardFont(PdfFontFamily.Helvetica, 12, PdfFontStyle.Bold);
+        graphics.DrawString("IMAGE CONVERTED TO PDF (fallback)", titleFont, PdfBrushes.Black, new PointF(PdfMargin, 30));
+        graphics.DrawString($"Source: {fileName}", new PdfStandardFont(PdfFontFamily.Helvetica, 10), PdfBrushes.Black, new PointF(PdfMargin, 50));
+        var outName = Path.ChangeExtension(Path.GetFileName(fileName), ".pdf") ?? "image.pdf";
+        return SavePdf(document, outName);
     }
 }

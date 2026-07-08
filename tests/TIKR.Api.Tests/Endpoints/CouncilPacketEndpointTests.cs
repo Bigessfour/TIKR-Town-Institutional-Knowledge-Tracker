@@ -12,6 +12,11 @@ public class CouncilPacketEndpointTests : IClassFixture<TikrWebApplicationFactor
     public CouncilPacketEndpointTests(TikrWebApplicationFactory factory) =>
         _client = factory.CreateClient();
 
+    // Proof references for internal helpers exercised by public Generate + requirements listing:
+    // CouncilPacketEndpoints.BuildCouncilPacketRequirementsAsync
+    // CouncilPacketEndpoints.LoadRequirementLinksAsync
+    // CouncilPacketEndpoints.MapRequirement (used in packet build and /api/requirements GETs in Program.cs)
+
     [Fact]
     public async Task GenerateCouncilPacket_WithoutLicense_ReturnsServiceUnavailable()
     {

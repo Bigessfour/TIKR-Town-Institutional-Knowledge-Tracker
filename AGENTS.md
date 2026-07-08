@@ -53,6 +53,7 @@ Templates: `docker/.env.example`, `.cursor/mcp.json.example`. See [docs/ai-tooli
 
 - Use **individual** NuGet packages (`Syncfusion.Blazor.Grid`, `InteractiveChat`, etc.) — **not** the meta `Syncfusion.Blazor` package together with individual packages (duplicate component errors).
 - Runtime license: `SYNCFUSION_LICENSE_KEY`. MCP developer key: `SYNCFUSION_API_KEY` (different credential).
+- IDE extensions (Cursor/VS Code): `SyncfusionInc.Blazor-VSCode-Extensions` (templates, snippets, conversion) and `SyncfusionInc.Blazor-Scaffolder-VSCode-Extensions` (Grid/Chart scaffolding) are recommended in `.vscode/extensions.json` for faster component integration.
 
 ## Agent Skills
 

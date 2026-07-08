@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using TIKR.Shared.Enums;
 
 namespace TIKR.Shared.DTOs;
@@ -18,14 +19,14 @@ public record RequirementDto(
 public record LinkRequirementDocumentRequest(Guid DocumentId);
 
 public record CreateRequirementRequest(
-    string Title,
+    [Required, MaxLength(500)] string Title,
     string? Description,
     DateOnly DueDate,
     RecurrenceType Recurrence,
     RequirementCategory Category);
 
 public record UpdateRequirementRequest(
-    string Title,
+    [Required, MaxLength(500)] string Title,
     string? Description,
     DateOnly DueDate,
     RecurrenceType Recurrence,

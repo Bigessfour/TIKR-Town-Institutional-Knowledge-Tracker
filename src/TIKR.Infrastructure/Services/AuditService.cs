@@ -20,6 +20,12 @@ public class AuditService(TikrDbContext db) : IAuditService
             Timestamp = DateTime.UtcNow
         });
 
-        await db.SaveChangesAsync(cancellationToken);
+        // Save immediately unless an explicit transaction is active on the context.
+        // This keeps simple call sites (and unit tests) working while allowing outer tx
+        // in multi-step operations (e.g. council packet, document upload) for atomicity.
+        if (db.Database.CurrentTransaction == null)
+        {
+            await db.SaveChangesAsync(cancellationToken);
+        }
     }
 }

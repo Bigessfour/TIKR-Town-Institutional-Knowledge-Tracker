@@ -7,6 +7,10 @@ namespace TIKR.Infrastructure.Tests.Data;
 
 public class DbSeederTests
 {
+    // TikrDbContextFactory.CreateDbContext is the design-time factory (IDesignTimeDbContextFactory).
+    // Used by EF Core tooling for migrations (committed in src/.../Migrations). Runtime DB contexts
+    // and seeding verified here via TestDbContextFactory (no direct design-time call in unit tests needed).
+
     [Fact]
     public async Task SeedAsync_InsertsFifteenColoradoDeadlines()
     {

@@ -2,7 +2,9 @@
   "recommendations": [
     "ms-dotnettools.csdevkit",
     "ms-azuretools.vscode-containers",
-    "docker.docker"
+    "docker.docker",
+    "SyncfusionInc.Blazor-VSCode-Extensions",
+    "SyncfusionInc.Blazor-Scaffolder-VSCode-Extensions"
   ],
   "unwantedRecommendations": [
     "ms-azuretools.vscode-docker"

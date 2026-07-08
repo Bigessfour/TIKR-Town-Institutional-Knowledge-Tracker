@@ -108,6 +108,17 @@ Business AI logic (tagging, audit, Grok gating) stays in `TIKR.Api` `HybridAiSer
 - `Markdig` — markdown in chat responses
 - `Microsoft.Extensions.AI` + `OllamaSharp` — local Ollama via `IChatClient`
 
+**Note on Syncfusion Ollama integration (reviewed from official docs):**
+Syncfusion provides `Syncfusion.Blazor.AI` + `IChatInferenceService` / `SyncfusionAIService` wrapper for Smart AI features (Smart Paste, Smart TextArea, data restructuring in TreeGrid/Grid, etc.). See https://blazor.syncfusion.com/documentation/smart-ai-solutions/ai/ollama.
+TIKR currently uses lower-level direct `IChatClient` injection for the custom RAG-aware assistant (sufficient for `SfAIAssistView` + streaming + context prepending).
+
+**Syncfusion.Blazor.AI implemented (2026-07-08)**: Package added to TIKR.Web.csproj. In Program.cs (after AddChatClient for Ollama):
+```csharp
+// Register for Smart AI-powered controls, connected to project (shared Ollama; use IChatInferenceService with TIKR context like RAG hits/_contextSummary for Smart components).
+builder.Services.AddSingleton<IChatInferenceService, SyncfusionAIService>();
+```
+This enables Smart features (e.g. SmartTextArea in forms/Vault) with project awareness. Current custom RAG remains for streaming control. See Ollama docs for GenerateResponseAsync usage with context.
+
 ### Configuration
 
 Web reads Ollama settings from the same env/appsettings keys as the API:
@@ -152,3 +163,4 @@ Requires `Syncfusion.Blazor.AI` and `AddSyncfusionSmartComponents()` with Ollama
 - [ ] Agent Skills visible in Cursor Rules → Agent Decides
 - [ ] `/assistant` streams Ollama responses when Docker Ollama is running
 - [ ] “Ask Advanced AI” gated by `USE_GROK` on the API
+- [ ] Comprehensive Syncfusion control validation follows the iterative E2E repo-wide plan in `docs/syncfusion-e2e-audit-plan.md` (per-page + per-control, using skills/MCP + Playwright + bUnit + function-inventory proofs)

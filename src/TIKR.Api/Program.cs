@@ -9,6 +9,26 @@ using TIKR.Shared.Constants;
 using TIKR.Shared.DTOs;
 using TIKR.Shared.Entities;
 using TIKR.Shared.Interfaces;
+using Serilog;
+using Serilog.Events;
+
+// Operational structured logging via Serilog (console + rolling file to /data/logs/tikr-*.log).
+// Captures detailed runtime info for observability, debugging, and proof of operation.
+// Verbosity: Debug (Microsoft overrides to reduce noise).
+try { Directory.CreateDirectory("/data/logs"); } catch { }
+Log.Logger = new LoggerConfiguration()
+    .MinimumLevel.Debug()
+    .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
+    .MinimumLevel.Override("Microsoft.AspNetCore", LogEventLevel.Warning)
+    .MinimumLevel.Override("Microsoft.EntityFrameworkCore", LogEventLevel.Warning)
+    .Enrich.FromLogContext()
+    .Enrich.WithProperty("Application", "TIKR")
+    .WriteTo.Console()
+    .WriteTo.File("/data/logs/tikr-.log",
+        rollingInterval: RollingInterval.Day,
+        retainedFileCountLimit: 14,
+        outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception}")
+    .CreateBootstrapLogger();
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -18,6 +38,7 @@ if (builder.Environment.IsDevelopment())
 builder.Configuration.AddEnvironmentVariables();
 
 builder.Services.AddTikrInfrastructure(builder.Configuration);
+builder.Services.AddProblemDetails();
 builder.Services.AddOpenApi();
 builder.Services.AddCors(options =>
 {
@@ -25,7 +46,21 @@ builder.Services.AddCors(options =>
         policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod());
 });
 
+// Serilog host integration for structured logging
+builder.Host.UseSerilog();
+
 var app = builder.Build();
+
+var logger = app.Services.GetRequiredService<ILogger<Program>>();
+var docSdkKey = TikrConfiguration.GetSyncfusionLicenseKey(app.Configuration);
+if (!string.IsNullOrWhiteSpace(docSdkKey))
+{
+    logger.LogInformation("Syncfusion license key found for Document SDK (length: {Length})", docSdkKey.Length);
+}
+else
+{
+    logger.LogWarning("No Syncfusion license key found for Document SDK in configuration");
+}
 
 SyncfusionDocumentLicense.RegisterFromConfiguration(app.Configuration);
 
@@ -43,6 +78,9 @@ if (authEnabled)
 }
 
 app.UseCors();
+
+// Request logging via Serilog for observability (HTTP, headers, timing)
+app.UseSerilogRequestLogging();
 
 if (authEnabled)
     app.MapAuthEndpoints();
@@ -87,23 +125,9 @@ api.MapGet("/requirements/{id:guid}", async (Guid id, TikrDbContext db) =>
     return Results.Ok(CouncilPacketEndpoints.MapRequirement(item, links.GetValueOrDefault(item.Id, [])));
 });
 
-api.MapPost("/requirements", async (CreateRequirementRequest request, TikrDbContext db, IAuditService audit, ICurrentUserService currentUser) =>
+api.MapPost("/requirements", async (CreateRequirementRequest request, TikrDbContext db, IAuditService audit, ICurrentUserService currentUser, IRequirementService requirementService) =>
 {
-    var entity = new Requirement
-    {
-        Id = Guid.NewGuid(),
-        Title = request.Title,
-        Description = request.Description,
-        DueDate = request.DueDate,
-        Recurrence = request.Recurrence,
-        Category = request.Category,
-        CreatedAt = DateTime.UtcNow,
-        UpdatedAt = DateTime.UtcNow
-    };
-
-    db.Requirements.Add(entity);
-    await db.SaveChangesAsync();
-    await audit.LogAsync("Create", nameof(Requirement), entity.Id, entity.Title, currentUser.UserId);
+    var entity = await requirementService.CreateAsync(request, audit, currentUser);
     return Results.Created(
         $"/api/requirements/{entity.Id}",
         CouncilPacketEndpoints.MapRequirement(entity, []));
@@ -133,10 +157,9 @@ api.MapPost("/requirements/{id:guid}/documents", async (
             DocumentId = request.DocumentId,
             LinkedAt = DateTime.UtcNow
         });
+        await audit.LogAsync("Link", nameof(Requirement), id, document.FileName, currentUser.UserId);
         await db.SaveChangesAsync();
     }
-
-    await audit.LogAsync("Link", nameof(Requirement), id, document.FileName, currentUser.UserId);
     var links = await CouncilPacketEndpoints.LoadRequirementLinksAsync(db);
     return Results.Ok(CouncilPacketEndpoints.MapRequirement(requirement, links.GetValueOrDefault(id, [])));
 });
@@ -153,40 +176,40 @@ api.MapDelete("/requirements/{id:guid}/documents/{documentId:guid}", async (
         return Results.NotFound();
 
     db.RequirementDocuments.Remove(link);
-    await db.SaveChangesAsync();
     await audit.LogAsync("Unlink", nameof(Requirement), id, documentId.ToString(), currentUser.UserId);
+    await db.SaveChangesAsync();
     return Results.NoContent();
 });
 
-api.MapPut("/requirements/{id:guid}", async (Guid id, UpdateRequirementRequest request, TikrDbContext db, IAuditService audit, ICurrentUserService currentUser) =>
+api.MapPut("/requirements/{id:guid}", async (Guid id, UpdateRequirementRequest request, TikrDbContext db, IAuditService audit, ICurrentUserService currentUser, IRequirementService requirementService) =>
 {
-    var entity = await db.Requirements.FindAsync(id);
-    if (entity is null) return Results.NotFound();
-
-    entity.Title = request.Title;
-    entity.Description = request.Description;
-    entity.DueDate = request.DueDate;
-    entity.Recurrence = request.Recurrence;
-    entity.Category = request.Category;
-    entity.IsCompleted = request.IsCompleted;
-    entity.UpdatedAt = DateTime.UtcNow;
-
-    await db.SaveChangesAsync();
-    await audit.LogAsync("Update", nameof(Requirement), entity.Id, entity.Title, currentUser.UserId);
-    var links = await CouncilPacketEndpoints.LoadRequirementLinksAsync(db);
-    return Results.Ok(CouncilPacketEndpoints.MapRequirement(entity, links.GetValueOrDefault(entity.Id, [])));
+    try
+    {
+        var entity = await requirementService.UpdateAsync(id, request, audit, currentUser);
+        var links = await CouncilPacketEndpoints.LoadRequirementLinksAsync(db);
+        return Results.Ok(CouncilPacketEndpoints.MapRequirement(entity, links.GetValueOrDefault(entity.Id, [])));
+    }
+    catch (KeyNotFoundException)
+    {
+        return Results.NotFound();
+    }
 });
 
-api.MapDelete("/requirements/{id:guid}", async (Guid id, TikrDbContext db, IAuditService audit, ICurrentUserService currentUser) =>
+api.MapDelete("/requirements/{id:guid}", async (Guid id, TikrDbContext db, IAuditService audit, ICurrentUserService currentUser, IRequirementService requirementService) =>
 {
-    var entity = await db.Requirements.FindAsync(id);
-    if (entity is null) return Results.NotFound();
-    if (entity.IsSystemSeeded) return Results.BadRequest("System-seeded requirements cannot be deleted.");
-
-    db.Requirements.Remove(entity);
-    await db.SaveChangesAsync();
-    await audit.LogAsync("Delete", nameof(Requirement), id, entity.Title, currentUser.UserId);
-    return Results.NoContent();
+    try
+    {
+        await requirementService.DeleteAsync(id, audit, currentUser);
+        return Results.NoContent();
+    }
+    catch (KeyNotFoundException)
+    {
+        return Results.NotFound();
+    }
+    catch (InvalidOperationException ex)
+    {
+        return Results.BadRequest(ex.Message);
+    }
 });
 
 // Documents
@@ -205,7 +228,7 @@ api.MapGet("/documents", async (TikrDbContext db, string? q) =>
     return items.Select(MapDocument).ToList();
 });
 
-api.MapPost("/documents", async (HttpRequest request, TikrDbContext db, IFileStorageService storage, IAuditService audit, ICurrentUserService currentUser) =>
+api.MapPost("/documents", async (HttpRequest request, IFileStorageService storage, IAuditService audit, ICurrentUserService currentUser, IDocumentService documentService) =>
 {
     if (!request.HasFormContentType)
         return Results.BadRequest("Expected multipart form data.");
@@ -213,41 +236,20 @@ api.MapPost("/documents", async (HttpRequest request, TikrDbContext db, IFileSto
     var form = await request.ReadFormAsync();
     var file = form.Files.FirstOrDefault();
     if (file is null) return Results.BadRequest("No file uploaded.");
+    if (file.Length > 100 * 1024 * 1024) return Results.BadRequest("File too large (max 100MB).");
+    if (string.IsNullOrWhiteSpace(file.FileName)) return Results.BadRequest("Invalid filename.");
 
-    string storagePath;
-    string? fullText = null;
-
-    if (DocumentTextExtractionService.CanExtract(file.FileName))
+    // Delegate to centralized DocumentService (thin endpoint)
+    try
     {
-        await using var buffer = new MemoryStream();
-        await file.CopyToAsync(buffer);
-        buffer.Position = 0;
-        fullText = await DocumentTextExtractionService.TryExtractAsync(buffer, file.FileName);
-        buffer.Position = 0;
-        storagePath = await storage.SaveAsync(buffer, file.FileName);
+        await using var fileStream = file.OpenReadStream();
+        var entity = await documentService.UploadAsync(fileStream, file.FileName, file.ContentType, file.Length, storage, audit, currentUser);
+        return Results.Created($"/api/documents/{entity.Id}", MapDocument(entity));
     }
-    else
+    catch (ArgumentException ex)
     {
-        await using var stream = file.OpenReadStream();
-        storagePath = await storage.SaveAsync(stream, file.FileName);
+        return Results.BadRequest(ex.Message);  // or Results.Problem for better
     }
-
-    var entity = new Document
-    {
-        Id = Guid.NewGuid(),
-        FileName = file.FileName,
-        StoragePath = storagePath,
-        ContentType = file.ContentType,
-        FileSizeBytes = file.Length,
-        FullTextContent = fullText,
-        UploadedAt = DateTime.UtcNow,
-        UpdatedAt = DateTime.UtcNow
-    };
-
-    db.Documents.Add(entity);
-    await db.SaveChangesAsync();
-    await audit.LogAsync("Upload", nameof(Document), entity.Id, entity.FileName, currentUser.UserId);
-    return Results.Created($"/api/documents/{entity.Id}", MapDocument(entity));
 });
 
 api.MapGet("/documents/{id:guid}/content", async (Guid id, TikrDbContext db, IFileStorageService storage) =>
@@ -266,9 +268,67 @@ api.MapDelete("/documents/{id:guid}", async (Guid id, TikrDbContext db, IFileSto
 
     await storage.DeleteAsync(entity.StoragePath);
     db.Documents.Remove(entity);
-    await db.SaveChangesAsync();
     await audit.LogAsync("Delete", nameof(Document), id, entity.FileName, currentUser.UserId);
+    await db.SaveChangesAsync();
     return Results.NoContent();
+});
+
+// Vault Complete Handover Package (last feature - searchable PDF with TOC/bookmarks using Document SDK)
+api.MapGet("/vault/handover-package", async (IConfiguration config, TikrDbContext db, IDocumentGenerationService generator) =>
+{
+    try
+    {
+        var town = config["TIKR_TOWN_NAME"] ?? "Wiley";
+        var knowledge = await db.KnowledgeEntries.OrderBy(k => k.SortOrder).ThenBy(k => k.Title).ToListAsync();
+        var requirements = await db.Requirements.OrderBy(r => r.DueDate).ToListAsync();
+        var documents = await db.Documents.OrderByDescending(d => d.UploadedAt).ToListAsync();
+
+        // Calendar snapshot: upcoming active requirements
+        var calendarSnapshot = requirements
+            .Where(r => !r.IsCompleted)
+            .OrderBy(r => r.DueDate)
+            .Take(25)
+            .Select(r => new CalendarSnapshotItem(r.Title, r.DueDate, r.Category.ToString()))
+            .ToList();
+
+        var req = new HandoverPackageRequest(
+            town,
+            DateTime.UtcNow,
+            knowledge.Select(MapKnowledge).ToList(),
+            requirements.Select(r => new RequirementDto(r.Id, r.Title, r.Description, r.DueDate, r.Recurrence, r.Category, r.IsSystemSeeded, r.IsCompleted, new List<RequirementLinkedDocumentDto>())).ToList(),
+            documents.Select(MapDocument).ToList(),
+            calendarSnapshot);
+
+        var result = await generator.GenerateHandoverPackagePdfAsync(req);
+        var fileName = $"TIKR-Complete-Handover-Package-{DateTime.UtcNow:yyyy-MM-dd}.pdf";
+        return Results.File(result.Content, result.ContentType, fileName);
+    }
+    catch (InvalidOperationException ex)
+    {
+        return Results.Json(new { error = ex.Message }, statusCode: StatusCodes.Status503ServiceUnavailable);
+    }
+});
+
+// On-demand extract using Document SDK (for "Extract Text/Tables to Vault" in Documents.razor)
+api.MapGet("/documents/{id:guid}/extract", async (Guid id, TikrDbContext db, IFileStorageService storage, IDocumentAgentExtractionBackend extractor) =>
+{
+    var entity = await db.Documents.FindAsync(id);
+    if (entity is null) return Results.NotFound();
+
+    try
+    {
+        var stream = await storage.OpenReadAsync(entity.StoragePath);
+        await using var buffer = new MemoryStream();
+        await stream.CopyToAsync(buffer);
+        buffer.Position = 0;
+
+        var result = await extractor.ExtractAsync(buffer, entity.FileName);
+        return Results.Ok(new DocumentTextExtractResult(result.ExtractedText, result.TablesExtractedCount));
+    }
+    catch (Exception ex)
+    {
+        return Results.Json(new { error = ex.Message }, statusCode: StatusCodes.Status500InternalServerError);
+    }
 });
 
 var generate = api.MapGroup("/documents/generate");
@@ -365,6 +425,7 @@ api.MapPost("/documents/convert/word-to-pdf", async (HttpRequest request, IDocum
     var file = request.Form.Files.FirstOrDefault();
     if (file is null || file.Length == 0)
         return Results.BadRequest("No file uploaded.");
+    if (file.Length > 50 * 1024 * 1024) return Results.BadRequest("File too large (max 50MB for conversion).");
 
     try
     {
@@ -399,6 +460,27 @@ api.MapPost("/documents/convert/excel-to-pdf", async (HttpRequest request, IDocu
     }
 });
 
+api.MapPost("/documents/convert/image-to-pdf", async (HttpRequest request, IDocumentGenerationService generator) =>
+{
+    if (!request.HasFormContentType)
+        return Results.BadRequest("Expected multipart form data.");
+
+    var file = request.Form.Files.FirstOrDefault();
+    if (file is null || file.Length == 0)
+        return Results.BadRequest("No file uploaded.");
+
+    try
+    {
+        await using var stream = file.OpenReadStream();
+        var result = await generator.ConvertImageToPdfAsync(stream, file.FileName);
+        return Results.File(result.Content, result.ContentType, result.FileName);
+    }
+    catch (InvalidOperationException ex)
+    {
+        return Results.Json(new { error = ex.Message }, statusCode: StatusCodes.Status503ServiceUnavailable);
+    }
+});
+
 // Knowledge vault
 api.MapGet("/knowledge", async (TikrDbContext db) =>
 {
@@ -406,56 +488,36 @@ api.MapGet("/knowledge", async (TikrDbContext db) =>
     return items.Select(MapKnowledge).ToList();
 });
 
-api.MapPost("/knowledge", async (CreateKnowledgeEntryRequest request, TikrDbContext db, IAuditService audit, IHybridAiService ai, ICurrentUserService currentUser) =>
+api.MapPost("/knowledge", async (CreateKnowledgeEntryRequest request, TikrDbContext db, IAuditService audit, IHybridAiService ai, ICurrentUserService currentUser, IKnowledgeService knowledgeService) =>
 {
-    var entity = new KnowledgeEntry
-    {
-        Id = Guid.NewGuid(),
-        Title = request.Title,
-        Content = request.Content,
-        Category = request.Category,
-        SortOrder = request.SortOrder,
-        CreatedAt = DateTime.UtcNow,
-        UpdatedAt = DateTime.UtcNow
-    };
-
-    db.KnowledgeEntries.Add(entity);
-    await db.SaveChangesAsync();
-    await audit.LogAsync("Create", nameof(KnowledgeEntry), entity.Id, entity.Title, currentUser.UserId);
-
-    _ = await ai.EmbedKnowledgeEntryAsync(entity.Id);
-
+    var entity = await knowledgeService.CreateAsync(request, audit, ai, currentUser);
     return Results.Created($"/api/knowledge/{entity.Id}", MapKnowledge(entity));
 });
 
-api.MapPut("/knowledge/{id:guid}", async (Guid id, UpdateKnowledgeEntryRequest request, TikrDbContext db, IAuditService audit, IHybridAiService ai, ICurrentUserService currentUser) =>
+api.MapPut("/knowledge/{id:guid}", async (Guid id, UpdateKnowledgeEntryRequest request, TikrDbContext db, IAuditService audit, IHybridAiService ai, ICurrentUserService currentUser, IKnowledgeService knowledgeService) =>
 {
-    var entity = await db.KnowledgeEntries.FindAsync(id);
-    if (entity is null) return Results.NotFound();
-
-    entity.Title = request.Title;
-    entity.Content = request.Content;
-    entity.Category = request.Category;
-    entity.SortOrder = request.SortOrder;
-    entity.UpdatedAt = DateTime.UtcNow;
-
-    await db.SaveChangesAsync();
-    await audit.LogAsync("Update", nameof(KnowledgeEntry), entity.Id, entity.Title, currentUser.UserId);
-
-    _ = await ai.EmbedKnowledgeEntryAsync(entity.Id);
-
-    return Results.Ok(MapKnowledge(entity));
+    try
+    {
+        var entity = await knowledgeService.UpdateAsync(id, request, audit, ai, currentUser);
+        return Results.Ok(MapKnowledge(entity));
+    }
+    catch (KeyNotFoundException)
+    {
+        return Results.NotFound();
+    }
 });
 
-api.MapDelete("/knowledge/{id:guid}", async (Guid id, TikrDbContext db, IAuditService audit, ICurrentUserService currentUser) =>
+api.MapDelete("/knowledge/{id:guid}", async (Guid id, TikrDbContext db, IAuditService audit, ICurrentUserService currentUser, IKnowledgeService knowledgeService) =>
 {
-    var entity = await db.KnowledgeEntries.FindAsync(id);
-    if (entity is null) return Results.NotFound();
-
-    db.KnowledgeEntries.Remove(entity);
-    await db.SaveChangesAsync();
-    await audit.LogAsync("Delete", nameof(KnowledgeEntry), id, entity.Title, currentUser.UserId);
-    return Results.NoContent();
+    try
+    {
+        await knowledgeService.DeleteAsync(id, audit, currentUser);
+        return Results.NoContent();
+    }
+    catch (KeyNotFoundException)
+    {
+        return Results.NotFound();
+    }
 });
 
 // Audit log (read-only)
@@ -520,11 +582,15 @@ api.MapPost("/ai/agent-scan", async (HttpRequest request, IDocumentAgentService 
     var file = request.Form.Files.FirstOrDefault();
     if (file is null || file.Length == 0)
         return Results.BadRequest("No file uploaded.");
+    if (file.Length > 100 * 1024 * 1024) return Results.BadRequest("File too large (max 100MB).");
+    if (string.IsNullOrWhiteSpace(file.FileName)) return Results.BadRequest("Invalid filename.");
 
     await using var stream = file.OpenReadStream();
     var result = await agent.ProcessUploadAsync(stream, file.FileName);
     return Results.Ok(result);
 });
+
+app.Lifetime.ApplicationStopped.Register(Log.CloseAndFlush);
 
 app.Run();
 
@@ -579,3 +645,5 @@ static bool TryGetSqlitePath(string? connectionString, out string path)
     path = value.Trim('"');
     return !string.IsNullOrWhiteSpace(path);
 }
+
+// NOTE: Upload orchestration moved to DocumentService (final cleanup for centralization/testability).

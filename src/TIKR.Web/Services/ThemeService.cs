@@ -32,11 +32,15 @@ public sealed class ThemeService(IJSRuntime js)
         Current = theme;
         try
         {
+            // Production guard: JS interop failures (timing, circuit state, missing functions)
+            // must never produce an unhandled exception that triggers the bottom-left
+            // "An unhandled error has occurred. Reload" banner.
             await js.InvokeVoidAsync("tikrTheme.set", theme);
         }
         catch
         {
-            // Theme persistence is best-effort when JS is unavailable.
+            // Theme persistence + Syncfusion link swap is best-effort.
+            // Our custom data-theme CSS rules still provide the visual switch for the sidebar.
         }
 
         Changed?.Invoke();

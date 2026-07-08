@@ -14,6 +14,9 @@ public class RequirementsEndpointTests : IClassFixture<TikrWebApplicationFactory
     public RequirementsEndpointTests(TikrWebApplicationFactory factory) =>
         _client = factory.CreateClient();
 
+    // Exercises CouncilPacketEndpoints helpers (via Program.cs wiring for /api/requirements):
+    // LoadRequirementLinksAsync, MapRequirement, BuildCouncilPacketRequirementsAsync (also via packet gen)
+
     [Fact]
     public async Task GetRequirements_ReturnsSeededColoradoDeadlines()
     {

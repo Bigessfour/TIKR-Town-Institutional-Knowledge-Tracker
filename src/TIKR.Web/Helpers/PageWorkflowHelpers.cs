@@ -106,6 +106,10 @@ public static class DocumentUiMessages
     public static bool CanConvertToPdf(string fileName)
     {
         var extension = Path.GetExtension(fileName).ToLowerInvariant();
-        return extension is ".doc" or ".docx" or ".xls" or ".xlsx";
+        return extension is ".doc" or ".docx" or ".xls" or ".xlsx"
+            or ".png" or ".jpg" or ".jpeg" or ".gif" or ".bmp" or ".tiff" or ".tif";
     }
+
+    public static string ExtractToVaultInProgress(string fileName) => $"Extracting text/tables from {fileName}…";
+    public static string ExtractToVaultSuccess(string fileName) => $"Extracted text/tables from {fileName} into Knowledge Vault.";
 }

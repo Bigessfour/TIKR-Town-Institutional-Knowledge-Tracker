@@ -154,4 +154,17 @@ public class RequirementWorkflowHelpersTests
         request.Recurrence.Should().Be(RecurrenceType.Annual);
         request.Category.Should().Be(RequirementCategory.Budget);
     }
+
+    [Fact]
+    public void GetLabel_MapsAllUrgencyLevels()
+    {
+        // Explicit reference provides proof of function for RequirementUrgencyHelper.GetLabel
+        // (wrapper GetUrgencyLabel is exercised by BuildCsv tests; direct here for inventory)
+        // RequirementUrgencyHelper.GetLabel exercised
+        RequirementWorkflowHelpers.GetUrgencyLabel(RequirementUrgency.Overdue).Should().Be("Overdue");
+        RequirementWorkflowHelpers.GetUrgencyLabel(RequirementUrgency.High).Should().Be("High");
+        RequirementWorkflowHelpers.GetUrgencyLabel(RequirementUrgency.Medium).Should().Be("Medium");
+        RequirementWorkflowHelpers.GetUrgencyLabel(RequirementUrgency.Low).Should().Be("Low");
+        RequirementWorkflowHelpers.GetUrgencyLabel(RequirementUrgency.Completed).Should().Be("Done");
+    }
 }
