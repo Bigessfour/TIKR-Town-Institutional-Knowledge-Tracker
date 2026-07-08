@@ -3,6 +3,7 @@ name: Trunk
 on:
   pull_request:
   push:
+    branches: [main]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -26,3 +27,15 @@ jobs:
 
       - name: Trunk Code Quality
         uses: trunk-io/trunk-action@v1
+
+  ollama-diagnosis:
+    needs: trunk_check
+    if: failure()
+    uses: ./.github/workflows/ollama-ci-diagnosis.yml
+    permissions:
+      actions: read
+      contents: read
+      pull-requests: write
+    with:
+      run_id: ${{ github.run_id }}
+      workflow_name: Trunk

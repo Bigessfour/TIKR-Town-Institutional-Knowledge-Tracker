@@ -94,3 +94,15 @@ jobs:
           name: ci-failure-snapshot-${{ github.run_id }}
           path: failure-context/
           retention-days: 14
+
+  ollama-diagnosis:
+    needs: build-and-test
+    if: failure()
+    uses: ./.github/workflows/ollama-ci-diagnosis.yml
+    permissions:
+      actions: read
+      contents: read
+      pull-requests: write
+    with:
+      run_id: ${{ github.run_id }}
+      workflow_name: TIKR CI
