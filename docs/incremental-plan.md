@@ -128,8 +128,9 @@ To give code agents (Grok Build in Cursor) the best environment:
 
 1. **MCP**: Copy .cursor/mcp.json.example, run scripts/setup-cursor-mcp.sh for .venv tikr-rag-mcp. Activate ≤ 4 servers: tikr-rag-mcp (mandatory RAG), sf-blazor-mcp, ollama, grok_com_github.
 2. **RAG**: `search_knowledge` before any substantial change. Run `scripts/update_tikr_rag_index.py` or MCP `refresh_index` after edits.
-3. **Skills**: `npx skills add syncfusion/blazor-ui-components-skills -y` (pinned in skills-lock.json; priority schedule/grid/uploader).
-4. **Rules**: .cursor/rules/tikr.mdc and AGENTS.md always followed. Read incremental-plan current phase.
+3. **Inventory**: After public endpoints/pages/services/AI tools: `./scripts/update-function-inventory.sh` + update action-items.md (AGENTS.md rule).
+4. **Skills**: `npx skills add syncfusion/blazor-ui-components-skills -y` (pinned in skills-lock.json; priority schedule/grid/uploader).
+5. **Rules**: .cursor/rules/tikr.mdc and AGENTS.md always followed. Read incremental-plan current phase.
 5. **Ollama**: Running + `nomic-embed-text` pulled.
 6. **Secrets**: SYNCFUSION_API_KEY exported for MCP; use .env.example.
 7. **Workflow**: Use todo_write for complex, enter_plan_mode for ambiguity, cite RAG hits.
@@ -279,6 +280,8 @@ Update this section when env changes.
 ## How to update this doc
 
 When a phase completes, set **Status** to `done` and move **in progress** to the next phase. Keep acceptance criteria honest — check boxes only when verified in CI or manual test.
+
+**Function inventory (hybrid):** After significant endpoint/page/service/AI tool work, run `./scripts/update-function-inventory.sh`, then curate status/verification in `docs/action-items.md` and tree in `docs/function-tree.md`. See AGENTS.md for the agent rule. Rebuild RAG index after edits.
 
 ---
 
