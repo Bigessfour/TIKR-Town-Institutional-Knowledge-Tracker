@@ -3,6 +3,7 @@ using TIKR.Api;
 using TIKR.Infrastructure;
 using TIKR.Infrastructure.Data;
 using TIKR.Infrastructure.Services;
+using TIKR.SyncfusionDocuments;
 using TIKR.Shared.Configuration;
 using TIKR.Shared.Constants;
 using TIKR.Shared.DTOs;
@@ -213,6 +214,115 @@ api.MapDelete("/documents/{id:guid}", async (Guid id, TikrDbContext db, IFileSto
     return Results.NoContent();
 });
 
+var generate = api.MapGroup("/documents/generate");
+generate.MapPost("/council-agenda", async (CouncilAgendaRequest? request, IConfiguration config, TikrDbContext db, IDocumentGenerationService generator) =>
+{
+    try
+    {
+        var town = request?.TownName ?? config["TIKR_TOWN_NAME"] ?? "Wiley";
+        var meetingDate = request?.MeetingDate ?? DateOnly.FromDateTime(DateTime.UtcNow);
+        var items = request?.Items is { Count: > 0 }
+            ? request.Items
+            : await BuildCouncilAgendaItemsAsync(db);
+
+        var result = await generator.GenerateCouncilAgendaPdfAsync(
+            new CouncilAgendaRequest(town, meetingDate, items));
+        return Results.File(result.Content, result.ContentType, result.FileName);
+    }
+    catch (InvalidOperationException ex)
+    {
+        return Results.Json(new { error = ex.Message }, statusCode: StatusCodes.Status503ServiceUnavailable);
+    }
+});
+
+generate.MapPost("/meeting-minutes", async (MeetingMinutesRequest request, IDocumentGenerationService generator) =>
+{
+    try
+    {
+        var result = await generator.GenerateMeetingMinutesDocxAsync(request);
+        return Results.File(result.Content, result.ContentType, result.FileName);
+    }
+    catch (InvalidOperationException ex)
+    {
+        return Results.Json(new { error = ex.Message }, statusCode: StatusCodes.Status503ServiceUnavailable);
+    }
+});
+
+generate.MapPost("/clerk-memo", async (ClerkMemoRequest request, IDocumentGenerationService generator) =>
+{
+    try
+    {
+        var result = await generator.GenerateClerkMemoDocxAsync(request);
+        return Results.File(result.Content, result.ContentType, result.FileName);
+    }
+    catch (InvalidOperationException ex)
+    {
+        return Results.Json(new { error = ex.Message }, statusCode: StatusCodes.Status503ServiceUnavailable);
+    }
+});
+
+generate.MapPost("/compliance-report", async (ComplianceReportRequest? request, IConfiguration config, TikrDbContext db, IDocumentGenerationService generator) =>
+{
+    try
+    {
+        var town = request?.TownName ?? config["TIKR_TOWN_NAME"] ?? "Wiley";
+        var reportDate = request?.ReportDate ?? DateOnly.FromDateTime(DateTime.UtcNow);
+        var rows = request?.Rows is { Count: > 0 }
+            ? request.Rows
+            : await BuildComplianceRowsAsync(db);
+
+        var result = await generator.GenerateComplianceReportXlsxAsync(
+            new ComplianceReportRequest(town, reportDate, rows));
+        return Results.File(result.Content, result.ContentType, result.FileName);
+    }
+    catch (InvalidOperationException ex)
+    {
+        return Results.Json(new { error = ex.Message }, statusCode: StatusCodes.Status503ServiceUnavailable);
+    }
+});
+
+api.MapPost("/documents/convert/word-to-pdf", async (HttpRequest request, IDocumentGenerationService generator) =>
+{
+    if (!request.HasFormContentType)
+        return Results.BadRequest("Expected multipart form data.");
+
+    var file = request.Form.Files.FirstOrDefault();
+    if (file is null || file.Length == 0)
+        return Results.BadRequest("No file uploaded.");
+
+    try
+    {
+        await using var stream = file.OpenReadStream();
+        var result = await generator.ConvertWordToPdfAsync(stream, file.FileName);
+        return Results.File(result.Content, result.ContentType, result.FileName);
+    }
+    catch (InvalidOperationException ex)
+    {
+        return Results.Json(new { error = ex.Message }, statusCode: StatusCodes.Status503ServiceUnavailable);
+    }
+});
+
+api.MapPost("/documents/convert/excel-to-pdf", async (HttpRequest request, IDocumentGenerationService generator) =>
+{
+    if (!request.HasFormContentType)
+        return Results.BadRequest("Expected multipart form data.");
+
+    var file = request.Form.Files.FirstOrDefault();
+    if (file is null || file.Length == 0)
+        return Results.BadRequest("No file uploaded.");
+
+    try
+    {
+        await using var stream = file.OpenReadStream();
+        var result = await generator.ConvertExcelToPdfAsync(stream, file.FileName);
+        return Results.File(result.Content, result.ContentType, result.FileName);
+    }
+    catch (InvalidOperationException ex)
+    {
+        return Results.Json(new { error = ex.Message }, statusCode: StatusCodes.Status503ServiceUnavailable);
+    }
+});
+
 // Knowledge vault
 api.MapGet("/knowledge", async (TikrDbContext db) =>
 {
@@ -350,6 +460,32 @@ static DocumentDto MapDocument(Document d) =>
 
 static KnowledgeEntryDto MapKnowledge(KnowledgeEntry k) =>
     new(k.Id, k.Title, k.Content, k.Category, k.SortOrder);
+
+static async Task<IReadOnlyList<CouncilAgendaItem>> BuildCouncilAgendaItemsAsync(TikrDbContext db)
+{
+    var requirements = await db.Requirements
+        .Where(r => !r.IsCompleted)
+        .OrderBy(r => r.DueDate)
+        .Take(25)
+        .ToListAsync();
+
+    return requirements
+        .Select(r => new CouncilAgendaItem(r.Title, r.Description, r.DueDate))
+        .ToList();
+}
+
+static async Task<IReadOnlyList<ComplianceReportRow>> BuildComplianceRowsAsync(TikrDbContext db)
+{
+    var requirements = await db.Requirements.OrderBy(r => r.DueDate).ToListAsync();
+    return requirements
+        .Select(r => new ComplianceReportRow(
+            r.Title,
+            r.Description,
+            r.DueDate,
+            r.Category.ToString(),
+            r.IsCompleted))
+        .ToList();
+}
 
 static bool TryGetSqlitePath(string? connectionString, out string path)
 {

@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\TIKR.Shared\TIKR.Shared.csproj" />
+    <ProjectReference Include="..\TIKR.SyncfusionDocuments\TIKR.SyncfusionDocuments.csproj" />
   </ItemGroup>
 
   <ItemGroup>

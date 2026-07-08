@@ -13,6 +13,7 @@ public class TikrWebApplicationFactory : WebApplicationFactory<Program>
     {
         builder.UseEnvironment("Testing");
         builder.UseSetting("TIKR_AUTH_ENABLED", "false");
+        builder.UseSetting("SYNCFUSION_LICENSE_KEY", "");
         builder.ConfigureAppConfiguration((_, config) =>
         {
             config.AddInMemoryCollection(new Dictionary<string, string?>
@@ -22,7 +23,8 @@ public class TikrWebApplicationFactory : WebApplicationFactory<Program>
                 ["USE_GROK"] = "false",
                 ["OLLAMA_HOST"] = "http://127.0.0.1:1",
                 ["TIKR_AUTH_ENABLED"] = "false",
-                ["USE_SYNCFUSION_AGENT_TOOLS"] = "false"
+                ["USE_SYNCFUSION_AGENT_TOOLS"] = "false",
+                ["SYNCFUSION_LICENSE_KEY"] = ""
             });
         });
     }

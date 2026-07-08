@@ -1,6 +1,6 @@
 using FluentAssertions;
 using Microsoft.Extensions.Configuration;
-using TIKR.Infrastructure.Services;
+using TIKR.SyncfusionDocuments;
 
 namespace TIKR.Infrastructure.Tests.Services;
 

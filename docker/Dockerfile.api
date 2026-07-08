@@ -8,6 +8,7 @@ WORKDIR /src
 
 COPY ["src/TIKR.Api/TIKR.Api.csproj", "src/TIKR.Api/"]
 COPY ["src/TIKR.Shared/TIKR.Shared.csproj", "src/TIKR.Shared/"]
+COPY ["src/TIKR.SyncfusionDocuments/TIKR.SyncfusionDocuments.csproj", "src/TIKR.SyncfusionDocuments/"]
 COPY ["src/TIKR.Infrastructure/TIKR.Infrastructure.csproj", "src/TIKR.Infrastructure/"]
 
 RUN dotnet restore "src/TIKR.Api/TIKR.Api.csproj"
@@ -18,9 +19,11 @@ RUN dotnet publish "TIKR.Api.csproj" -c Release -o /app/publish /p:UseAppHost=fa
 
 FROM base AS final
 WORKDIR /app
+ENV LANG="en_US.UTF-8"
+# libfontconfig + fonts required for DocIO/XlsIO PDF conversion on Linux (Syncfusion NAS guidance).
 # hadolint ignore=DL3008
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends curl \
+    && apt-get install -y --no-install-recommends curl libfontconfig1 fonts-liberation \
     && rm -rf /var/lib/apt/lists/*
 RUN mkdir -p /data/documents
 COPY --from=build /app/publish .

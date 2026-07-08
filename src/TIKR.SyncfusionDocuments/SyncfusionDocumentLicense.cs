@@ -3,7 +3,7 @@ using Syncfusion.Pdf;
 using TIKR.Shared.Configuration;
 using TIKR.Shared.DTOs;
 
-namespace TIKR.Infrastructure.Services;
+namespace TIKR.SyncfusionDocuments;
 
 public static class SyncfusionDocumentLicense
 {
