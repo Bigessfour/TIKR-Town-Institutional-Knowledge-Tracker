@@ -1,21 +1,8 @@
+# Manual-only entry point for diagnosing a past failed run by id.
+# Automatic diagnosis runs inside TIKR CI / Syncfusion smoke via the composite action.
 name: Ollama CI Diagnosis
 
 on:
-  workflow_call:
-    inputs:
-      run_id:
-        description: GitHub Actions run id for the failed workflow
-        required: true
-        type: string
-      workflow_name:
-        description: Display name of the failed workflow
-        required: true
-        type: string
-      model:
-        description: Ollama model
-        required: false
-        type: string
-        default: llama3.2:3b
   workflow_dispatch:
     inputs:
       run_id:
@@ -33,133 +20,12 @@ permissions:
   contents: read
   pull-requests: write
 
-concurrency:
-  group: ollama-ci-diagnosis-${{ inputs.run_id || github.event.inputs.run_id }}
-  cancel-in-progress: true
-
 jobs:
-  ai-diagnosis:
+  diagnose:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Resolve failed run metadata
-        id: meta
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          if [ "${{ github.event_name }}" = "workflow_call" ]; then
-            RUN_ID="${{ inputs.run_id }}"
-            MODEL="${{ inputs.model }}"
-            WORKFLOW_NAME="${{ inputs.workflow_name }}"
-          else
-            RUN_ID="${{ github.event.inputs.run_id }}"
-            MODEL="${{ github.event.inputs.model }}"
-            WORKFLOW_NAME=""
-          fi
-
-          if [ -z "$RUN_ID" ]; then
-            echo "No run id to diagnose."
-            exit 1
-          fi
-
-          RUN_JSON=$(gh api "repos/${{ github.repository }}/actions/runs/${RUN_ID}")
-          HEAD_SHA=$(echo "$RUN_JSON" | jq -r '.head_sha')
-          HEAD_BRANCH=$(echo "$RUN_JSON" | jq -r '.head_branch // "unknown"')
-          RUN_URL=$(echo "$RUN_JSON" | jq -r '.html_url')
-          if [ -z "$WORKFLOW_NAME" ]; then
-            WORKFLOW_NAME=$(echo "$RUN_JSON" | jq -r '.name')
-          fi
-          EVENT=$(echo "$RUN_JSON" | jq -r '.event')
-          CONCLUSION=$(echo "$RUN_JSON" | jq -r '.conclusion // "unknown"')
-
-          echo "run_id=$RUN_ID" >> "$GITHUB_OUTPUT"
-          echo "model=$MODEL" >> "$GITHUB_OUTPUT"
-          echo "head_sha=$HEAD_SHA" >> "$GITHUB_OUTPUT"
-          echo "head_branch=$HEAD_BRANCH" >> "$GITHUB_OUTPUT"
-          echo "run_url=$RUN_URL" >> "$GITHUB_OUTPUT"
-          echo "workflow_name=$WORKFLOW_NAME" >> "$GITHUB_OUTPUT"
-          echo "event=$EVENT" >> "$GITHUB_OUTPUT"
-          echo "conclusion=$CONCLUSION" >> "$GITHUB_OUTPUT"
-
-      - name: Checkout failed revision
-        uses: actions/checkout@v4
+      - name: Run Ollama failure diagnosis
+        uses: ./.github/actions/ollama-ci-diagnosis
         with:
-          ref: ${{ steps.meta.outputs.head_sha }}
-
-      - name: System information
-        run: |
-          echo "Runner OS: ${{ runner.os }}"
-          df -h
-          free -h
-          nproc
-
-      - name: Install Ollama
-        run: curl -fsSL https://ollama.com/install.sh | sh
-
-      - name: Start Ollama service
-        run: |
-          ollama serve &
-          sleep 10
-          curl -sf http://localhost:11434/api/tags || (sleep 10 && curl -sf http://localhost:11434/api/tags)
-
-      - name: Verify Ollama installation
-        run: |
-          ollama --version
-          ollama list
-
-      - name: Run CI failure diagnosis
-        env:
-          OLLAMA_MODEL: ${{ steps.meta.outputs.model }}
-          GITHUB_REPOSITORY: ${{ github.repository }}
-          FAILED_WORKFLOW_NAME: ${{ steps.meta.outputs.workflow_name }}
-          FAILED_RUN_URL: ${{ steps.meta.outputs.run_url }}
-          FAILED_HEAD_SHA: ${{ steps.meta.outputs.head_sha }}
-          FAILED_HEAD_BRANCH: ${{ steps.meta.outputs.head_branch }}
-          FAILED_EVENT: ${{ steps.meta.outputs.event }}
-          FAILED_CONCLUSION: ${{ steps.meta.outputs.conclusion }}
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          chmod +x scripts/ollama_ci_diagnosis.sh
-          scripts/ollama_ci_diagnosis.sh "${{ steps.meta.outputs.run_id }}"
-
-      - name: Upload AI diagnosis artifacts
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: ollama-ci-diagnosis-${{ steps.meta.outputs.run_id }}
-          path: outputs/
-          retention-days: 30
-
-      - name: Comment diagnosis on PR
-        if: steps.meta.outputs.conclusion == 'failure'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          PR_NUMBER=$(gh api "repos/${{ github.repository }}/commits/${{ steps.meta.outputs.head_sha }}/pulls" \
-            --jq '[.[] | select(.state == "open")][0].number' 2>/dev/null || true)
-          if [ -z "$PR_NUMBER" ] || [ "$PR_NUMBER" = "null" ]; then
-            echo "No open PR for SHA ${{ steps.meta.outputs.head_sha }} — feedback is in job Summary and artifacts only."
-            exit 0
-          fi
-
-          {
-            echo "## Ollama CI Diagnosis"
-            echo ""
-            echo "**Workflow:** ${{ steps.meta.outputs.workflow_name }}"
-            echo "**Failed run:** [${{ steps.meta.outputs.run_id }}](${{ steps.meta.outputs.run_url }})"
-            echo "**Model:** \`${{ steps.meta.outputs.model }}\`"
-            echo ""
-            echo "### Triage"
-            echo '```'
-            head -n 40 outputs/01-triage.txt
-            echo '```'
-            echo ""
-            echo "### Immediate fix"
-            echo '```'
-            sed -n '/IMMEDIATE_FIX:/,/VERIFY_LOCALLY:/p' outputs/02-fix-plan.txt | head -n 25
-            echo '```'
-            echo ""
-            echo "Full reports are in the [Ollama CI Diagnosis workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) artifacts."
-          } > /tmp/ollama-pr-comment.md
-
-          gh pr comment "$PR_NUMBER" --body-file /tmp/ollama-pr-comment.md
+          run_id: ${{ github.event.inputs.run_id }}
+          model: ${{ github.event.inputs.model }}

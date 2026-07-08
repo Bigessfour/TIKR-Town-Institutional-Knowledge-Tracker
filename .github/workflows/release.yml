@@ -1,3 +1,4 @@
+# Publishes versioned API/Web images to GHCR on semver tags (or manual dispatch).
 name: Release
 
 on:

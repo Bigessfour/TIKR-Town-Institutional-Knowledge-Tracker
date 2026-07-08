@@ -1,3 +1,5 @@
+# Approves and auto-merges Dependabot patch/minor PRs after required checks pass.
+# Job skips instantly for non-Dependabot PRs (no follow-on workflows).
 name: Dependabot auto-merge
 
 on:
@@ -10,6 +12,10 @@ on:
 permissions:
   pull-requests: write
   contents: read
+
+concurrency:
+  group: dependabot-auto-merge-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
 
 jobs:
   dependabot:
