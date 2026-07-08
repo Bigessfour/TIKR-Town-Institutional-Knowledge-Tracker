@@ -248,7 +248,7 @@ Update this section when env changes.
 | # | Slice | Status |
 |---|-------|--------|
 | 1 | UI polish + NAS footer (#33) | done |
-| 2 | Test & accessibility pass (#34) | **partial** — keyboard nav + bUnit merged; Playwright CI gate + `FullyTested` trait still open |
+| 2 | Test & accessibility pass (#34) | **partial** — keyboard nav + bUnit merged; Playwright CI gate in [#48](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/48) (rebased); `FullyTested` CI filter deferred until coverage targets pass with subset |
 | 3 | Documentation & clerk touches | planned |
 | 4 | Health UI closure + Done Detector sign-off | planned |
 
