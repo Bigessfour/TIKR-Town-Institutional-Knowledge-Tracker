@@ -17,11 +17,24 @@
     </div>
 </div>
 
+<div class="page-header">
+    <div class="page-header-main">
+        <h2>Knowledge Vault</h2>
+        <p>Institutional memory and succession handoff</p>
+    </div>
+    <div class="page-header-actions">
+        <PageTourButton Route="/vault" />
+        <PageHelp DataTour="@ClerkTourIds.HelpVault" HelpText="This vault is your town's lifeline. Record how things really work. The 'Copy for New Clerk' button creates a single document they can take with them." />
+    </div>
+</div>
+
 <!-- Prominent global Copy button + Handover PDF (last feature) -->
+<TourAnchor TourId="@ClerkTourIds.VaultCopy">
 <SfButton CssClass="tikr-action-btn primary vault-copy-btn"
           IconCss="e-icons e-copy"
           Content="Copy Everything for New Clerk"
           OnClick="CopyAllForNewClerkAsync" />
+</TourAnchor>
 <SfButton CssClass="tikr-action-btn"
           IconCss="e-icons e-export-pdf"
           Content="Generate Complete Handover Package"
@@ -52,6 +65,7 @@
     </div>
 }
 
+<div data-tour="@ClerkTourIds.VaultTabs">
 <SfTab CssClass="vault-tabs">
     <TabItems>
         <!-- How-To -->
@@ -257,6 +271,7 @@
         </TabItem>
     </TabItems>
 </SfTab>
+</div>
 
 <!-- Rich editor for selected entry (shared across tabs) -->
 @if (SelectedEntry is not null)
@@ -270,8 +285,6 @@
         </div>
     </div>
 }
-
-<PageHelp HelpText="This vault is your town's lifeline. Record how things really work. The 'Copy for New Clerk' button creates a single document they can take with them." />
 
 <ConfirmDeleteDialog @bind-Visible="_confirmDeleteVisible"
                      ItemName="@_confirmDeleteLabel"

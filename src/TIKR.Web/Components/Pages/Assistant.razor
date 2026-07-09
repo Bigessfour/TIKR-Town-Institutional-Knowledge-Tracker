@@ -13,7 +13,10 @@
         <h2>AI Assistant</h2>
         <p>Local Ollama for everyday questions; Grok for advanced reasoning when enabled.</p>
     </div>
-    <PageHelp HelpText="Ask questions in plain English. Your data stays local unless you choose Ask Advanced AI." />
+    <div class="page-header-actions">
+        <PageTourButton Route="/assistant" />
+        <PageHelp DataTour="@ClerkTourIds.HelpAssistant" HelpText="Ask questions in plain English. Your data stays local unless you choose Ask Advanced AI." />
+    </div>
 </div>
 
 @if (!string.IsNullOrEmpty(_contextSummary))
@@ -26,7 +29,7 @@
     </SfCard>
 }
 
-<div class="assistant-container">
+<div class="assistant-container" data-tour="@ClerkTourIds.AsstChat">
     <SfAIAssistView @ref="_assistView"
                     ID="tikrAssistant"
                     Prompt="What should I be working on this week?"
@@ -39,7 +42,7 @@
     </SfAIAssistView>
 </div>
 
-<div class="mt-3">
+<div class="mt-3" data-tour="@ClerkTourIds.AsstAdvanced">
     <SfButton CssClass="tikr-action-btn" IsPrimary="false" Content="Ask Advanced AI (Grok)" OnClick="AskAdvancedAsync"></SfButton>
     @if (!string.IsNullOrEmpty(_advancedNote))
     {
@@ -192,14 +195,31 @@
                 new(Microsoft.Extensions.AI.ChatRole.User, userMessage)
             };
 
+            var streamDelta = new System.Text.StringBuilder();
+            var lastUiPush = DateTime.UtcNow;
+            const int streamUiIntervalMs = 120;
+
             await foreach (var update in ChatClient.GetStreamingResponseAsync(messages, cancellationToken: token))
             {
-                if (string.IsNullOrEmpty(update.Text)) continue;
+                if (string.IsNullOrEmpty(update.Text))
+                    continue;
+
                 markdownBuilder.Append(update.Text);
-                var html = Markdown.ToHtml(markdownBuilder.ToString());
-                args.Response = html;  // ensure the view knows this is the response for the prompt
-                await SafeUpdateResponseAsync(html);
+                streamDelta.Append(update.Text);
+
+                var elapsed = (DateTime.UtcNow - lastUiPush).TotalMilliseconds;
+                if (elapsed < streamUiIntervalMs)
+                    continue;
+
+                await SafeUpdateResponseAsync(streamDelta.ToString());
+                streamDelta.Clear();
+                lastUiPush = DateTime.UtcNow;
             }
+
+            if (streamDelta.Length > 0)
+                await SafeUpdateResponseAsync(streamDelta.ToString());
+
+            args.Response = Markdown.ToHtml(markdownBuilder.ToString());
         }
         catch (OperationCanceledException)
         {

@@ -12,12 +12,10 @@ using TIKR.Web.Services;
 
 namespace TIKR.Web.Tests.Components;
 
-public class AssistantPageTests : TestContext
+public class AssistantPageTests : ClerkTestContext
 {
     public AssistantPageTests()
     {
-        Services.AddSyncfusionBlazor();
-        JSInterop.Mode = JSRuntimeMode.Loose;
         Services.AddSingleton<IChatClient>(new StubChatClient());
         Services.AddSingleton(new ColoradoResourceCatalog([
             new ColoradoResource("CML", "https://www.cml.org", "organization", ["gov"], "Colorado Municipal League")

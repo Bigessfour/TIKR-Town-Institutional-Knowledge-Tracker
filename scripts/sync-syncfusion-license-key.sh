@@ -16,7 +16,7 @@ to local TIKR configuration. The key is never printed or committed to git.
 
 Store in Passwords as a generic password (any of these work):
   Service: com.wileyco.syncfusion.license
-  Service: SYNCFUSION_LICENSE_KEY          Account: SYNCFUSION_LICENSE_KEY
+  Service: SYNCFUSION_LICENSE_KEY          Account: SYNCFUSION or SYNCFUSION_LICENSE_KEY
   Service: Syncfusion License Key          Account: syncfusion
   Label:   Syncfusion License Key / SYNCFUSION_LICENSE_KEY
 
@@ -27,6 +27,10 @@ Options:
   --enable-agent-tools  Also set USE_SYNCFUSION_AGENT_TOOLS=true in docker/.env
   --all                 --docker-env --user-secrets (recommended local setup)
   -h, --help            Show this help
+
+TIKR.Web uses Syncfusion Blazor 34.1.29 — the key must be generated for Blazor v34.x
+(https://www.syncfusion.com/account/downloads). A Document SDK-only key clears API probes
+but leaves the Blazor trial overlay until the Blazor platform key matches.
 
 Recommended one-time setup:
   ./scripts/sync-syncfusion-license-key.sh --all
@@ -82,8 +86,9 @@ try_keychain_label() {
 }
 
 CANDIDATES=(
-  "com.wileyco.syncfusion.license|"
+  "SYNCFUSION_LICENSE_KEY|SYNCFUSION"
   "SYNCFUSION_LICENSE_KEY|SYNCFUSION_LICENSE_KEY"
+  "com.wileyco.syncfusion.license|"
   "Syncfusion License Key|syncfusion"
   "Syncfusion License Key|"
   "Syncfusion|license"
@@ -122,6 +127,12 @@ if [[ -z "$KEY" ]]; then
   echo "Add a generic password in Passwords with service com.wileyco.syncfusion.license" >&2
   echo "or label 'Syncfusion License Key', then re-run this script." >&2
   exit 1
+fi
+
+alt_license="$(try_keychain_lookup "Syncfusion License Key" "syncfusion")"
+if [[ -n "$alt_license" && "$alt_license" != "$KEY" ]]; then
+  echo "WARNING: Keychain item 'Syncfusion License Key' (account syncfusion) differs from the entry used for sync (${#KEY} vs ${#alt_license} chars)." >&2
+  echo "If you just updated the license in Passwords, edit the generic password with Service SYNCFUSION_LICENSE_KEY (not only the title), or delete duplicate items." >&2
 fi
 
 if [[ "$EXPORT" == true ]]; then

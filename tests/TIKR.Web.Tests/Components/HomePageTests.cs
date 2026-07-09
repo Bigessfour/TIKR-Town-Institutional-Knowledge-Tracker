@@ -11,12 +11,11 @@ using TIKR.Web.Services;
 
 namespace TIKR.Web.Tests.Components;
 
-public class HomePageTests : TestContext
+public class HomePageTests : ClerkTestContext
 {
     public HomePageTests()
     {
-        Services.AddSyncfusionBlazor();
-        JSInterop.Mode = JSRuntimeMode.Loose;
+        Services.AddSingleton(new AuthSettings { IsEnabled = false });
     }
 
     [Fact]

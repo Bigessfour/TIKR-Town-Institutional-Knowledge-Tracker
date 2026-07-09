@@ -117,25 +117,47 @@
     opacity: 0.9;
 }
 
-.tikr-theme-bar select,
-.tikr-theme-bar .e-dropdownlist,
-.tikr-theme-bar .e-input-group {
+.tikr-theme-bar .tikr-theme-select,
+.tikr-theme-bar select {
     width: 100%;
     min-height: 44px;
-    padding: 0.4rem 0.5rem;
+    padding: 0.4rem 2rem 0.4rem 0.5rem;
     border-radius: 6px;
-    border: 1px solid rgba(255, 255, 255, 0.25);
-    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    background-color: rgba(0, 0, 0, 0.35);
     color: #fff;
     font: inherit;
+    cursor: pointer;
+    appearance: menulist;
+    -webkit-appearance: menulist;
+    color-scheme: dark;
 }
 
-/* Ensure inner input of SfDropDownList inherits sidebar-appropriate colors */
-.tikr-theme-bar .e-dropdownlist input,
-.tikr-theme-bar .e-dropdownlist .e-input {
-    color: inherit;
-    background: transparent;
-    border: none;
+.tikr-theme-bar .tikr-theme-select option {
+    color: #1e293b;
+    background: #fff;
+}
+
+.tikr-settings-theme {
+    max-width: 320px;
+}
+
+.tikr-settings-theme .tikr-theme-bar {
+    border-top: none;
+    margin-top: 0;
+    padding-top: 0;
+}
+
+.tikr-settings-theme .tikr-theme-bar label {
+    color: #334155;
+    opacity: 1;
+}
+
+.tikr-settings-theme .tikr-theme-bar .tikr-theme-select,
+.tikr-settings-theme .tikr-theme-bar select {
+    background-color: #fff;
+    color: #1e293b;
+    border-color: #cbd5e1;
 }
 
 .page-header {
@@ -933,7 +955,9 @@ html[data-theme="high-contrast"] .tikr-skeleton-row {
 /* Production-ready styling for the default Blazor circuit error banner (bottom-left).
    Keep it visible for real problems but make it calm, professional, and non-alarming.
    Also styles the local ErrorBoundary recovery UI used around AI + heavy Syncfusion areas. */
+/* Blazor sets inline display:block only when a circuit error occurs; default must stay hidden. */
 #blazor-error-ui {
+    display: none;
     position: fixed;
     bottom: 0;
     left: 0;
@@ -943,9 +967,13 @@ html[data-theme="high-contrast"] .tikr-skeleton-row {
     color: #721c24;
     border-top: 1px solid #f5c6cb;
     font-size: 0.8rem;
-    display: flex;
     align-items: center;
     gap: 0.5rem;
+}
+
+#blazor-error-ui[style*="display: block"],
+#blazor-error-ui[style*="display:block"] {
+    display: flex;
 }
 
 #blazor-error-ui .tikr-error-banner-text {
@@ -1161,6 +1189,150 @@ html[data-theme="high-contrast"] .tikr-skeleton-row {
 
     .e-grid {
         font-size: 0.8rem;
+    }
+}
+
+.page-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.tikr-settings-help-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.tikr-tour-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.55);
+    z-index: 10000;
+}
+
+.tikr-tour-spotlight {
+    position: fixed;
+    z-index: 10001;
+    border-radius: 8px;
+    box-shadow: 0 0 0 9999px rgba(15, 23, 42, 0.55);
+    pointer-events: none;
+    border: 2px solid #fff;
+}
+
+.tikr-tour-popover {
+    position: fixed;
+    z-index: 10002;
+    max-width: 320px;
+    padding: 1rem;
+    background: #fff;
+    color: #1e293b;
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+
+.tikr-tour-step {
+    margin: 0 0 0.35rem;
+    font-size: 0.75rem;
+    color: #64748b;
+}
+
+.tikr-tour-title {
+    margin: 0 0 0.5rem;
+    font-size: 1.05rem;
+}
+
+.tikr-tour-desc {
+    margin: 0 0 0.75rem;
+    font-size: 0.9rem;
+    line-height: 1.45;
+}
+
+.tikr-tour-actions {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+
+.tikr-tour-actions button {
+    min-height: 44px;
+    padding: 0.35rem 0.75rem;
+    border-radius: 6px;
+    border: 1px solid #cbd5e1;
+    background: #f8fafc;
+    cursor: pointer;
+    font: inherit;
+}
+
+.tikr-tour-actions .tikr-tour-next {
+    background: #1e3a5f;
+    color: #fff;
+    border-color: #1e3a5f;
+}
+
+.tikr-guide-layout {
+    display: flex;
+    gap: 1rem;
+    min-height: 360px;
+    max-height: 65vh;
+}
+
+.tikr-guide-toc {
+    flex: 0 0 200px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.tikr-guide-toc-item {
+    text-align: left;
+    padding: 0.45rem 0.5rem;
+    border: none;
+    background: transparent;
+    border-radius: 6px;
+    cursor: pointer;
+    font: inherit;
+    color: #334155;
+}
+
+.tikr-guide-toc-item.is-active,
+.tikr-guide-toc-item:hover {
+    background: #e8edf3;
+}
+
+.tikr-guide-body {
+    flex: 1;
+    overflow-y: auto;
+    padding-right: 0.5rem;
+}
+
+.tikr-guide-section {
+    margin-bottom: 1.25rem;
+}
+
+.tikr-guide-section h3 {
+    margin: 0 0 0.5rem;
+}
+
+.tikr-guide-html p {
+    margin: 0 0 0.65rem;
+    line-height: 1.5;
+}
+
+.tikr-guide-toolbar {
+    margin-bottom: 0.75rem;
+}
+
+@media (max-width: 640px) {
+    .tikr-guide-layout {
+        flex-direction: column;
+        max-height: none;
+    }
+
+    .tikr-guide-toc {
+        flex: none;
+        max-height: 120px;
     }
 }
 

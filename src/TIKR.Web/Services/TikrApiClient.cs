@@ -322,4 +322,31 @@ public class TikrApiClient(HttpClient http)
             ? "Syncfusion Document SDK is not licensed. Set SYNCFUSION_LICENSE_KEY on the API container."
             : $"Document generation failed ({(int)response.StatusCode}).";
     }
+
+    public async Task<ClerkTourStateDto?> GetClerkTourStateAsync()
+    {
+        try
+        {
+            return await http.GetFromJsonAsync<ClerkTourStateDto>("/api/auth/me/tour");
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    public async Task<ClerkTourStateDto?> UpdateClerkTourStateAsync(ClerkTourStateDto state)
+    {
+        try
+        {
+            var response = await http.PutAsJsonAsync("/api/auth/me/tour", new UpdateClerkTourStateRequest(state.CompletedVersion, state.AutoTourDisabled));
+            return response.IsSuccessStatusCode
+                ? await response.Content.ReadFromJsonAsync<ClerkTourStateDto>()
+                : null;
+        }
+        catch
+        {
+            return null;
+        }
+    }
 }

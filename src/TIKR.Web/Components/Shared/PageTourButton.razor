@@ -1,0 +1,15 @@
+@inject ClerkTourService Tour
+
+<TourAnchor TourId="@TourButtonId">
+    <SfButton CssClass="tikr-action-btn e-outline" OnClick="StartAsync" Content="Tour this page" aria-label="Start walkthrough for this page" />
+</TourAnchor>
+
+@code {
+    [Parameter, EditorRequired]
+    public string Route { get; set; } = "/";
+
+    [Parameter]
+    public string? TourButtonId { get; set; }
+
+    private Task StartAsync() => Tour.StartPageTourAsync(Route);
+}

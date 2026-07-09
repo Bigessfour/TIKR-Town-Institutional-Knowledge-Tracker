@@ -21,7 +21,10 @@ Local verification before or after merge:
 dotnet test TIKR.sln --configuration Release
 trunk check --all
 ./scripts/done-detector.sh
+./scripts/package-for-deployment.sh
 ```
+
+Clerk walkthrough and user guide: [clerk-tour-deployment.md](clerk-tour-deployment.md).
 
 ---
 

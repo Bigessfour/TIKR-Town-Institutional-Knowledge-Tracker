@@ -15,7 +15,7 @@ TIKR targets **>90% line coverage** across unit, integration, and component test
 
 | Project | Scope |
 |---------|-------|
-| E2E (Playwright) | Clerk flows against Docker stack — `tests/e2e/` (includes Requirements AI Scan stub) |
+| E2E (Playwright) | Clerk flows against Docker stack — `tests/e2e/` (`clerk-smoke`, `page-readiness`, `requirements-agent-scan`). See [ui-readiness-audit.md](../docs/ui-readiness-audit.md). |
 
 Fixtures for agent-scan live in **`tests/fixtures/agent-scan/`** (shared by API integration tests, Playwright, and licensed CI workflow).
 

@@ -58,6 +58,12 @@ public class TikrConfigurationTests
         {
             ["AI:OllamaHost"] = "http://ollama:11434"
         })).Should().Be("http://ollama:11434");
+
+        TikrConfiguration.GetOllamaHost(BuildConfig(new Dictionary<string, string?>
+        {
+            ["AI:OllamaHost"] = "http://ollama:11434",
+            ["OLLAMA_HOST"] = "http://host.docker.internal:11434"
+        })).Should().Be("http://host.docker.internal:11434");
     }
 
     [Fact]
@@ -85,17 +91,23 @@ public class TikrConfigurationTests
     }
 
     [Fact]
-    public void GetUseGrok_PrefersNestedAiSection()
+    public void GetUseGrok_PrefersUseGrokEnvOverAiSection()
     {
-        var config = new ConfigurationBuilder()
+        TikrConfiguration.GetUseGrok(new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["AI:UseGrok"] = "false",
+                ["USE_GROK"] = "true"
+            })
+            .Build()).Should().BeTrue();
+
+        TikrConfiguration.GetUseGrok(new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
                 ["AI:UseGrok"] = "true",
                 ["USE_GROK"] = "false"
             })
-            .Build();
-
-        TikrConfiguration.GetUseGrok(config).Should().BeTrue();
+            .Build()).Should().BeFalse();
     }
 
     [Fact]

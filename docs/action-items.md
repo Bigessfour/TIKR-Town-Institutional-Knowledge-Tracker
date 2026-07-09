@@ -18,7 +18,9 @@ This file owns **status, checkboxes, priorities, verification evidence**. The ge
 
 - [x] Phase 0 PR #3 — Deb NAS install + maintainer ship checklist ([deb-nas-install.md](deb-nas-install.md), [ship-to-production.md](ship-to-production.md)) — 2026-07-09
 - [ ] Phase 0 PR #4 — Recorded Deb walkthrough ([demo-deb.md](demo-deb.md)) + Layer 2 bus-factor checkbox below
-- [ ] Merge [PR #61](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/61) + ship-doc commit to `main`; tag `v1.0.0` per [ship-to-production.md](ship-to-production.md)
+- [x] Merge [PR #61](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/61) to `main` — 2026-07-09 (`242b754`, TIKR CI green)
+- [ ] Tag `v1.0.0` + GHCR release per [ship-to-production.md](ship-to-production.md) (after local UI readiness + Deb walkthrough)
+- [ ] Page readiness audit — chrome-devtools-mcp / Playwright pass; log in [ui-readiness-audit.md](ui-readiness-audit.md)
 - [ ] Manual NAS licensed smoke for Syncfusion agent tools (post #36) — **post-ship**
 - [ ] 10C-C extraction source badge in UI (UsedSyncfusionTools) — **post-ship**
 - [x] Playwright E2E as required CI gate (merged #48, green in CI)

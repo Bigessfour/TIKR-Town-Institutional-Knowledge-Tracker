@@ -43,6 +43,33 @@ public static class AuthEndpoints
             return Results.Ok(new UserProfileDto(user.Id, user.Email ?? string.Empty, user.DisplayName, roles.ToList()));
         }).RequireAuthorization(TikrAuthPolicies.Authenticated);
 
+        auth.MapGet("/me/tour", async (
+            ClaimsPrincipal principal,
+            UserManager<ApplicationUser> userManager) =>
+        {
+            var user = await FindUserAsync(principal, userManager);
+            if (user is null) return Results.Unauthorized();
+            return Results.Ok(new ClerkTourStateDto(user.ClerkTourCompletedVersion, user.ClerkTourAutoDisabled));
+        }).RequireAuthorization(TikrAuthPolicies.Authenticated);
+
+        auth.MapPut("/me/tour", async (
+            UpdateClerkTourStateRequest request,
+            ClaimsPrincipal principal,
+            UserManager<ApplicationUser> userManager) =>
+        {
+            var user = await FindUserAsync(principal, userManager);
+            if (user is null) return Results.Unauthorized();
+
+            if (request.CompletedVersion is not null)
+                user.ClerkTourCompletedVersion = request.CompletedVersion;
+
+            if (request.AutoTourDisabled.HasValue)
+                user.ClerkTourAutoDisabled = request.AutoTourDisabled.Value;
+
+            await userManager.UpdateAsync(user);
+            return Results.Ok(new ClerkTourStateDto(user.ClerkTourCompletedVersion, user.ClerkTourAutoDisabled));
+        }).RequireAuthorization(TikrAuthPolicies.Authenticated);
+
         auth.MapPost("/change-password", async (
             ChangePasswordRequest request,
             ClaimsPrincipal principal,

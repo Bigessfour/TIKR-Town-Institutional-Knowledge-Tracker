@@ -24,7 +24,7 @@ public class OllamaChatClientFactory : IOllamaChatClientFactory
     {
         try
         {
-            using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(5) };
+            using var http = OllamaHttpProbe.CreateClient(TimeSpan.FromSeconds(5));
             var response = await http.GetAsync($"{EnsureTrailingSlash(OllamaHost)}api/tags", cancellationToken);
             return response.IsSuccessStatusCode;
         }

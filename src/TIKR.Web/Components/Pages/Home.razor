@@ -1,6 +1,7 @@
 ﻿@page "/"
 @rendermode InteractiveServer
 @inject TikrApiClient Api
+@inject ClerkUserGuideService Guide
 
 @using TIKR.Web.Components.Shared
 
@@ -9,9 +10,16 @@
         <h2>Dashboard</h2>
         <p>What should you be working on today?</p>
     </div>
-    <PageHelp HelpText="Your daily priorities from Colorado deadlines and open requirements. Everything is computed locally from your NAS database." />
+    <div class="page-header-actions">
+        <TourAnchor TourId="@ClerkTourIds.DashboardUserGuide">
+            <SfButton CssClass="tikr-action-btn" OnClick="OpenGuide">User guide</SfButton>
+        </TourAnchor>
+        <PageTourButton Route="/" />
+        <PageHelp DataTour="@ClerkTourIds.HelpDashboard" HelpText="Your daily priorities from Colorado deadlines and open requirements. Everything is computed locally from your NAS database." />
+    </div>
 </div>
 
+<div data-tour="@ClerkTourIds.DashboardPriorities">
 @if (_loading)
 {
     <div class="tikr-loading-state" role="status" aria-live="polite" aria-busy="true">
@@ -51,6 +59,7 @@ else
         }
     </div>
 }
+</div>
 
 @code {
     private List<DashboardPriority> _priorities = [];
@@ -79,4 +88,6 @@ else
         "Medium" => "priority-medium",
         _ => ""
     };
+
+    private void OpenGuide() => Guide.Open();
 }

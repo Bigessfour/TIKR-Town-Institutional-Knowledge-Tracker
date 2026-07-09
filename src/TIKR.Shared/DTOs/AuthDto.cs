@@ -33,3 +33,7 @@ public record UserProfileDto(
     string Email,
     string? DisplayName,
     IReadOnlyList<string> Roles);
+
+public record ClerkTourStateDto(string? CompletedVersion, bool AutoTourDisabled);
+
+public record UpdateClerkTourStateRequest(string? CompletedVersion, bool? AutoTourDisabled);

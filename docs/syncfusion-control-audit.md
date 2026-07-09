@@ -4,7 +4,7 @@
 
 **New:** Frontend Polish PR plan created at [docs/frontend-polish-phased-plan.md](../frontend-polish-phased-plan.md) (2026-07-08 UI audit). This document now drives the next phase of Syncfusion + UX improvements.
 
-**2026-07-09 End-of-dev gate:** Condensed sign-off pass on Home, Requirements, Documents, Vault, Assistant, Settings — theme switch, core Sf* controls, Playwright CI gate on `main`/PR #61. Full quarterly E2E iteration deferred post-ship (see action-items Post-ship).
+**2026-07-09 End-of-dev gate:** Condensed sign-off pass on Home, Requirements, Documents, Vault, Assistant, Settings — theme switch, core Sf* controls, Playwright CI gate on `main` (PR #61 merged `242b754`). Full quarterly E2E iteration tracked in [ui-readiness-audit.md](ui-readiness-audit.md) + [syncfusion-e2e-audit-plan.md](syncfusion-e2e-audit-plan.md).
 
 **2026-07-08 Update (manager + subagents):** All phased polish items (buttons/tokens, states, grids/selection, responsive heights, dialogs, banners extraction, theme selector SfDropDownList, skeletons, full theming dark/high-contrast coverage for Sf* + customs) implemented and verified. See phased-plan for per-item status + acceptance. Builds/tests green on targeted. Ready for full gate run + PR. (No new FIX/DEFER; prior PASS baseline holds.)
 

@@ -17,3 +17,7 @@ services:
     depends_on: !reset []
     environment:
       OLLAMA_HOST: http://host.docker.internal:11434
+
+  tikr-web:
+    environment:
+      OLLAMA_HOST: http://host.docker.internal:11434
