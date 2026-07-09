@@ -86,16 +86,7 @@ builder.Host.UseSerilog();
 var app = builder.Build();
 
 var logger = app.Services.GetRequiredService<ILogger<Program>>();
-var syncfusionLicense = TikrConfiguration.GetSyncfusionLicenseKey(app.Configuration);
-if (!string.IsNullOrWhiteSpace(syncfusionLicense))
-{
-    logger.LogInformation("Syncfusion license key found for Blazor UI (length: {Length})", syncfusionLicense.Length);
-    Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense(syncfusionLicense);
-}
-else
-{
-    logger.LogWarning("No Syncfusion license key found for Blazor UI in configuration");
-}
+TIKR.Web.SyncfusionLicenseBootstrap.RegisterIfConfigured(app.Configuration, logger, "Blazor UI");
 
 if (!app.Environment.IsDevelopment())
 {

@@ -52,16 +52,7 @@ builder.Host.UseSerilog();
 var app = builder.Build();
 
 var logger = app.Services.GetRequiredService<ILogger<Program>>();
-var docSdkKey = TikrConfiguration.GetSyncfusionLicenseKey(app.Configuration);
-if (!string.IsNullOrWhiteSpace(docSdkKey))
-{
-    logger.LogInformation("Syncfusion license key found for Document SDK (length: {Length})", docSdkKey.Length);
-}
-else
-{
-    logger.LogWarning("No Syncfusion license key found for Document SDK in configuration");
-}
-
+SyncfusionLicenseBootstrap.RegisterIfConfigured(app.Configuration, logger, "Document SDK");
 SyncfusionDocumentLicense.RegisterFromConfiguration(app.Configuration);
 
 var authEnabled = TikrConfiguration.IsAuthEnabled(app.Configuration);

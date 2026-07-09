@@ -2,9 +2,9 @@
 <!-- Do NOT edit manually. Lightweight function tracker for proof + minimal viable. -->
 
 # Function Inventory — TIKR
-Generated: 2026-07-09T13:24:01.189650+00:00
+Generated: 2026-07-09T13:52:59.493666+00:00
 
-**Summary:** 564 tracked functions | 564 with proof | 0 without proof
+**Summary:** 568 tracked functions | 568 with proof | 0 without proof
 Focus on the ones without proof for your key paths.
 
 ## Detected Packages & Major Components
@@ -457,10 +457,12 @@ SfAIAssistView, SfAccordion, SfButton, SfCard, SfCheckBox, SfContextMenu, SfData
 | Other Public | TikrConfiguration.GetUseSyncfusionAgentOrchestration | src/TIKR.Shared/Configuration/TikrConfiguration.cs:83 | tests/TIKR.Shared.Tests/Configuration/TikrConfigurationTests... | small body |
 | Other Public | TikrConfiguration.GetUseSyncfusionAgentTools | src/TIKR.Shared/Configuration/TikrConfiguration.cs:75 | tests/TIKR.Shared.Tests/Configuration/TikrConfigurationTests... | small body |
 | Other Public | TikrConfiguration.IsAuthEnabled | src/TIKR.Shared/Configuration/TikrConfiguration.cs:41 | tests/TIKR.Shared.Tests/Configuration/TikrConfigurationTests... | has logic |
-| Other Public | CouncilPacketGenerator.Build | src/TIKR.SyncfusionDocuments/CouncilPacketGenerator.cs:15 | tests/TIKR.Api.Tests/Endpoints/CouncilPacketEndpointTests.cs... | small body |
-| Other Public | DependencyInjection.AddSyncfusionDocumentGeneration | src/TIKR.SyncfusionDocuments/DependencyInjection.cs:8 | tests/TIKR.Web.Tests/Components/SettingsPageTests.cs, tests/... | small body |
-| Other Public | SyncfusionDocumentLicense.GetStatus | src/TIKR.SyncfusionDocuments/SyncfusionDocumentLicense.cs:24 | tests/TIKR.Infrastructure.Tests/Services/SyncfusionDocumentL... | small body |
-| Other Public | SyncfusionDocumentLicense.RegisterFromConfiguration | src/TIKR.SyncfusionDocuments/SyncfusionDocumentLicense.cs:10 | tests/TIKR.Infrastructure.Tests/Services/SyncfusionDocumentL... | small body |
+| Other Public | CouncilPacketGenerator.Build | src/TIKR.SyncfusionDocuments/CouncilPacketGenerator.cs:15 | tests/TIKR.SyncfusionDocuments.Tests/SyncfusionDocumentGener... | small body |
+| Other Public | DependencyInjection.AddSyncfusionDocumentGeneration | src/TIKR.SyncfusionDocuments/DependencyInjection.cs:9 | tests/TIKR.Web.Tests/Components/SettingsPageTests.cs, tests/... | small body |
+| Other Public | SyncfusionDocumentLicense.GetStatus | src/TIKR.SyncfusionDocuments/SyncfusionDocumentLicense.cs:14 | tests/TIKR.Infrastructure.Tests/Services/SyncfusionDocumentL... | small body |
+| Other Public | SyncfusionDocumentLicense.RegisterFromConfiguration | src/TIKR.SyncfusionDocuments/SyncfusionDocumentLicense.cs:9 | tests/TIKR.Infrastructure.Tests/Services/SyncfusionDocumentL... | small body |
+| Other Public | SyncfusionLicenseBootstrap.RegisterIfConfigured | src/TIKR.SyncfusionDocuments/SyncfusionLicenseBootstrap.cs:10 | tests/TIKR.SyncfusionDocuments.Tests/SyncfusionLicenseBootst... | has logic |
+| Other Public | SyncfusionLicenseBootstrap.RegisterIfConfigured | src/TIKR.Web/SyncfusionLicenseBootstrap.cs:10 | tests/TIKR.SyncfusionDocuments.Tests/SyncfusionLicenseBootst... | has logic |
 | Other Public | DbSeederTests.SeedAsync_IncludesKnownColoradoDeadlines | tests/TIKR.Infrastructure.Tests/Data/DbSeederTests.cs:39 | tests/TIKR.Infrastructure.Tests/Data/DbSeederTests.cs | has logic |
 | Other Public | DbSeederTests.SeedAsync_InsertsFifteenColoradoDeadlines | tests/TIKR.Infrastructure.Tests/Data/DbSeederTests.cs:15 | tests/TIKR.Infrastructure.Tests/Data/DbSeederTests.cs | has logic |
 | Other Public | DbSeederTests.SeedAsync_IsIdempotent | tests/TIKR.Infrastructure.Tests/Data/DbSeederTests.cs:28 | tests/TIKR.Infrastructure.Tests/Data/DbSeederTests.cs | has logic |
@@ -491,6 +493,8 @@ SfAIAssistView, SfAccordion, SfButton, SfCard, SfCheckBox, SfContextMenu, SfData
 | Other Public | TikrConfigurationTests.IsAuthEnabled_FalseWhenNoCreds | tests/TIKR.Shared.Tests/Configuration/TikrConfigurationTests.cs:166 | tests/TIKR.Shared.Tests/Configuration/TikrConfigurationTests... | has logic |
 | Other Public | TikrConfigurationTests.IsAuthEnabled_TrueWhenAdminBootstrapCredsPresent | tests/TIKR.Shared.Tests/Configuration/TikrConfigurationTests.cs:145 | tests/TIKR.Shared.Tests/Configuration/TikrConfigurationTests... | has logic |
 | Other Public | TikrConfigurationTests.IsAuthEnabled_TrueWhenExplicitlyEnabled | tests/TIKR.Shared.Tests/Configuration/TikrConfigurationTests.cs:218 | tests/TIKR.Shared.Tests/Configuration/TikrConfigurationTests... | has logic |
+| Other Public | SyncfusionLicenseBootstrapTests.RegisterIfConfigured_ReturnsFalseWhenKeyMissing | tests/TIKR.SyncfusionDocuments.Tests/SyncfusionLicenseBootstrapTests.cs:10 | tests/TIKR.SyncfusionDocuments.Tests/SyncfusionLicenseBootst... | has logic |
+| Other Public | SyncfusionLicenseBootstrapTests.RegisterIfConfigured_ReturnsTrueWhenKeyPresent | tests/TIKR.SyncfusionDocuments.Tests/SyncfusionLicenseBootstrapTests.cs:17 | tests/TIKR.SyncfusionDocuments.Tests/SyncfusionLicenseBootst... | has logic |
 | Other Public | AssistantPageTests.Assistant_LoadsDeadlineContextFromApi | tests/TIKR.Web.Tests/Components/AssistantPageTests.cs:81 | tests/TIKR.Web.Tests/Components/AssistantPageTests.cs | has logic |
 | Other Public | AssistantPageTests.Assistant_MainChatPrompt_ReceivesStreamedResponse | tests/TIKR.Web.Tests/Components/AssistantPageTests.cs:94 | tests/TIKR.Web.Tests/Components/AssistantPageTests.cs | small body |
 | Other Public | AssistantPageTests.Assistant_ShowsAdvancedAiNoteWhenNoPriorPrompt | tests/TIKR.Web.Tests/Components/AssistantPageTests.cs:58 | tests/TIKR.Web.Tests/Components/AssistantPageTests.cs | has logic |

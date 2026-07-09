@@ -29,7 +29,22 @@ Syncfusion ships agent tools for **six capability groups**. The NuGet package (`
 
 ## NAS setup checklist (record results when hardware available)
 
-### Prerequisites
+### Runtime license (Blazor + Document SDK)
+
+TIKR registers the **same** `SYNCFUSION_LICENSE_KEY` in **both** processes:
+
+- **TIKR.Web** — Blazor UI (packages **34.1.x**)
+- **TIKR.Api** — Document SDK (packages **33.2.x**)
+
+Sync keys from macOS Passwords:
+
+```bash
+./scripts/setup-local-secrets.sh
+```
+
+If trial banners persist with a key present, regenerate the key in the [Syncfusion portal](https://www.syncfusion.com/account/downloads) for the installed major versions. Settings → Document SDK shows API probe status.
+
+## Prerequisites
 
 - [ ] Synology NAS with Container Manager (DS225+ or equivalent)
 - [ ] Shared folder for TIKR data (e.g. `/volume1/tikr/data`)
