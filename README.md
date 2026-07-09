@@ -170,14 +170,22 @@ docker compose -f docker/docker-compose.prod.yml --env-file docker/.env up -d --
 
 Before the first GHCR release, build from source with `docker/docker-compose.yml` instead. See [docker/README.md](docker/README.md) and [docs/ship-to-production.md](docs/ship-to-production.md).
 
-### Windows self-contained publish (optional VM)
+### Windows thumb drive / laptop (optional)
+
+```bash
+./scripts/package-thumb-drive.sh
+# Outputs: publish/TIKR-Deploy/ (+ zip) with Start-TIKR.bat for the Dell
+```
+
+Copy `TIKR-Deploy` to USB → follow `README-QuickStart.txt`. Details: [docs/windows-thumb-drive-deploy.md](docs/windows-thumb-drive-deploy.md).
+
+Publish only (no scripts):
 
 ```bash
 ./scripts/publish-tikr.sh
-# Outputs: publish/TIKR.Api/TIKR.Api.exe and publish/TIKR.Web/TIKR.Web.exe
 ```
 
-Run **Api** first, then **Web** in separate terminals (not a single combined EXE).
+Run **Api** first, then **Web** (two exes, not one combined app).
 
 ### Demo scripts
 
