@@ -70,4 +70,40 @@ public class RequirementService(TikrDbContext db) : IRequirementService
         await db.SaveChangesAsync(ct);
         await tx.CommitAsync(ct);
     }
+
+    public async Task LinkDocumentAsync(Guid requirementId, Guid documentId, IAuditService audit, ICurrentUserService currentUser, CancellationToken ct = default)
+    {
+        var requirement = await db.Requirements.FindAsync(requirementId, ct);
+        if (requirement is null) throw new KeyNotFoundException($"Requirement {requirementId} not found.");
+
+        var document = await db.Documents.FindAsync(documentId, ct);
+        if (document is null) throw new KeyNotFoundException("Document not found.");
+
+        var existing = await db.RequirementDocuments.FindAsync(new object[] { requirementId, documentId }, ct);
+        if (existing is null)
+        {
+            using var tx = await db.Database.BeginTransactionAsync(ct);
+            db.RequirementDocuments.Add(new RequirementDocument
+            {
+                RequirementId = requirementId,
+                DocumentId = documentId,
+                LinkedAt = DateTime.UtcNow
+            });
+            await audit.LogAsync("Link", nameof(Requirement), requirementId, document.FileName, currentUser.UserId, ct);
+            await db.SaveChangesAsync(ct);
+            await tx.CommitAsync(ct);
+        }
+    }
+
+    public async Task UnlinkDocumentAsync(Guid requirementId, Guid documentId, IAuditService audit, ICurrentUserService currentUser, CancellationToken ct = default)
+    {
+        var link = await db.RequirementDocuments.FindAsync(new object[] { requirementId, documentId }, ct);
+        if (link is null) throw new KeyNotFoundException($"Link not found for requirement {requirementId} and document {documentId}.");
+
+        using var tx = await db.Database.BeginTransactionAsync(ct);
+        db.RequirementDocuments.Remove(link);
+        await audit.LogAsync("Unlink", nameof(Requirement), requirementId, documentId.ToString(), currentUser.UserId, ct);
+        await db.SaveChangesAsync(ct);
+        await tx.CommitAsync(ct);
+    }
 }

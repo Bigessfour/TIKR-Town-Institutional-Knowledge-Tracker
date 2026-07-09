@@ -40,7 +40,7 @@
 </div>
 
 <div class="mt-3">
-    <SfButton IsPrimary="false" Content="Ask Advanced AI (Grok)" OnClick="AskAdvancedAsync"></SfButton>
+    <SfButton CssClass="tikr-action-btn" IsPrimary="false" Content="Ask Advanced AI (Grok)" OnClick="AskAdvancedAsync"></SfButton>
     @if (!string.IsNullOrEmpty(_advancedNote))
     {
         <p class="mt-2 text-muted">@_advancedNote</p>
@@ -59,11 +59,13 @@
 
 <style>
     .assistant-container {
-        height: 520px;
+        flex: 1;
+        min-height: 320px;
         border: 1px solid #dee2e6;
         border-radius: 8px;
         overflow: hidden;
         /* Background now controlled by data-theme rules in tikr-clerk-polish.css for Syncfusion + side panel consistency */
+        /* Phase 2 Item 4: flexible height via flex + Height="100%" on child; 520px replaced */
     }
 </style>
 

@@ -23,4 +23,9 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 RUN mkdir -p /data/logs
 COPY --from=build /app/publish .
+# Run container as non-root user (deploy/NAS hardening)
+RUN groupadd --system --gid 1001 appuser \
+    && useradd --system --uid 1001 --gid appuser --home-dir /app appuser \
+    && chown -R appuser:appuser /app /data
+USER appuser
 ENTRYPOINT ["dotnet", "TIKR.Web.dll"]

@@ -24,6 +24,8 @@
 - Incremental: after any change touching a page/control, theme system, AI backend, or new feature.
 - Before Phase 0 / release gates.
 
+**2026-07 Polish Focus**: See dedicated [frontend-polish-phased-plan.md](../frontend-polish-phased-plan.md) for the current PR-driven polish work (phased by priority, focusing on idiomatic Sf usage, theming, and clerk UX).
+
 ## Phase 0: Preparation & Inventory (Always First, Use RAG)
 
 1. **RAG**:

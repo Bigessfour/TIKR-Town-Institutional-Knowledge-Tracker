@@ -14,7 +14,7 @@
 </div>
 
 <div class="mb-3">
-    <SfButton CssClass="e-primary" IsPrimary="true" OnClick="OpenCreateDialog">Add user</SfButton>
+    <SfButton CssClass="tikr-action-btn primary" OnClick="OpenCreateDialog">Add user</SfButton>
 </div>
 
 @if (!string.IsNullOrWhiteSpace(_error))
@@ -40,7 +40,7 @@
                 @{
                     var user = (UserSummaryDto)context;
                 }
-                <SfButton CssClass="e-small" OnClick="@(() => ToggleActiveAsync(user))">
+                <SfButton CssClass="tikr-action-btn small" OnClick="@(() => ToggleActiveAsync(user))">
                     @(user.IsActive ? "Disable" : "Enable")
                 </SfButton>
             </Template>
@@ -48,11 +48,12 @@
     </GridColumns>
 </SfGrid>
 
-<SfDialog @bind-Visible="_showDialog" Width="420px" IsModal="true" ShowCloseIcon="true" Header="Add user">
+<SfDialog @bind-Visible="_showDialog" Width="480px" IsModal="true" ShowCloseIcon="true" Header="Add user">
     <DialogTemplates>
         <Content>
             <EditForm Model="_createModel" OnValidSubmit="CreateUserAsync">
                 <DataAnnotationsValidator />
+                <ValidationSummary />
                 <SfDataForm Model="_createModel" ColumnCount="1" Width="100%">
                     <FormItems>
                         <FormItem Field="@nameof(CreateUserFormModel.Email)" LabelText="Email" />
@@ -70,7 +71,8 @@
                     </FormItems>
                 </SfDataForm>
                 <div class="mt-3">
-                    <SfButton Type="ButtonType.Submit" CssClass="e-primary" IsPrimary="true">Create</SfButton>
+                    <SfButton CssClass="tikr-action-btn" OnClick="CloseCreateDialog">Cancel</SfButton>
+                    <SfButton Type="ButtonType.Submit" CssClass="tikr-action-btn primary">Create</SfButton>
                 </div>
             </EditForm>
         </Content>
@@ -99,6 +101,8 @@
         _createModel.Role = TikrRoles.Clerk;
         _showDialog = true;
     }
+
+    private void CloseCreateDialog() => _showDialog = false;
 
     private async Task CreateUserAsync()
     {

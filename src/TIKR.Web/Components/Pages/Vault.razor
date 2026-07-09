@@ -18,7 +18,7 @@
 </div>
 
 <!-- Prominent global Copy button + Handover PDF (last feature) -->
-<SfButton CssClass="tikr-action-btn vault-copy-btn"
+<SfButton CssClass="tikr-action-btn primary vault-copy-btn"
           IconCss="e-icons e-copy"
           Content="Copy Everything for New Clerk"
           OnClick="CopyAllForNewClerkAsync" />
@@ -26,6 +26,31 @@
           IconCss="e-icons e-export-pdf"
           Content="Generate Complete Handover Package"
           OnClick="GenerateHandoverPackageAsync" />
+
+<!-- Bulk toolbar (appears on multi-selection, consistent with Documents pattern) -->
+@if (VaultSelectedCount > 0)
+{
+    <div class="bulk-toolbar">
+        <span class="bulk-count">@VaultSelectedCount selected</span>
+        <SfButton CssClass="tikr-action-btn danger" IconCss="e-icons e-trash" Content="Delete selected" OnClick="RequestBulkVaultDelete" />
+        <SfButton CssClass="tikr-action-btn" Content="Clear selection" OnClick="ClearVaultSelection" />
+    </div>
+}
+
+@if (_loading)
+{
+    <div class="tikr-loading-state" role="status" aria-live="polite" aria-busy="true">
+        <div class="tikr-loading-spinner" aria-hidden="true"></div>
+        <span>Loading vault entries…</span>
+    </div>
+    <!-- Lightweight skeleton rows for grid polish (Phase 3 Item 10) -->
+    <div class="tikr-skeleton-grid" aria-hidden="true">
+        <div class="tikr-skeleton-row w-95"></div>
+        <div class="tikr-skeleton-row w-85"></div>
+        <div class="tikr-skeleton-row w-75"></div>
+        <div class="tikr-skeleton-row w-65"></div>
+    </div>
+}
 
 <SfTab CssClass="vault-tabs">
     <TabItems>
@@ -36,8 +61,17 @@
             </ChildContent>
             <ContentTemplate>
                 <div class="vault-section">
-                    <SfGrid DataSource="@HowToEntries" AllowPaging="true" PageSize="8" Height="260" AllowSorting="true">
+                    <div class="vault-grid-host">
+                    <SfGrid @ref="HowToGridRef" DataSource="@HowToEntries" AllowPaging="true" PageSize="8" Height="100%" AllowSorting="true" AllowSelection="true" CssClass="vault-grid">
+                        <GridSelectionSettings Type="Syncfusion.Blazor.Grids.SelectionType.Multiple" />
+                        <GridEvents RowSelected="@((RowSelectEventArgs<KnowledgeEntryDto> e) => OnVaultEntryRowSelected(e))" RowDeselected="@((RowDeselectEventArgs<KnowledgeEntryDto> e) => OnVaultEntryRowDeselected(e))" />
+                        <GridTemplates>
+                            <EmptyRecordTemplate>
+                                <div class="tikr-empty-state">No how-to guides yet. Add institutional knowledge using the editor below.</div>
+                            </EmptyRecordTemplate>
+                        </GridTemplates>
                         <GridColumns>
+                            <GridColumn Type="ColumnType.CheckBox" Width="50" />
                             <GridColumn Field="@nameof(KnowledgeEntryDto.Title)" HeaderText="Title" Width="220" />
                             <GridColumn Field="@nameof(KnowledgeEntryDto.SortOrder)" HeaderText="Order" Width="70" />
                             <GridColumn Width="100">
@@ -51,6 +85,7 @@
                             </GridColumn>
                         </GridColumns>
                     </SfGrid>
+                    </div>
 
                     <SfAccordion CssClass="vault-accordion">
                         @foreach (var e in HowToEntries)
@@ -78,8 +113,17 @@
             </ChildContent>
             <ContentTemplate>
                 <div class="vault-section">
-                    <SfGrid DataSource="@ContactEntries" AllowPaging="true" PageSize="8" Height="260" AllowSorting="true">
+                    <div class="vault-grid-host">
+                    <SfGrid @ref="ContactGridRef" DataSource="@ContactEntries" AllowPaging="true" PageSize="8" Height="100%" AllowSorting="true" AllowSelection="true" CssClass="vault-grid">
+                        <GridSelectionSettings Type="Syncfusion.Blazor.Grids.SelectionType.Multiple" />
+                        <GridEvents RowSelected="@((RowSelectEventArgs<KnowledgeEntryDto> e) => OnVaultEntryRowSelected(e))" RowDeselected="@((RowDeselectEventArgs<KnowledgeEntryDto> e) => OnVaultEntryRowDeselected(e))" />
+                        <GridTemplates>
+                            <EmptyRecordTemplate>
+                                <div class="tikr-empty-state">No contacts recorded yet. Add key roles and phone numbers for the new clerk.</div>
+                            </EmptyRecordTemplate>
+                        </GridTemplates>
                         <GridColumns>
+                            <GridColumn Type="ColumnType.CheckBox" Width="50" />
                             <GridColumn Field="@nameof(KnowledgeEntryDto.Title)" HeaderText="Contact / Role" Width="220" />
                             <GridColumn Width="100">
                                 <Template>
@@ -92,6 +136,7 @@
                             </GridColumn>
                         </GridColumns>
                     </SfGrid>
+                    </div>
 
                     <SfAccordion>
                         @foreach (var e in ContactEntries)
@@ -117,8 +162,17 @@
             </ChildContent>
             <ContentTemplate>
                 <div class="vault-section">
-                    <SfGrid DataSource="@TribalEntries" AllowPaging="true" PageSize="8" Height="260" AllowSorting="true">
+                    <div class="vault-grid-host">
+                    <SfGrid @ref="TribalGridRef" DataSource="@TribalEntries" AllowPaging="true" PageSize="8" Height="100%" AllowSorting="true" AllowSelection="true" CssClass="vault-grid">
+                        <GridSelectionSettings Type="Syncfusion.Blazor.Grids.SelectionType.Multiple" />
+                        <GridEvents RowSelected="@((RowSelectEventArgs<KnowledgeEntryDto> e) => OnVaultEntryRowSelected(e))" RowDeselected="@((RowDeselectEventArgs<KnowledgeEntryDto> e) => OnVaultEntryRowDeselected(e))" />
+                        <GridTemplates>
+                            <EmptyRecordTemplate>
+                                <div class="tikr-empty-state">No tribal knowledge captured yet. Record the unwritten rules and gotchas here.</div>
+                            </EmptyRecordTemplate>
+                        </GridTemplates>
                         <GridColumns>
+                            <GridColumn Type="ColumnType.CheckBox" Width="50" />
                             <GridColumn Field="@nameof(KnowledgeEntryDto.Title)" HeaderText="Title" Width="220" />
                             <GridColumn Width="100">
                                 <Template>
@@ -131,6 +185,7 @@
                             </GridColumn>
                         </GridColumns>
                     </SfGrid>
+                    </div>
 
                     <SfAccordion>
                         @foreach (var e in TribalEntries)
@@ -169,12 +224,21 @@
                         <div class="transcription-box">
                             <label>Transcribed note (edit if needed):</label>
                             <SfTextBox Multiline="true" @bind-Value="PendingTranscription" Placeholder="What you said..." />
-                            <SfButton CssClass="tikr-action-btn" Content="Save as Voice Note" OnClick="SaveVoiceNoteAsync" />
+                            <SfButton CssClass="tikr-action-btn primary" Content="Save as Voice Note" OnClick="SaveVoiceNoteAsync" />
                         </div>
                     }
 
-                    <SfGrid DataSource="@VoiceNotes" AllowPaging="true" PageSize="6" Height="220">
+                    <div class="vault-grid-host">
+                    <SfGrid @ref="VoiceGridRef" DataSource="@VoiceNotes" AllowPaging="true" PageSize="6" Height="100%" AllowSelection="true" CssClass="vault-grid">
+                        <GridSelectionSettings Type="Syncfusion.Blazor.Grids.SelectionType.Multiple" />
+                        <GridEvents RowSelected="@((RowSelectEventArgs<VaultVoiceNote> e) => OnVoiceNoteRowSelected(e))" RowDeselected="@((RowDeselectEventArgs<VaultVoiceNote> e) => OnVoiceNoteRowDeselected(e))" />
+                        <GridTemplates>
+                            <EmptyRecordTemplate>
+                                <div class="tikr-empty-state">No voice notes yet. Use the speech-to-text recorder above to capture quick reminders.</div>
+                            </EmptyRecordTemplate>
+                        </GridTemplates>
                         <GridColumns>
+                            <GridColumn Type="ColumnType.CheckBox" Width="50" />
                             <GridColumn Field="Title" HeaderText="Title" Width="200" />
                             <GridColumn Field="Transcription" HeaderText="Transcription" Width="280" />
                             <GridColumn Width="80">
@@ -187,6 +251,7 @@
                             </GridColumn>
                         </GridColumns>
                     </SfGrid>
+                    </div>
                 </div>
             </ContentTemplate>
         </TabItem>
@@ -200,7 +265,7 @@
         <h4>Editing: @SelectedEntry.Title</h4>
         <SfRichTextEditor @bind-Value="EditorContent" Height="220px" />
         <div class="editor-actions">
-            <SfButton CssClass="tikr-action-btn" Content="Save Changes" OnClick="SaveSelectedEntryAsync" />
+            <SfButton CssClass="tikr-action-btn primary" Content="Save Changes" OnClick="SaveSelectedEntryAsync" />
             <SfButton CssClass="tikr-action-btn" Content="Cancel" OnClick="CancelEdit" />
         </div>
     </div>
@@ -217,11 +282,23 @@
     private string _confirmDeleteLabel = string.Empty;
     private KnowledgeEntryDto? _pendingEntryDelete;
     private VaultVoiceNote? _pendingVoiceDelete;
+    private bool _pendingBulkVaultDelete;
+
     private List<KnowledgeEntryDto> _allEntries = [];
     private List<VaultVoiceNote> VoiceNotes { get; set; } = new();
+    private bool _loading = true;
 
     private KnowledgeEntryDto? SelectedEntry;
     private string EditorContent = "";
+
+    // Selection refs and state (pattern consistent with Documents.razor)
+    private SfGrid<KnowledgeEntryDto>? HowToGridRef;
+    private SfGrid<KnowledgeEntryDto>? ContactGridRef;
+    private SfGrid<KnowledgeEntryDto>? TribalGridRef;
+    private SfGrid<VaultVoiceNote>? VoiceGridRef;
+
+    private HashSet<Guid> _selectedVaultIds = new();
+    private int VaultSelectedCount => _selectedVaultIds.Count;
 
     private string PendingTranscription = "";
 
@@ -234,7 +311,15 @@
 
     protected override async Task OnInitializedAsync()
     {
-        await LoadEntriesAsync();
+        _loading = true;
+        try
+        {
+            await LoadEntriesAsync();
+        }
+        finally
+        {
+            _loading = false;
+        }
     }
 
     private async Task LoadEntriesAsync()
@@ -245,6 +330,9 @@
             .Select(VaultVoiceNoteMapper.ToVoiceNote)
             .OrderByDescending(v => v.Timestamp)
             .ToList();
+
+        // Clear any prior multi-selection when data reloads (keeps state consistent)
+        _selectedVaultIds.Clear();
     }
 
     private void SelectEntry(KnowledgeEntryDto entry)
@@ -270,6 +358,64 @@
         EditorContent = "";
     }
 
+    // SfGrid selection event handlers (built-in AllowSelection + events pattern from Documents)
+    private void OnVaultEntryRowSelected(RowSelectEventArgs<KnowledgeEntryDto> args)
+    {
+        if (args?.Data is { } entry)
+        {
+            _selectedVaultIds.Add(entry.Id);
+            StateHasChanged();
+        }
+    }
+
+    private void OnVaultEntryRowDeselected(RowDeselectEventArgs<KnowledgeEntryDto> args)
+    {
+        if (args?.Data is { } entry)
+        {
+            _selectedVaultIds.Remove(entry.Id);
+            StateHasChanged();
+        }
+    }
+
+    private void OnVoiceNoteRowSelected(RowSelectEventArgs<VaultVoiceNote> args)
+    {
+        if (args?.Data is { } note)
+        {
+            _selectedVaultIds.Add(note.Id);
+            StateHasChanged();
+        }
+    }
+
+    private void OnVoiceNoteRowDeselected(RowDeselectEventArgs<VaultVoiceNote> args)
+    {
+        if (args?.Data is { } note)
+        {
+            _selectedVaultIds.Remove(note.Id);
+            StateHasChanged();
+        }
+    }
+
+    private async Task ClearVaultSelection()
+    {
+        _selectedVaultIds.Clear();
+        try { if (HowToGridRef is not null) await HowToGridRef.ClearSelectionAsync(); } catch { /* grid not ready */ }
+        try { if (ContactGridRef is not null) await ContactGridRef.ClearSelectionAsync(); } catch { /* grid not ready */ }
+        try { if (TribalGridRef is not null) await TribalGridRef.ClearSelectionAsync(); } catch { /* grid not ready */ }
+        try { if (VoiceGridRef is not null) await VoiceGridRef.ClearSelectionAsync(); } catch { /* grid not ready */ }
+        StateHasChanged();
+    }
+
+    private void RequestBulkVaultDelete()
+    {
+        if (VaultSelectedCount == 0) return;
+
+        _pendingBulkVaultDelete = true;
+        _pendingEntryDelete = null;
+        _pendingVoiceDelete = null;
+        _confirmDeleteLabel = $"{VaultSelectedCount} selected vault item{(VaultSelectedCount == 1 ? "" : "s")}";
+        _confirmDeleteVisible = true;
+    }
+
     private void RequestDeleteEntry(KnowledgeEntryDto entry)
     {
         _pendingVoiceDelete = null;
@@ -288,6 +434,26 @@
 
     private async Task ConfirmDeleteAsync()
     {
+        if (_pendingBulkVaultDelete)
+        {
+            var ids = _selectedVaultIds.ToList();
+            var count = ids.Count;
+
+            foreach (var id in ids)
+            {
+                try { await Api.DeleteKnowledgeEntryAsync(id); } catch { /* continue for other items */ }
+                VoiceNotes.RemoveAll(v => v.Id == id);
+            }
+
+            Toast.Show($"Deleted {count} vault item{(count == 1 ? "" : "s")}");
+            await LoadEntriesAsync();
+            _pendingBulkVaultDelete = false;
+            // Load clears the _selectedVaultIds hash; also ensure editor cleaned if affected
+            if (SelectedEntry is not null && ids.Contains(SelectedEntry.Id))
+                CancelEdit();
+            return;
+        }
+
         if (_pendingEntryDelete is not null)
         {
             var entry = _pendingEntryDelete;

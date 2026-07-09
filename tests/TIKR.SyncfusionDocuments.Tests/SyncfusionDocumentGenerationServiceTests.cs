@@ -1,6 +1,8 @@
 using FluentAssertions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging.Abstractions;
+using SkiaSharp;
+using Syncfusion.Pdf.Parsing;
 using TIKR.Shared.DTOs;
 using TIKR.SyncfusionDocuments;
 
@@ -157,4 +159,85 @@ public class SyncfusionDocumentGenerationServiceTests
                             "Summary of election filing requirements for the November cycle.")
                     ])
             ]);
+
+    [Fact]
+    [Trait("Category", "SyncfusionLicensed")]
+    public async Task CreateAgentArchivePdfAsync_WhenLicensed_ForPdf_ReturnsAiArchiveWithStampAndMetadata()
+    {
+        var licenseKey = Environment.GetEnvironmentVariable("SYNCFUSION_LICENSE_KEY");
+        if (string.IsNullOrWhiteSpace(licenseKey))
+            return;
+
+        SyncfusionDocumentLicense.RegisterFromConfiguration(
+            new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string?> { ["SYNCFUSION_LICENSE_KEY"] = licenseKey })
+                .Build());
+
+        var service = CreateService(licenseKey);
+
+        // Use fixture to get a valid minimal PDF (exercises load + per-page stamp + metadata path)
+        var pdfBytes = AgentScanPdfFixture.CreateMinimalClerkReportPdf();
+        await using var stream = new MemoryStream(pdfBytes);
+        var result = await service.CreateAgentArchivePdfAsync(stream, "clerk-report.pdf", DateTime.UtcNow);
+
+        result.ContentType.Should().Be("application/pdf");
+        result.FileName.Should().Contain(".ai-archive.pdf");
+        result.Content.Should().NotBeEmpty();
+        result.Content.Take(4).Should().Equal([(byte)'%', (byte)'P', (byte)'D', (byte)'F']);
+
+        // Real behavior: reload and verify archive metadata (Title/Subject/Keywords contain key phrases + original name)
+        using var reloaded = new PdfLoadedDocument(new MemoryStream(result.Content));
+        reloaded.DocumentInformation.Title.Should().Contain("AI Archive");
+        reloaded.DocumentInformation.Subject.Should().Contain("AI PROCESSED - TIKR VAULT");
+        reloaded.DocumentInformation.Keywords.Should().Contain("clerk-report.pdf");
+    }
+
+    [Fact]
+    [Trait("Category", "SyncfusionLicensed")]
+    public async Task ConvertImageToPdfAsync_WhenLicensed_HandlesInvalidImageWithAiFallback()
+    {
+        var licenseKey = Environment.GetEnvironmentVariable("SYNCFUSION_LICENSE_KEY");
+        if (string.IsNullOrWhiteSpace(licenseKey))
+            return;
+
+        var service = CreateService(licenseKey);
+
+        // Invalid bytes -> exercises fallback path (produces valid stamped PDF)
+        await using var stream = new MemoryStream(new byte[] { 0x00, 0x01, 0x02 });
+        var result = await service.ConvertImageToPdfAsync(stream, "bad-image.png");
+
+        result.ContentType.Should().Be("application/pdf");
+        result.FileName.Should().EndWith(".pdf");
+        result.Content.Should().NotBeEmpty();
+        result.Content.Take(4).Should().Equal([(byte)'%', (byte)'P', (byte)'D', (byte)'F']);
+    }
+
+    [Fact]
+    [Trait("Category", "SyncfusionLicensed")]
+    public async Task ConvertImageToPdfAsync_WhenLicensed_ForValidImage_ReturnsPdf()
+    {
+        var licenseKey = Environment.GetEnvironmentVariable("SYNCFUSION_LICENSE_KEY");
+        if (string.IsNullOrWhiteSpace(licenseKey))
+            return;
+
+        var service = CreateService(licenseKey);
+
+        // Synthesize a minimal valid PNG via Skia (no external asset dependency for CI)
+        using var bitmap = new SKBitmap(64, 48);
+        using (var canvas = new SKCanvas(bitmap))
+        {
+            canvas.Clear(SKColors.LightBlue);
+            canvas.Flush();
+        }
+        using var img = SKImage.FromBitmap(bitmap);
+        using var data = img.Encode(SKEncodedImageFormat.Png, 90);
+        await using var imageStream = new MemoryStream(data.ToArray());
+
+        var result = await service.ConvertImageToPdfAsync(imageStream, "diagram.png");
+
+        result.ContentType.Should().Be("application/pdf");
+        result.FileName.Should().EndWith(".pdf");
+        result.Content.Should().NotBeEmpty();
+        result.Content.Take(4).Should().Equal([(byte)'%', (byte)'P', (byte)'D', (byte)'F']);
+    }
 }

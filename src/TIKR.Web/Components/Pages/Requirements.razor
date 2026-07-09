@@ -25,9 +25,9 @@
 </div>
 
 <div class="requirements-toolbar mb-3">
-    <SfButton CssClass="tikr-action-btn e-primary" IsPrimary="true" IconCss="e-icons e-plus" Content="Add requirement" OnClick="OpenCreateDialog" />
+    <SfButton CssClass="tikr-action-btn primary" IsPrimary="true" IconCss="e-icons e-plus" Content="Add requirement" OnClick="OpenCreateDialog" />
     <SfButton CssClass="tikr-action-btn" IconCss="e-icons e-export" Content="Export CSV" OnClick="ExportCsvAsync" />
-    <SfButton CssClass="tikr-action-btn e-primary" IsPrimary="true" IconCss="e-icons e-export-pdf" Content="@CouncilPacketButtonLabel" Disabled="@(_generating is not null)" OnClick="GenerateCouncilPacketAsync" />
+    <SfButton CssClass="tikr-action-btn primary" IsPrimary="true" IconCss="e-icons e-export-pdf" Content="@CouncilPacketButtonLabel" Disabled="@(_generating is not null)" OnClick="GenerateCouncilPacketAsync" />
     <SfButton CssClass="tikr-action-btn" IconCss="e-icons e-export-pdf" Content="@AgendaPdfButtonLabel" Disabled="@(_generating is not null)" OnClick="DownloadAgendaPdfAsync" />
     <SfButton CssClass="tikr-action-btn" IconCss="e-icons e-export-excel" Content="@ComplianceExcelButtonLabel" Disabled="@(_generating is not null)" OnClick="DownloadComplianceReportAsync" />
     <SfButton CssClass="tikr-action-btn" IconCss="e-icons e-description" Content="Meeting minutes" OnClick="OpenMinutesDialog" />
@@ -67,40 +67,71 @@
     <SfButton CssClass="tikr-action-btn" Content="Reset Wiley view" OnClick="ResetFiltersToWileyDefaults" />
 </div>
 
-@if (!string.IsNullOrWhiteSpace(_error))
+@if (_loading)
 {
-    <div class="login-error mb-3">@_error</div>
-}
-
-@if (!string.IsNullOrWhiteSpace(_packetStatus))
-{
-    <div class="ai-suggestion-banner mb-3" aria-busy="@(_generating == "packet")" aria-live="polite">
-        <strong>@_packetStatus</strong>
+    <div class="tikr-loading-state" role="status" aria-live="polite" aria-busy="true">
+        <div class="tikr-loading-spinner" aria-hidden="true"></div>
+        <span>Loading requirements…</span>
+    </div>
+    <!-- Lightweight skeleton rows for grid polish (Phase 3 Item 10) -->
+    <div class="tikr-skeleton-grid" aria-hidden="true">
+        <div class="tikr-skeleton-row w-95"></div>
+        <div class="tikr-skeleton-row w-80"></div>
+        <div class="tikr-skeleton-row w-70"></div>
+        <div class="tikr-skeleton-row w-60"></div>
     </div>
 }
-
-@if (_agentScanning)
+else
 {
-    <div class="ai-suggestion-banner mb-3" aria-busy="true" aria-live="polite">
-        <strong>Scanning document on Synology…</strong>
-        <div class="banner-body">Extracting text and tables for the requirement form.</div>
-    </div>
-}
-else if (!string.IsNullOrWhiteSpace(_agentMessage))
-{
-    <div class="ai-suggestion-banner mb-3">
-        @if (_lastAgentResult is not null)
-        {
-            <span class="extraction-badge @RequirementWorkflowHelpers.GetExtractionBadgeCssClass(_lastAgentResult)">
-                @RequirementWorkflowHelpers.GetExtractionSourceLabel(_lastAgentResult)
-            </span>
-        }
-        <strong>@_agentMessage</strong>
-        <div class="banner-body">Review the pre-filled requirement below, then save or edit before filing.</div>
-    </div>
-}
+    @if (!string.IsNullOrWhiteSpace(_error))
+    {
+        <div class="tikr-error-state" role="alert" aria-live="assertive">@_error</div>
+    }
 
-<SfGrid CssClass="tikr-print-area" DataSource="@VisibleRequirements" AllowPaging="true" PageSize="12" AllowSorting="true" Height="520">
+    @if (!string.IsNullOrWhiteSpace(_packetStatus))
+    {
+        <AiSuggestionBanner CssClass="mb-3" aria-busy="@(_generating == "packet")" aria-live="polite">
+            <ChildContent>
+                <strong>@_packetStatus</strong>
+            </ChildContent>
+        </AiSuggestionBanner>
+    }
+
+    @if (_agentScanning)
+    {
+        <AiSuggestionBanner CssClass="mb-3" aria-busy="true" aria-live="polite">
+            <ChildContent>
+                <strong>Scanning document on Synology…</strong>
+                <div class="banner-body">Extracting text and tables for the requirement form.</div>
+            </ChildContent>
+        </AiSuggestionBanner>
+    }
+    else if (!string.IsNullOrWhiteSpace(_agentMessage))
+    {
+        <AiSuggestionBanner CssClass="mb-3">
+            <ChildContent>
+                @if (_lastAgentResult is not null)
+                {
+                    <span class="extraction-badge @RequirementWorkflowHelpers.GetExtractionBadgeCssClass(_lastAgentResult)">
+                        @RequirementWorkflowHelpers.GetExtractionSourceLabel(_lastAgentResult)
+                    </span>
+                }
+                <strong>@_agentMessage</strong>
+                <div class="banner-body">Review the pre-filled requirement below, then save or edit before filing.</div>
+            </ChildContent>
+        </AiSuggestionBanner>
+    }
+
+    <div class="requirements-grid-host">
+    <SfGrid CssClass="tikr-print-area" DataSource="@VisibleRequirements" AllowPaging="true" PageSize="12" AllowSorting="true" Height="100%">
+        <GridTemplates>
+            <EmptyRecordTemplate>
+                <div class="tikr-empty-state">
+                    No requirements match your filters.
+                    <div class="tikr-empty-action">Try clearing the search or adjusting category/urgency filters above.</div>
+                </div>
+            </EmptyRecordTemplate>
+        </GridTemplates>
     <GridColumns>
         <GridColumn Field="@nameof(RequirementDto.Title)" HeaderText="Requirement" Width="240" />
         <GridColumn HeaderText="Urgency" Width="110">
@@ -133,12 +164,15 @@ else if (!string.IsNullOrWhiteSpace(_agentMessage))
         </GridColumn>
     </GridColumns>
 </SfGrid>
+    </div>
+}
 
 <SfDialog @bind-Visible="_showDialog" Width="480px" IsModal="true" ShowCloseIcon="true" Header="@(_editingId is null ? "Add requirement" : "Edit requirement")">
     <DialogTemplates>
         <Content>
             <EditForm Model="_form" OnValidSubmit="SaveAsync">
                 <DataAnnotationsValidator />
+                <ValidationSummary />
                 <SfDataForm Model="_form" ColumnCount="1" Width="100%">
                     <FormItems>
                         <FormItem Field="@nameof(RequirementFormModel.Title)" LabelText="Title" />
@@ -180,15 +214,15 @@ else if (!string.IsNullOrWhiteSpace(_agentMessage))
                     </FormItems>
                 </SfDataForm>
                 <div class="mt-3">
-                    <SfButton Type="ButtonType.Submit" CssClass="e-primary" IsPrimary="true">Save</SfButton>
                     <SfButton CssClass="tikr-action-btn" OnClick="CloseDialog">Cancel</SfButton>
+                    <SfButton Type="ButtonType.Submit" CssClass="tikr-action-btn primary">Save</SfButton>
                 </div>
             </EditForm>
         </Content>
     </DialogTemplates>
 </SfDialog>
 
-<SfDialog @bind-Visible="_minutesDialogVisible" Width="520px" IsModal="true" ShowCloseIcon="true" Header="Generate meeting minutes">
+<SfDialog @bind-Visible="_minutesDialogVisible" Width="480px" IsModal="true" ShowCloseIcon="true" Header="Generate meeting minutes">
     <DialogTemplates>
         <Content>
             <div class="mb-2">
@@ -211,11 +245,11 @@ else if (!string.IsNullOrWhiteSpace(_agentMessage))
                 <label class="form-label">Minutes notes</label>
                 <SfTextBox Multiline="true" @bind-Value="_minutesNotes" Placeholder="Motions, votes, and discussion…" />
             </div>
-            <div class="mt-3">
-                <SfButton CssClass="e-primary tikr-action-btn" IsPrimary="true" Content="@MinutesGenerateButtonLabel" Disabled="@(_generating is not null)" OnClick="DownloadMeetingMinutesAsync" />
-                <SfButton CssClass="tikr-action-btn" Content="Cancel" OnClick="CloseMinutesDialog" />
-            </div>
         </Content>
+        <FooterTemplate>
+            <SfButton CssClass="tikr-action-btn" Content="Cancel" OnClick="CloseMinutesDialog" />
+            <SfButton CssClass="tikr-action-btn primary" Content="@MinutesGenerateButtonLabel" Disabled="@(_generating is not null)" OnClick="DownloadMeetingMinutesAsync" />
+        </FooterTemplate>
     </DialogTemplates>
 </SfDialog>
 
@@ -229,6 +263,7 @@ else if (!string.IsNullOrWhiteSpace(_agentMessage))
     private string _categoryFilterValue = "All";
     private string _urgencyFilterValue = "All";
     private bool _includeCompleted;
+    private bool _loading = true;
     private bool _showDialog;
     private Guid? _editingId;
     private string? _error;
@@ -271,6 +306,7 @@ else if (!string.IsNullOrWhiteSpace(_agentMessage))
 
     private async Task LoadAsync()
     {
+        _loading = true;
         _error = null;
         try
         {
@@ -284,6 +320,10 @@ else if (!string.IsNullOrWhiteSpace(_agentMessage))
         {
             _requirements = [];
             _error = "Could not load requirements. Is the API running?";
+        }
+        finally
+        {
+            _loading = false;
         }
     }
 

@@ -1,0 +1,30 @@
+@rendermode InteractiveServer
+
+<div class="ai-suggestion-banner @CssClass" @attributes="AdditionalAttributes">
+    @if (BadgeContent is not null)
+    {
+        @BadgeContent
+    }
+    @ChildContent
+    @if (ActionsContent is not null)
+    {
+        @ActionsContent
+    }
+</div>
+
+@code {
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+
+    [Parameter]
+    public RenderFragment? BadgeContent { get; set; }
+
+    [Parameter]
+    public RenderFragment? ActionsContent { get; set; }
+
+    [Parameter]
+    public string? CssClass { get; set; }
+
+    [Parameter(CaptureUnmatchedValues = true)]
+    public Dictionary<string, object>? AdditionalAttributes { get; set; }
+}

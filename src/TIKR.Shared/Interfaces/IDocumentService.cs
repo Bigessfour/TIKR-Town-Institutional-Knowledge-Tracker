@@ -10,6 +10,13 @@ namespace TIKR.Shared.Interfaces;
 public interface IDocumentService
 {
     /// <summary>
+    /// Prepares upload (text extraction decision + storage save) returning ready-to-persist entity + metadata.
+    /// Does NOT perform DB persist or audit (caller responsible, e.g. UploadAsync).
+    /// Accepts portable stream data (avoids web types in Shared interface).
+    /// </summary>
+    Task<(Document Entity, string? FullText, string StoragePath)> PrepareDocumentUploadAsync(Stream content, string fileName, string? contentType, long length, IFileStorageService storage, CancellationToken ct = default);
+
+    /// <summary>
     /// Prepares upload (text extraction decision + storage) and creates/persists Document entity.
     /// Handles validation, audit, and transaction for atomicity with audit.
     /// Accepts portable stream data (avoids web types in Shared interface).
@@ -25,4 +32,9 @@ public interface IDocumentService
         CancellationToken ct = default);
 
     // Future: other CRUD if needed beyond thin endpoints; queries can stay direct for now.
+
+    /// <summary>
+    /// Delete document + audit under transaction (storage cleanup best-effort after commit for integrity).
+    /// </summary>
+    Task DeleteAsync(Guid id, IFileStorageService storage, IAuditService audit, ICurrentUserService currentUser, CancellationToken ct = default);
 }

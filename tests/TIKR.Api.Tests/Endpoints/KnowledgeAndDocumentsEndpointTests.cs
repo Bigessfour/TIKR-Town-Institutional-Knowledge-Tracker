@@ -17,9 +17,12 @@ public class KnowledgeEndpointTests : IClassFixture<TikrWebApplicationFactory>
     public KnowledgeEndpointTests(TikrWebApplicationFactory factory) =>
         _client = factory.CreateClient();
 
+    // Covers KnowledgeService.CreateAsync / UpdateAsync / DeleteAsync via thin /api/knowledge endpoints (Program.cs delegation)
+
     [Fact]
     public async Task PostAndGetKnowledgeEntry_RoundTrips()
     {
+        // Covers KnowledgeService.CreateAsync via thin endpoint
         var request = new CreateKnowledgeEntryRequest(
             "How to run elections",
             "Step-by-step guide for the backup clerk.",
@@ -38,6 +41,7 @@ public class KnowledgeEndpointTests : IClassFixture<TikrWebApplicationFactory>
     [Fact]
     public async Task PutKnowledgeEntry_UpdatesContent()
     {
+        // Covers KnowledgeService.UpdateAsync via thin endpoint
         var create = await _client.PostAsJsonAsync("/api/knowledge", new CreateKnowledgeEntryRequest(
             "Original title",
             "Original content",
@@ -102,9 +106,13 @@ public class DocumentsEndpointTests : IClassFixture<TikrWebApplicationFactory>
     public DocumentsEndpointTests(TikrWebApplicationFactory factory) =>
         _client = factory.CreateClient();
 
+    // Covers DocumentService.PrepareDocumentUploadAsync (and UploadAsync which calls it) via thin POST /api/documents
+    // + DocumentService.DeleteAsync etc.
+
     [Fact]
     public async Task UploadDocument_PersistsMetadata()
     {
+        // Covers DocumentService.PrepareDocumentUploadAsync via document upload endpoint
         using var content = new MultipartFormDataContent();
         var fileContent = new ByteArrayContent("sample pdf bytes"u8.ToArray());
         fileContent.Headers.ContentType = new MediaTypeHeaderValue("application/pdf");

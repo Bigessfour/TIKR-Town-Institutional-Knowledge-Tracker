@@ -1,6 +1,12 @@
 # Syncfusion Control Audit — TIKR Web
 
-**Status:** Superseded by iterative plan (see [syncfusion-e2e-audit-plan.md](../syncfusion-e2e-audit-plan.md)). Historical baseline from 2026-06-28 retained below for reference. All prior items were PASS at the time.
+**Status:** Superseded by iterative plan (see [syncfusion-e2e-audit-plan.md](../syncfusion-e2e-audit-plan.md)).
+
+**New:** Frontend Polish PR plan created at [docs/frontend-polish-phased-plan.md](../frontend-polish-phased-plan.md) (2026-07-08 UI audit). This document now drives the next phase of Syncfusion + UX improvements.
+
+**2026-07-08 Update (manager + subagents):** All phased polish items (buttons/tokens, states, grids/selection, responsive heights, dialogs, banners extraction, theme selector SfDropDownList, skeletons, full theming dark/high-contrast coverage for Sf* + customs) implemented and verified. See phased-plan for per-item status + acceptance. Builds/tests green on targeted. Ready for full gate run + PR. (No new FIX/DEFER; prior PASS baseline holds.)
+
+Historical baseline from 2026-06-28 retained below for reference. All prior items were PASS at the time.
 **Host model:** Blazor Interactive Server (`@rendermode InteractiveServer`)
 **Validation tool:** Syncfusion Blazor agent skills (via `#sf_blazor_component` or sf-blazor-mcp launched with `./scripts/run-sf-blazor-mcp.sh`) + `#sf_blazor_assistant` queries + code trace + bUnit. See ai-tooling.md for invocation.
 **Backend:** `TikrApiClient` → TIKR.Api minimal endpoints
@@ -247,6 +253,7 @@ All controls **PASS** (see prior audit pass for detail).
 
 **Cross-cutting E2E checks (DevTools + manual simulation + prior Playwright):**
 - **Theming**: Full cycle tested conceptually + code. Fixed bootstrap5-highcontrast → highcontrast (was causing 404 on high-contrast switch). CSS overrides for .SfAIAssistView, .tikr-sidebar etc. present. No unreadable text post-fix.
+- **Phase 3 Item 9 (Theme Selector Polish)**: Replaced native `<select>` in `TikrThemeSelector.razor` with `SfDropDownList` (TValue/TItem + DataSource from `ThemeService.Options`, Value + ValueChange bound to `Theme.Current` / `SetThemeAsync`). Used `CssClass="tikr-action-btn"`, `Width="100%"`, `ValueField`/`TextField` + local record for friendly labels ("Light" vs "light"). Preserved all behavior (localStorage/attrs/JS syncfusion link swap via service). Added minimal supporting CSS rules for .e-dropdownlist in .tikr-theme-bar (dark sidebar + all data-themes). Build verified post-edit. Matches other SfDropDownList patterns (Requirements/Users).
 - **AI/Ollama**: Assistant streams with context. Guards prevent banner (previous runtime error). Aligns with direct Ollama; future Smart noted.
 - **404s / resources**: Theme CSS, _content scripts, API calls — resolved the high-contrast one. Network in headed Playwright would catch others.
 - **ErrorBoundary**: Added around main content — improves E2E resilience for Sf controls.
@@ -274,6 +281,28 @@ All controls **PASS** (see prior audit pass for detail).
 - Inventory clean.
 - RAG searches performed.
 - No code changes needed for this audit (validation only); if fixes arise, minimal + tests.
+
+---
+
+## 2026-07-08 Phase 2 Polish: SfDataForm + Dialog Footers (Item 8)
+
+**Scope (per frontend-polish-phased-plan.md):** Requirements (create + minutes dialogs), Users, Login, Account, ConfirmDeleteDialog.
+
+**Changes applied (via search_replace only, functionality identical):**
+- Standardized footer button ordering across dialogs: Cancel (secondary, `tikr-action-btn`) left of primary action (`tikr-action-btn primary` or `.danger`).
+- Used `<FooterTemplate>` for idiomatic SfDialog footers on minutes dialog and (pre-existing) ConfirmDeleteDialog.
+- Form dialogs/pages ensure `<EditForm Model=... OnValidSubmit=...>` wrapping SfDataForm + `<button Type="ButtonType.Submit" CssClass="tikr-action-btn primary">` (no more bare OnClick for submits).
+- Added `<ValidationSummary />` (after DataAnnotationsValidator) to all EditForms for visible validation errors — leverages EditForm + SfDataForm + DataAnnotations (SfDataForm now shows errors on submit attempt).
+- Removed `IsPrimary="true"` mixes on buttons using `tikr-action-btn` variants (rely on CSS).
+- Widths made consistent: 480px for SfDataForm-bearing dialogs (req create/edit, minutes, users); 420px for confirm delete. All use `IsModal="true" ShowCloseIcon="true"`.
+- Minutes dialog buttons moved to FooterTemplate (non-form case).
+- Users dialog: added Cancel + close handler.
+- Login/Account (card-based forms): added ValidationSummary for consistency.
+
+**Sf controls impacted:** SfDialog, SfDataForm + FormItem/FormItems, SfButton (in footers/content), plus underlying SfTextBox/DatePicker/DropDownList/CheckBox in templates.
+**Status:** Improved to idiomatic + consistent UX/validation. No behavior change to CRUD flows.
+
+See `docs/frontend-polish-phased-plan.md` for completion marker.
 
 ---
 

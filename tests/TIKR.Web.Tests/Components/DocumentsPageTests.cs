@@ -16,6 +16,10 @@ namespace TIKR.Web.Tests.Components;
 [Trait("Category", TestCategories.FullyTested)]
 public class DocumentsPageTests : ClerkTestContext
 {
+    public DocumentsPageTests()
+    {
+        JSInterop.Mode = JSRuntimeMode.Loose;
+    }
 
     [Fact]
     public void Documents_LoadsDocumentListFromApi()

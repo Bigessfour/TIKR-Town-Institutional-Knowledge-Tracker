@@ -1,3 +1,38 @@
+/* =========================================================
+   TIKR Design Tokens (Phase 1 Item 1)
+   Add at top of file for button styling, spacing, touch targets.
+   Used by .tikr-action-btn variants and theme rules.
+   ========================================================= */
+:root {
+  --tikr-btn-min-height: 44px;
+  --tikr-btn-min-width: 44px;
+  --tikr-btn-padding-x: 0.75rem;
+  --tikr-btn-padding-y: 0.4rem;
+  --tikr-spacing-xs: 0.25rem;
+  --tikr-spacing-sm: 0.5rem;
+  --tikr-spacing-md: 0.75rem;
+  --tikr-spacing-lg: 1rem;
+  --tikr-radius-sm: 4px;
+  --tikr-radius-md: 6px;
+  --tikr-color-primary: #1e3a5f;
+  --tikr-color-primary-hover: #16314f;
+  --tikr-color-danger: #c0392b;
+  --tikr-color-danger-hover: #a93226;
+  --tikr-color-text: #1f2937;
+  --tikr-color-text-inverse: #fff;
+  --tikr-color-muted: #64748b;
+  --tikr-color-surface: #fff;
+  --tikr-color-surface-alt: #f8fafc;
+}
+
+/* Light theme defaults (override in dark/high-contrast below) */
+.tikr-action-btn {
+  min-height: var(--tikr-btn-min-height);
+  min-width: var(--tikr-btn-min-width);
+  padding: var(--tikr-btn-padding-y) var(--tikr-btn-padding-x);
+  border-radius: var(--tikr-radius-md);
+}
+
 .tikr-skip-link {
     position: absolute;
     left: -9999px;
@@ -82,7 +117,9 @@
     opacity: 0.9;
 }
 
-.tikr-theme-bar select {
+.tikr-theme-bar select,
+.tikr-theme-bar .e-dropdownlist,
+.tikr-theme-bar .e-input-group {
     width: 100%;
     min-height: 44px;
     padding: 0.4rem 0.5rem;
@@ -91,6 +128,14 @@
     background: rgba(0, 0, 0, 0.2);
     color: #fff;
     font: inherit;
+}
+
+/* Ensure inner input of SfDropDownList inherits sidebar-appropriate colors */
+.tikr-theme-bar .e-dropdownlist input,
+.tikr-theme-bar .e-dropdownlist .e-input {
+    color: inherit;
+    background: transparent;
+    border: none;
 }
 
 .page-header {
@@ -111,19 +156,65 @@
 }
 
 .tikr-help-btn {
-    min-width: 44px;
-    min-height: 44px;
+    min-width: var(--tikr-btn-min-width);
+    min-height: var(--tikr-btn-min-height);
 }
 
-.tikr-action-btn,
-.tikr-action-btn.small {
-    min-height: 44px;
+/* Ensure other action-like native buttons meet 44px touch target (Phase 1) */
+.tikr-logout,
+.tikr-error-boundary button {
+    min-height: var(--tikr-btn-min-height);
+    min-width: var(--tikr-btn-min-width);
+    display: inline-flex;
+    align-items: center;
+}
+
+/* Standardized SfButton variants (Phase 1). Use via CssClass="tikr-action-btn", "tikr-action-btn primary", "tikr-action-btn danger", "tikr-action-btn small".
+   Ensures >=44px touch targets. Primary/danger provide consistent visual language without mixing e-primary in markup. */
+.tikr-action-btn {
+    /* base already set via :root above; add Syncfusion-friendly reset */
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    font-weight: 500;
+    line-height: 1.2;
+}
+
+.tikr-action-btn.primary {
+    background-color: var(--tikr-color-primary);
+    color: var(--tikr-color-text-inverse);
+    border: 1px solid var(--tikr-color-primary);
+}
+
+.tikr-action-btn.primary:hover:not(:disabled) {
+    background-color: var(--tikr-color-primary-hover);
+    border-color: var(--tikr-color-primary-hover);
+}
+
+.tikr-action-btn.danger {
+    background-color: var(--tikr-color-danger);
+    color: var(--tikr-color-text-inverse);
+    border: 1px solid var(--tikr-color-danger);
+}
+
+.tikr-action-btn.danger:hover:not(:disabled) {
+    background-color: var(--tikr-color-danger-hover);
+    border-color: var(--tikr-color-danger-hover);
 }
 
 .tikr-action-btn.small {
-    min-width: 44px;
+    min-width: var(--tikr-btn-min-width);
+    min-height: var(--tikr-btn-min-height);
     padding-left: 0.65rem;
     padding-right: 0.65rem;
+    font-size: 0.85rem;
+}
+
+.tikr-action-btn.icon-only {
+    min-width: var(--tikr-btn-min-width);
+    padding-left: 0.4rem;
+    padding-right: 0.4rem;
 }
 
 .tikr-nav a {
@@ -186,6 +277,10 @@ html[data-theme="dark"] .tikr-status-footer {
     border-color: #334155;
 }
 
+html[data-theme="dark"] .text-muted {
+    color: #94a3b8;
+}
+
 html[data-theme="dark"] .tikr-status-footer-primary {
     color: #e2e8f0;
 }
@@ -202,6 +297,13 @@ html[data-theme="high-contrast"] .tikr-sidebar {
 html[data-theme="high-contrast"] .tikr-main {
     background: #fff;
     color: #000;
+}
+
+/* High-contrast: ensure page header descriptions and muted text (used in Assistant, Settings, Documents preview, etc.) meet high-contrast requirements (no low-contrast grays). */
+html[data-theme="high-contrast"] .page-header-main p,
+html[data-theme="high-contrast"] .text-muted {
+    color: #000;
+    font-weight: 600;
 }
 
 html[data-theme="high-contrast"] .tikr-nav a,
@@ -242,7 +344,9 @@ html[data-theme="dark"] .tikr-theme-bar label {
     color: #e2e8f0;
 }
 
-html[data-theme="dark"] .tikr-theme-bar select {
+html[data-theme="dark"] .tikr-theme-bar select,
+html[data-theme="dark"] .tikr-theme-bar .e-dropdownlist,
+html[data-theme="dark"] .tikr-theme-bar .e-input-group {
     background: rgba(0, 0, 0, 0.35);
     color: #e2e8f0;
     border-color: rgba(226, 232, 240, 0.3);
@@ -257,7 +361,9 @@ html[data-theme="high-contrast"] .tikr-theme-bar label {
     color: #fff;
 }
 
-html[data-theme="high-contrast"] .tikr-theme-bar select {
+html[data-theme="high-contrast"] .tikr-theme-bar select,
+html[data-theme="high-contrast"] .tikr-theme-bar .e-dropdownlist,
+html[data-theme="high-contrast"] .tikr-theme-bar .e-input-group {
     background: #111;
     color: #fff;
     border-color: #fff;
@@ -278,6 +384,7 @@ html[data-theme="dark"] .SfAIAssistView {
     background: #1e293b;
     color: #e2e8f0;
     border-color: #334155;
+    border: 1px solid #334155; /* ensure full override vs inline border in Assistant.razor for dark */
 }
 
 html[data-theme="high-contrast"] .assistant-container,
@@ -285,6 +392,7 @@ html[data-theme="high-contrast"] .SfAIAssistView {
     background: #fff;
     color: #000;
     border-color: #000;
+    border: 1px solid #000; /* ensure full override vs inline border in Assistant.razor for high-contrast */
 }
 
 /* Additional Syncfusion panel/control text safety inside sidebar or dark contexts */
@@ -298,6 +406,286 @@ html[data-theme="high-contrast"] .tikr-sidebar .e-list-item,
 html[data-theme="high-contrast"] .tikr-sidebar .e-link,
 html[data-theme="high-contrast"] .tikr-sidebar [class*="e-"] {
     color: inherit;
+}
+
+/* =========================================================
+   Phase 1 Item 5: Complete high-contrast + dark coverage
+   for .tikr-* , badges, banners, grids, dialogs, assistant,
+   and other custom UI (ai-suggestion, vault-emergency, etc.)
+   All .tikr-action-btn variants get proper contrast.
+   ========================================================= */
+html[data-theme="dark"] .tikr-action-btn {
+    border-color: rgba(226, 232, 240, 0.3);
+}
+
+html[data-theme="dark"] .tikr-action-btn.primary {
+    background-color: #3b82f6;
+    border-color: #3b82f6;
+    color: #fff;
+}
+
+html[data-theme="dark"] .tikr-action-btn.primary:hover:not(:disabled) {
+    background-color: #2563eb;
+}
+
+html[data-theme="dark"] .tikr-action-btn.danger {
+    background-color: #ef4444;
+    border-color: #ef4444;
+    color: #fff;
+}
+
+html[data-theme="dark"] .tikr-action-btn.danger:hover:not(:disabled) {
+    background-color: #dc2626;
+}
+
+html[data-theme="dark"] .tikr-help-btn {
+    color: #e2e8f0;
+    border-color: rgba(226, 232, 240, 0.3);
+}
+
+html[data-theme="high-contrast"] .tikr-action-btn {
+    background: #fff;
+    color: #000;
+    border: 2px solid #000;
+    font-weight: 700;
+}
+
+html[data-theme="high-contrast"] .tikr-action-btn.primary,
+html[data-theme="high-contrast"] .tikr-action-btn.danger {
+    background: #000;
+    color: #fff;
+    border-color: #000;
+}
+
+html[data-theme="high-contrast"] .tikr-action-btn:hover:not(:disabled) {
+    background: #000;
+    color: #fff;
+}
+
+html[data-theme="high-contrast"] .tikr-help-btn {
+    background: #fff;
+    color: #000;
+    border: 2px solid #000;
+}
+
+/* Banners & suggestion UI */
+html[data-theme="dark"] .tikr-offline-banner {
+    background: #451a03;
+    border-bottom-color: #92400e;
+    color: #fcd34d;
+}
+
+html[data-theme="dark"] .vault-emergency-banner {
+    background: #3f1f1f;
+    border-color: #ef4444;
+    color: #fca5a5;
+}
+
+html[data-theme="dark"] .vault-emergency-banner .banner-sub {
+    color: #cbd5e1;
+}
+
+html[data-theme="dark"] .ai-suggestion-banner {
+    background: #1e293b;
+    border-color: #334155;
+    color: #e2e8f0;
+}
+
+html[data-theme="dark"] .ai-suggestion-banner .banner-body {
+    color: #cbd5e1;
+}
+
+html[data-theme="high-contrast"] .tikr-offline-banner {
+    background: #fff;
+    border-bottom: 2px solid #000;
+    color: #000;
+    font-weight: 700;
+}
+
+html[data-theme="high-contrast"] .vault-emergency-banner {
+    background: #fff;
+    border: 2px solid #000;
+    color: #000;
+}
+
+html[data-theme="high-contrast"] .vault-emergency-banner .banner-sub {
+    color: #000;
+}
+
+html[data-theme="high-contrast"] .ai-suggestion-banner {
+    background: #fff;
+    border: 2px solid #000;
+    color: #000;
+}
+
+html[data-theme="high-contrast"] .ai-suggestion-banner .banner-body {
+    color: #000;
+}
+
+/* Badges (urgency, extraction, doc tags) */
+html[data-theme="dark"] .extraction-badge {
+    border: 1px solid rgba(226, 232, 240, 0.2);
+}
+
+html[data-theme="dark"] .extraction-badge-stub {
+    background: #451a03;
+    color: #fcd34d;
+}
+
+html[data-theme="dark"] .extraction-badge-syncfusion {
+    background: #064e3b;
+    color: #6ee7b7;
+}
+
+html[data-theme="dark"] .urgency-badge {
+    filter: saturate(1.1);
+}
+
+/* Priority badges (used in SfCard on Home for dashboard priorities + urgency in grids).
+   Base colors from MainLayout.razor.css are too dark for dark surfaces; brighten for contrast. */
+html[data-theme="dark"] .priority-high { color: #f87171; font-weight: 600; }
+html[data-theme="dark"] .priority-medium { color: #fb923c; }
+html[data-theme="dark"] .priority-overdue { color: #ef4444; font-weight: 700; }
+html[data-theme="dark"] .priority-low { color: #4ade80; }
+html[data-theme="dark"] .urgency-completed { color: #94a3b8; text-decoration: line-through; }
+
+html[data-theme="dark"] .doc-tag,
+html[data-theme="dark"] .doc-tag-more {
+    background: #334155;
+    color: #e2e8f0;
+    border: 1px solid #475569;
+}
+
+html[data-theme="high-contrast"] .extraction-badge,
+html[data-theme="high-contrast"] .urgency-badge,
+html[data-theme="high-contrast"] .doc-tag,
+html[data-theme="high-contrast"] .doc-tag-more {
+    background: #fff;
+    color: #000;
+    border: 1px solid #000;
+    font-weight: 700;
+}
+
+html[data-theme="high-contrast"] .extraction-badge-stub,
+html[data-theme="high-contrast"] .extraction-badge-syncfusion {
+    background: #fff;
+    color: #000;
+    border-color: #000;
+}
+
+/* High-contrast must force priority badge text (used by urgency in grids + SfCard priorities) to full black for gov high-contrast compliance.
+   Combined selectors ensure they win over base .priority-* colors from MainLayout.razor.css. */
+html[data-theme="high-contrast"] .urgency-badge.priority-high,
+html[data-theme="high-contrast"] .urgency-badge.priority-medium,
+html[data-theme="high-contrast"] .urgency-badge.priority-overdue,
+html[data-theme="high-contrast"] .urgency-badge.priority-low,
+html[data-theme="high-contrast"] .urgency-badge.urgency-completed,
+html[data-theme="high-contrast"] .priority-high,
+html[data-theme="high-contrast"] .priority-medium,
+html[data-theme="high-contrast"] .priority-overdue,
+html[data-theme="high-contrast"] .priority-low,
+html[data-theme="high-contrast"] .urgency-completed {
+    color: #000;
+    font-weight: 700;
+}
+
+/* Preview panes, bulk, status, grids/dialogs inside custom areas */
+html[data-theme="dark"] .preview-pane,
+html[data-theme="dark"] .preview-text-body,
+html[data-theme="dark"] .bulk-toolbar,
+html[data-theme="dark"] .status-msg,
+html[data-theme="dark"] .login-error {
+    background: #1e293b;
+    color: #e2e8f0;
+    border-color: #334155;
+}
+
+html[data-theme="dark"] .preview-empty,
+html[data-theme="dark"] .preview-note,
+html[data-theme="dark"] .tree-hint {
+    color: #94a3b8;
+}
+
+html[data-theme="dark"] .e-grid,
+html[data-theme="dark"] .e-dialog,
+html[data-theme="dark"] .e-toolbar,
+html[data-theme="dark"] .e-schedule,
+html[data-theme="dark"] .e-card {
+    /* Syncfusion dark theme (highcontrast or bootstrap5-dark) provides most; these are safety for SfSchedule (Calendar), SfCard (Home priorities/context, Settings, Assistant, Login), grids/selection */
+    color: inherit;
+}
+
+html[data-theme="high-contrast"] .preview-pane,
+html[data-theme="high-contrast"] .preview-text-body,
+html[data-theme="high-contrast"] .bulk-toolbar,
+html[data-theme="high-contrast"] .status-msg,
+html[data-theme="high-contrast"] .login-error,
+html[data-theme="high-contrast"] .e-grid,
+html[data-theme="high-contrast"] .e-dialog,
+html[data-theme="high-contrast"] .e-schedule,
+html[data-theme="high-contrast"] .e-card {
+    background: #fff;
+    color: #000;
+    border-color: #000;
+}
+
+html[data-theme="high-contrast"] .preview-empty,
+html[data-theme="high-contrast"] .preview-note {
+    color: #000;
+    font-weight: 600;
+}
+
+/* Clerk toasts, error boundaries, confirm notes, theme bar */
+html[data-theme="dark"] .clerk-toast {
+    background: #1e293b;
+    color: #f8fafc;
+    border: 1px solid #475569;
+}
+
+html[data-theme="dark"] .tikr-error-boundary {
+    background: #451a03;
+    border-color: #92400e;
+    color: #fcd34d;
+}
+
+html[data-theme="dark"] .tikr-error-boundary button {
+    border-color: #fcd34d;
+    color: #fcd34d;
+}
+
+html[data-theme="dark"] .confirm-audit-note {
+    color: #94a3b8;
+}
+
+html[data-theme="high-contrast"] .clerk-toast {
+    background: #fff;
+    color: #000;
+    border: 2px solid #000;
+}
+
+html[data-theme="high-contrast"] .tikr-error-boundary {
+    background: #fff;
+    border: 2px solid #000;
+    color: #000;
+    font-weight: 700;
+}
+
+html[data-theme="high-contrast"] .tikr-error-boundary button {
+    border-color: #000;
+    color: #000;
+}
+
+html[data-theme="high-contrast"] .confirm-audit-note,
+html[data-theme="high-contrast"] .voice-help {
+    color: #000;
+    font-weight: 700;
+}
+
+/* Dialog footers and form labels in high contrast for visibility */
+html[data-theme="high-contrast"] .e-footer-content,
+html[data-theme="high-contrast"] .e-dlg-header,
+html[data-theme="high-contrast"] .form-label {
+    color: #000;
 }
 
 @media (max-width: 768px) {
@@ -375,6 +763,155 @@ html[data-theme="high-contrast"] .tikr-sidebar [class*="e-"] {
     color: #155724;
 }
 
+/* Consistent loading, empty, and error states for clerk pages.
+   Calm, professional, theme-aware. Uses CSS-only subtle spinner.
+   Supports aria-busy / live regions for screen readers. */
+.tikr-loading-state {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem 1.25rem;
+    font-size: 0.95rem;
+    color: #4a5568;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    min-height: 44px;
+}
+
+.tikr-loading-spinner {
+    width: 18px;
+    height: 18px;
+    border: 2px solid #e2e8f0;
+    border-top-color: #2563eb;
+    border-radius: 50%;
+    animation: tikr-spin 0.8s linear infinite;
+    flex-shrink: 0;
+}
+
+@keyframes tikr-spin {
+    to { transform: rotate(360deg); }
+}
+
+.tikr-empty-state {
+    padding: 1.5rem 1.25rem;
+    text-align: center;
+    color: #4a5568;
+    background: #f8fafc;
+    border: 1px dashed #cbd5e1;
+    border-radius: 8px;
+    font-size: 0.95rem;
+}
+
+.tikr-empty-state .tikr-empty-action {
+    margin-top: 0.5rem;
+    font-size: 0.9rem;
+}
+
+.tikr-error-state {
+    padding: 0.75rem 1rem;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #991b1b;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
+}
+
+/* Theme overrides for states (dark + high-contrast for accessibility) */
+html[data-theme="dark"] .tikr-loading-state,
+html[data-theme="dark"] .tikr-empty-state {
+    background: #1e293b;
+    color: #94a3b8;
+    border-color: #334155;
+}
+
+html[data-theme="dark"] .tikr-loading-spinner {
+    border-color: #334155;
+    border-top-color: #60a5fa;
+}
+
+html[data-theme="dark"] .tikr-error-state {
+    background: #3f1f1f;
+    border-color: #7f1d1d;
+    color: #fca5a5;
+}
+
+html[data-theme="high-contrast"] .tikr-loading-state,
+html[data-theme="high-contrast"] .tikr-empty-state,
+html[data-theme="high-contrast"] .tikr-error-state {
+    background: #fff;
+    color: #000;
+    border-color: #000;
+    font-weight: 600;
+}
+
+html[data-theme="high-contrast"] .tikr-loading-spinner {
+    border-color: #000;
+    border-top-color: #000;
+}
+
+html[data-theme="high-contrast"] .tikr-error-state {
+    background: #fff;
+    border-color: #000;
+    color: #000;
+}
+
+/* Lightweight CSS skeleton rows for grid/card loading indication (Phase 3 Item 10).
+   Calm professional government aesthetic. Subtle shimmer pulse (no heavy component).
+   Used to enhance the existing .tikr-loading-state during initial loads for Documents,
+   Requirements, Vault (and Home cards). Keeps existing spinner + text.
+   Theme-aware for dark + high-contrast. Minimal churn. */
+.tikr-skeleton-grid {
+    margin-top: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+}
+
+.tikr-skeleton-row {
+    height: 1.05rem;
+    background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+    background-size: 200% 100%;
+    animation: tikr-skeleton-shimmer 1.5s ease-in-out infinite;
+    border-radius: 3px;
+    margin: 0.4rem 0;
+}
+
+@keyframes tikr-skeleton-shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+/* Optional width modifiers for mimicking columns (used inline or via classes) */
+.tikr-skeleton-row.w-95 { width: 95%; }
+.tikr-skeleton-row.w-85 { width: 85%; }
+.tikr-skeleton-row.w-75 { width: 75%; }
+.tikr-skeleton-row.w-65 { width: 65%; }
+.tikr-skeleton-row.w-55 { width: 55%; }
+
+html[data-theme="dark"] .tikr-skeleton-grid {
+    background: #1e293b;
+    border-color: #334155;
+}
+
+html[data-theme="dark"] .tikr-skeleton-row {
+    background: linear-gradient(90deg, #334155 25%, #475569 50%, #334155 75%);
+    background-size: 200% 100%;
+}
+
+html[data-theme="high-contrast"] .tikr-skeleton-grid {
+    background: #fff;
+    border-color: #000;
+}
+
+html[data-theme="high-contrast"] .tikr-skeleton-row {
+    background: #000;
+    animation: none; /* solid fill preferred for high-contrast readability */
+    height: 0.95rem;
+}
+
 .preview-text-body {
     max-height: 240px;
     overflow: auto;
@@ -438,4 +975,203 @@ html[data-theme="high-contrast"] .tikr-sidebar [class*="e-"] {
     border-radius: 4px;
     cursor: pointer;
     font: inherit;
+}
+
+/* =========================================================
+   Phase 2 Item 4: Flexible grid/splitter heights + responsive
+   Hosts use flex/min-height so Height="100%" on SfSplitter/SfGrid/SfAIAssistView
+   works inside .tikr-main-content (flex column).
+   Media queries stack panes, shrink heights, reduce density on small viewports/tablets.
+   No clipping on common sizes (320px phone -> 1024 tablet); desktop + print preserved.
+   ========================================================= */
+
+/* Flex hosts for 100% propagation (Documents, Requirements, Vault, Assistant) */
+.documents-splitter-host,
+.requirements-grid-host,
+.vault-grid-host,
+.assistant-container {
+    min-height: 0;
+}
+
+.documents-splitter-host {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.requirements-grid-host {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 320px;
+}
+
+.vault-grid-host {
+    height: 260px; /* base for tab grids; media adjusts */
+    display: flex;
+    flex-direction: column;
+}
+
+/* Improve splitter pane internals for better fit */
+.documents-splitter-host .e-pane {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden; /* prevent double scroll with inner grid */
+    min-height: 0;
+}
+
+.documents-splitter-host .e-pane > * {
+    min-height: 0;
+}
+
+/* Grid (middle pane) and preview fill; tree pane children stack naturally */
+.documents-splitter-host .e-pane:nth-child(2) > *,
+.documents-splitter-host .e-pane:last-child > * {
+    flex: 1;
+}
+
+.documents-splitter-host .preview-pane {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: auto;
+}
+
+/* Responsive: tablets and below - adjust heights, reduce padding, stack behavior */
+@media (max-width: 1024px) {
+    .tikr-main-content {
+        padding: 1rem 1.25rem;
+    }
+
+    .requirements-grid-host {
+        min-height: 280px;
+    }
+
+    .vault-grid-host {
+        height: 220px;
+    }
+
+    .assistant-container {
+        min-height: 280px;
+    }
+
+    /* Reduce effective grid page density visually via row */
+    .e-grid .e-row {
+        line-height: 1.1;
+    }
+}
+
+@media (max-width: 768px) {
+    .tikr-main-content {
+        padding: 0.75rem 1rem;
+    }
+
+    /* Stack splitter panes (Documents): force vertical layout for usability on phones/tablets */
+    .documents-splitter-host .e-splitter {
+        flex-direction: column !important;
+    }
+
+    .documents-splitter-host .e-pane {
+        width: 100% !important;
+        min-height: 160px;
+        height: auto !important;
+        flex: 0 0 auto !important;
+    }
+
+    /* First pane (folders) and last (preview) get constrained share on mobile */
+    .documents-splitter-host .e-pane:first-child {
+        max-height: 180px;
+    }
+
+    .documents-splitter-host .e-pane:last-child {
+        min-height: 220px;
+    }
+
+    .documents-splitter-host {
+        min-height: 420px; /* ensure usable stacked area */
+    }
+
+    .requirements-grid-host {
+        min-height: 240px;
+    }
+
+    .vault-grid-host {
+        height: 180px;
+    }
+
+    .assistant-container {
+        min-height: 220px;
+    }
+
+    /* Reduce page sizes effect: tighter grids, smaller fonts for content without clipping */
+    .e-grid {
+        font-size: 0.85rem;
+    }
+
+    .e-grid .e-rowcell,
+    .e-grid .e-headercell {
+        padding: 0.25rem 0.35rem;
+    }
+
+    /* Prevent horizontal clipping */
+    .e-grid,
+    .SfSplitter,
+    .documents-splitter-host,
+    .preview-pane,
+    .folder-tree-header + .e-treeview {
+        max-width: 100%;
+        overflow-x: hidden;
+    }
+
+    /* Page header and toolbars tighter */
+    .page-header {
+        margin-bottom: 1rem;
+    }
+
+    .uploader-zone,
+    .search-controls,
+    .bulk-toolbar,
+    .requirements-toolbar,
+    .requirements-filters {
+        gap: 0.5rem;
+    }
+}
+
+/* Extra small phones: further reduce to avoid any clipping */
+@media (max-width: 480px) {
+    .tikr-main-content {
+        padding: 0.5rem 0.75rem;
+    }
+
+    .documents-splitter-host .e-pane:first-child {
+        max-height: 140px;
+    }
+
+    .documents-splitter-host .e-pane:last-child {
+        min-height: 160px;
+    }
+
+    .vault-grid-host {
+        height: 160px;
+    }
+
+    .assistant-container {
+        min-height: 180px;
+    }
+
+    .e-grid {
+        font-size: 0.8rem;
+    }
+}
+
+/* Ensure print is unaffected (existing print rules take precedence) */
+@media print {
+    .documents-splitter-host,
+    .requirements-grid-host,
+    .vault-grid-host,
+    .assistant-container {
+        height: auto !important;
+        min-height: 0 !important;
+        flex: none !important;
+    }
 }

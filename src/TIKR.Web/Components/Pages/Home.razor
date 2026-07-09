@@ -14,15 +14,23 @@
 
 @if (_loading)
 {
-    <p>Loading priorities...</p>
+    <div class="tikr-loading-state" role="status" aria-live="polite" aria-busy="true">
+        <div class="tikr-loading-spinner" aria-hidden="true"></div>
+        <span>Loading priorities…</span>
+    </div>
+    <!-- Lightweight skeleton for cards (Phase 3 Item 10) -->
+    <div class="tikr-skeleton-grid" aria-hidden="true">
+        <div class="tikr-skeleton-row w-85"></div>
+        <div class="tikr-skeleton-row w-95"></div>
+        <div class="tikr-skeleton-row w-70"></div>
+    </div>
 }
 else if (_priorities.Count == 0)
 {
-    <SfCard>
-        <CardContent>
-            <p>No priorities found. Check the <a href="/calendar">Calendar</a> for upcoming deadlines.</p>
-        </CardContent>
-    </SfCard>
+    <div class="tikr-empty-state" role="status" aria-live="polite">
+        <strong>No priorities right now.</strong>
+        <div class="tikr-empty-action">Check the <a href="/calendar">Calendar</a> for upcoming statutory deadlines, or add requirements in the Requirements Manager.</div>
+    </div>
 }
 else
 {

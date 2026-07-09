@@ -2,16 +2,33 @@
 @inject ThemeService Theme
 
 <div class="tikr-theme-bar">
-    <label for="tikr-theme-select">Display theme</label>
-    <select id="tikr-theme-select" @bind="_selected" @bind:after="OnThemeChangedAsync" aria-label="Display theme">
-        <option value="light">Light</option>
-        <option value="dark">Dark</option>
-        <option value="high-contrast">High contrast</option>
-    </select>
+    <label>Display theme</label>
+    <SfDropDownList TValue="string" TItem="ThemeOption"
+                    DataSource="@_themeOptions"
+                    ValueField="Value"
+                    TextField="Text"
+                    Value="@Theme.Current"
+                    ValueChange="OnThemeChangedAsync"
+                    Width="100%"
+                    CssClass="tikr-action-btn"
+                    aria-label="Display theme">
+    </SfDropDownList>
 </div>
 
 @code {
-    private string _selected = "light";
+    private record ThemeOption(string Value, string Text);
+
+    private readonly List<ThemeOption> _themeOptions = ThemeService.Options
+        .Select(key => new ThemeOption(key, ToDisplay(key)))
+        .ToList();
+
+    private static string ToDisplay(string key) => key switch
+    {
+        "light" => "Light",
+        "dark" => "Dark",
+        "high-contrast" => "High contrast",
+        _ => key
+    };
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -19,9 +36,12 @@
             return;
 
         await Theme.InitializeAsync();
-        _selected = Theme.Current;
         StateHasChanged();
     }
 
-    private async Task OnThemeChangedAsync() => await Theme.SetThemeAsync(_selected);
+    private async Task OnThemeChangedAsync(Syncfusion.Blazor.DropDowns.ChangeEventArgs<string, ThemeOption> args)
+    {
+        if (args.Value is not null)
+            await Theme.SetThemeAsync(args.Value);
+    }
 }

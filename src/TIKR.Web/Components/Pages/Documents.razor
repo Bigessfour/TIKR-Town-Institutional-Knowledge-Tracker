@@ -31,25 +31,29 @@
 <!-- AI banners (appear after upload + auto-tag) -->
 @if (_lastTagSuggestion is not null)
 {
-    <div class="ai-suggestion-banner">
-        <strong>AI analysis complete</strong>
-        <div class="banner-body">
-            This looks like <strong>@(_lastTagSuggestion.SuggestedFolder ?? "a general document")</strong>.
-            @if (_lastTagSuggestion.Tags?.Length > 0)
-            {
-                <span> Suggested tags: </span>
-                @foreach (var t in _lastTagSuggestion.Tags.Take(5))
+    <AiSuggestionBanner>
+        <ChildContent>
+            <strong>AI analysis complete</strong>
+            <div class="banner-body">
+                This looks like <strong>@(_lastTagSuggestion.SuggestedFolder ?? "a general document")</strong>.
+                @if (_lastTagSuggestion.Tags?.Length > 0)
                 {
-                    <span class="doc-tag">@t</span>
+                    <span> Suggested tags: </span>
+                    @foreach (var t in _lastTagSuggestion.Tags.Take(5))
+                    {
+                        <span class="doc-tag">@t</span>
+                    }
                 }
-            }
-        </div>
-        <div class="banner-actions">
-            <SfButton CssClass="tikr-action-btn" Content="Looks good / Accept" OnClick="AcceptSuggestion" />
-            <SfButton CssClass="tikr-action-btn" Content="Dismiss" OnClick="() => _lastTagSuggestion = null" />
-            <SfButton CssClass="tikr-action-btn" Content="Re-tag" OnClick="RetagLast" />
-        </div>
-    </div>
+            </div>
+        </ChildContent>
+        <ActionsContent>
+            <div class="banner-actions">
+                <SfButton CssClass="tikr-action-btn" Content="Looks good / Accept" OnClick="AcceptSuggestion" />
+                <SfButton CssClass="tikr-action-btn" Content="Dismiss" OnClick="() => _lastTagSuggestion = null" />
+                <SfButton CssClass="tikr-action-btn" Content="Re-tag" OnClick="RetagLast" />
+            </div>
+        </ActionsContent>
+    </AiSuggestionBanner>
 }
 
 <!-- Search mode toggle + input (large, obvious) -->
@@ -69,18 +73,35 @@
 </div>
 
 <!-- Bulk toolbar (large, appears when selection) -->
-@if (_selection.Count > 0)
+@if (SelectedCount > 0)
 {
     <div class="bulk-toolbar">
-        <span class="bulk-count">@_selection.Count selected</span>
-        <SfButton CssClass="tikr-action-btn" IconCss="e-icons e-trash" Content="Delete selected" OnClick="RequestBulkDelete" />
+        <span class="bulk-count">@SelectedCount selected</span>
+        <SfButton CssClass="tikr-action-btn danger" IconCss="e-icons e-trash" Content="Delete selected" OnClick="RequestBulkDelete" />
         <SfButton CssClass="tikr-action-btn" IconCss="e-icons e-reload" Content="Re-tag with AI" OnClick="BulkRetagAsync" />
         <SfButton CssClass="tikr-action-btn" Content="Clear selection" OnClick="ClearSelection" />
     </div>
 }
 
+@if (_loading)
+{
+    <div class="tikr-loading-state" role="status" aria-live="polite" aria-busy="true">
+        <div class="tikr-loading-spinner" aria-hidden="true"></div>
+        <span>Loading documents…</span>
+    </div>
+    <!-- Lightweight skeleton rows for grid polish (Phase 3 Item 10) -->
+    <div class="tikr-skeleton-grid" aria-hidden="true">
+        <div class="tikr-skeleton-row w-95"></div>
+        <div class="tikr-skeleton-row w-85"></div>
+        <div class="tikr-skeleton-row w-75"></div>
+        <div class="tikr-skeleton-row w-65"></div>
+    </div>
+}
+
 <!-- Main resizable layout: Tree | Grid | Preview -->
-<SfSplitter Height="620px" Width="100%" SeparatorSize="4">
+<!-- Wrapped in flex host so Height="100%" on splitter works against .tikr-main-content flex column (Phase 2 Item 4) -->
+<div class="documents-splitter-host">
+<SfSplitter Height="100%" Width="100%" SeparatorSize="4">
     <SplitterPanes>
         <!-- Left: Folder tree -->
         <SplitterPane Size="20%" Min="160px" Max="280px">
@@ -100,22 +121,22 @@
                     PageSize="12"
                     AllowSorting="true"
                     AllowFiltering="true"
-                    Height="520px"
+                    AllowSelection="true"
+                    Height="100%"
                     CssClass="doc-grid">
+                <GridSelectionSettings Type="Syncfusion.Blazor.Grids.SelectionType.Multiple" />
+                <GridEvents RowSelected="@((RowSelectEventArgs<DocumentDto> e) => OnRowSelected(e))"
+                            RowDeselected="@((RowDeselectEventArgs<DocumentDto> e) => OnRowDeselected(e))" />
+                <GridTemplates>
+                    <EmptyRecordTemplate>
+                        <div class="tikr-empty-state">
+                            No documents found.
+                            <div class="tikr-empty-action">Upload files using the area above, or adjust your search/folder filter.</div>
+                        </div>
+                    </EmptyRecordTemplate>
+                </GridTemplates>
                 <GridColumns>
-                    <!-- Selection checkbox (reliable client state) -->
-                    <GridColumn Width="50" HeaderText="">
-                        <Template>
-                            @{
-                                var row = (context as DocumentDto)!;
-                                bool isSel = _selection.Contains(row.Id);
-                            }
-                            <input type="checkbox"
-                                   checked="@isSel"
-                                   @onchange="() => ToggleSelectionAsync(row)"
-                                   aria-label="Select document" />
-                        </Template>
-                    </GridColumn>
+                    <GridColumn Type="ColumnType.CheckBox" Width="50" />
                     <GridColumn Field="@nameof(DocumentDto.FileName)" HeaderText="File Name" Width="220" />
                     <GridColumn HeaderText="AI Tags" Width="160">
                         <Template>
@@ -147,9 +168,9 @@
         <!-- Right: Preview pane -->
         <SplitterPane Size="24%" Min="200px">
             <div class="preview-pane">
-                @if (_selection.SelectedPreview is not null)
+                @if (_selectedPreview is not null)
                 {
-                    var d = _selection.SelectedPreview;
+                    var d = _selectedPreview;
                     <h4 class="preview-title">@d.FileName</h4>
                     <div class="preview-meta">
                         <div><strong>Uploaded:</strong> @d.UploadedAt.ToLocalTime().ToString("g")</div>
@@ -171,7 +192,7 @@
 
                     <div class="preview-actions">
                         <SfButton CssClass="tikr-action-btn" Content="Re-tag with AI" OnClick="@(async () => await RetagOne(d))" />
-                        <SfButton CssClass="tikr-action-btn" Content="Delete" OnClick="@(() => RequestDelete(d))" />
+                        <SfButton CssClass="tikr-action-btn danger" Content="Delete" OnClick="@(() => RequestDelete(d))" />
                         <SfButton CssClass="tikr-action-btn"
                                   Content="@(_downloadingDocId == d.Id ? "Downloading…" : "Download")"
                                   Disabled="@(_downloadingDocId == d.Id)"
@@ -203,21 +224,25 @@
                     }
                     else if (_previewLoading)
                     {
-                        <div class="preview-note">Loading PDF preview…</div>
+                        <div class="tikr-loading-state" style="margin:0.5rem 0;" role="status" aria-live="polite" aria-busy="true">
+                            <div class="tikr-loading-spinner" aria-hidden="true"></div>
+                            <span>Loading preview…</span>
+                        </div>
                     }
                     else
                     {
-                        <div class="preview-note">Preview not available for this file type.</div>
+                        <div class="tikr-empty-state" style="margin:0.5rem 0;">Preview not available for this file type.</div>
                     }
                 }
                 else
                 {
-                    <div class="preview-empty">Select a document in the list to see details and actions.</div>
+                    <div class="tikr-empty-state" style="margin:0.5rem 0;">Select a document in the list to see details and actions.</div>
                 }
             </div>
         </SplitterPane>
     </SplitterPanes>
 </SfSplitter>
+</div>
 
 <!-- Context menu (right-click on grid area) -->
 <SfContextMenu TValue="MenuItem" Target=".doc-grid .e-gridcontent" CssClass="doc-context-menu">
@@ -233,7 +258,7 @@
 
 @if (!string.IsNullOrEmpty(_statusMessage))
 {
-    <div class="status-msg mt-2">@_statusMessage</div>
+    <div class="status-msg mt-2" role="status" aria-live="polite">@_statusMessage</div>
 }
 
 <ConfirmDeleteDialog @bind-Visible="_confirmDeleteVisible"
@@ -247,7 +272,9 @@
     private SfGrid<DocumentDto>? GridRef;
 
     private List<DocumentDto> _documents = [];
-    private readonly DocumentSelectionState _selection = new();
+    private HashSet<Guid> _selectedIds = new();
+    private DocumentDto? _selectedPreview;
+    private int SelectedCount => _selectedIds.Count;
     private string _searchQuery = "";
     private string SearchMode { get; set; } = "full"; // "full" | "semantic"
     private string? _statusMessage;
@@ -267,6 +294,7 @@
     private Guid? _convertingDocId;
 
     private List<DocumentLibraryLogic.FolderNode> _folderNodes = [];
+    private bool _loading = true;
 
     private IEnumerable<DocumentDto> VisibleDocuments =>
         DocumentLibraryLogic.FilterVisible(_documents, _currentFolderFilter, SearchMode, _searchQuery, _semanticHitIds);
@@ -275,7 +303,15 @@
 
     protected override async Task OnInitializedAsync()
     {
-        await LoadDocumentsAsync();
+        _loading = true;
+        try
+        {
+            await LoadDocumentsAsync();
+        }
+        finally
+        {
+            _loading = false;
+        }
     }
 
     protected override void OnParametersSet()
@@ -287,7 +323,7 @@
     {
         _documents = await Api.GetDocumentsAsync(query);
         RebuildFolderTree();
-        ClearSelection();
+        await ClearSelection();
         _statusMessage = null;
     }
 
@@ -434,13 +470,33 @@
         }
     }
 
-    private async Task ToggleSelectionAsync(DocumentDto doc)
+    private void OnRowSelected(RowSelectEventArgs<DocumentDto> args)
+    {
+        if (args?.Data is { } doc)
+        {
+            _selectedIds.Add(doc.Id);
+            _ = UpdateSelectedPreviewAsync();
+        }
+    }
+
+    private void OnRowDeselected(RowDeselectEventArgs<DocumentDto> args)
+    {
+        if (args?.Data is { } doc)
+        {
+            _selectedIds.Remove(doc.Id);
+            _ = UpdateSelectedPreviewAsync();
+        }
+    }
+
+    private async Task UpdateSelectedPreviewAsync()
     {
         await RevokePdfPreviewAsync();
-        _selection.Toggle(doc, _documents);
+        _selectedPreview = _documents.FirstOrDefault(d => _selectedIds.Contains(d.Id));
 
-        if (_selection.SelectedPreview is { } preview)
+        if (_selectedPreview is { } preview)
+        {
             await LoadPdfPreviewAsync(preview);
+        }
 
         StateHasChanged();
     }
@@ -615,20 +671,30 @@
         }
     }
 
-    private void ClearSelection()
+    private async Task ClearSelection()
     {
-        _selection.Clear();
+        _selectedIds.Clear();
+        _selectedPreview = null;
+        if (GridRef is not null)
+        {
+            try
+            {
+                await GridRef.ClearSelectionAsync();
+            }
+            catch { /* grid may not be ready */ }
+        }
+        await RevokePdfPreviewAsync();
         StateHasChanged();
     }
 
     private void RequestBulkDelete()
     {
-        if (_selection.Count == 0)
+        if (SelectedCount == 0)
             return;
 
         _pendingBulkDelete = true;
         _pendingDeleteDoc = null;
-        _confirmDeleteLabel = $"{_selection.Count} selected document{(_selection.Count == 1 ? "" : "s")}";
+        _confirmDeleteLabel = $"{SelectedCount} selected document{(SelectedCount == 1 ? "" : "s")}";
         _confirmDeleteVisible = true;
     }
 
@@ -644,8 +710,8 @@
     {
         if (_pendingBulkDelete)
         {
-            var count = _selection.Count;
-            foreach (var id in _selection.SelectedIds.ToList())
+            var count = SelectedCount;
+            foreach (var id in _selectedIds.ToList())
             {
                 try { await Api.DeleteDocumentAsync(id); } catch { /* continue */ }
             }
@@ -653,7 +719,7 @@
             Toast.Show($"Deleted {count} document{(count == 1 ? "" : "s")}");
             _statusMessage = DocumentUiMessages.BulkDelete(count);
             await LoadDocumentsAsync();
-            ClearSelection();
+            // LoadDocumentsAsync already clears selection
             _pendingBulkDelete = false;
             return;
         }
@@ -666,12 +732,15 @@
         await Api.DeleteDocumentAsync(doc.Id);
         Toast.Show($"Deleted \"{doc.FileName}\"");
         await LoadDocumentsAsync();
-        _selection.RemoveIfSelected(doc.Id);
+        // LoadDocumentsAsync already clears selection; safe remove anyway
+        _selectedIds.Remove(doc.Id);
+        if (_selectedPreview?.Id == doc.Id)
+            _selectedPreview = null;
     }
 
     private async Task BulkRetagAsync()
     {
-        var ids = _selection.SelectedIds.ToList();
+        var ids = _selectedIds.ToList();
         foreach (var id in ids)
         {
             try { await Api.TagDocumentAsync(id); } catch { }
@@ -688,7 +757,7 @@
 
     private async Task OnContextMenuSelected(Syncfusion.Blazor.Navigations.MenuEventArgs<Syncfusion.Blazor.Navigations.MenuItem> args)
     {
-        var targetDoc = _selection.SelectedPreview ?? _documents.FirstOrDefault(d => _selection.Contains(d.Id));
+        var targetDoc = _selectedPreview ?? _documents.FirstOrDefault(d => _selectedIds.Contains(d.Id));
 
         if (targetDoc is null) return;
 
