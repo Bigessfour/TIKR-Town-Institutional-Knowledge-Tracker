@@ -40,11 +40,11 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-agent_args=()
-[[ "$ENABLE_AGENT_TOOLS" == true ]] && agent_args+=(--enable-agent-tools)
+sync_license_args=(--all)
+[[ "$ENABLE_AGENT_TOOLS" == true ]] && sync_license_args+=(--enable-agent-tools)
 
 echo "==> Syncfusion runtime license (SYNCFUSION_LICENSE_KEY)"
-"$ROOT/scripts/sync-syncfusion-license-key.sh" --all "${agent_args[@]}"
+"$ROOT/scripts/sync-syncfusion-license-key.sh" "${sync_license_args[@]}"
 
 if [[ "$SKIP_GROK" == false ]]; then
   echo ""
