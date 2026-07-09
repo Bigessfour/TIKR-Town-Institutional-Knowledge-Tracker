@@ -1,0 +1,61 @@
+@inject ClerkUserGuideService Guide
+@implements IDisposable
+
+<SfDialog @bind-Visible="_visible" Width="920px" CssClass="tikr-guide-dialog" IsModal="true" ShowCloseIcon="true" Header="TIKR user guide">
+    <DialogTemplates>
+        <Content>
+            <div class="tikr-guide-toolbar">
+                <SfTextBox @bind-Value="_search" Placeholder="Search guide…" CssClass="tikr-guide-search" aria-label="Search user guide" />
+            </div>
+            <div class="tikr-guide-layout">
+                <nav class="tikr-guide-toc" aria-label="Guide sections">
+                    @foreach (var sec in _filtered)
+                    {
+                        <button type="button" class="tikr-guide-toc-item @(_activeId == sec.Id ? "is-active" : "")"
+                                @onclick="() => SelectSection(sec.Id)">
+                            @sec.Title
+                        </button>
+                    }
+                    @if (_filtered.Count == 0)
+                    {
+                        <p class="text-muted">No sections match your search.</p>
+                    }
+                </nav>
+                <div class="tikr-guide-body" id="tikr-guide-scroll">
+                    @foreach (var sec in _filtered)
+                    {
+                        <div id="@($"guide-{sec.Id}")" class="tikr-guide-section">
+                            <h3>@sec.Title</h3>
+                            <div class="tikr-guide-html">@((MarkupString)ClerkGuideContent.ToHtml(sec.BodyMarkdown))</div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </Content>
+    </DialogTemplates>
+</SfDialog>
+
+@code {
+    private bool _visible;
+    private string _search = string.Empty;
+    private IReadOnlyList<ClerkGuideSection> _sections = [];
+    private string _activeId = string.Empty;
+
+    private IReadOnlyList<ClerkGuideSection> _filtered =>
+        ClerkGuideContent.Filter(_sections, _search);
+
+    protected override void OnInitialized() => Guide.OpenRequested += OnOpenRequested;
+
+    private async void OnOpenRequested()
+    {
+        _sections = await Guide.GetSectionsAsync();
+        _search = string.Empty;
+        _activeId = _sections.FirstOrDefault()?.Id ?? string.Empty;
+        _visible = true;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private void SelectSection(string id) => _activeId = id;
+
+    public void Dispose() => Guide.OpenRequested -= OnOpenRequested;
+}

@@ -14,8 +14,8 @@ public static class TikrConfiguration
         ?? Path.Combine(Directory.GetCurrentDirectory(), "data", "documents");
 
     public static string GetOllamaHost(IConfiguration configuration) =>
-        configuration["AI:OllamaHost"]
-        ?? configuration["OLLAMA_HOST"]
+        configuration["OLLAMA_HOST"]
+        ?? configuration["AI:OllamaHost"]
         ?? "http://localhost:11434";
 
     public static string GetChatModel(IConfiguration configuration) =>
@@ -25,10 +25,13 @@ public static class TikrConfiguration
 
     public static bool GetUseGrok(IConfiguration configuration)
     {
+        if (bool.TryParse(configuration["USE_GROK"], out var fromEnv))
+            return fromEnv;
+
         if (configuration.GetSection("AI").GetValue<bool?>("UseGrok") is { } useGrok)
             return useGrok;
 
-        return bool.TryParse(configuration["USE_GROK"], out var enabled) && enabled;
+        return false;
     }
 
     public static string? GetGrokApiKey(IConfiguration configuration) =>
@@ -90,6 +93,9 @@ public static class TikrConfiguration
     /// <summary>
     /// Runtime Syncfusion license key (Blazor UI + Document SDK). Set via docker/.env, user-secrets, or CI secret — never commit.
     /// </summary>
-    public static string? GetSyncfusionLicenseKey(IConfiguration configuration) =>
-        configuration["SYNCFUSION_LICENSE_KEY"];
+    public static string? GetSyncfusionLicenseKey(IConfiguration configuration)
+    {
+        var key = configuration["SYNCFUSION_LICENSE_KEY"];
+        return string.IsNullOrWhiteSpace(key) ? null : key.Trim();
+    }
 }

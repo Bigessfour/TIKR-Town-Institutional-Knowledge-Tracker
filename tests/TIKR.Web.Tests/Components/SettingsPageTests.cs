@@ -34,6 +34,7 @@ public class SettingsPageTests : ClerkTestContext
                     {"licenseKeyConfigured":true,"licenseProbePassed":true,"licenseProbeDetail":null,"agentToolsEnabled":true,"orchestrationEnabled":false}
                     """,
                 "/api/audit" => "[]",
+                "/api/auth/me/tour" => """{"completedVersion":null,"autoTourDisabled":false}""",
                 _ => "[]"
             };
             return new HttpResponseMessage(HttpStatusCode.OK)
@@ -50,6 +51,8 @@ public class SettingsPageTests : ClerkTestContext
         cut.Markup.Should().Contain("llama3.2:3b");
         cut.Markup.Should().Contain("Wiley");
         cut.Markup.Should().Contain("Syncfusion Document SDK");
+        cut.Markup.Should().Contain("Clerk preferences");
+        cut.Markup.Should().Contain("docker/.env");
         cut.Markup.Should().Contain("/assistant");
     }
 

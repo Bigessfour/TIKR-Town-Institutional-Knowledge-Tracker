@@ -21,12 +21,19 @@
         <h2>Requirements Manager</h2>
         <p>Colorado municipal obligations and custom deadlines</p>
     </div>
-    <PageHelp HelpText="Manage pre-seeded Colorado deadlines and add town-specific requirements. Export council agenda PDF, compliance Excel, or meeting minutes when Syncfusion Document SDK is licensed (see Settings)." />
+    <div class="page-header-actions">
+        <PageTourButton Route="/requirements" />
+        <PageHelp DataTour="@ClerkTourIds.HelpRequirements" HelpText="Manage pre-seeded Colorado deadlines and add town-specific requirements. Export council agenda PDF, compliance Excel, or meeting minutes when Syncfusion Document SDK is licensed (see Settings)." />
+    </div>
 </div>
 
 <div class="requirements-toolbar mb-3">
-    <SfButton CssClass="tikr-action-btn primary" IsPrimary="true" IconCss="e-icons e-plus" Content="Add requirement" OnClick="OpenCreateDialog" />
-    <SfButton CssClass="tikr-action-btn" IconCss="e-icons e-export" Content="Export CSV" OnClick="ExportCsvAsync" />
+    <TourAnchor TourId="@ClerkTourIds.ReqAdd">
+        <SfButton CssClass="tikr-action-btn primary" IsPrimary="true" IconCss="e-icons e-plus" Content="Add requirement" OnClick="OpenCreateDialog" />
+    </TourAnchor>
+    <TourAnchor TourId="@ClerkTourIds.ReqExportCsv">
+        <SfButton CssClass="tikr-action-btn" IconCss="e-icons e-export" Content="Export CSV" OnClick="ExportCsvAsync" />
+    </TourAnchor>
     <SfButton CssClass="tikr-action-btn primary" IsPrimary="true" IconCss="e-icons e-export-pdf" Content="@CouncilPacketButtonLabel" Disabled="@(_generating is not null)" OnClick="GenerateCouncilPacketAsync" />
     <SfButton CssClass="tikr-action-btn" IconCss="e-icons e-export-pdf" Content="@AgendaPdfButtonLabel" Disabled="@(_generating is not null)" OnClick="DownloadAgendaPdfAsync" />
     <SfButton CssClass="tikr-action-btn" IconCss="e-icons e-export-excel" Content="@ComplianceExcelButtonLabel" Disabled="@(_generating is not null)" OnClick="DownloadComplianceReportAsync" />
@@ -43,7 +50,7 @@
     </div>
 </div>
 
-<div class="requirements-filters mb-3">
+<div class="requirements-filters mb-3" data-tour="@ClerkTourIds.ReqFilters">
     <SfTextBox CssClass="requirements-search"
                Placeholder="Search title or description..."
                @bind-Value="_searchText"
@@ -122,7 +129,7 @@ else
         </AiSuggestionBanner>
     }
 
-    <div class="requirements-grid-host">
+    <div class="requirements-grid-host" data-tour="@ClerkTourIds.ReqGrid">
     <SfGrid CssClass="tikr-print-area" DataSource="@VisibleRequirements" AllowPaging="true" PageSize="12" AllowSorting="true" Height="100%">
         <GridTemplates>
             <EmptyRecordTemplate>

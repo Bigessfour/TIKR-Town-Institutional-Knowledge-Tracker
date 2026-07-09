@@ -1,5 +1,6 @@
 ﻿@inherits LayoutComponentBase
 @using Microsoft.AspNetCore.Components.Authorization
+@using TIKR.Web.ClerkTour
 @inject AuthSettings Auth
 @inject IAuthSessionService AuthSession
 @inject NavigationManager Navigation
@@ -14,13 +15,13 @@
             <p>The Town Clerk's Second Brain</p>
         </div>
         <ul class="tikr-nav">
-            <li><NavLink href="/" Match="NavLinkMatch.All">Dashboard</NavLink></li>
-            <li><NavLink href="/calendar">Calendar</NavLink></li>
-            <li><NavLink href="/requirements">Requirements</NavLink></li>
-            <li><NavLink href="/documents">Documents</NavLink></li>
-            <li><NavLink href="/assistant">AI Assistant</NavLink></li>
-            <li><NavLink href="/vault">Knowledge Vault</NavLink></li>
-            <li><NavLink href="/settings">Settings</NavLink></li>
+            <li><NavLink href="/" Match="NavLinkMatch.All" data-tour="@ClerkTourIds.NavDashboard">Dashboard</NavLink></li>
+            <li><NavLink href="/calendar" data-tour="@ClerkTourIds.NavCalendar">Calendar</NavLink></li>
+            <li><NavLink href="/requirements" data-tour="@ClerkTourIds.NavRequirements">Requirements</NavLink></li>
+            <li><NavLink href="/documents" data-tour="@ClerkTourIds.NavDocuments">Documents</NavLink></li>
+            <li><NavLink href="/assistant" data-tour="@ClerkTourIds.NavAssistant">AI Assistant</NavLink></li>
+            <li><NavLink href="/vault" data-tour="@ClerkTourIds.NavVault">Knowledge Vault</NavLink></li>
+            <li><NavLink href="/settings" data-tour="@ClerkTourIds.NavSettings">Settings</NavLink></li>
             @if (Auth.IsEnabled)
             {
                 <AuthorizeView Roles="@TikrRoles.Admin">
@@ -65,6 +66,8 @@
 </div>
 
 <ClerkToastHost />
+<ClerkTourHost />
+<ClerkUserGuideDialog />
 <TikrKeyboardShortcuts />
 
 @* The default Blazor error UI. We style it to be calmer and less alarming in production.

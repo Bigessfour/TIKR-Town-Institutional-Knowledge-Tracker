@@ -1,0 +1,21 @@
+@if (string.IsNullOrWhiteSpace(TourId))
+{
+    @ChildContent
+}
+else
+{
+    <span data-tour="@TourId" class="@CssClass">
+        @ChildContent
+    </span>
+}
+
+@code {
+    [Parameter]
+    public string? TourId { get; set; }
+
+    [Parameter]
+    public string? CssClass { get; set; }
+
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+}

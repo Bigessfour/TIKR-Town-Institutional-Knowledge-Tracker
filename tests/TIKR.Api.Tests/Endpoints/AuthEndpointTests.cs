@@ -66,6 +66,25 @@ public class AuthEndpointTests : IClassFixture<AuthEnabledWebApplicationFactory>
     }
 
     [Fact]
+    public async Task MeTour_CanReadAndUpdateTourPreferences()
+    {
+        var token = await LoginAsync();
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        var initial = await _client.GetFromJsonAsync<ClerkTourStateDto>("/api/auth/me/tour");
+        initial.Should().NotBeNull();
+        initial!.AutoTourDisabled.Should().BeFalse();
+
+        var update = await _client.PutAsJsonAsync("/api/auth/me/tour",
+            new UpdateClerkTourStateRequest("v1", true));
+        update.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var saved = await _client.GetFromJsonAsync<ClerkTourStateDto>("/api/auth/me/tour");
+        saved!.CompletedVersion.Should().Be("v1");
+        saved.AutoTourDisabled.Should().BeTrue();
+    }
+
+    [Fact]
     public async Task Admin_CanCreateClerkUser()
     {
         var token = await LoginAsync();

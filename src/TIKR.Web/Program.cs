@@ -1,8 +1,10 @@
 using TIKR.Shared.Configuration;
+using TIKR.Web;
 using TIKR.Shared.Constants;
 using TIKR.Web.Components;
 using TIKR.Web.Services;
 using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.Extensions.AI;
 using OllamaSharp;
 using Syncfusion.Blazor;
@@ -34,6 +36,44 @@ if (builder.Environment.IsDevelopment())
 
 builder.Configuration.AddEnvironmentVariables();
 
+// Persist antiforgery / Blazor circuit keys on NAS volume (docker: TIKR_DATA_PROTECTION_PATH=/data/.dpkeys).
+var dataProtectionBuilder = builder.Services.AddDataProtection()
+    .SetApplicationName("TIKR.Web");
+var dataProtectionPath = builder.Configuration["TIKR_DATA_PROTECTION_PATH"];
+if (!string.IsNullOrWhiteSpace(dataProtectionPath))
+{
+    try
+    {
+        Directory.CreateDirectory(dataProtectionPath);
+        dataProtectionBuilder.PersistKeysToFileSystem(new DirectoryInfo(dataProtectionPath));
+    }
+    catch (Exception ex)
+    {
+        Log.Warning(ex, "Could not persist data protection keys to {Path}", dataProtectionPath);
+    }
+}
+
+// Syncfusion: register + validate Blazor license before AddSyncfusionBlazor (official startup order).
+SyncfusionBlazorLicenseStatus blazorLicenseStatus;
+using (var startupLogFactory = LoggerFactory.Create(b => b.AddConsole()))
+{
+    var startupLogger = startupLogFactory.CreateLogger("TIKR.Web.SyncfusionLicense");
+    var keyConfigured = !string.IsNullOrWhiteSpace(TikrConfiguration.GetSyncfusionLicenseKey(builder.Configuration));
+    var valid = SyncfusionLicenseBootstrap.RegisterIfConfigured(
+        builder.Configuration,
+        out var detail,
+        startupLogger,
+        "Blazor UI");
+    blazorLicenseStatus = new SyncfusionBlazorLicenseStatus
+    {
+        KeyConfigured = keyConfigured,
+        BlazorLicenseValid = valid,
+        Detail = detail,
+    };
+}
+
+builder.Services.AddSingleton(blazorLicenseStatus);
+
 var authEnabled = TikrConfiguration.IsAuthEnabled(builder.Configuration);
 
 var ollamaHost = TikrConfiguration.GetOllamaHost(builder.Configuration);
@@ -50,10 +90,13 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
 builder.Services.AddSyncfusionBlazor();
+builder.Services.AddMemoryCache();
 
 builder.Services.AddSingleton(new AuthSettings { IsEnabled = authEnabled });
 builder.Services.AddSingleton<LocalConnectionStateService>();
 builder.Services.AddScoped<ClerkToastService>();
+builder.Services.AddScoped<ClerkUserGuideService>();
+builder.Services.AddScoped<ClerkTourService>();
 builder.Services.AddScoped<ThemeService>();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<TikrAuthenticationStateProvider>();
@@ -84,9 +127,6 @@ builder.Services.AddHttpClient<TikrApiClient>(client => client.BaseAddress = api
 builder.Host.UseSerilog();
 
 var app = builder.Build();
-
-var logger = app.Services.GetRequiredService<ILogger<Program>>();
-TIKR.Web.SyncfusionLicenseBootstrap.RegisterIfConfigured(app.Configuration, logger, "Blazor UI");
 
 if (!app.Environment.IsDevelopment())
 {

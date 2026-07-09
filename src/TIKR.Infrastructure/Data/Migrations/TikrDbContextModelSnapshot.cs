@@ -153,6 +153,12 @@ namespace TIKR.Infrastructure.Data.Migrations
                     b.Property<int>("AccessFailedCount")
                         .HasColumnType("INTEGER");
 
+                    b.Property<bool>("ClerkTourAutoDisabled")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ClerkTourCompletedVersion")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("ConcurrencyStamp")
                         .IsConcurrencyToken()
                         .HasColumnType("TEXT");

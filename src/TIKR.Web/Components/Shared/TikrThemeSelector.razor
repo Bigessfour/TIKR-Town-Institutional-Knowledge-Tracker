@@ -1,47 +1,53 @@
-@rendermode InteractiveServer
+@using TIKR.Web.ClerkTour
 @inject ThemeService Theme
+@implements IDisposable
 
 <div class="tikr-theme-bar">
-    <label>Display theme</label>
-    <SfDropDownList TValue="string" TItem="ThemeOption"
-                    DataSource="@_themeOptions"
-                    ValueField="Value"
-                    TextField="Text"
-                    Value="@Theme.Current"
-                    ValueChange="OnThemeChangedAsync"
-                    Width="100%"
-                    CssClass="tikr-action-btn"
-                    aria-label="Display theme">
-    </SfDropDownList>
+    <label for="@SelectId">Display theme</label>
+    <select id="@SelectId"
+            class="tikr-theme-select"
+            data-tour="@ClerkTourIds.ThemeSelect"
+            aria-label="Display theme"
+            @bind="_themeValue"
+            @bind:after="OnThemeBoundAsync">
+        @foreach (var opt in _themeOptions)
+        {
+            <option value="@opt.Value">@opt.Text</option>
+        }
+    </select>
 </div>
 
 @code {
-    private record ThemeOption(string Value, string Text);
+    [Parameter]
+    public string SelectId { get; set; } = "tikr-theme-ddl";
 
-    private readonly List<ThemeOption> _themeOptions = ThemeService.Options
-        .Select(key => new ThemeOption(key, ToDisplay(key)))
-        .ToList();
+    private readonly (string Value, string Text)[] _themeOptions =
+    [
+        ("light", "Light"),
+        ("dark", "Dark"),
+        ("high-contrast", "High contrast"),
+    ];
 
-    private static string ToDisplay(string key) => key switch
-    {
-        "light" => "Light",
-        "dark" => "Dark",
-        "high-contrast" => "High contrast",
-        _ => key
-    };
+    private string _themeValue = "light";
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (!firstRender)
             return;
 
+        Theme.Changed += OnThemeChanged;
         await Theme.InitializeAsync();
+        _themeValue = Theme.Current;
         StateHasChanged();
     }
 
-    private async Task OnThemeChangedAsync(Syncfusion.Blazor.DropDowns.ChangeEventArgs<string, ThemeOption> args)
+    private void OnThemeChanged()
     {
-        if (args.Value is not null)
-            await Theme.SetThemeAsync(args.Value);
+        _themeValue = Theme.Current;
+        _ = InvokeAsync(StateHasChanged);
     }
+
+    private async Task OnThemeBoundAsync() => await Theme.SetThemeAsync(_themeValue);
+
+    public void Dispose() => Theme.Changed -= OnThemeChanged;
 }

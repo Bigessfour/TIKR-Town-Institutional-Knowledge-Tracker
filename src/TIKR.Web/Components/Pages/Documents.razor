@@ -17,11 +17,14 @@
         <h2>Document Library</h2>
         <p>Upload, AI-tag, organize, and search municipal documents</p>
     </div>
-    <PageHelp HelpText="Store ordinances, minutes, forms, and correspondence. AI auto-tags and suggests folders on upload. Everything stays on your local NAS." />
+    <div class="page-header-actions">
+        <PageTourButton Route="/documents" />
+        <PageHelp DataTour="@ClerkTourIds.HelpDocuments" HelpText="Store ordinances, minutes, forms, and correspondence. AI auto-tags and suggests folders on upload. Everything stays on your local NAS." />
+    </div>
 </div>
 
 <!-- Prominent large uploader -->
-<div class="uploader-zone">
+<div class="uploader-zone" data-tour="@ClerkTourIds.DocUploader">
     <SfUploader AutoUpload="true" Multiple="true" AllowedExtensions=".pdf,.doc,.docx,.txt,.csv,.xlsx,.png,.jpg,.jpeg,.gif,.bmp,.tiff" MaxFileSize="52428800">
         <UploaderEvents ValueChange="OnUpload"></UploaderEvents>
     </SfUploader>
@@ -57,7 +60,7 @@
 }
 
 <!-- Search mode toggle + input (large, obvious) -->
-<div class="search-controls">
+<div class="search-controls" data-tour="@ClerkTourIds.DocSearch">
     <div class="mode-toggle" role="group" aria-label="Search mode">
         <SfButton CssClass="@(SearchMode == "full" ? "tikr-action-btn active" : "tikr-action-btn")"
                   Content="Full-text search"
@@ -100,7 +103,7 @@
 
 <!-- Main resizable layout: Tree | Grid | Preview -->
 <!-- Wrapped in flex host so Height="100%" on splitter works against .tikr-main-content flex column (Phase 2 Item 4) -->
-<div class="documents-splitter-host">
+<div class="documents-splitter-host" data-tour="@ClerkTourIds.DocLibrary">
 <SfSplitter Height="100%" Width="100%" SeparatorSize="4">
     <SplitterPanes>
         <!-- Left: Folder tree -->
@@ -124,7 +127,10 @@
                     AllowSelection="true"
                     Height="100%"
                     CssClass="doc-grid">
-                <GridSelectionSettings Type="Syncfusion.Blazor.Grids.SelectionType.Multiple" />
+                <GridSelectionSettings Type="Syncfusion.Blazor.Grids.SelectionType.Multiple"
+                                       Mode="Syncfusion.Blazor.Grids.SelectionMode.Row"
+                                       CheckboxOnly="true"
+                                       PersistSelection="true" />
                 <GridEvents RowSelected="@((RowSelectEventArgs<DocumentDto> e) => OnRowSelected(e))"
                             RowDeselected="@((RowDeselectEventArgs<DocumentDto> e) => OnRowDeselected(e))" />
                 <GridTemplates>

@@ -13,11 +13,17 @@ using TIKR.Web.Services;
 
 namespace TIKR.Web.Tests.Components;
 
-public class CalendarPageTests : TestContext
+public class CalendarPageTests : ClerkTestContext
 {
     public CalendarPageTests()
     {
         Services.AddSyncfusionBlazor();
+        Services.AddSingleton(new SyncfusionBlazorLicenseStatus
+        {
+            KeyConfigured = true,
+            BlazorLicenseValid = true,
+            Detail = "Valid for Blazor UI (test host).",
+        });
         JSInterop.Mode = JSRuntimeMode.Loose;
     }
 
@@ -36,6 +42,23 @@ public class CalendarPageTests : TestContext
         var cut = RenderComponent<Calendar>();
         cut.WaitForAssertion(() => cut.Markup.Should().Contain("Mill Levy Certification"));
         cut.Markup.Should().Contain("Deadline Calendar");
+    }
+
+    [Fact]
+    public void Calendar_WhenBlazorLicenseInvalid_ShowsMessageAndSkipsSchedule()
+    {
+        Services.AddSingleton(new SyncfusionBlazorLicenseStatus
+        {
+            KeyConfigured = true,
+            BlazorLicenseValid = false,
+            Detail = "The included Syncfusion license key is invalid.",
+        });
+        RegisterApi("[]");
+        SetRendererInfo(new RendererInfo("Server", true));
+
+        var cut = RenderComponent<Calendar>();
+        cut.WaitForAssertion(() => cut.Markup.Should().Contain("Schedule view needs a valid Syncfusion Blazor license"));
+        cut.Markup.Should().NotContain("e-schedule");
     }
 
     private void RegisterApi(string json)

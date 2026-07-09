@@ -1,0 +1,17 @@
+@inject ClerkTourService Tour
+@implements IDisposable
+
+@code {
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+            return;
+
+        if (await Tour.ShouldAutoStartAsync())
+            await Tour.StartGlobalTourAsync();
+    }
+
+    public void Dispose()
+    {
+    }
+}

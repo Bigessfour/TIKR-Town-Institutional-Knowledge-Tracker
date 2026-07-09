@@ -79,16 +79,29 @@ ollama pull nomic-embed-text    # embedding model for index
 - Natural language with “Syncfusion” keyword for the Blazor MCP
 - Ask Microsoft Learn MCP for `IChatClient`, Blazor Interactive Server, etc.
 
-**Best practice:** Keep ≤3–4 active MCP servers in Cursor to avoid tool-selection ambiguity.
+**Best practice:** Keep ≤4 active MCP servers in Cursor to avoid tool-selection ambiguity. For a **UI readiness audit**, temporarily disable `ollama` or `microsoft-learn` and enable `chrome-devtools` (see below).
 
 **Verify:** Cursor Settings → Tools & MCP → `sf-blazor-mcp` shows connected (green).
 
-### 3. Already enabled (optional)
+### 3. Browser audit MCP (localhost:8080)
+
+[Chrome DevTools MCP](https://github.com/ChromeDevTools/chrome-devtools-mcp) drives real Chrome (navigate, click, snapshot, console, network). TIKR uses **slim + headless** in `.cursor/mcp.json.example` for clerk smoke on `http://localhost:8080`.
+
+```bash
+./scripts/setup-cursor-mcp.sh --with-chrome-devtools
+# Restart Cursor → Settings → Tools & MCP → chrome-devtools connected
+```
+
+Or Grok CLI: `grok mcp add chrome-devtools npx chrome-devtools-mcp@latest`
+
+Record findings in [ui-readiness-audit.md](ui-readiness-audit.md). Complement with `tests/e2e/page-readiness.spec.ts` and `./scripts/ci-smoke.sh`.
+
+### 4. Other optional MCP
 
 | MCP | TIKR use |
 |-----|----------|
-| `cursor-ide-browser` | E2E test Blazor at `localhost:8080` |
-| `user-MCP_DOCKER` | Container ops from agent (optional) |
+| `cursor-ide-browser` | Built-in Cursor browser tools (alternative to chrome-devtools) |
+| `MCP_DOCKER` | Container ops + bundled browser tools (optional) |
 
 ---
 

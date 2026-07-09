@@ -1,18 +1,64 @@
 @page "/settings"
 @rendermode InteractiveServer
 @inject TikrApiClient Api
+@inject SyncfusionBlazorLicenseStatus BlazorLicenseStatus
+@inject ClerkTourService Tour
+@inject ClerkUserGuideService Guide
 
 @using TIKR.Shared.DTOs
 @using TIKR.Shared.Entities
 @using TIKR.Web.Components.Shared
 @using TIKR.Web.Helpers
+@using TIKR.Web.Services
 
 <div class="page-header">
     <div class="page-header-main">
         <h2>Settings</h2>
-        <p>AI configuration, Synology health, and audit trail</p>
+        <p>Clerk preferences on this device, plus read-only health for your NAS deployment</p>
     </div>
-    <PageHelp HelpText="Check Ollama and local storage status before council night. Optional Grok escalation is configured on the API container." />
+    <div class="page-header-actions">
+        <PageTourButton Route="/settings" />
+        <PageHelp DataTour="@ClerkTourIds.HelpSettings" HelpText="Change display theme here or in the sidebar. Town name, Ollama host, and Grok are set in docker/.env on the Synology (see Deployment below)." />
+    </div>
+</div>
+
+<SfCard CssClass="mb-3">
+    <CardHeader Title="Clerk preferences" />
+    <CardContent>
+        <p class="text-muted mb-2">Saved in this browser only — does not change other clerks or devices.</p>
+        <div class="tikr-settings-theme">
+            <TikrThemeSelector SelectId="tikr-theme-settings" />
+        </div>
+        <div class="tikr-settings-help-actions mt-3">
+            <TourAnchor TourId="@ClerkTourIds.TourReplay">
+                <SfButton CssClass="tikr-action-btn" OnClick="ReplayTourAsync">Show me around TIKR</SfButton>
+            </TourAnchor>
+            <TourAnchor TourId="@ClerkTourIds.UserGuideOpen">
+                <SfButton CssClass="tikr-action-btn e-outline" OnClick="OpenGuide">Open user guide</SfButton>
+            </TourAnchor>
+        </div>
+        <div class="mt-2">
+            <SfCheckBox @bind-Checked="_autoTourDisabled" Label="Don't show walkthrough automatically" @bind-Checked:after="PersistAutoTourDisabledAsync" />
+        </div>
+    </CardContent>
+</SfCard>
+
+<div data-tour="@ClerkTourIds.SettingsDeployment">
+<SfCard CssClass="mb-3">
+    <CardHeader Title="Deployment options (Synology / docker/.env)" />
+    <CardContent>
+        <p class="mb-2">These are not edited inside TIKR. Update <code>docker/.env</code> on the NAS, then restart the API and Web containers.</p>
+        <ul class="shortcuts-list">
+            <li><span><strong>TIKR_TOWN_NAME</strong> — town label on reports and footer</span><span>@(_localStatus?.TownName ?? "—")</span></li>
+            <li><span><strong>OLLAMA_HOST</strong> — local AI endpoint</span><span>@(_status?.OllamaAvailable == true ? "Reachable" : "Unreachable")</span></li>
+            <li><span><strong>OLLAMA_CHAT_MODEL</strong> / <strong>AI:DefaultModel</strong></span><span>@(_status?.OllamaModel ?? "—")</span></li>
+            <li><span><strong>USE_GROK</strong> + <strong>GROK_API_KEY</strong></span><span>@(_status?.GrokEnabled == true ? "Enabled" : "Disabled")</span></li>
+            <li><span><strong>SYNCFUSION_LICENSE_KEY</strong></span><span>@(BlazorLicenseStatus.KeyConfigured ? "Configured" : "Not set")</span></li>
+            <li><span><strong>USE_SYNCFUSION_AGENT_TOOLS</strong></span><span>@(_documentSdkStatus?.AgentToolsEnabled == true ? "Enabled" : "Disabled")</span></li>
+        </ul>
+        <p class="text-muted mb-0 mt-2">Template: <code>docker/.env.example</code>. On Mac dev: <code>./scripts/setup-local-secrets.sh</code>.</p>
+    </CardContent>
+</SfCard>
 </div>
 
 <SfCard CssClass="mb-3">
@@ -28,6 +74,18 @@
             <p><strong>Storage:</strong> @_localStatus.StorageLabel</p>
             <p><strong>Database:</strong> @LocalStatusFooterHelper.FormatLastSaved(_localStatus.DataLastModifiedUtc, DateTime.UtcNow)</p>
             <p><strong>Ollama:</strong> @(_localStatus.OllamaAvailable ? "Ready on NAS" : "Offline — local AI features pause until Ollama returns")</p>
+        }
+    </CardContent>
+</SfCard>
+
+<SfCard CssClass="mb-3">
+    <CardHeader Title="Syncfusion Blazor UI" />
+    <CardContent>
+        <p><strong>License key:</strong> @(BlazorLicenseStatus.KeyConfigured ? "Configured" : "Not set — add SYNCFUSION_LICENSE_KEY to docker/.env or user-secrets")</p>
+        <p><strong>Blazor UI probe:</strong> @(BlazorLicenseStatus.BlazorLicenseValid ? "Valid — trial banner should not block clicks" : $"Invalid — {BlazorLicenseStatus.Detail}")</p>
+        @if (!BlazorLicenseStatus.BlazorLicenseValid && BlazorLicenseStatus.KeyConfigured)
+        {
+            <p class="text-muted">Generate a <strong>Blazor v34.1.x</strong> key at your Syncfusion account (Downloads). Document SDK keys alone do not clear the Blazor trial overlay.</p>
         }
     </CardContent>
 </SfCard>
@@ -88,7 +146,7 @@
 
 <div class="mt-4">
     <h4>Advanced AI</h4>
-    <p class="text-muted">Use the dedicated <a href="/assistant">AI Assistant</a> page for local Ollama chat and optional Grok escalation.</p>
+    <p class="text-muted">Use the <a href="/assistant">AI Assistant</a> page for everyday Ollama chat. Enable Grok on the API when you need deeper reasoning.</p>
 </div>
 
 @code {
@@ -96,6 +154,7 @@
     private LocalStorageStatusDto? _localStatus;
     private DocumentSdkStatusDto? _documentSdkStatus;
     private List<AuditLog> _audit = [];
+    private bool _autoTourDisabled;
 
     protected override async Task OnInitializedAsync()
     {
@@ -113,7 +172,16 @@
             _documentSdkStatus = null;
             _audit = [];
         }
+
+        _autoTourDisabled = await Tour.IsAutoTourDisabledForUiAsync();
     }
+
+    private async Task ReplayTourAsync() => await Tour.StartFullTourAsync();
+
+    private void OpenGuide() => Guide.Open();
+
+    private async Task PersistAutoTourDisabledAsync() =>
+        await Tour.SetAutoTourDisabledAsync(_autoTourDisabled);
 
     private static string DocumentSdkStatusLabel(DocumentSdkStatusDto status)
     {
