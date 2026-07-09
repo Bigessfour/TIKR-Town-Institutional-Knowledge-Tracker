@@ -29,6 +29,13 @@ coverage/
 # Local RAG index (tikr-rag-mcp)
 .rag_index/
 
+# Repomix pack output (npm run repomix)
+repomix-output.md
+repomix-output.*
+
+# Local agent harness (not shipped)
+.grok/
+
 # Python venv for tikr-rag-mcp
 .venv/
 

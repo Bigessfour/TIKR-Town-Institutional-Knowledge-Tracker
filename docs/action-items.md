@@ -14,12 +14,23 @@ This file owns **status, checkboxes, priorities, verification evidence**. The ge
 
 ---
 
-## Current Priorities (Phase 0 + 10C closure)
+## Current Priorities (Phase 0 + ship)
 
-- [x] Phase 0 PR #4 — Health UI closure + Done Detector sign-off (see incremental-plan.md) — Layer 1 (inventory 0 w/o proof) + Layer 2 gate largely complete via done-detector; human walkthrough remains.
-- [ ] Manual NAS licensed smoke for Syncfusion agent tools (post #36)
-- [ ] 10C-C extraction source badge in UI (UsedSyncfusionTools)
+- [x] Phase 0 PR #3 — Deb NAS install + maintainer ship checklist ([deb-nas-install.md](deb-nas-install.md), [ship-to-production.md](ship-to-production.md)) — 2026-07-09
+- [ ] Phase 0 PR #4 — Recorded Deb walkthrough ([demo-deb.md](demo-deb.md)) + Layer 2 bus-factor checkbox below
+- [ ] Merge [PR #61](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/61) + ship-doc commit to `main`; tag `v1.0.0` per [ship-to-production.md](ship-to-production.md)
+- [ ] Manual NAS licensed smoke for Syncfusion agent tools (post #36) — **post-ship**
+- [ ] 10C-C extraction source badge in UI (UsedSyncfusionTools) — **post-ship**
 - [x] Playwright E2E as required CI gate (merged #48, green in CI)
+
+### Post-ship / v1.1+ (not blocking v1.0.0)
+
+- Full accessibility pass (axe or screen reader on key flows)
+- Documents: Syncfusion SfPdfViewer / DOCX preview
+- IMAP / forward-to-folder email ingestion scaffold
+- Richer audit snapshots (changed fields)
+- Phase 6 Smart Components (Syncfusion AI on forms)
+- Windows Inno installer polish; multi-NAS replication story
 
 ---
 

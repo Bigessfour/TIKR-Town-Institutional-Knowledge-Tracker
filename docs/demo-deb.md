@@ -9,7 +9,7 @@
 
 | Mode | How to start | Who |
 |------|--------------|-----|
-| **Production (primary)** | Browser → `http://<nas-hostname>:8080` after IT runs [docker-compose.prod.yml](../docker/docker-compose.prod.yml) on Synology | Wiley clerk daily |
+| **Production (primary)** | Browser → `http://<nas-hostname>:8080` after IT follows [deb-nas-install.md](deb-nas-install.md) on Synology | Wiley clerk daily |
 | **Optional Windows VM** | `./scripts/publish-tikr.sh` → run `TIKR.Api.exe` then `TIKR.Web.exe` | IT smoke test only |
 
 Settings shows **Ollama** and **Grok** status (env-configured on the API) — there is no “Local PC / Full Synology” UI toggle.

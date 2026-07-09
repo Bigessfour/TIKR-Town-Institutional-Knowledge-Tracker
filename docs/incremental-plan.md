@@ -241,7 +241,7 @@ Update this section when env changes.
 
 ## Phase 0 — Final Gap Closure & Ship-Ready Polish
 
-**Status:** in progress ([#33](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/33) + [#34](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/34) + Playwright CI gate [#48](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/48) merged; PR sequence 3–4 remaining). Move-in and dev tooling complete (2026-07).
+**Status:** closing ([#33](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/33) + [#34](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/34) + [#48](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/48) merged; PR #3 docs done; **PR #4 recorded walkthrough** remains). Active development complete after tag `v1.0.0`; polish in action-items Post-ship.
 
 **Purpose:** Clerk-facing polish before Deb sign-off — local-first trust cues, safe deletes, accessibility, and E2E smoke.
 
@@ -251,8 +251,8 @@ Update this section when env changes.
 |---|-------|--------|
 | 1 | UI polish + NAS footer (#33) | done |
 | 2 | Test & accessibility pass (#34 + #48) | **done** — keyboard nav + bUnit + blocking Playwright E2E in CI; `FullyTested` CI filter deferred until coverage targets pass with subset |
-| 3 | Documentation & clerk touches | planned |
-| 4 | Health UI closure + Done Detector sign-off | in progress (Layer 1+2 gates executed locally; awaiting recorded walkthrough) |
+| 3 | Documentation & clerk touches | done ([deb-nas-install.md](deb-nas-install.md), [ship-to-production.md](ship-to-production.md)) |
+| 4 | Health UI closure + Done Detector sign-off | in progress (Layer 1+2 automated gates done; awaiting recorded Deb walkthrough) |
 | Vault Export | Generate Complete Handover Package (PDF) | done (last feature - project complete) |
 
 ### Acceptance criteria (combined PR #33 + follow-ups)
@@ -394,7 +394,7 @@ Update this section with future agent env changes.
 - [x] Sync local repo to `main`
 - [x] Rebuild RAG index (`scripts/update_tikr_rag_index.py`)
 - [x] Done Detector Layer 1 (function inventory → 0 without proof) + Layer 2 gate progress (action-items.md updated, tests/lint green, see scripts/done-detector.sh)
-- [ ] Phase 0 PR #3: Documentation & clerk touches / handover ([demo-deb.md](demo-deb.md) checklist)
+- [x] Phase 0 PR #3: Documentation & clerk touches / handover ([deb-nas-install.md](deb-nas-install.md), [demo-deb.md](demo-deb.md), [ship-to-production.md](ship-to-production.md))
 - [ ] Phase 0 PR #4: Health UI closure + Done Detector sign-off (recorded Deb walkthrough + final gate checks)
 
-**Immediate recommendation:** RAG + Done Detector run complete (inventory clean, tests green, trunk clean). Proceed to PR #3 docs/handover then PR #4 sign-off with Deb.
+**Immediate recommendation:** Merge ship docs + polish to `main` (see [ship-to-production.md](ship-to-production.md)), then PR #4 recorded walkthrough, then tag `v1.0.0`.
