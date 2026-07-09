@@ -1,0 +1,10 @@
+name: TIKR-Town-Institutional-Knowledge-Tracker
+version: 1.0.0
+description: APM project for TIKR-Town-Institutional-Knowledge-Tracker
+author: Bigessfour
+dependencies:
+  apm:
+  - syncfusion/blazor-ui-builder
+  mcp: []
+includes: auto
+scripts: {}
