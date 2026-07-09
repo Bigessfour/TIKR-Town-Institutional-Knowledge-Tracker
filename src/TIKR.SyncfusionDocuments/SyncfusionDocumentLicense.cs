@@ -1,4 +1,3 @@
-using Syncfusion.Licensing;
 using Syncfusion.Pdf;
 using TIKR.Shared.Configuration;
 using TIKR.Shared.DTOs;
@@ -9,17 +8,8 @@ public static class SyncfusionDocumentLicense
 {
     public static void RegisterFromConfiguration(Microsoft.Extensions.Configuration.IConfiguration configuration)
     {
-        var licenseKey = TikrConfiguration.GetSyncfusionLicenseKey(configuration);
-        if (!string.IsNullOrWhiteSpace(licenseKey))
-        {
-            // Diag log - will be picked up by host logger
-            Console.WriteLine($"[SyncfusionDocumentLicense] Registering Document SDK key (length: {licenseKey.Length})");
-            SyncfusionLicenseProvider.RegisterLicense(licenseKey);
-        }
-        else
-        {
+        if (!SyncfusionLicenseBootstrap.RegisterIfConfigured(configuration, componentLabel: "Document SDK"))
             Console.WriteLine("[SyncfusionDocumentLicense] No Document SDK license key configured");
-        }
     }
 
     public static DocumentSdkStatusDto GetStatus(Microsoft.Extensions.Configuration.IConfiguration configuration)

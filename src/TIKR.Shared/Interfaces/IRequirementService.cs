@@ -12,5 +12,14 @@ public interface IRequirementService
     Task<Requirement> CreateAsync(CreateRequirementRequest request, IAuditService audit, ICurrentUserService currentUser, CancellationToken ct = default);
     Task<Requirement> UpdateAsync(Guid id, UpdateRequirementRequest request, IAuditService audit, ICurrentUserService currentUser, CancellationToken ct = default);
     Task DeleteAsync(Guid id, IAuditService audit, ICurrentUserService currentUser, CancellationToken ct = default);
-    // Link/unlink can be added; queries thin for now.
+
+    /// <summary>
+    /// Link a document to requirement (idempotent) inside transaction + audit log.
+    /// </summary>
+    Task LinkDocumentAsync(Guid requirementId, Guid documentId, IAuditService audit, ICurrentUserService currentUser, CancellationToken ct = default);
+
+    /// <summary>
+    /// Unlink document from requirement inside transaction + audit log.
+    /// </summary>
+    Task UnlinkDocumentAsync(Guid requirementId, Guid documentId, IAuditService audit, ICurrentUserService currentUser, CancellationToken ct = default);
 }

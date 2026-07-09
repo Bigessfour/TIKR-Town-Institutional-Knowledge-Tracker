@@ -26,16 +26,7 @@ public class DocumentService(TikrDbContext db) : IDocumentService
         if (length > 100 * 1024 * 1024) throw new ArgumentException("File too large (max 100MB).");
         if (string.IsNullOrWhiteSpace(fileName)) throw new ArgumentException("Invalid filename.");
 
-        // Adapt to internal prep (for now wrap stream; in full would refactor prepare to take Stream+meta)
-        // Simple: create temp form-like or delegate. For min, use a wrapper stream + filename.
-        // To keep simple, reuse logic by creating MemoryStream copy if needed.
-        await using var buffer = new MemoryStream();
-        await content.CopyToAsync(buffer, ct);
-        buffer.Position = 0;
-
-        // For extraction/storage use the buffer; length from param.
-        // Simplified for now - call internal with adapted (production would have overload).
-        var (entity, _, _) = await PrepareUploadInternalFromStreamAsync(buffer, fileName, contentType, length, storage, ct);
+        var (entity, _, _) = await PrepareDocumentUploadAsync(content, fileName, contentType, length, storage, ct);
 
         using var tx = await db.Database.BeginTransactionAsync(ct);
         db.Documents.Add(entity);
@@ -46,8 +37,8 @@ public class DocumentService(TikrDbContext db) : IDocumentService
         return entity;
     }
 
-    private static async Task<(Document Entity, string? FullText, string StoragePath)> PrepareUploadInternalFromStreamAsync(
-        Stream contentStream,
+    public async Task<(Document Entity, string? FullText, string StoragePath)> PrepareDocumentUploadAsync(
+        Stream content,
         string fileName,
         string? contentType,
         long length,
@@ -58,12 +49,12 @@ public class DocumentService(TikrDbContext db) : IDocumentService
         string? fullText = null;
 
         // Reset for read
-        if (contentStream.CanSeek) contentStream.Position = 0;
+        if (content.CanSeek) content.Position = 0;
 
         if (DocumentTextExtractionService.CanExtract(fileName))
         {
             await using var buffer = new MemoryStream();
-            await contentStream.CopyToAsync(buffer, ct);
+            await content.CopyToAsync(buffer, ct);
             buffer.Position = 0;
             fullText = await DocumentTextExtractionService.TryExtractAsync(buffer, fileName, ct);
             buffer.Position = 0;
@@ -71,8 +62,8 @@ public class DocumentService(TikrDbContext db) : IDocumentService
         }
         else
         {
-            if (contentStream.CanSeek) contentStream.Position = 0;
-            storagePath = await storage.SaveAsync(contentStream, fileName, ct);
+            if (content.CanSeek) content.Position = 0;
+            storagePath = await storage.SaveAsync(content, fileName, ct);
         }
 
         var entity = new Document
@@ -87,5 +78,36 @@ public class DocumentService(TikrDbContext db) : IDocumentService
             UpdatedAt = DateTime.UtcNow
         };
         return (entity, fullText, storagePath);
+    }
+
+    public async Task DeleteAsync(
+        Guid id,
+        IFileStorageService storage,
+        IAuditService audit,
+        ICurrentUserService currentUser,
+        CancellationToken ct = default)
+    {
+        var entity = await db.Documents.FindAsync(id, ct);
+        if (entity is null) throw new KeyNotFoundException($"Document {id} not found.");
+
+        using var tx = await db.Database.BeginTransactionAsync(ct);
+        db.Documents.Remove(entity);
+        await audit.LogAsync("Delete", nameof(Document), id, entity.FileName, currentUser.UserId, ct);
+        await db.SaveChangesAsync(ct);
+        await tx.CommitAsync(ct);
+
+        // Delete file from storage only after successful commit to avoid record-without-file or file-without-record.
+        // Best-effort: ignore storage errors (e.g. already deleted) so DB+audit removal is not rolled back.
+        if (!string.IsNullOrWhiteSpace(entity.StoragePath))
+        {
+            try
+            {
+                await storage.DeleteAsync(entity.StoragePath, ct);
+            }
+            catch
+            {
+                // best effort cleanup; record removal takes precedence for consistency
+            }
+        }
     }
 }

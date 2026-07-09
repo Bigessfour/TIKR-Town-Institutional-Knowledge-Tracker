@@ -55,7 +55,8 @@ public class HomePageTests : TestContext
         Services.AddSingleton(new TikrApiClient(new HttpClient(handler) { BaseAddress = new Uri("http://localhost/") }));
 
         var cut = RenderComponent<Home>();
-        cut.WaitForAssertion(() => cut.Markup.Should().Contain("No priorities found"));
+        cut.WaitForAssertion(() => cut.Markup.Should().Contain("tikr-empty-state"));
+        cut.Markup.Should().Contain("No priorities right now.");
     }
 
     [Fact]
@@ -64,7 +65,8 @@ public class HomePageTests : TestContext
         RegisterApi("[]");
 
         var cut = RenderComponent<Home>();
-        cut.WaitForAssertion(() => cut.Markup.Should().Contain("No priorities found"));
+        cut.WaitForAssertion(() => cut.Markup.Should().Contain("tikr-empty-state"));
+        cut.Markup.Should().Contain("No priorities right now.");
     }
 
     private void RegisterApi(string json)

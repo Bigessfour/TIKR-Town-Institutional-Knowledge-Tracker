@@ -13,93 +13,9 @@ internal static class CouncilPacketEndpoints
 {
     private const int SummaryMaxLength = 500;
 
-    public static async Task<IResult> GenerateCouncilPacketAsync(
-        CreateCouncilPacketRequest? request,
-        IConfiguration config,
-        TikrDbContext db,
-        IDocumentGenerationService generator,
-        IFileStorageService storage,
-        IAuditService audit,
-        ICurrentUserService currentUser,
-        ILogger logger)
-    {
-        try
-        {
-            logger.LogInformation("Council packet generation requested");
-            var town = request?.TownName ?? config["TIKR_TOWN_NAME"] ?? "Wiley";
-            var packetDate = request?.PacketDate ?? DateOnly.FromDateTime(DateTime.UtcNow);
-            var logoPath = request?.LogoPath ?? config["TIKR_TOWN_LOGO_PATH"];
-            var requirements = request?.Requirements is { Count: > 0 }
-                ? request.Requirements
-                : await BuildCouncilPacketRequirementsAsync(db);
-
-            if (requirements.Count == 0)
-            {
-                return Results.BadRequest(new CouncilPacketResponse(
-                    null,
-                    null,
-                    "No requirements available for council packet."));
-            }
-
-            logger.LogInformation("Building council packet for {Town} ({Count} requirements)", town, requirements.Count);
-            var packetRequest = new CreateCouncilPacketRequest(town, packetDate, logoPath, requirements);
-            var files = await generator.GenerateCouncilPacketAsync(packetRequest);
-
-            using var tx = await db.Database.BeginTransactionAsync();
-
-            logger.LogInformation("Saving council packet PDF to NAS storage ({Bytes} bytes)", files.PdfContent.Length);
-            var pdfEntity = await PersistGeneratedDocumentAsync(
-                db, storage, files.PdfContent, files.PdfFileName, "application/pdf");
-
-            logger.LogInformation("Saving council packet DOCX to NAS storage ({Bytes} bytes)", files.DocxContent.Length);
-            var docxEntity = await PersistGeneratedDocumentAsync(
-                db, storage, files.DocxContent, files.DocxFileName,
-                "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
-
-            await audit.LogAsync(
-                "Generate",
-                nameof(Document),
-                pdfEntity.Id,
-                $"Council packet PDF {pdfEntity.FileName}",
-                currentUser.UserId);
-            await audit.LogAsync(
-                "Generate",
-                nameof(Document),
-                docxEntity.Id,
-                $"Council packet DOCX {docxEntity.FileName}",
-                currentUser.UserId);
-
-            await db.SaveChangesAsync();
-            await tx.CommitAsync();
-
-            logger.LogInformation(
-                "Council packet saved: PDF {PdfId}, DOCX {DocxId}",
-                pdfEntity.Id,
-                docxEntity.Id);
-
-            return Results.Ok(new CouncilPacketResponse(
-                new CouncilPacketStoredFileDto(pdfEntity.Id, pdfEntity.FileName, BuildDownloadUrl(pdfEntity.Id)),
-                new CouncilPacketStoredFileDto(docxEntity.Id, docxEntity.FileName, BuildDownloadUrl(docxEntity.Id)),
-                null));
-        }
-        catch (ArgumentException ex)
-        {
-            logger.LogWarning(ex, "Invalid council packet request");
-            return Results.BadRequest(new CouncilPacketResponse(null, null, ex.Message));
-        }
-        catch (InvalidOperationException ex)
-        {
-            logger.LogWarning(ex, "Council packet generation unavailable");
-            return Results.Json(new CouncilPacketResponse(null, null, ex.Message), statusCode: StatusCodes.Status503ServiceUnavailable);
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Council packet generation failed");
-            return Results.Json(
-                new CouncilPacketResponse(null, null, "Council packet generation failed. Check API logs."),
-                statusCode: StatusCodes.Status500InternalServerError);
-        }
-    }
+    // NOTE: GenerateCouncilPacketAsync heavy logic moved to ICouncilPacketService / CouncilPacketService
+    // (in Infrastructure) for thin endpoints + proper tx/audit layering. Program.cs now delegates to service.
+    // Requirement listing mappers (Load/Map/Build for packet items) kept here as used by /api/requirements GETs.
 
     public static async Task<Dictionary<Guid, List<RequirementLinkedDocumentDto>>> LoadRequirementLinksAsync(TikrDbContext db)
     {
@@ -160,32 +76,6 @@ internal static class CouncilPacketEndpoints
             requirement.IsSystemSeeded,
             requirement.IsCompleted,
             linkedDocuments);
-
-    private static async Task<Document> PersistGeneratedDocumentAsync(
-        TikrDbContext db,
-        IFileStorageService storage,
-        byte[] content,
-        string fileName,
-        string contentType)
-    {
-        await using var stream = new MemoryStream(content);
-        var storagePath = await storage.SaveAsync(stream, fileName);
-        var entity = new Document
-        {
-            Id = Guid.NewGuid(),
-            FileName = fileName,
-            StoragePath = storagePath,
-            ContentType = contentType,
-            FileSizeBytes = content.Length,
-            UploadedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow
-        };
-
-        db.Documents.Add(entity);
-        return entity;
-    }
-
-    private static string BuildDownloadUrl(Guid documentId) => $"/api/documents/{documentId}/content";
 
     private static string? TruncateSummary(string? text)
     {

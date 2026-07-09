@@ -59,6 +59,9 @@
 .tikr-main-content {
     flex: 1;
     padding: 1.5rem 2rem;
+    display: flex;
+    flex-direction: column;
+    min-height: 0; /* allow nested flex children (splitters/grids) with Height="100%" to size correctly without clipping */
 }
 
 .tikr-status-footer {

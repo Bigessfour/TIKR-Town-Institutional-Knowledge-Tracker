@@ -52,7 +52,8 @@ public static class DependencyInjection
         services.AddScoped<IDocumentService, DocumentService>();
         services.AddScoped<IRequirementService, RequirementService>();
         services.AddScoped<IKnowledgeService, KnowledgeService>();
-        services.AddSyncfusionDocumentGeneration();
+        services.AddSyncfusionDocumentGeneration(configuration);
+        services.AddScoped<ICouncilPacketService, CouncilPacketService>();
         services.AddHttpClient<GrokService>();
 
         services.AddSingleton<IOllamaChatClientFactory>(_ =>

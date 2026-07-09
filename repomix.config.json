@@ -1,0 +1,49 @@
+{
+  "$schema": "https://repomix.com/schemas/latest/schema.json",
+  "input": {
+    "maxFileSize": 50000000
+  },
+  "output": {
+    "filePath": "repomix-output.md",
+    "style": "markdown",
+    "parsableStyle": true,
+    "compress": false,
+    "fileSummary": true,
+    "directoryStructure": true,
+    "files": true,
+    "showLineNumbers": true,
+    "includeEmptyDirectories": true,
+    "includeFullDirectoryStructure": true,
+    "topFilesLength": 10,
+    "removeComments": false,
+    "removeEmptyLines": false,
+    "truncateBase64": true
+  },
+  "include": [],
+  "ignore": {
+    "useGitignore": true,
+    "useDefaultPatterns": false,
+    "customPatterns": [
+      ".git/**",
+      "node_modules/**",
+      "repomix-output.md",
+      "repomix-output.*",
+      "apm.lock.yaml",
+      "apm_modules/**",
+      ".grok/**",
+      ".cursor/agents/**",
+      "**/bin/**",
+      "**/obj/**",
+      ".venv/**",
+      "coverage/**",
+      ".rag_index/**",
+      "data/**"
+    ]
+  },
+  "security": {
+    "enableSecurityCheck": true
+  },
+  "tokenCount": {
+    "encoding": "o200k_base"
+  }
+}

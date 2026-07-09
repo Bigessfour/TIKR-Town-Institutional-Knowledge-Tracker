@@ -37,7 +37,9 @@ public class DocumentAgentService(
         string? processedPath = null;
         string? structuredTables = extraction.ExtractedText; // basic; enhanced below if tables available
 
-        // 3. Grok Heavy recommended: create clean tagged PDF archive copy + dual storage (when Syncfusion available)
+        // 3. Grok Heavy recommended: create clean stamped PDF archive copy + dual storage (original + processed)
+        // when Syncfusion tools were used for extraction. The archive generator always returns a
+        // .ai-archive.pdf named result; storage layer scopes under agent-scans/.
         if (extraction.UsedSyncfusionTools && documentGenerationService is not null)
         {
             try
@@ -46,22 +48,20 @@ public class DocumentAgentService(
                 var archiveResult = await documentGenerationService.CreateAgentArchivePdfAsync(
                     archiveInput, fileName, DateTime.UtcNow, cancellationToken);
 
-                // Save the processed archive version under a distinct processed path
                 await using var processedStream = new MemoryStream(archiveResult.Content);
                 var processedFileName = archiveResult.FileName ?? Path.ChangeExtension(fileName, ".ai-archive.pdf");
-                processedPath = await agentStorage.SaveAgentScanAsync(processedStream, $"processed/{processedFileName}", cancellationToken);
-
-                // For structured tables, prefer richer data if the generation or future extraction provides it.
-                // Currently we surface the extracted text; future enhancement can parse JSON tables here.
+                // Pass clean filename (no dir prefix). NasAgentDocumentStorage + LocalFileStorageService
+                // ensure agent-scans/ scoping; filename suffix distinguishes processed copy.
+                processedPath = await agentStorage.SaveAgentScanAsync(processedStream, processedFileName, cancellationToken);
             }
             catch (Exception ex)
             {
-                // Best effort: if archive creation fails (e.g. license edge), continue with original only
+                // Best effort: continue with original only on generation/storage edge cases
                 logger?.LogWarning(ex, "Agent archive PDF creation failed for {File}", fileName);
             }
         }
 
-        // 4. Return enhanced result with dual paths and structured hint
+        // 4. Return enhanced result with dual paths (original kept for fidelity; processed preferred for display/use)
         return new DocumentAgentResult(
             SuggestedTitle: title,
             ExtractedText: extraction.ExtractedText,
@@ -69,7 +69,7 @@ public class DocumentAgentService(
             SuggestedRecurrence: RecurrenceType.Annual,
             SuggestedCategory: category,
             TablesExtractedCount: extraction.TablesExtractedCount,
-            StoragePath: processedPath ?? originalPath,   // prefer processed as primary StoragePath for archive use
+            StoragePath: processedPath ?? originalPath,
             ProcessedLocally: true,
             UsedSyncfusionTools: extraction.UsedSyncfusionTools,
             OriginalStoragePath: originalPath,

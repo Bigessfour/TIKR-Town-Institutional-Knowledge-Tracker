@@ -38,6 +38,12 @@ public class DocumentAgentSyncfusionLicensedTests : IClassFixture<SyncfusionAgen
         var body = await response.Content.ReadFromJsonAsync<DocumentAgentResult>();
         body!.UsedSyncfusionTools.Should().BeTrue();
         body.ExtractedText.Should().Contain(AgentScanPdfFixture.ExpectedText);
+
+        // Real dual-storage behavior (original + processed .ai-archive.pdf)
+        body.OriginalStoragePath.Should().StartWith("agent-scans/");
+        body.ProcessedStoragePath.Should().NotBeNullOrWhiteSpace();
+        body.ProcessedStoragePath.Should().Contain(".ai-archive.pdf");
+        body.ProcessedStoragePath.Should().NotBe(body.OriginalStoragePath);
     }
 
     [Fact]

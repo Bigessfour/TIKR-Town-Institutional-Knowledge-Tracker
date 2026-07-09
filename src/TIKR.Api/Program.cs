@@ -52,16 +52,7 @@ builder.Host.UseSerilog();
 var app = builder.Build();
 
 var logger = app.Services.GetRequiredService<ILogger<Program>>();
-var docSdkKey = TikrConfiguration.GetSyncfusionLicenseKey(app.Configuration);
-if (!string.IsNullOrWhiteSpace(docSdkKey))
-{
-    logger.LogInformation("Syncfusion license key found for Document SDK (length: {Length})", docSdkKey.Length);
-}
-else
-{
-    logger.LogWarning("No Syncfusion license key found for Document SDK in configuration");
-}
-
+SyncfusionLicenseBootstrap.RegisterIfConfigured(app.Configuration, logger, "Document SDK");
 SyncfusionDocumentLicense.RegisterFromConfiguration(app.Configuration);
 
 var authEnabled = TikrConfiguration.IsAuthEnabled(app.Configuration);
@@ -138,28 +129,19 @@ api.MapPost("/requirements/{id:guid}/documents", async (
     LinkRequirementDocumentRequest request,
     TikrDbContext db,
     IAuditService audit,
-    ICurrentUserService currentUser) =>
+    ICurrentUserService currentUser,
+    IRequirementService requirementService) =>
 {
-    var requirement = await db.Requirements.FindAsync(id);
-    if (requirement is null)
-        return Results.NotFound();
-
-    var document = await db.Documents.FindAsync(request.DocumentId);
-    if (document is null)
-        return Results.NotFound(new { error = "Document not found." });
-
-    var existing = await db.RequirementDocuments.FindAsync(id, request.DocumentId);
-    if (existing is null)
+    try
     {
-        db.RequirementDocuments.Add(new RequirementDocument
-        {
-            RequirementId = id,
-            DocumentId = request.DocumentId,
-            LinkedAt = DateTime.UtcNow
-        });
-        await audit.LogAsync("Link", nameof(Requirement), id, document.FileName, currentUser.UserId);
-        await db.SaveChangesAsync();
+        await requirementService.LinkDocumentAsync(id, request.DocumentId, audit, currentUser);
     }
+    catch (KeyNotFoundException)
+    {
+        return Results.NotFound();
+    }
+    var requirement = await db.Requirements.FindAsync(id);
+    if (requirement is null) return Results.NotFound();
     var links = await CouncilPacketEndpoints.LoadRequirementLinksAsync(db);
     return Results.Ok(CouncilPacketEndpoints.MapRequirement(requirement, links.GetValueOrDefault(id, [])));
 });
@@ -169,16 +151,18 @@ api.MapDelete("/requirements/{id:guid}/documents/{documentId:guid}", async (
     Guid documentId,
     TikrDbContext db,
     IAuditService audit,
-    ICurrentUserService currentUser) =>
+    ICurrentUserService currentUser,
+    IRequirementService requirementService) =>
 {
-    var link = await db.RequirementDocuments.FindAsync(id, documentId);
-    if (link is null)
+    try
+    {
+        await requirementService.UnlinkDocumentAsync(id, documentId, audit, currentUser);
+        return Results.NoContent();
+    }
+    catch (KeyNotFoundException)
+    {
         return Results.NotFound();
-
-    db.RequirementDocuments.Remove(link);
-    await audit.LogAsync("Unlink", nameof(Requirement), id, documentId.ToString(), currentUser.UserId);
-    await db.SaveChangesAsync();
-    return Results.NoContent();
+    }
 });
 
 api.MapPut("/requirements/{id:guid}", async (Guid id, UpdateRequirementRequest request, TikrDbContext db, IAuditService audit, ICurrentUserService currentUser, IRequirementService requirementService) =>
@@ -261,16 +245,17 @@ api.MapGet("/documents/{id:guid}/content", async (Guid id, TikrDbContext db, IFi
     return Results.File(stream, entity.ContentType ?? "application/octet-stream", entity.FileName);
 });
 
-api.MapDelete("/documents/{id:guid}", async (Guid id, TikrDbContext db, IFileStorageService storage, IAuditService audit, ICurrentUserService currentUser) =>
+api.MapDelete("/documents/{id:guid}", async (Guid id, IFileStorageService storage, IAuditService audit, ICurrentUserService currentUser, IDocumentService documentService) =>
 {
-    var entity = await db.Documents.FindAsync(id);
-    if (entity is null) return Results.NotFound();
-
-    await storage.DeleteAsync(entity.StoragePath);
-    db.Documents.Remove(entity);
-    await audit.LogAsync("Delete", nameof(Document), id, entity.FileName, currentUser.UserId);
-    await db.SaveChangesAsync();
-    return Results.NoContent();
+    try
+    {
+        await documentService.DeleteAsync(id, storage, audit, currentUser);
+        return Results.NoContent();
+    }
+    catch (KeyNotFoundException)
+    {
+        return Results.NotFound();
+    }
 });
 
 // Vault Complete Handover Package (last feature - searchable PDF with TOC/bookmarks using Document SDK)
@@ -380,22 +365,33 @@ generate.MapPost("/clerk-memo", async (ClerkMemoRequest request, IDocumentGenera
 
 generate.MapPost("/council-packet", async (
     CreateCouncilPacketRequest? request,
-    IConfiguration config,
-    TikrDbContext db,
-    IDocumentGenerationService generator,
-    IFileStorageService storage,
-    IAuditService audit,
-    ICurrentUserService currentUser,
+    ICouncilPacketService councilPacketService,
     ILogger<Program> logger) =>
-    await CouncilPacketEndpoints.GenerateCouncilPacketAsync(
-        request,
-        config,
-        db,
-        generator,
-        storage,
-        audit,
-        currentUser,
-        logger));
+{
+    try
+    {
+        // Thin handler: auth/validation/mapping/service call (logic in ICouncilPacketService)
+        var response = await councilPacketService.GenerateCouncilPacketAsync(request);
+        if (response.ErrorMessage is not null)
+            return Results.BadRequest(response);
+        return Results.Ok(response);
+    }
+    catch (ArgumentException ex)
+    {
+        return Results.BadRequest(new CouncilPacketResponse(null, null, ex.Message));
+    }
+    catch (InvalidOperationException ex)
+    {
+        return Results.Json(new CouncilPacketResponse(null, null, ex.Message), statusCode: StatusCodes.Status503ServiceUnavailable);
+    }
+    catch (Exception ex)
+    {
+        logger.LogError(ex, "Council packet generation failed");
+        return Results.Json(
+            new CouncilPacketResponse(null, null, "Council packet generation failed. Check API logs."),
+            statusCode: StatusCodes.Status500InternalServerError);
+    }
+});
 
 generate.MapPost("/compliance-report", async (ComplianceReportRequest? request, IConfiguration config, TikrDbContext db, IDocumentGenerationService generator) =>
 {

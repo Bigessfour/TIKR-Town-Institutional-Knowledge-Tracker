@@ -1,0 +1,11 @@
+{
+  "name": "tikr-town-institutional-knowledge-tracker",
+  "private": true,
+  "description": "Root tooling for TIKR (repomix pack for deploy/AI context)",
+  "scripts": {
+    "repomix": "repomix --config repomix.config.json"
+  },
+  "devDependencies": {
+    "repomix": "^1.16.0"
+  }
+}

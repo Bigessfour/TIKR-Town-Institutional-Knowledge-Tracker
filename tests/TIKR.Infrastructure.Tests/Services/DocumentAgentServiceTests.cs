@@ -64,7 +64,31 @@ public class DocumentAgentServiceTests
         // With stub (false flag) we still get original path; generator is accepted without crash
         result.OriginalStoragePath.Should().StartWith("agent-scans/");
         result.ProcessedLocally.Should().BeTrue();
-        // When flag=true + generator, processedPath would be populated (see integration tests / licensed path)
+        // When flag=true + generator, processedPath is populated (see ProcessUploadAsync_WithTrueSyncfusionBackendAndGenerator_SetsDualStoragePaths)
+    }
+
+    [Fact]
+    public async Task ProcessUploadAsync_WithTrueSyncfusionBackendAndGenerator_SetsDualStoragePaths()
+    {
+        // Proves real dual-storage behavior exercised by DocumentAgentService when the extraction backend
+        // signals UsedSyncfusionTools=true and a generator is provided (matches licensed agent-scan path).
+        var fileStorage = new InMemoryFileStorage();
+        var agentStorage = new NasAgentDocumentStorage(fileStorage, new ConfigurationBuilder().Build());
+        var trueBackend = new TrueSyncfusionStubBackend();
+        var fakeGenerator = new FakeArchiveGenerator();
+        var sut = new DocumentAgentService(agentStorage, trueBackend, fakeGenerator);
+
+        await using var content = new MemoryStream("sample ordinance text"u8.ToArray());
+        var result = await sut.ProcessUploadAsync(content, "budget-report.pdf");
+
+        result.UsedSyncfusionTools.Should().BeTrue();
+        result.OriginalStoragePath.Should().StartWith("agent-scans/");
+        result.ProcessedStoragePath.Should().NotBeNullOrWhiteSpace();
+        result.ProcessedStoragePath.Should().Contain(".ai-archive.pdf");
+        result.ProcessedStoragePath.Should().NotBe(result.OriginalStoragePath);
+        result.StoragePath.Should().Be(result.ProcessedStoragePath); // prefers processed when available
+        fileStorage.SavedFileNames.Should().ContainMatch("agent-scans/*budget-report.pdf*");
+        fileStorage.SavedFileNames.Should().ContainMatch("agent-scans/*ai-archive.pdf*");
     }
 
     private sealed class FakeArchiveGenerator : Shared.Interfaces.IDocumentGenerationService
@@ -82,6 +106,15 @@ public class DocumentAgentServiceTests
         public Task<Shared.DTOs.GeneratedDocumentResult> ConvertImageToPdfAsync(Stream imageContent, string fileName, CancellationToken cancellationToken = default) => throw new NotImplementedException();
         public Task<Shared.DTOs.CouncilPacketGeneratedFiles> GenerateCouncilPacketAsync(Shared.DTOs.CreateCouncilPacketRequest request, CancellationToken cancellationToken = default) => throw new NotImplementedException();
         public Task<Shared.DTOs.GeneratedDocumentResult> GenerateHandoverPackagePdfAsync(Shared.DTOs.HandoverPackageRequest request, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+    }
+
+    /// <summary>
+    /// Minimal backend that signals Syncfusion tools were used so the archive/dual-storage branch executes.
+    /// </summary>
+    private sealed class TrueSyncfusionStubBackend : Shared.Interfaces.IDocumentAgentExtractionBackend
+    {
+        public Task<Shared.Interfaces.AgentExtractionResult> ExtractAsync(Stream content, string fileName, CancellationToken cancellationToken = default)
+            => Task.FromResult(new Shared.Interfaces.AgentExtractionResult("extracted", 1, UsedSyncfusionTools: true));
     }
 
     private static DocumentAgentService CreateService(IConfiguration configuration)

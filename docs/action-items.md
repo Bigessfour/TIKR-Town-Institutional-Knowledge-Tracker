@@ -14,12 +14,23 @@ This file owns **status, checkboxes, priorities, verification evidence**. The ge
 
 ---
 
-## Current Priorities (Phase 0 + 10C closure)
+## Current Priorities (Phase 0 + ship)
 
-- [x] Phase 0 PR #4 — Health UI closure + Done Detector sign-off (see incremental-plan.md) — Layer 1 (inventory 0 w/o proof) + Layer 2 gate largely complete via done-detector; human walkthrough remains.
-- [ ] Manual NAS licensed smoke for Syncfusion agent tools (post #36)
-- [ ] 10C-C extraction source badge in UI (UsedSyncfusionTools)
+- [x] Phase 0 PR #3 — Deb NAS install + maintainer ship checklist ([deb-nas-install.md](deb-nas-install.md), [ship-to-production.md](ship-to-production.md)) — 2026-07-09
+- [ ] Phase 0 PR #4 — Recorded Deb walkthrough ([demo-deb.md](demo-deb.md)) + Layer 2 bus-factor checkbox below
+- [ ] Merge [PR #61](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/61) + ship-doc commit to `main`; tag `v1.0.0` per [ship-to-production.md](ship-to-production.md)
+- [ ] Manual NAS licensed smoke for Syncfusion agent tools (post #36) — **post-ship**
+- [ ] 10C-C extraction source badge in UI (UsedSyncfusionTools) — **post-ship**
 - [x] Playwright E2E as required CI gate (merged #48, green in CI)
+
+### Post-ship / v1.1+ (not blocking v1.0.0)
+
+- Full accessibility pass (axe or screen reader on key flows)
+- Documents: Syncfusion SfPdfViewer / DOCX preview
+- IMAP / forward-to-folder email ingestion scaffold
+- Richer audit snapshots (changed fields)
+- Phase 6 Smart Components (Syncfusion AI on forms)
+- Windows Inno installer polish; multi-NAS replication story
 
 ---
 
@@ -37,6 +48,7 @@ All prior items now have scanner-detected proof (string mentions in *Tests.cs ex
 
 - `AuthEndpoints.MapAuthEndpoints` — covered by AuthEndpointTests + factory setup.
 - CouncilPacket* (Build/Load/MapRequirement) — covered by CouncilPacketEndpointTests + RequirementsEndpointTests (and Program wiring).
+- ICouncilPacketService.GenerateCouncilPacketAsync (and thin /council-packet handler in Program.cs) — covered by CouncilPacketEndpointTests (new service impl used for packet gen path; audit/tx inside service). RAG + inventory run post-edit.
 - `ThemeService.InitializeAsync` / `SetThemeAsync` — covered by SettingsPageTests (theme selector render path).
 - `TikrDbContextFactory.CreateDbContext` — design-time; documented + migration tests.
 - `IDocumentAgentExtractionBackend.AgentExtractionResult` — covered by agent backend + endpoint tests.
@@ -48,6 +60,7 @@ See updated "without proof" section in generated (now empty). Real verification 
 - [x] GET /api/system/local-status — NAS + AI status footer. Used on every page.
 - [x] GET /api/system/document-sdk-status — license flag for agent tools.
 - [x] Full requirements CRUD + document links (`/api/requirements*`) — covered by RequirementsEndpointTests + bUnit + Playwright 05b.
+  - Transaction integrity: link/unlink + doc delete now delegate to IRequirementService/I DocumentService methods using BeginTransactionAsync + audit.Log inside tx (AuditService skips inner Save when CurrentTransaction). Fixes last direct Save+log in Program.cs. Pattern matches RequirementService.Create etc. Proofs via existing create/update/delete+audit assertions in tests; doc delete test path now through service.
 - [x] Documents + generate group (council-agenda, meeting-minutes, clerk-memo, council-packet, compliance-report, converts) — CouncilPacketEndpointTests + Syncfusion tests.
 - [x] Knowledge CRUD + auto-embed (`/api/knowledge*`).
 - [x] Audit read (`/api/audit`).
@@ -86,6 +99,7 @@ See updated "without proof" section in generated (now empty). Real verification 
 
 - [x] `IHybridAiService` + impl (8 public methods): Tag, Priorities, AskAdvanced (Ollama first + Grok fallback by prompt context), Status, `SemanticSearch*` (docs + knowledge), `Embed*`. Phase 3/9. Tests: `HybridAiService*Tests.cs`. (Logic update 2026-07-08 for validate-first per user query.)
 - [x] `IDocumentAgentService` + `DocumentAgentService.ProcessUploadAsync` (stub + Syncfusion path via backend). 10B/10C. Tests + fixtures.
+- [x] `IDocumentService` + `DocumentService.UploadAsync` / `PrepareDocumentUploadAsync` (prep extraction+storage via IFileStorage + tx+audit persist). Thin API audit item #3. Proof: DocumentsEndpointTests.Upload* (9 tests passing post-refactor) + endpoint integration via /api/documents POST delegating to service (covers both methods since Upload calls Prepare). Inventory now tracks PrepareDocumentUploadAsync.
 - [x] `SyncfusionDocumentAgentOrchestrator.TryExtractAsync` + `SyncfusionDocumentAgentToolRegistry` (A3 orchestration + full clerk tool set). feature/phase10c-document-tool-coverage.
 - Supporting: AuditService, file storage impls (Local/Nas*), GrokService, text extraction, crypto for agent storage.
 
@@ -136,8 +150,9 @@ See generated inventory + interfaces in TIKR.Shared.
   - Evidence: HybridAiServiceSemanticSearchTests, HybridAiServiceVaultRagTests, diagrams/05c + 05d.
 
 - [x] **Council Packet + generation flows** (generate + persist to NAS + audit)
-  - CouncilPacketEndpoints + IDocumentGenerationService (SyncfusionDocs).
-  - Evidence: CouncilPacketEndpointTests + generation tests.
+  - Thin API extraction complete: logic moved to `ICouncilPacketService` / `CouncilPacketService` (Infrastructure) + thin delegation in Program.cs.
+  - Evidence: CouncilPacketEndpointTests + `ICouncilPacketService` implementation + generation tests. (See thin API audit item #3 / Phase 0 cleanup).
+  - Old statics in CouncilPacketEndpoints retained only for shared mappers used by /requirements.
 
 - [x] Dashboard priorities + urgency (RequirementUrgencyHelper + Hybrid + UI pills).
 - [x] Knowledge CRUD + auto-embed on POST/PUT.
@@ -165,7 +180,7 @@ This is the final system-level verification layer. Individual functions proven (
 
 ### Checklist
 
-- [x] Function inventory clean: run `./scripts/update-function-inventory.sh` (or Python directly) → **0 without proof**. Then run `./scripts/done-detector.sh` for combined check. (Done 2026-07-08; 526/526 with proof)
+- [x] Function inventory clean: run `./scripts/update-function-inventory.sh` (or Python directly) → **0 without proof**. Then run `./scripts/done-detector.sh` for combined check. (Done 2026-07-09 post gap-fills; 564/564 with proof)
 - [x] Full test suite green:
   ```bash
   dotnet test TIKR.sln --configuration Release

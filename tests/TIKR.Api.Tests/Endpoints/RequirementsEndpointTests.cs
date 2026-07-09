@@ -1,4 +1,5 @@
 using System.Net;
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using FluentAssertions;
 using TIKR.Api.Tests.Fixtures;
@@ -14,8 +15,9 @@ public class RequirementsEndpointTests : IClassFixture<TikrWebApplicationFactory
     public RequirementsEndpointTests(TikrWebApplicationFactory factory) =>
         _client = factory.CreateClient();
 
-    // Exercises CouncilPacketEndpoints helpers (via Program.cs wiring for /api/requirements):
-    // LoadRequirementLinksAsync, MapRequirement, BuildCouncilPacketRequirementsAsync (also via packet gen)
+    // Exercises thin endpoints delegating to services (via Program.cs):
+    // Covers RequirementService.CreateAsync, UpdateAsync, DeleteAsync, LinkDocumentAsync, UnlinkDocumentAsync
+    // + CouncilPacketEndpoints helpers (LoadRequirementLinksAsync, MapRequirement, BuildCouncilPacketRequirementsAsync)
 
     [Fact]
     public async Task GetRequirements_ReturnsSeededColoradoDeadlines()
@@ -29,6 +31,7 @@ public class RequirementsEndpointTests : IClassFixture<TikrWebApplicationFactory
     [Fact]
     public async Task PostRequirement_CreatesAndAudits()
     {
+        // Covers RequirementService.CreateAsync via thin /api/requirements POST endpoint + audit
         var request = new CreateRequirementRequest(
             "Custom Clerk Task",
             "Test description",
@@ -78,6 +81,7 @@ public class RequirementsEndpointTests : IClassFixture<TikrWebApplicationFactory
     [Fact]
     public async Task PutRequirement_UpdatesAndAudits()
     {
+        // Covers RequirementService.UpdateAsync via thin /api/requirements PUT endpoint + audit
         var create = await _client.PostAsJsonAsync("/api/requirements", new CreateRequirementRequest(
             "Editable task",
             "Original",
@@ -124,6 +128,7 @@ public class RequirementsEndpointTests : IClassFixture<TikrWebApplicationFactory
     [Fact]
     public async Task DeleteCustomRequirement_ReturnsNoContent()
     {
+        // Covers RequirementService.DeleteAsync via thin /api/requirements DELETE endpoint
         var request = new CreateRequirementRequest(
             "Temporary task",
             null,
@@ -143,6 +148,60 @@ public class RequirementsEndpointTests : IClassFixture<TikrWebApplicationFactory
     {
         var response = await _client.DeleteAsync($"/api/requirements/{Guid.NewGuid()}");
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task PostLinkDocumentToRequirement_CreatesLinkAndAuditsLink()
+    {
+        // Covers RequirementService.LinkDocumentAsync via thin POST /api/requirements/{id}/documents + audit "Link"
+        var createReq = await _client.PostAsJsonAsync("/api/requirements", new CreateRequirementRequest(
+            "Linkable Task",
+            "For doc link test",
+            DateOnly.FromDateTime(DateTime.UtcNow.AddDays(5)),
+            RecurrenceType.None,
+            RequirementCategory.Custom));
+        var req = await createReq.Content.ReadFromJsonAsync<RequirementDto>();
+
+        using var content = new MultipartFormDataContent();
+        var fileContent = new ByteArrayContent("link test doc"u8.ToArray());
+        fileContent.Headers.ContentType = new MediaTypeHeaderValue("text/plain");
+        content.Add(fileContent, "file", "link-test.txt");
+        var createDoc = await _client.PostAsync("/api/documents", content);
+        var doc = await createDoc.Content.ReadFromJsonAsync<DocumentDto>();
+
+        var linkResp = await _client.PostAsJsonAsync($"/api/requirements/{req!.Id}/documents", new LinkRequirementDocumentRequest(doc!.Id));
+        linkResp.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var audit = await _client.GetFromJsonAsync<List<AuditLogDto>>("/api/audit?limit=10");
+        audit.Should().Contain(a => a.Action == "Link" && a.EntityType == "Requirement");
+    }
+
+    [Fact]
+    public async Task DeleteLinkDocumentFromRequirement_RemovesLinkAndAuditsUnlink()
+    {
+        // Covers RequirementService.UnlinkDocumentAsync via thin DELETE /api/requirements/{id}/documents/{docId} + audit "Unlink"
+        var createReq = await _client.PostAsJsonAsync("/api/requirements", new CreateRequirementRequest(
+            "Unlinkable Task",
+            null,
+            DateOnly.FromDateTime(DateTime.UtcNow.AddDays(1)),
+            RecurrenceType.None,
+            RequirementCategory.Custom));
+        var req = await createReq.Content.ReadFromJsonAsync<RequirementDto>();
+
+        using var content = new MultipartFormDataContent();
+        var fileContent = new ByteArrayContent("unlink test"u8.ToArray());
+        fileContent.Headers.ContentType = new MediaTypeHeaderValue("text/plain");
+        content.Add(fileContent, "file", "unlink-test.txt");
+        var createDoc = await _client.PostAsync("/api/documents", content);
+        var doc = await createDoc.Content.ReadFromJsonAsync<DocumentDto>();
+
+        await _client.PostAsJsonAsync($"/api/requirements/{req!.Id}/documents", new LinkRequirementDocumentRequest(doc!.Id));
+
+        var delResp = await _client.DeleteAsync($"/api/requirements/{req.Id}/documents/{doc.Id}");
+        delResp.StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        var audit = await _client.GetFromJsonAsync<List<AuditLogDto>>("/api/audit?limit=10");
+        audit.Should().Contain(a => a.Action == "Unlink" && a.EntityType == "Requirement");
     }
 
     private sealed record AuditLogDto(

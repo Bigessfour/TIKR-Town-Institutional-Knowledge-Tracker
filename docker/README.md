@@ -61,7 +61,7 @@ docker compose -f docker/docker-compose.prod.yml --env-file docker/.env up -d --
 
 `USE_GROK=false` by default. Healthchecks require `curl` in API/Web images (see Dockerfiles).
 
-Demo walkthroughs: [demo-code-platoon.md](../docs/demo-code-platoon.md) · [demo-deb.md](../docs/demo-deb.md)
+Demo walkthroughs: [demo-code-platoon.md](../docs/demo-code-platoon.md) · [demo-deb.md](../docs/demo-deb.md) · [deb-nas-install.md](../docs/deb-nas-install.md) · [ship-to-production.md](../docs/ship-to-production.md)
 
 ## IDE (Cursor / VS Code)
 

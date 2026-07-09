@@ -168,7 +168,7 @@ docker compose -f docker/docker-compose.prod.yml --env-file docker/.env up -d --
 ./validate-prod.sh
 ```
 
-Before the first GHCR release, build from source with `docker/docker-compose.yml` instead. See [docker/README.md](docker/README.md).
+Before the first GHCR release, build from source with `docker/docker-compose.yml` instead. See [docker/README.md](docker/README.md) and [docs/ship-to-production.md](docs/ship-to-production.md).
 
 ### Windows self-contained publish (optional VM)
 
@@ -185,6 +185,8 @@ Run **Api** first, then **Web** in separate terminals (not a single combined EXE
 |----------|-----|
 | Code Platoon (developers) | [docs/demo-code-platoon.md](docs/demo-code-platoon.md) |
 | Deb (clerk walkthrough) | [docs/demo-deb.md](docs/demo-deb.md) |
+| Deb (NAS install) | [docs/deb-nas-install.md](docs/deb-nas-install.md) |
+| Maintainer (release / GHCR) | [docs/ship-to-production.md](docs/ship-to-production.md) |
 
 ## Synology NAS Deployment
 
