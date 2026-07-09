@@ -72,7 +72,14 @@ Do **not** rely on the Windows folder for NAS production. Use existing Docker:
 | Web loads but data errors | API window still open; `http://localhost:5000/health` |
 | HTTPS redirect loop | Use `http://localhost:8080` (not https) |
 
+## Windows Setup.exe (Inno Setup)
+
+For a professional **`Setup-TIKR.exe`** (Program Files install, Start Menu, firewall, Syncfusion env var) instead of a loose folder copy, see **[installer/README.md](../installer/README.md)** and `installer/tikr-setup.iss`.
+
+Build flow: publish with `package-thumb-drive.sh` → point Inno at that folder (or `C:\TIKR`) → compile on Windows with Inno Setup 6.
+
 ## Related
 
 - [ship-to-production.md](ship-to-production.md) — GHCR tag and NAS release
 - [scripts/publish-tikr.sh](../scripts/publish-tikr.sh) — publish only (no USB layout)
+- [installer/README.md](../installer/README.md) — Inno Setup municipal installer

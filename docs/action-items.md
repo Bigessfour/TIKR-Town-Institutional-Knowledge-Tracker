@@ -32,7 +32,7 @@ This file owns **status, checkboxes, priorities, verification evidence**. The ge
 - IMAP / forward-to-folder email ingestion scaffold
 - Richer audit snapshots (changed fields)
 - Phase 6 Smart Components (Syncfusion AI on forms)
-- Windows Inno installer polish; multi-NAS replication story
+- Windows Inno installer polish (base script in `installer/tikr-setup.iss` — icon, CI build, optional Windows Service); multi-NAS replication story
 
 ---
 

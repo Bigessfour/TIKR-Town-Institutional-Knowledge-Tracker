@@ -1,0 +1,10 @@
+; Copy this file to license.local.iss (gitignored) on the Windows build PC.
+; NEVER commit a real Syncfusion key.
+;
+;   copy license.local.iss.example license.local.iss
+;
+; Then either:
+;   A) Leave MyAppSyncfusionLicense empty and enter the key in the installer wizard, OR
+;   B) Set the key here so municipal IT can bake a pre-keyed Setup for one machine.
+
+#define MyAppSyncfusionLicense "paste-your-syncfusion-community-license-key-here"

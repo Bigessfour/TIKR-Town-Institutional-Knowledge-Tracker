@@ -23,6 +23,10 @@ user-secrets.json
 *.key
 *.p12
 
+# Inno Setup — local Syncfusion bake-in and compiled Setup.exe (never commit keys)
+installer/license.local.iss
+installer/Output/
+
 # CI coverage output
 coverage/
 
