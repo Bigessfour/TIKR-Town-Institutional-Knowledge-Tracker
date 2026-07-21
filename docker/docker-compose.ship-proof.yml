@@ -1,0 +1,14 @@
+# Local ship-proof override — replace host ports to avoid conflicts:
+# - macOS Control Center / AirPlay often binds :5000
+# - host Ollama often binds :11434
+# Requires Compose merge with !override (Docker Compose v2.24+)
+services:
+  tikr-api:
+    ports: !override
+      - 15000:8080
+  tikr-web:
+    ports: !override
+      - 18080:8080
+  ollama:
+    ports: !override
+      - 11435:11434

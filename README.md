@@ -8,14 +8,14 @@ Local-first web application for one-person town clerks in small Colorado municip
 
 ## Tech Stack
 
-| Layer | Technology |
-|-------|------------|
-| Runtime | .NET 10 (LTS) |
-| Frontend | Blazor Interactive Server + Syncfusion Blazor |
-| Backend | Minimal Web API |
-| Database | SQLite (default), PostgreSQL (optional) |
-| AI | Ollama (local) + optional xAI Grok via `Microsoft.Extensions.AI` |
-| Containers | Docker Compose |
+| Layer      | Technology                                                       |
+| ---------- | ---------------------------------------------------------------- |
+| Runtime    | .NET 10 (LTS)                                                    |
+| Frontend   | Blazor Interactive Server + Syncfusion Blazor                    |
+| Backend    | Minimal Web API                                                  |
+| Database   | SQLite (default), PostgreSQL (optional)                          |
+| AI         | Ollama (local) + optional xAI Grok via `Microsoft.Extensions.AI` |
+| Containers | Docker Compose                                                   |
 
 ## Repository Structure
 
@@ -41,6 +41,8 @@ Local-first web application for one-person town clerks in small Colorado municip
 - [Ollama](https://ollama.com/) (included in Docker Compose)
 
 For Cursor IDE AI tooling (Syncfusion MCP, Agent Skills, Ollama MCP), see **[docs/ai-tooling.md](docs/ai-tooling.md)**.
+
+For **Spec-Driven Development** with GitHub Spec Kit (Cursor `/speckit-*` skills), see **[docs/spec-kit.md](docs/spec-kit.md)**.
 
 Agent skills are **not** committed (`.agents/` is gitignored). Install locally from the pinned lock file:
 
@@ -144,11 +146,11 @@ From the repo root:
 docker compose -f docker/docker-compose.yml --env-file docker/.env up --build
 ```
 
-| Service | URL |
-|---------|-----|
-| Web UI | http://localhost:8080 |
-| API | http://localhost:5000 |
-| Ollama | http://localhost:11434 |
+| Service | URL                    |
+| ------- | ---------------------- |
+| Web UI  | http://localhost:8080  |
+| API     | http://localhost:5000  |
+| Ollama  | http://localhost:11434 |
 
 ### Pull AI models (first run)
 
@@ -170,33 +172,37 @@ docker compose -f docker/docker-compose.prod.yml --env-file docker/.env up -d --
 
 Before the first GHCR release, build from source with `docker/docker-compose.yml` instead. See [docker/README.md](docker/README.md) and [docs/ship-to-production.md](docs/ship-to-production.md).
 
-### Windows thumb drive / laptop (optional)
+### Install for clerks (Windows) — canonical day-1
 
-```bash
-./scripts/package-thumb-drive.sh
-# Outputs: publish/TIKR-Deploy/ (+ zip) with Start-TIKR.bat for the Dell
-```
+**Deb and Paige:** install with **`Setup-TIKR.exe`** on the shared municipal Windows PC. No login required on this trusted machine. Clerk one-pager: [docs/clerk-windows-install.md](docs/clerk-windows-install.md).
 
-Copy `TIKR-Deploy` to USB → follow `README-QuickStart.txt`. Details: [docs/windows-thumb-drive-deploy.md](docs/windows-thumb-drive-deploy.md).
+| Step             | Who                   | Action                                                                             |
+| ---------------- | --------------------- | ---------------------------------------------------------------------------------- |
+| 1. Build payload | IT                    | `./scripts/package-thumb-drive.sh` → `publish/TIKR-Deploy/`                        |
+| 2. Compile Setup | IT (Windows + Inno 6) | See [installer/README.md](installer/README.md) → `installer/Output/Setup-TIKR.exe` |
+| 3. Install       | Clerk / IT            | Run Setup → Syncfusion license → Start Menu **TIKR - Clerk's Vault**               |
+| 4. Daily use     | Deb / Paige           | Desktop **Start TIKR** → `http://localhost:8080`                                   |
+| 5. Backup        | Named owner           | Copy `C:\ProgramData\TIKR` regularly                                               |
 
-Publish only (no scripts):
+Alternate (no Setup.exe): copy the USB folder and use `Start-TIKR.bat` — [docs/windows-thumb-drive-deploy.md](docs/windows-thumb-drive-deploy.md).
+
+Publish binaries only (no deploy scripts):
 
 ```bash
 ./scripts/publish-tikr.sh
 ```
 
-Run **Api** first, then **Web** (two exes, not one combined app).
-
 ### Demo scripts
 
-| Audience | Doc |
-|----------|-----|
-| Code Platoon (developers) | [docs/demo-code-platoon.md](docs/demo-code-platoon.md) |
-| Deb (clerk walkthrough) | [docs/demo-deb.md](docs/demo-deb.md) |
-| Deb (NAS install) | [docs/deb-nas-install.md](docs/deb-nas-install.md) |
-| Maintainer (release / GHCR) | [docs/ship-to-production.md](docs/ship-to-production.md) |
+| Audience                      | Doc                                                            |
+| ----------------------------- | -------------------------------------------------------------- |
+| Deb & Paige (Windows install) | [docs/clerk-windows-install.md](docs/clerk-windows-install.md) |
+| Code Platoon (developers)     | [docs/demo-code-platoon.md](docs/demo-code-platoon.md)         |
+| Deb (clerk walkthrough)       | [docs/demo-deb.md](docs/demo-deb.md)                           |
+| Deb (NAS Phase 2)             | [docs/deb-nas-install.md](docs/deb-nas-install.md)             |
+| Maintainer (release / GHCR)   | [docs/ship-to-production.md](docs/ship-to-production.md)       |
 
-## Synology NAS Deployment
+## Synology NAS Deployment (Phase 2)
 
 1. Copy the repo to your NAS or clone via SSH.
 2. Open **Container Manager** → **Project** → **Create**.
@@ -258,28 +264,28 @@ In Development, the app also loads `.env` and `docker/.env` from the repo root i
 
 ## Environment Variables
 
-| Variable | Service | Default | Description |
-|----------|---------|---------|-------------|
-| `SYNCFUSION_LICENSE_KEY` | Web | — | Syncfusion Community License key (runtime components) |
-| `SYNCFUSION_API_KEY` | Cursor MCP only | — | Syncfusion account API key for Blazor MCP — see [docs/ai-tooling.md](docs/ai-tooling.md) |
-| `TIKR_API_URL` | Web | `http://localhost:5000` | API base URL |
-| `DATABASE_PROVIDER` | API | `Sqlite` | `Sqlite` or `Postgres` |
-| `ConnectionStrings__Default` | API | `Data Source=tikr.db` | Database connection |
-| `FILE_STORAGE_PATH` | API | `data/documents` | Document storage path |
-| `OLLAMA_HOST` | API | `http://localhost:11434` | Ollama server URL |
-| `OLLAMA_CHAT_MODEL` | API | `llama3.2:3b` | Chat model name |
-| `USE_GROK` | API | `false` | Enable xAI Grok for advanced AI |
-| `GROK_API_KEY` | API | — | xAI API key (required if USE_GROK=true) |
-| `GROK_MODEL` | API | `grok-4.3` | xAI chat model ([docs](https://docs.x.ai/docs/models); aliases: `grok-latest`) |
-| `USE_SYNCFUSION_AGENT_TOOLS` | API | `false` | Enable Syncfusion Document SDK agent-scan (PDF/Word/Excel/PPT) |
-| `USE_SYNCFUSION_AGENT_ORCHESTRATION` | API | `false` | Ollama tool loop over Syncfusion tools (requires agent tools + Ollama) |
-| `TIKR_AGENT_STORAGE_KEY` | API | — | Optional AES-256-GCM for agent-scan blobs on NAS |
+| Variable                             | Service         | Default                  | Description                                                                              |
+| ------------------------------------ | --------------- | ------------------------ | ---------------------------------------------------------------------------------------- |
+| `SYNCFUSION_LICENSE_KEY`             | Web             | —                        | Syncfusion Community License key (runtime components)                                    |
+| `SYNCFUSION_API_KEY`                 | Cursor MCP only | —                        | Syncfusion account API key for Blazor MCP — see [docs/ai-tooling.md](docs/ai-tooling.md) |
+| `TIKR_API_URL`                       | Web             | `http://localhost:5000`  | API base URL                                                                             |
+| `DATABASE_PROVIDER`                  | API             | `Sqlite`                 | `Sqlite` or `Postgres`                                                                   |
+| `ConnectionStrings__Default`         | API             | `Data Source=tikr.db`    | Database connection                                                                      |
+| `FILE_STORAGE_PATH`                  | API             | `data/documents`         | Document storage path                                                                    |
+| `OLLAMA_HOST`                        | API             | `http://localhost:11434` | Ollama server URL                                                                        |
+| `OLLAMA_CHAT_MODEL`                  | API             | `llama3.2:3b`            | Chat model name                                                                          |
+| `USE_GROK`                           | API             | `false`                  | Enable xAI Grok for advanced AI                                                          |
+| `GROK_API_KEY`                       | API             | —                        | xAI API key (required if USE_GROK=true)                                                  |
+| `GROK_MODEL`                         | API             | `grok-4.3`               | xAI chat model ([docs](https://docs.x.ai/docs/models); aliases: `grok-latest`)           |
+| `USE_SYNCFUSION_AGENT_TOOLS`         | API             | `false`                  | Enable Syncfusion Document SDK agent-scan (PDF/Word/Excel/PPT)                           |
+| `USE_SYNCFUSION_AGENT_ORCHESTRATION` | API             | `false`                  | Ollama tool loop over Syncfusion tools (requires agent tools + Ollama)                   |
+| `TIKR_AGENT_STORAGE_KEY`             | API             | —                        | Optional AES-256-GCM for agent-scan blobs on NAS                                         |
 
 Document SDK setup: [docs/sf-document-agent-tools.md](docs/sf-document-agent-tools.md) · NAS smoke tracker: [docs/nas-agent-tools-setup.md](docs/nas-agent-tools-setup.md)
 
 ### Optional multi-user auth
 
-Auth is **off by default** (single-clerk open access). Set all three bootstrap variables in `docker/.env` to enable login on both **tikr-api** and **tikr-web** (Compose `env_file` applies to both). Example:
+Auth is **off by default** (Deb + Paige on a trusted shared PC need no login). Enable later if the app leaves that trusted machine. Set all three bootstrap variables in `docker/.env` to enable login on both **tikr-api** and **tikr-web** (Compose `env_file` applies to both). Example:
 
 ```bash
 TIKR_ADMIN_EMAIL=clerk@yourtown.gov
@@ -287,12 +293,12 @@ TIKR_ADMIN_PASSWORD=your-strong-bootstrap-password
 TIKR_JWT_SIGNING_KEY=your-local-hmac-secret-at-least-32-characters
 ```
 
-| Variable | Service | Description |
-|----------|---------|-------------|
-| `TIKR_ADMIN_EMAIL` | API + Web | First admin account email |
-| `TIKR_ADMIN_PASSWORD` | API + Web | Initial admin password (change after first login) |
-| `TIKR_JWT_SIGNING_KEY` | API + Web | HMAC secret for API JWTs (≥32 chars) |
-| `TIKR_AUTH_ENABLED` | API + Web | Optional override (`true` / `false`) |
+| Variable               | Service   | Description                                       |
+| ---------------------- | --------- | ------------------------------------------------- |
+| `TIKR_ADMIN_EMAIL`     | API + Web | First admin account email                         |
+| `TIKR_ADMIN_PASSWORD`  | API + Web | Initial admin password (change after first login) |
+| `TIKR_JWT_SIGNING_KEY` | API + Web | HMAC secret for API JWTs (≥32 chars)              |
+| `TIKR_AUTH_ENABLED`    | API + Web | Optional override (`true` / `false`)              |
 
 Flow: Blazor login → `POST /api/auth/login` → JWT in HttpOnly cookie → protected `/api/*` routes. Roles: `Admin` (user management), `Clerk` (full workflows). See [docs/architecture.md](docs/architecture.md).
 
@@ -315,17 +321,17 @@ Flow: Blazor login → `POST /api/auth/login` → JWT in HttpOnly cookie → pro
 
 ## API Endpoints
 
-| Method | Route | Description |
-|--------|-------|-------------|
-| GET | `/health` | Health check |
-| GET/POST/PUT/DELETE | `/api/requirements` | Deadline CRUD |
-| GET/POST/DELETE | `/api/documents` | Document upload & list |
-| GET/POST/PUT/DELETE | `/api/knowledge` | Knowledge vault CRUD |
-| GET | `/api/audit` | Audit log (read-only) |
-| GET | `/api/ai/status` | AI service status |
-| GET | `/api/ai/dashboard-priorities` | Dashboard priorities |
-| POST | `/api/ai/tag-document` | Ollama auto-tagging |
-| POST | `/api/ai/ask-advanced` | Grok escalation (gated) |
+| Method              | Route                          | Description             |
+| ------------------- | ------------------------------ | ----------------------- |
+| GET                 | `/health`                      | Health check            |
+| GET/POST/PUT/DELETE | `/api/requirements`            | Deadline CRUD           |
+| GET/POST/DELETE     | `/api/documents`               | Document upload & list  |
+| GET/POST/PUT/DELETE | `/api/knowledge`               | Knowledge vault CRUD    |
+| GET                 | `/api/audit`                   | Audit log (read-only)   |
+| GET                 | `/api/ai/status`               | AI service status       |
+| GET                 | `/api/ai/dashboard-priorities` | Dashboard priorities    |
+| POST                | `/api/ai/tag-document`         | Ollama auto-tagging     |
+| POST                | `/api/ai/ask-advanced`         | Grok escalation (gated) |
 
 ## Switching to PostgreSQL
 

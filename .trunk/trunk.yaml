@@ -29,6 +29,13 @@ lint:
         - pinact
         - prettier
         - trufflehog
+    # Spec Kit managed templates/skills — do not fight upstream formatting
+    ignore:
+        - linters: [ALL]
+          paths:
+              - .specify/**
+              - .cursor/skills/**
+
 actions:
     enabled:
         - trunk-upgrade-available
