@@ -72,7 +72,7 @@
 
 - [ ] T032–T034 Doc sync / full quickstart note
 - [x] T035 `/speckit-converge` run
-- [ ] T036 Open PR
+- [x] T036 Open PR — https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/72
 
 ---
 
