@@ -55,9 +55,14 @@ Reference lines from generated inventory (re-run script to refresh).
 
 **Function inventory clean (0 without proof):** ✅ 2026-07-08 (545 tracked) after proof references + AI/theme logic updates + runtime guard fixes. Re-ran scanner post-edit.
 
-**Done Detector UI question (2026-07-08):** The core Python tracker (`detect_ui_elements` + package list + "Blazor Page / Component" category) does sample Syncfusion controls and a few component methods. It does **not** deeply track theme implementation, JS interop contracts, control settings, error UI, or layout config as first-class "functions with proof".
+**Done Detector UI question (2026-07-08):** The core Python tracker (`detect_ui_elements` + package list + "Blazor Page / Component" category) historically only sampled Syncfusion control *names*.
 
-Decision: **Lightly extend** the existing scanner (add UI/theming section in future runs) + treat UI proofs explicitly here (bUnit render + assert + Playwright + manual "no banner + readable sidebar after theme"). Do not fork a separate "UI Done Detector" skill yet (minimal churn per TIKR prompt). UI items now tracked with proofs in this file. If volume justifies, a companion skill modeled on the same format can be added later.
+**Decision (updated 2026-07-20):** Lightly extended `~/.cursor/skills/function-inventory/scripts/update-function-inventory.py` — it now emits:
+1. **UI / Theme / Layout / JS Interop Surfaces** (theme CSS swap, ErrorBoundary, IJSRuntime, layout registration)
+2. **Syncfusion Controls & Documented Configurations** — every `Sf*` instance with attrs/children, plus full documented topic lists from Syncfusion Blazor skill `references/*.md` (`apm_modules/...`), marked `configured` vs `documented-available`
+3. **MCP validation hints** for Cursor **`sf-blazor-mcp`** (`sf_blazor_component`, `sf_blazor_style`, `sf_blazor_assistant`) — live docs oracle; scanner stays offline/deterministic
+
+Still no separate "UI Done Detector" skill. Re-run `./scripts/update-function-inventory.sh` after Sf* / theme changes. Deep PASS/FIX/DEFER stays in [syncfusion-control-audit.md](syncfusion-control-audit.md) + [syncfusion-e2e-audit-plan.md](syncfusion-e2e-audit-plan.md). UI proofs remain: bUnit + Playwright + manual theme check.
 
 All prior items now have scanner-detected proof (string mentions in *Tests.cs exercising or documenting the call paths):
 
