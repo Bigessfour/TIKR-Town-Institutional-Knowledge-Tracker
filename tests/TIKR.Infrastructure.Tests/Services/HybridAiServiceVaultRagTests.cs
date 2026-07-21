@@ -7,6 +7,7 @@ using TIKR.Infrastructure.Tests.Helpers;
 using TIKR.Shared.DTOs;
 using TIKR.Shared.Entities;
 using TIKR.Shared.Enums;
+using TIKR.Shared.Interfaces;
 
 namespace TIKR.Infrastructure.Tests.Services;
 
@@ -31,7 +32,7 @@ public class HybridAiServiceVaultRagTests
         await db.SaveChangesAsync();
 
         var ollama = CreateOllamaFactoryWithEmbedder(text => Vector(text));
-        var sut = new HybridAiService(db, ollama, DisabledGrok, NullLogger<HybridAiService>.Instance);
+        var sut = new HybridAiService(db, ollama, DisabledGrok, Mock.Of<IFileStorageService>(), Mock.Of<IDocumentAgentExtractionBackend>(), NullLogger<HybridAiService>.Instance);
 
         var result = await sut.EmbedKnowledgeEntryAsync(entry.Id);
         result.Embedded.Should().BeTrue();
@@ -46,7 +47,7 @@ public class HybridAiServiceVaultRagTests
     {
         await using var db = await TestDbContextFactory.CreateMigratedAsync();
         var ollama = CreateOllamaFactoryWithEmbedder(_ => Vector("x"));
-        var sut = new HybridAiService(db, ollama, DisabledGrok, NullLogger<HybridAiService>.Instance);
+        var sut = new HybridAiService(db, ollama, DisabledGrok, Mock.Of<IFileStorageService>(), Mock.Of<IDocumentAgentExtractionBackend>(), NullLogger<HybridAiService>.Instance);
 
         var act = async () => await sut.EmbedKnowledgeEntryAsync(Guid.NewGuid());
         await act.Should().ThrowAsync<KeyNotFoundException>();
@@ -60,7 +61,7 @@ public class HybridAiServiceVaultRagTests
         await db.SaveChangesAsync();
 
         var ollama = CreateOllamaFactoryWithEmbedder(_ => null);
-        var sut = new HybridAiService(db, ollama, DisabledGrok, NullLogger<HybridAiService>.Instance);
+        var sut = new HybridAiService(db, ollama, DisabledGrok, Mock.Of<IFileStorageService>(), Mock.Of<IDocumentAgentExtractionBackend>(), NullLogger<HybridAiService>.Instance);
 
         var result = await sut.EmbedKnowledgeEntryAsync(entry.Id);
         result.Embedded.Should().BeFalse();
@@ -80,7 +81,7 @@ public class HybridAiServiceVaultRagTests
         await db.SaveChangesAsync();
 
         var ollama = CreateOllamaFactoryWithEmbedder(text => Vector(text));
-        var sut = new HybridAiService(db, ollama, DisabledGrok, NullLogger<HybridAiService>.Instance);
+        var sut = new HybridAiService(db, ollama, DisabledGrok, Mock.Of<IFileStorageService>(), Mock.Of<IDocumentAgentExtractionBackend>(), NullLogger<HybridAiService>.Instance);
 
         var response = await sut.SemanticSearchKnowledgeAsync(new SemanticSearchRequest("permit fee", 2));
 
@@ -100,7 +101,7 @@ public class HybridAiServiceVaultRagTests
         await db.SaveChangesAsync();
 
         var ollama = CreateOllamaFactoryWithEmbedder(text => Vector(text));
-        var sut = new HybridAiService(db, ollama, DisabledGrok, NullLogger<HybridAiService>.Instance);
+        var sut = new HybridAiService(db, ollama, DisabledGrok, Mock.Of<IFileStorageService>(), Mock.Of<IDocumentAgentExtractionBackend>(), NullLogger<HybridAiService>.Instance);
 
         var response = await sut.SemanticSearchKnowledgeAsync(new SemanticSearchRequest("permit", 5));
         response.Considered.Should().Be(1);
@@ -116,7 +117,7 @@ public class HybridAiServiceVaultRagTests
         await db.SaveChangesAsync();
 
         var ollama = CreateOllamaFactoryWithEmbedder(_ => null);
-        var sut = new HybridAiService(db, ollama, DisabledGrok, NullLogger<HybridAiService>.Instance);
+        var sut = new HybridAiService(db, ollama, DisabledGrok, Mock.Of<IFileStorageService>(), Mock.Of<IDocumentAgentExtractionBackend>(), NullLogger<HybridAiService>.Instance);
 
         var response = await sut.SemanticSearchKnowledgeAsync(new SemanticSearchRequest("query", 3));
         response.Hits.Should().BeEmpty();
@@ -127,7 +128,7 @@ public class HybridAiServiceVaultRagTests
     {
         await using var db = await TestDbContextFactory.CreateMigratedAsync();
         var ollama = CreateOllamaFactoryWithEmbedder(_ => Vector("x"));
-        var sut = new HybridAiService(db, ollama, DisabledGrok, NullLogger<HybridAiService>.Instance);
+        var sut = new HybridAiService(db, ollama, DisabledGrok, Mock.Of<IFileStorageService>(), Mock.Of<IDocumentAgentExtractionBackend>(), NullLogger<HybridAiService>.Instance);
 
         var response = await sut.SemanticSearchKnowledgeAsync(new SemanticSearchRequest("   ", 3));
         response.Hits.Should().BeEmpty();
@@ -142,7 +143,7 @@ public class HybridAiServiceVaultRagTests
         await db.SaveChangesAsync();
 
         var ollama = CreateOllamaFactoryWithEmbedder(text => Vector(text));
-        var sut = new HybridAiService(db, ollama, DisabledGrok, NullLogger<HybridAiService>.Instance);
+        var sut = new HybridAiService(db, ollama, DisabledGrok, Mock.Of<IFileStorageService>(), Mock.Of<IDocumentAgentExtractionBackend>(), NullLogger<HybridAiService>.Instance);
 
         var low = await sut.SemanticSearchKnowledgeAsync(new SemanticSearchRequest("permit", 0));
         low.Hits.Should().HaveCountLessThanOrEqualTo(1);

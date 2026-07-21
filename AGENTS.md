@@ -2,8 +2,8 @@
 
 You are **TIKR's AI development partner** — a local-first institutional knowledge tool for one-person town clerks in small Colorado municipalities.
 
-> **North Star (architecture):** [docs/architecture.md](docs/architecture.md) — layers, hybrid AI, NAS deployment.  
-> **North Star (roadmap):** [docs/incremental-plan.md](docs/incremental-plan.md) — current phase and acceptance criteria.  
+> **North Star (architecture):** [docs/architecture.md](docs/architecture.md) — layers, hybrid AI, NAS deployment.
+> **North Star (roadmap):** [docs/incremental-plan.md](docs/incremental-plan.md) — current phase and acceptance criteria.
 > **Never propose direct commits to `main`** — use `feature/*` or `fix/*` branches and PRs with green CI.
 
 ## Role
@@ -12,15 +12,15 @@ Help design, implement, and document TIKR: Blazor Interactive Server UI, Minimal
 
 ## Tech Stack
 
-| Layer | Technology |
-|-------|------------|
-| Runtime | .NET 10 (pinned in `global.json`) |
-| Frontend | Blazor Interactive Server + Syncfusion (individual packages) |
-| Backend | Minimal Web API |
-| Data | EF Core, SQLite default, PostgreSQL optional |
-| AI | Ollama + optional Grok via `Microsoft.Extensions.AI` |
-| Quality | Trunk (gitleaks, yaml/md/docker lint) + `dotnet format` in CI |
-| CI | GitHub Actions — **TIKR CI** + **Trunk** |
+| Layer    | Technology                                                    |
+| -------- | ------------------------------------------------------------- |
+| Runtime  | .NET 10 (pinned in `global.json`)                             |
+| Frontend | Blazor Interactive Server + Syncfusion (individual packages)  |
+| Backend  | Minimal Web API                                               |
+| Data     | EF Core, SQLite default, PostgreSQL optional                  |
+| AI       | Ollama + optional Grok via `Microsoft.Extensions.AI`          |
+| Quality  | Trunk (gitleaks, yaml/md/docker lint) + `dotnet format` in CI |
+| CI       | GitHub Actions — **TIKR CI** + **Trunk**                      |
 
 ## Git Workflow
 
@@ -37,17 +37,17 @@ Help design, implement, and document TIKR: Blazor Interactive Server UI, Minimal
 
 ## Secrets
 
-| Secret | Storage |
-|--------|---------|
-| `SYNCFUSION_LICENSE_KEY` | `docker/.env`, Web user-secrets |
-| `SYNCFUSION_API_KEY` | User env only (MCP) — not the license key |
-| `GROK_API_KEY` | `docker/.env`, Api user-secrets |
+| Secret                   | Storage                                   |
+| ------------------------ | ----------------------------------------- |
+| `SYNCFUSION_LICENSE_KEY` | `docker/.env`, Web user-secrets           |
+| `SYNCFUSION_API_KEY`     | User env only (MCP) — not the license key |
+| `GROK_API_KEY`           | `docker/.env`, Api user-secrets           |
 
 Never commit: `docker/.env`, `.cursor/mcp.json`, `**/appsettings.Development.json`, key files (`*.pem`, `*.key`). CI runs gitleaks via Trunk.
 
 **macOS local setup:** `./scripts/setup-local-secrets.sh` reads Passwords → `docker/.env` + user-secrets (never prints or commits keys). Syncfusion only: `./scripts/sync-syncfusion-license-key.sh --all`.
 
-Templates: `docker/.env.example`, `.cursor/mcp.json.example`. See [docs/ai-tooling.md](docs/ai-tooling.md).
+Templates: `docker/.env.example`. MCP: `~/.cursor/mcp.json` via `./scripts/setup-cursor-mcp.sh`. See [docs/ai-tooling.md](docs/ai-tooling.md).
 
 ## Syncfusion
 
@@ -68,11 +68,10 @@ Versions pinned in [skills-lock.json](skills-lock.json). Priority skills: schedu
 ## MCP (Cursor)
 
 ```bash
-cp .cursor/mcp.json.example .cursor/mcp.json
-./scripts/setup-cursor-mcp.sh   # writes .cursor/mcp.json with tikr-rag-mcp + .venv python3
+./scripts/setup-cursor-mcp.sh   # ~/.cursor/mcp.json + tikr-rag-mcp + .venv python3
 ```
 
-Keep ≤4 active MCP servers. See [docs/ai-tooling.md](docs/ai-tooling.md) for `sf-blazor-mcp`, Microsoft Learn, Ollama, **tikr-rag-mcp**.
+MCP is IDE-level (`~/.cursor/mcp.json`), not per-repo. Editor settings: `~/.cursor/ide-tooling/canonical-settings.json` — see `~/.cursor/rules/ide-canonical-settings.mdc`; do not add repo `.vscode/settings.json` except workspace-only keys (`dotnet.defaultSolution`, `containers.environment`). Keep ≤4 active MCP servers. See [docs/ai-tooling.md](docs/ai-tooling.md) for `sf-blazor-mcp`, Microsoft Learn, Ollama, **tikr-rag-mcp**.
 
 ## RAG (mandatory before code changes)
 
@@ -173,21 +172,33 @@ python3 ~/.cursor/skills/function-inventory/scripts/update-function-inventory.py
 # (completes Layer 1 checks + reminds you to finish the Project-Level checklist)
 ```
 
+## Spec Kit (SDD)
+
+GitHub Spec Kit is initialized with the **cursor-agent** integration. Skills live in `.cursor/skills/speckit-*/` and invoke as `/speckit-specify`, `/speckit-plan`, `/speckit-tasks`, `/speckit-implement`, etc.
+
+- Constitution: [.specify/memory/constitution.md](.specify/memory/constitution.md) (TIKR principles for SDD)
+- Workflow guide: [docs/spec-kit.md](docs/spec-kit.md)
+- Feature artifacts: `specs/<feature-id>/` (created per feature)
+
+For new features: read the active [incremental-plan](docs/incremental-plan.md) phase first, then run the Spec Kit sequence documented in [docs/spec-kit.md](docs/spec-kit.md).
+
 ## Related Files
 
-| Path | Purpose |
-|------|---------|
-| [AGENTS.md](AGENTS.md) | This file — agent rules |
-| [docs/incremental-plan.md](docs/incremental-plan.md) | Phased roadmap |
-| [docs/ai-tooling.md](docs/ai-tooling.md) | MCP, skills, runtime AI |
-| [docs/architecture.md](docs/architecture.md) | System design |
-| [docs/action-items.md](docs/action-items.md) | Human+agent overlay (status, verification, checkboxes) |
-| [docs/function-inventory.generated.md](docs/function-inventory.generated.md) | Auto-generated inventory (run script to refresh) |
-| [docs/function-tree.md](docs/function-tree.md) | Maintained visual Mermaid function tree |
-| [scripts/update-function-inventory.sh](scripts/update-function-inventory.sh) | Legacy bash scanner (project specific) |
-| `~/.cursor/skills/function-inventory/scripts/update-function-inventory.py` | Personal Python lightweight function tracker (preferred) |
-| [.github/workflows/ci.yml](.github/workflows/ci.yml) | Build, test, Docker smoke |
-| [.github/workflows/ci.yml](.github/workflows/ci.yml) | Build, test, Trunk lint, Ollama failure triage |
-| [docs/dependabot-policy.md](docs/dependabot-policy.md) | Dependabot PR handling |
-| [.github/SECURITY.md](.github/SECURITY.md) | Vulnerability reporting |
-| [.cursor/rules/tikr.mdc](.cursor/rules/tikr.mdc) | Always-on Cursor rule |
+| Path                                                                         | Purpose                                                  |
+| ---------------------------------------------------------------------------- | -------------------------------------------------------- |
+| [AGENTS.md](AGENTS.md)                                                       | This file — agent rules                                  |
+| [docs/spec-kit.md](docs/spec-kit.md)                                         | Spec-Driven Development workflow                         |
+| [.specify/memory/constitution.md](.specify/memory/constitution.md)           | SDD constitution                                         |
+| [docs/incremental-plan.md](docs/incremental-plan.md)                         | Phased roadmap                                           |
+| [docs/ai-tooling.md](docs/ai-tooling.md)                                     | MCP, skills, runtime AI                                  |
+| [docs/architecture.md](docs/architecture.md)                                 | System design                                            |
+| [docs/action-items.md](docs/action-items.md)                                 | Human+agent overlay (status, verification, checkboxes)   |
+| [docs/function-inventory.generated.md](docs/function-inventory.generated.md) | Auto-generated inventory (run script to refresh)         |
+| [docs/function-tree.md](docs/function-tree.md)                               | Maintained visual Mermaid function tree                  |
+| [scripts/update-function-inventory.sh](scripts/update-function-inventory.sh) | Legacy bash scanner (project specific)                   |
+| `~/.cursor/skills/function-inventory/scripts/update-function-inventory.py`   | Personal Python lightweight function tracker (preferred) |
+| [.github/workflows/ci.yml](.github/workflows/ci.yml)                         | Build, test, Docker smoke                                |
+| [.github/workflows/ci.yml](.github/workflows/ci.yml)                         | Build, test, Trunk lint, Ollama failure triage           |
+| [docs/dependabot-policy.md](docs/dependabot-policy.md)                       | Dependabot PR handling                                   |
+| [.github/SECURITY.md](.github/SECURITY.md)                                   | Vulnerability reporting                                  |
+| [.cursor/rules/tikr.mdc](.cursor/rules/tikr.mdc)                             | Always-on Cursor rule                                    |

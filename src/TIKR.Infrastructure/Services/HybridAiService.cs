@@ -13,21 +13,27 @@ public class HybridAiService(
     TikrDbContext db,
     IOllamaChatClientFactory ollamaFactory,
     GrokService grokService,
+    IFileStorageService storage,
+    IDocumentAgentExtractionBackend extractionBackend,
     ILogger<HybridAiService> logger) : IHybridAiService
 {
+    private const int TagPreviewChars = 4000;
+    private const int MaxPersistedExtractChars = 100_000;
+
     public async Task<TagDocumentResponse> TagDocumentAsync(Guid documentId, CancellationToken cancellationToken = default)
     {
         var document = await db.Documents.FindAsync([documentId], cancellationToken)
             ?? throw new KeyNotFoundException($"Document {documentId} not found.");
 
-        var preview = (document.FullTextContent ?? document.FileName);
-        preview = preview[..Math.Min(500, preview.Length)];
-        var prompt =
-            "Analyze this municipal document and respond with JSON only: " +
-            "{\"tags\": [\"tag1\",\"tag2\"], \"suggestedFolder\": \"folder name\"}\n\n" +
-            $"File name: {document.FileName}\nContent preview: {preview}";
+        await TryBackfillFullTextAsync(document, cancellationToken);
 
-        var response = await GetLocalCompletionAsync(prompt, cancellationToken);
+        var previewSource = document.FullTextContent ?? document.FileName;
+        var preview = previewSource[..Math.Min(TagPreviewChars, previewSource.Length)];
+        var prompt = DocumentTagPromptBuilder.Build(document.FileName, preview);
+
+        // Low temperature for deterministic JSON tagging; AskAdvanced keeps default sampling.
+        var taggingOptions = new ChatOptions { Temperature = DocumentTagPromptBuilder.TaggingTemperature };
+        var response = await GetLocalCompletionAsync(prompt, cancellationToken, taggingOptions);
         var tags = Array.Empty<string>();
         string? folder = null;
 
@@ -48,6 +54,12 @@ public class HybridAiService(
             }
         }
 
+        (tags, folder) = DocumentTagHeuristics.FillGaps(
+            document.FileName,
+            document.FullTextContent,
+            tags,
+            folder);
+
         document.AiTags = JsonSerializer.Serialize(tags);
         document.SuggestedFolder = folder;
         document.UpdatedAt = DateTime.UtcNow;
@@ -61,6 +73,46 @@ public class HybridAiService(
         await db.SaveChangesAsync(cancellationToken);
 
         return new TagDocumentResponse(documentId, tags, folder);
+    }
+
+    private async Task TryBackfillFullTextAsync(Document document, CancellationToken cancellationToken)
+    {
+        if (!string.IsNullOrWhiteSpace(document.FullTextContent))
+            return;
+        if (string.IsNullOrWhiteSpace(document.StoragePath))
+            return;
+
+        try
+        {
+            await using var stream = await storage.OpenReadAsync(document.StoragePath, cancellationToken);
+            await using var buffer = new MemoryStream();
+            await stream.CopyToAsync(buffer, cancellationToken);
+            buffer.Position = 0;
+
+            var result = await extractionBackend.ExtractAsync(buffer, document.FileName, cancellationToken);
+            if (!IsUsableExtractedText(result))
+                return;
+
+            var text = result.ExtractedText.Trim();
+            if (text.Length > MaxPersistedExtractChars)
+                text = text[..MaxPersistedExtractChars];
+
+            document.FullTextContent = text;
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Failed to backfill FullTextContent for document {DocumentId}", document.Id);
+        }
+    }
+
+    internal static bool IsUsableExtractedText(AgentExtractionResult result)
+    {
+        if (string.IsNullOrWhiteSpace(result.ExtractedText))
+            return false;
+        if (result.UsedSyncfusionTools)
+            return true;
+        // Stub backend returns a placeholder for PDF/DOCX — do not persist that as content.
+        return !result.ExtractedText.StartsWith("Agent stub:", StringComparison.Ordinal);
     }
 
     public async Task<EmbedDocumentResponse> EmbedDocumentAsync(Guid documentId, CancellationToken cancellationToken = default)
@@ -252,12 +304,15 @@ public class HybridAiService(
         return new AiStatusResponse(ollamaAvailable, ollamaFactory.ChatModel, grokService.IsEnabled);
     }
 
-    private async Task<string?> GetLocalCompletionAsync(string prompt, CancellationToken cancellationToken)
+    private async Task<string?> GetLocalCompletionAsync(
+        string prompt,
+        CancellationToken cancellationToken,
+        ChatOptions? options = null)
     {
         try
         {
             var client = ollamaFactory.CreateChatClient();
-            var response = await client.GetResponseAsync(prompt, cancellationToken: cancellationToken);
+            var response = await client.GetResponseAsync(prompt, options, cancellationToken);
             return response.Text;
         }
         catch (Exception ex)
@@ -306,7 +361,7 @@ public class HybridAiService(
         }
     }
 
-    private static string BuildEmbeddingText(Document document)
+    internal static string BuildEmbeddingText(Document document)
     {
         var parts = new List<string> { document.FileName };
         if (!string.IsNullOrWhiteSpace(document.SuggestedFolder))

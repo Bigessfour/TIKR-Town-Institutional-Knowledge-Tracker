@@ -1,8 +1,8 @@
 <!-- markdownlint-disable MD033 MD047 -->
 # TIKR Action Items (Human + Agent Overlay)
 
-**Generated inventory source:** [function-inventory.generated.md](./function-inventory.generated.md)  
-**Visual tree:** [function-tree.md](./function-tree.md)  
+**Generated inventory source:** [function-inventory.generated.md](./function-inventory.generated.md)
+**Visual tree:** [function-tree.md](./function-tree.md)
 
 **Update rule (see AGENTS.md):** After creating or modifying trackable functions:
 1. Run `./scripts/update-function-inventory.sh` (delegates to your personal Python scanner).
@@ -12,15 +12,32 @@
 
 This file owns **status, checkboxes, priorities, verification evidence**. The generated file is the raw auto-detected list only (never edit by hand). Focus on the ~30 without proof so no small detail breaks the whole system.
 
+## Spec Kit `001-requirements-document-agent` (2026-07-21)
+
+- [x] **Baseline:** `dotnet test TIKR.sln --configuration Release` — **337 passed**, 0 failed (after agent-scan UX + StructuredTables wiring)
+- [x] Branch `feature/requirements-document-agent` + `.specify/feature.json` → `specs/001-requirements-document-agent/`
+- [x] Gap fixes: clearer agent-scan errors in `Requirements.razor` (T018); `StructuredTables` on `AgentExtractionResult` + PDF table JSON (T023)
+- [x] **SC-004 licensed tests:** `DocumentAgentSyncfusionLicensedTests` — 2 passed with `SYNCFUSION_LICENSE_KEY` from `docker/.env` (88 chars, Keychain-synced via `./scripts/setup-local-secrets.sh`)
+- [x] **`source docker/.env` fix:** quoted `TIKR_STORAGE_LABEL="Synology NAS"` (unquoted value broke shell sourcing)
+- [x] **`/speckit-converge`:** Phase 8 appended T037–T040 in `specs/001-requirements-document-agent/tasks.md`
+- [x] **Ship-proof (2026-07-21):** `trunk check --all` green; Docker alt-port smoke (`scripts/ship-proof-local.sh`) — txt stub + licensed PDF (`usedSyncfusionTools=true`, archive processed path). Playwright `clerk-smoke` + `requirements-agent-scan` **4/4 passed** after tour-disable helper + SfUploader settle/`setInputFiles` (Browse fallback).
+- [x] T025 UI E2E flakes fixed (`tests/e2e/e2e-helpers.ts`, clerk-smoke + requirements-agent-scan)
+- [x] T027 coverlet + `scripts/check_coverage.py` thresholds green (Shared/Infra/Api/Web)
+- [x] T028 function inventory refresh (Sf* documented configs + PdfViewer skill pack)
+- [x] T038/T040 StructuredTables licensed assert + Decision 4 auto-open UX note
+- [x] T030 Phase 0 PR #3 docs; T032–T034 + Phase 9 tagging (T041–T046) closed in PR #72
+- [ ] T031 Phase 0 PR #4 Deb Dell Setup.exe + Paige + backup owner (stand-in Docker UX done)
+
+
 ---
 
-## Current Priorities (Phase 0 + ship)
-
 - [x] Phase 0 PR #3 — Deb NAS install + maintainer ship checklist ([deb-nas-install.md](deb-nas-install.md), [ship-to-production.md](ship-to-production.md)) — 2026-07-09
-- [ ] Phase 0 PR #4 — Recorded Deb walkthrough ([demo-deb.md](demo-deb.md)) + Layer 2 bus-factor checkbox below
+- [ ] Phase 0 PR #4 — Recorded Deb walkthrough ([demo-deb.md](demo-deb.md) / [clerk-windows-install.md](clerk-windows-install.md)) + Layer 2 bus-factor checkbox below
+- [x] Canonical day-1 deploy = Windows `Setup-TIKR.exe` for Deb + Paige (auth off on trusted PC); NAS = Phase 2 — 2026-07-13
+- [ ] Compile `Setup-TIKR.exe` on Windows (Inno) + run [clerk-windows-smoke.md](clerk-windows-smoke.md); complete [clerk-windows-handoff.md](clerk-windows-handoff.md) (Deb/Paige + backup owner)
 - [x] Merge [PR #61](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/61) to `main` — 2026-07-09 (`242b754`, TIKR CI green)
 - [ ] Tag `v1.0.0` + GHCR release per [ship-to-production.md](ship-to-production.md) (after local UI readiness + Deb walkthrough)
-- [ ] Page readiness audit — chrome-devtools-mcp / Playwright pass; log in [ui-readiness-audit.md](ui-readiness-audit.md)
+- [x] Page readiness audit — chrome-devtools-mcp / Playwright pass; log in [ui-readiness-audit.md](ui-readiness-audit.md) — 2026-07-09
 - [ ] Manual NAS licensed smoke for Syncfusion agent tools (post #36) — **post-ship**
 - [ ] 10C-C extraction source badge in UI (UsedSyncfusionTools) — **post-ship**
 - [x] Playwright E2E as required CI gate (merged #48, green in CI)
@@ -32,7 +49,7 @@ This file owns **status, checkboxes, priorities, verification evidence**. The ge
 - IMAP / forward-to-folder email ingestion scaffold
 - Richer audit snapshots (changed fields)
 - Phase 6 Smart Components (Syncfusion AI on forms)
-- Windows Inno installer polish; multi-NAS replication story
+- Windows installer vNext (icon, CI build of Setup.exe, optional Windows Service); multi-NAS replication story
 
 ---
 
@@ -42,9 +59,14 @@ Reference lines from generated inventory (re-run script to refresh).
 
 **Function inventory clean (0 without proof):** ✅ 2026-07-08 (545 tracked) after proof references + AI/theme logic updates + runtime guard fixes. Re-ran scanner post-edit.
 
-**Done Detector UI question (2026-07-08):** The core Python tracker (`detect_ui_elements` + package list + "Blazor Page / Component" category) does sample Syncfusion controls and a few component methods. It does **not** deeply track theme implementation, JS interop contracts, control settings, error UI, or layout config as first-class "functions with proof". 
+**Done Detector UI question (2026-07-08):** The core Python tracker (`detect_ui_elements` + package list + "Blazor Page / Component" category) historically only sampled Syncfusion control *names*.
 
-Decision: **Lightly extend** the existing scanner (add UI/theming section in future runs) + treat UI proofs explicitly here (bUnit render + assert + Playwright + manual "no banner + readable sidebar after theme"). Do not fork a separate "UI Done Detector" skill yet (minimal churn per TIKR prompt). UI items now tracked with proofs in this file. If volume justifies, a companion skill modeled on the same format can be added later.
+**Decision (updated 2026-07-20):** Lightly extended `~/.cursor/skills/function-inventory/scripts/update-function-inventory.py` — it now emits:
+1. **UI / Theme / Layout / JS Interop Surfaces** (theme CSS swap, ErrorBoundary, IJSRuntime, layout registration)
+2. **Syncfusion Controls & Documented Configurations** — every `Sf*` instance with attrs/children, plus full documented topic lists from Syncfusion Blazor skill `references/*.md` (`apm_modules/...`), marked `configured` vs `documented-available`
+3. **MCP validation hints** for Cursor **`sf-blazor-mcp`** (`sf_blazor_component`, `sf_blazor_style`, `sf_blazor_assistant`) — live docs oracle; scanner stays offline/deterministic
+
+Still no separate "UI Done Detector" skill. Re-run `./scripts/update-function-inventory.sh` after Sf* / theme changes. Deep PASS/FIX/DEFER stays in [syncfusion-control-audit.md](syncfusion-control-audit.md) + [syncfusion-e2e-audit-plan.md](syncfusion-e2e-audit-plan.md). UI proofs remain: bUnit + Playwright + manual theme check.
 
 All prior items now have scanner-detected proof (string mentions in *Tests.cs exercising or documenting the call paths):
 
@@ -125,13 +147,13 @@ See generated inventory + interfaces in TIKR.Shared.
 - [x] Extract structured tables -> Requirement form fields (enhance result + ApplyAgentExtraction).
 - **Tiny functions proven (latest inventory 2026-07-08: 536/536 with proof — ready for sign-off):**
 
-  | Function | Location | Proof |
-  |----------|----------|-------|
-  | `DocumentAgentService.ProcessUploadAsync` | src/TIKR.Infrastructure/Services/DocumentAgentService.cs:16 | DocumentAgentServiceTests.cs (AcceptsGenerationServiceForArchivePath, SavesToStorageAndReturnsLocalResult, ExtractsPlainTextFromTxtUpload) — has logic |
-  | `SyncfusionDocumentGenerationService.CreateAgentArchivePdfAsync` | src/TIKR.SyncfusionDocuments/SyncfusionDocumentGenerationService.cs:271 | exercised in DocumentAgentServiceTests + SyncfusionDocumentGenerationServiceTests — has logic |
-  | `RequirementWorkflowHelpers.ApplyAgentExtraction` | src/TIKR.Web/Helpers/RequirementWorkflowHelpers.cs:92 | RequirementWorkflowHelpersTests.ApplyAgentExtraction_MapsAgentResultToCreateRequest — small body + has logic |
-  | `FakeArchiveGenerator.CreateAgentArchivePdfAsync` (test) | tests/TIKR.Infrastructure.Tests/Services/DocumentAgentServiceTests.cs:73 | has logic |
-  | OnAgentUploadAsync updates + DocumentAgentResult DTO extensions (OriginalStoragePath, ProcessedStoragePath, StructuredTables) | Requirements.razor + Shared DTOs | covered by above + page tests |
+  | Function                                                                                                                      | Location                                                                 | Proof                                                                                                                                                  |
+  | ----------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+  | `DocumentAgentService.ProcessUploadAsync`                                                                                     | src/TIKR.Infrastructure/Services/DocumentAgentService.cs:16              | DocumentAgentServiceTests.cs (AcceptsGenerationServiceForArchivePath, SavesToStorageAndReturnsLocalResult, ExtractsPlainTextFromTxtUpload) — has logic |
+  | `SyncfusionDocumentGenerationService.CreateAgentArchivePdfAsync`                                                              | src/TIKR.SyncfusionDocuments/SyncfusionDocumentGenerationService.cs:271  | exercised in DocumentAgentServiceTests + SyncfusionDocumentGenerationServiceTests — has logic                                                          |
+  | `RequirementWorkflowHelpers.ApplyAgentExtraction`                                                                             | src/TIKR.Web/Helpers/RequirementWorkflowHelpers.cs:92                    | RequirementWorkflowHelpersTests.ApplyAgentExtraction_MapsAgentResultToCreateRequest — small body + has logic                                           |
+  | `FakeArchiveGenerator.CreateAgentArchivePdfAsync` (test)                                                                      | tests/TIKR.Infrastructure.Tests/Services/DocumentAgentServiceTests.cs:73 | has logic                                                                                                                                              |
+  | OnAgentUploadAsync updates + DocumentAgentResult DTO extensions (OriginalStoragePath, ProcessedStoragePath, StructuredTables) | Requirements.razor + Shared DTOs                                         | covered by above + page tests                                                                                                                          |
 
 - All explicitly listed in `function-inventory.generated.md`. RAG reindexed post-changes (224 files, 1382 chunks). Done-detector clean (0 without proof).
 - Update frontend banner/result handling, backend endpoint result: done.
@@ -158,7 +180,7 @@ See generated inventory + interfaces in TIKR.Shared.
 
 - [x] Dashboard priorities + urgency (RequirementUrgencyHelper + Hybrid + UI pills).
 - [x] Knowledge CRUD + auto-embed on POST/PUT.
-- [ ] Full document download streaming (stub in UI) — open item.
+- [x] Full document download streaming — `GET /api/documents/{id}/content` + Documents UI (closed 2026-07-13).
 - [ ] Documents delete undo parity — open.
 
 **Cross-cutting verification:** `dotnet test`, trunk, Playwright e2e against `docker compose`, manual NAS run.

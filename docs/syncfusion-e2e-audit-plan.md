@@ -35,11 +35,12 @@
    Query examples: "syncfusion controls on [Page].razor", "SfAIAssistView validation", "theming data-theme SfGrid".
 
 2. **Inventory**:
-   - Run `./scripts/update-function-inventory.sh` (focus on "Blazor Page / Component" and UI elements).
+   - Run `./scripts/update-function-inventory.sh` — review **UI / Theme / Layout / JS Interop Surfaces** and **Syncfusion Controls & Documented Configurations** (skill `references/*.md` + MCP hints).
    - Grep for controls:
      ```bash
      grep -r '<Sf[A-Z]' src/TIKR.Web --include="*.razor" | sort | uniq
      ```
+   - Deep-validate any control with MCP: Cursor `sf-blazor-mcp` → `sf_blazor_component` (use MCP ids from the inventory table) or `./scripts/run-sf-blazor-mcp.sh`.
    - Review `src/TIKR.Web/Components/_Imports.razor` and per-page usings.
    - List all pages (see current list below).
    - Identify Shared/Layout controls.

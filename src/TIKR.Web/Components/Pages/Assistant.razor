@@ -70,6 +70,11 @@
         /* Background now controlled by data-theme rules in tikr-clerk-polish.css for Syncfusion + side panel consistency */
         /* Phase 2 Item 4: flexible height via flex + Height="100%" on child; 520px replaced */
     }
+
+    .tikr-assist-stream {
+        white-space: pre-wrap;
+        word-break: break-word;
+    }
 </style>
 
 @code {
@@ -195,31 +200,29 @@
                 new(Microsoft.Extensions.AI.ChatRole.User, userMessage)
             };
 
-            var streamDelta = new System.Text.StringBuilder();
             var lastUiPush = DateTime.UtcNow;
             const int streamUiIntervalMs = 120;
 
+            // UpdateResponseAsync *replaces* the bubble contents — always push the
+            // full accumulated text (not a delta), or the UI only shows the latest chunk.
             await foreach (var update in ChatClient.GetStreamingResponseAsync(messages, cancellationToken: token))
             {
                 if (string.IsNullOrEmpty(update.Text))
                     continue;
 
                 markdownBuilder.Append(update.Text);
-                streamDelta.Append(update.Text);
 
                 var elapsed = (DateTime.UtcNow - lastUiPush).TotalMilliseconds;
                 if (elapsed < streamUiIntervalMs)
                     continue;
 
-                await SafeUpdateResponseAsync(streamDelta.ToString());
-                streamDelta.Clear();
+                await SafeUpdateResponseAsync(AssistantPromptBuilder.FormatStreamingHtml(markdownBuilder.ToString()));
                 lastUiPush = DateTime.UtcNow;
             }
 
-            if (streamDelta.Length > 0)
-                await SafeUpdateResponseAsync(streamDelta.ToString());
-
-            args.Response = Markdown.ToHtml(markdownBuilder.ToString());
+            var html = Markdown.ToHtml(markdownBuilder.ToString());
+            args.Response = html;
+            await SafeUpdateResponseAsync(html);
         }
         catch (OperationCanceledException)
         {

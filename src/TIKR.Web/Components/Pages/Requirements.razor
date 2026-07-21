@@ -637,7 +637,7 @@ else
             var result = await Api.ScanDocumentWithAgentAsync(buffer, file.Name);
             if (result is null)
             {
-                _error = "AI scan failed. Is the API running?";
+                _error = BuildAgentScanFailureMessage(file.Name);
                 return;
             }
 
@@ -654,9 +654,17 @@ else
 
             OpenCreateDialogFromDraft(RequirementWorkflowHelpers.ApplyAgentExtraction(result));
         }
+        catch (HttpRequestException)
+        {
+            _error = "Could not reach TIKR.Api. Confirm the API is running (port 5000) and try again.";
+        }
+        catch (TaskCanceledException)
+        {
+            _error = "AI scan timed out. Try a smaller file or confirm TIKR.Api is responding.";
+        }
         catch
         {
-            _error = "Could not scan document. Try a smaller PDF or text file.";
+            _error = BuildAgentScanFailureMessage(file.Name);
         }
         finally
         {
@@ -674,6 +682,15 @@ else
         _form.IsCompleted = false;
         _formDueDate = draft.DueDate.ToDateTime(TimeOnly.MinValue);
         _showDialog = true;
+    }
+
+    private static string BuildAgentScanFailureMessage(string fileName)
+    {
+        var ext = Path.GetExtension(fileName).ToLowerInvariant();
+        if (ext is ".txt" or ".md" or ".csv")
+            return "AI scan failed. Confirm TIKR.Api is running and the file is plain text.";
+
+        return "AI scan failed. For PDF or Office files, set USE_SYNCFUSION_AGENT_TOOLS=true with a valid Syncfusion license — or upload a .txt file.";
     }
 
     private sealed class RequirementFormModel
