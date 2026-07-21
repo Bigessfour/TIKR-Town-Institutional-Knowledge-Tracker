@@ -64,7 +64,7 @@
 - [x] T028 [US4] Function inventory refresh — regenerated with Syncfusion config catalog + PdfViewer skill; evidence in `docs/function-inventory.generated.md`
 - [x] T029 [P] [US4] Clerk install doc: AI Scan + Documents download
 - [ ] T030 [US4] Phase 0 PR #3 docs remaining items
-- [ ] T031 [US4] Phase 0 PR #4 Deb walkthrough sign-off
+- [~] T031 [US4] Phase 0 PR #4 Deb walkthrough — **stand-in UX done** 2026-07-20 on Docker ([demo-deb-walkthrough-evidence.md](../../docs/demo-deb-walkthrough-evidence.md)); Dell Setup.exe + Paige + backup still open
 
 ---
 
