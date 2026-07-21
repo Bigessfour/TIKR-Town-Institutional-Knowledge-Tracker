@@ -8,6 +8,7 @@ using TIKR.Infrastructure.Tests.Helpers;
 using TIKR.Shared.DTOs;
 using TIKR.Shared.Entities;
 using TIKR.Shared.Enums;
+using TIKR.Shared.Interfaces;
 using TIKR.Shared.TestFixtures;
 
 namespace TIKR.Infrastructure.Tests.Services;
@@ -59,6 +60,46 @@ public class HybridAiServiceTests
     }
 
     [Fact]
+    public async Task TagDocumentAsync_UsesLowTemperature()
+    {
+        await using var db = await TestDbContextFactory.CreateMigratedAsync();
+        var document = new Document
+        {
+            Id = Guid.NewGuid(),
+            FileName = "budget.pdf",
+            StoragePath = "2026/01/budget.pdf",
+            ContentType = "application/pdf",
+            UploadedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
+        db.Documents.Add(document);
+        await db.SaveChangesAsync();
+
+        var chat = new StubChatClient("""{"tags":["budget"],"suggestedFolder":"Budget / Finance"}""");
+        var ollama = CreateOllamaFactory(responseText: "", chatClient: chat);
+        var sut = CreateService(db, ollama, DisabledGrok);
+
+        await sut.TagDocumentAsync(document.Id);
+
+        chat.LastOptions.Should().NotBeNull();
+        chat.LastOptions!.Temperature.Should().Be(DocumentTagPromptBuilder.TaggingTemperature);
+    }
+
+    [Fact]
+    public async Task AskAdvancedAsync_DoesNotForceTaggingTemperature()
+    {
+        var chat = new StubChatClient("local answer");
+        var ollama = CreateOllamaFactory(responseText: "", chatClient: chat);
+        await using var db = await TestDbContextFactory.CreateMigratedAsync();
+        var sut = CreateService(db, ollama, DisabledGrok);
+
+        var result = await sut.AskAdvancedAsync(new AskAdvancedRequest("hello", null));
+
+        result.Answer.Should().Be("local answer");
+        chat.LastOptions.Should().BeNull();
+    }
+
+    [Fact]
     public async Task TagDocumentAsync_UsesFallbackTagsOnMalformedJson()
     {
         await using var db = await TestDbContextFactory.CreateMigratedAsync();
@@ -102,6 +143,101 @@ public class HybridAiServiceTests
 
         var result = await sut.TagDocumentAsync(document.Id);
         result.Tags.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task TagDocumentAsync_ResumeFilename_UsesHeuristicsWhenOllamaEmpty()
+    {
+        await using var db = await TestDbContextFactory.CreateMigratedAsync();
+        var document = new Document
+        {
+            Id = Guid.NewGuid(),
+            FileName = "Stephen_McKitrick_Resume.pdf",
+            StoragePath = "2026/01/Stephen_McKitrick_Resume.pdf",
+            ContentType = "application/pdf",
+            UploadedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
+        db.Documents.Add(document);
+        await db.SaveChangesAsync();
+
+        var sut = CreateService(db, CreateOllamaFactory(""), DisabledGrok);
+        var result = await sut.TagDocumentAsync(document.Id);
+
+        result.SuggestedFolder.Should().Be(DocumentTagHeuristics.PersonnelHr);
+        result.Tags.Should().BeEquivalentTo(["resume", "personnel"]);
+    }
+
+    [Fact]
+    public async Task TagDocumentAsync_BackfillsFullTextFromExtractor()
+    {
+        await using var db = await TestDbContextFactory.CreateMigratedAsync();
+        var document = new Document
+        {
+            Id = Guid.NewGuid(),
+            FileName = "minutes.pdf",
+            StoragePath = "2026/01/minutes.pdf",
+            ContentType = "application/pdf",
+            UploadedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
+        db.Documents.Add(document);
+        await db.SaveChangesAsync();
+
+        var storage = new Mock<IFileStorageService>();
+        storage.Setup(s => s.OpenReadAsync(document.StoragePath, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(() => new MemoryStream("%PDF-fake"u8.ToArray()));
+
+        var extraction = new Mock<IDocumentAgentExtractionBackend>();
+        extraction.Setup(e => e.ExtractAsync(It.IsAny<Stream>(), document.FileName, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new AgentExtractionResult(
+                "Town council minutes for July meeting. Attendance recorded.",
+                TablesExtractedCount: 0,
+                UsedSyncfusionTools: true));
+
+        var ollama = CreateOllamaFactory(
+            """{"tags":["minutes"],"suggestedFolder":"Minutes"}""",
+            _ => new[] { 0f, 1f, 0f, 0f });
+        var sut = CreateService(db, ollama, DisabledGrok, storage.Object, extraction.Object);
+
+        await sut.TagDocumentAsync(document.Id);
+
+        var updated = await db.Documents.FindAsync(document.Id);
+        updated!.FullTextContent.Should().Contain("Town council minutes");
+        updated.Embedding.Should().NotBeNull();
+    }
+
+    [Fact]
+    public async Task TagDocumentAsync_DoesNotPersistStubExtractorPlaceholder()
+    {
+        await using var db = await TestDbContextFactory.CreateMigratedAsync();
+        var document = new Document
+        {
+            Id = Guid.NewGuid(),
+            FileName = "scan.pdf",
+            StoragePath = "2026/01/scan.pdf",
+            ContentType = "application/pdf",
+            UploadedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
+        db.Documents.Add(document);
+        await db.SaveChangesAsync();
+
+        var storage = new Mock<IFileStorageService>();
+        storage.Setup(s => s.OpenReadAsync(document.StoragePath, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(() => new MemoryStream("%PDF-fake"u8.ToArray()));
+
+        var sut = CreateService(
+            db,
+            CreateOllamaFactory("""{"tags":["x"],"suggestedFolder":"General"}"""),
+            DisabledGrok,
+            storage.Object,
+            new StubDocumentAgentExtractionBackend());
+
+        await sut.TagDocumentAsync(document.Id);
+
+        var updated = await db.Documents.FindAsync(document.Id);
+        updated!.FullTextContent.Should().BeNull();
     }
 
     [Fact]
@@ -324,16 +460,48 @@ public class HybridAiServiceTests
         updated!.Embedding.Should().NotBeNull();
     }
 
+    [Fact]
+    public void BuildEmbeddingText_IncludesFullTextBody()
+    {
+        var document = new Document
+        {
+            Id = Guid.NewGuid(),
+            FileName = "resume.pdf",
+            StoragePath = "x",
+            SuggestedFolder = DocumentTagHeuristics.PersonnelHr,
+            AiTags = """["resume","personnel"]""",
+            FullTextContent = "Software engineer with municipal experience.",
+            UploadedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
+
+        var text = HybridAiService.BuildEmbeddingText(document);
+        text.Should().Contain("resume.pdf");
+        text.Should().Contain(DocumentTagHeuristics.PersonnelHr);
+        text.Should().Contain("Software engineer with municipal experience.");
+    }
+
     private static HybridAiService CreateService(
         TikrDbContext db,
         IOllamaChatClientFactory ollama,
-        GrokService grok) =>
-        new(db, ollama, grok, NullLogger<HybridAiService>.Instance);
+        GrokService grok,
+        IFileStorageService? storage = null,
+        IDocumentAgentExtractionBackend? extraction = null) =>
+        new(
+            db,
+            ollama,
+            grok,
+            storage ?? Mock.Of<IFileStorageService>(),
+            extraction ?? Mock.Of<IDocumentAgentExtractionBackend>(),
+            NullLogger<HybridAiService>.Instance);
 
-    private static IOllamaChatClientFactory CreateOllamaFactory(string responseText, Func<string, float[]?>? embedder = null)
+    private static IOllamaChatClientFactory CreateOllamaFactory(
+        string responseText,
+        Func<string, float[]?>? embedder = null,
+        StubChatClient? chatClient = null)
     {
         var factory = new Mock<IOllamaChatClientFactory>();
-        factory.Setup(f => f.CreateChatClient()).Returns(new StubChatClient(responseText));
+        factory.Setup(f => f.CreateChatClient()).Returns(chatClient ?? new StubChatClient(responseText));
         factory.SetupGet(f => f.ChatModel).Returns("test-model");
         factory.Setup(f => f.CreateEmbeddingGenerator(It.IsAny<string>()))
             .Returns(new StubEmbeddingGenerator(embedder ?? (_ => null)));

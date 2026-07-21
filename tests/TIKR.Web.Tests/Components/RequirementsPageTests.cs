@@ -73,6 +73,21 @@ public class RequirementsPageTests : ClerkTestContext
         cut.WaitForAssertion(() => cut.Markup.Should().Contain("Select due date"));
     }
 
+    [Fact]
+    public void Requirements_RendersDeleteActionForNonSeededRows()
+    {
+        var json = JsonSerializer.Serialize(new List<RequirementDto>
+        {
+            new(Guid.NewGuid(), "Clerk-added filing", "Local obligation", new DateOnly(2026, 12, 15),
+                RecurrenceType.Annual, RequirementCategory.Custom, false, false, [])
+        });
+        RegisterApi(json);
+        SetRendererInfo(new RendererInfo("Server", true));
+
+        var cut = RenderComponent<Requirements>();
+        cut.WaitForAssertion(() => cut.Markup.Should().Contain("Delete"));
+    }
+
     private void RegisterApi(string json)
     {
         var handler = new StubHandler((req, _) =>
