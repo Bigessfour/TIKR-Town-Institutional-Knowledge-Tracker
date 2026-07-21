@@ -273,7 +273,7 @@ In Development, the app also loads `.env` and `docker/.env` from the repo root i
 | `ConnectionStrings__Default`         | API             | `Data Source=tikr.db`    | Database connection                                                                      |
 | `FILE_STORAGE_PATH`                  | API             | `data/documents`         | Document storage path                                                                    |
 | `OLLAMA_HOST`                        | API             | `http://localhost:11434` | Ollama server URL                                                                        |
-| `OLLAMA_CHAT_MODEL`                  | API             | `llama3.2:3b`            | Chat model name                                                                          |
+| `OLLAMA_CHAT_MODEL`                  | API             | `llama3.2:3b`            | Chat model name (optional: `tikr-clerk` — see [docs/ai-tooling.md](docs/ai-tooling.md)) |
 | `USE_GROK`                           | API             | `false`                  | Enable xAI Grok for advanced AI                                                          |
 | `GROK_API_KEY`                       | API             | —                        | xAI API key (required if USE_GROK=true)                                                  |
 | `GROK_MODEL`                         | API             | `grok-4.3`               | xAI chat model ([docs](https://docs.x.ai/docs/models); aliases: `grok-latest`)           |

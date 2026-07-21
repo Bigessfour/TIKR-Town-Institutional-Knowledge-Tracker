@@ -8,6 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Syncfusion.Blazor;
 using TIKR.Shared.DTOs;
 using TIKR.Web.Components.Pages;
+using TIKR.Web.Helpers;
 using TIKR.Web.Services;
 
 namespace TIKR.Web.Tests.Components;
@@ -103,6 +104,40 @@ public class AssistantPageTests : ClerkTestContext
         args.Response.Should().Contain("stub stream");
     }
 
+    [Fact]
+    public void FormatStreamingHtml_EncodesAndPreservesAccumulatedText()
+    {
+        var html = AssistantPromptBuilder.FormatStreamingHtml("Hello <world> & more");
+        html.Should().Contain("tikr-assist-stream");
+        html.Should().Contain("Hello &lt;world&gt; &amp; more");
+        html.Should().NotContain("<world>");
+    }
+
+    [Fact]
+    public async Task Assistant_MainChatPrompt_AccumulatesMultiChunkStream()
+    {
+        // Constructor registers StubChatClient; replace so this test owns the stream chunks.
+        var existing = Services.FirstOrDefault(d => d.ServiceType == typeof(IChatClient));
+        if (existing is not null)
+            Services.Remove(existing);
+        Services.AddSingleton<IChatClient>(new MultiChunkStubChatClient());
+        RegisterApi();
+        var cut = RenderComponent<Assistant>();
+
+        var method = cut.Instance.GetType().GetMethod(
+            "OnPromptRequested",
+            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!;
+        var args = new Syncfusion.Blazor.InteractiveChat.AssistViewPromptRequestedEventArgs { Prompt = "Say hello" };
+        var task = (Task)method.Invoke(cut.Instance, [args])!;
+        await cut.InvokeAsync(async () => await task);
+
+        // Final response must contain the full concatenated stream, not only the last chunk.
+        args.Response.Should().Contain("Hello");
+        args.Response.Should().Contain("world");
+        args.Response.Should().Contain("from");
+        args.Response.Should().Contain("TIKR");
+    }
+
     private void RegisterApi(string? prioritiesJson = null)
     {
         prioritiesJson ??= "[]";
@@ -136,6 +171,35 @@ public class AssistantPageTests : ClerkTestContext
             {
                 await Task.Yield();
                 yield return new ChatResponseUpdate(ChatRole.Assistant, "stub stream");
+            }
+
+            return Stream();
+        }
+
+        public object? GetService(Type serviceType, object? serviceKey = null) => null;
+        public void Dispose() { }
+    }
+
+    /// <summary>Yields several chunks with delays so the UI throttle path runs between updates.</summary>
+    private sealed class MultiChunkStubChatClient : IChatClient
+    {
+        public ChatClientMetadata Metadata => new("multi-chunk-stub");
+
+        public Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null, CancellationToken cancellationToken = default) =>
+            Task.FromResult(new ChatResponse(new ChatMessage(ChatRole.Assistant, "Hello world from TIKR")));
+
+        public IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(
+            IEnumerable<ChatMessage> messages,
+            ChatOptions? options = null,
+            CancellationToken cancellationToken = default)
+        {
+            async IAsyncEnumerable<ChatResponseUpdate> Stream()
+            {
+                foreach (var part in new[] { "Hello ", "world ", "from ", "TIKR" })
+                {
+                    await Task.Delay(50, cancellationToken);
+                    yield return new ChatResponseUpdate(ChatRole.Assistant, part);
+                }
             }
 
             return Stream();

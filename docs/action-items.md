@@ -25,7 +25,8 @@ This file owns **status, checkboxes, priorities, verification evidence**. The ge
 - [x] T027 coverlet + `scripts/check_coverage.py` thresholds green (Shared/Infra/Api/Web)
 - [x] T028 function inventory refresh (Sf* documented configs + PdfViewer skill pack)
 - [x] T038/T040 StructuredTables licensed assert + Decision 4 auto-open UX note
-- [ ] T030–T031 Phase 0 Deb walkthrough / sign-off; T032–T034 doc sync
+- [x] T030 Phase 0 PR #3 docs; T032–T034 + Phase 9 tagging (T041–T046) closed in PR #72
+- [ ] T031 Phase 0 PR #4 Deb Dell Setup.exe + Paige + backup owner (stand-in Docker UX done)
 
 
 ---

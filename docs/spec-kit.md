@@ -50,7 +50,7 @@ specify integration upgrade cursor-agent
 | ----------- | ---------------------------------------------------------- |
 | Feature ID  | `001-requirements-document-agent`                          |
 | Path        | `specs/001-requirements-document-agent/`                   |
-| Status      | converge done — 29/40 tasks; ship proof + T037–T038 remain |
+| Status      | PR #72 — 45/46 done; T031 Deb Dell sign-off remains open   |
 | Aligns with | incremental-plan Phase 10 + Phase 0 ship closure           |
 
 Shell exports (optional):

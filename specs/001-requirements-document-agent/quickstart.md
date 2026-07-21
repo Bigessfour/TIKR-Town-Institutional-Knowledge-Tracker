@@ -17,6 +17,13 @@ Open http://localhost:8080/requirements
 
 **Expected**: Grid loads with seeded Colorado obligations; filters and CSV export work.
 
+**Mac host conflicts:** If `:5000` (Control Center) or `:11434` (host Ollama) are busy, use licensed/alt-port ship-proof instead of default compose:
+
+```bash
+export SYNCFUSION_LICENSE_KEY=…   # or sync via ./scripts/setup-local-secrets.sh
+./scripts/ship-proof-local.sh     # API :15000, Web :18080, Ollama :11435
+```
+
 ## 2. Agent scan — plain text (FR-002, SC-001)
 
 1. On `/requirements`, use **AI Scan uploaded doc**

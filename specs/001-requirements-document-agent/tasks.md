@@ -63,14 +63,16 @@
 - [x] T027 [US4] Coverage script after coverlet run — **passed** (`check_coverage.py`: Shared 95.2%, Infra 91.3%, Api 99.4%, Web testable 89.3%)
 - [x] T028 [US4] Function inventory refresh — regenerated with Syncfusion config catalog + PdfViewer skill; evidence in `docs/function-inventory.generated.md`
 - [x] T029 [P] [US4] Clerk install doc: AI Scan + Documents download
-- [ ] T030 [US4] Phase 0 PR #3 docs remaining items
+- [x] T030 [US4] Phase 0 PR #3 docs — **done** (`deb-nas-install.md`, `ship-to-production.md`, `clerk-windows-smoke.md`)
 - [~] T031 [US4] Phase 0 PR #4 Deb walkthrough — **stand-in UX done** 2026-07-20 on Docker ([demo-deb-walkthrough-evidence.md](../../docs/demo-deb-walkthrough-evidence.md)); Dell Setup.exe + Paige + backup still open
 
 ---
 
 ## Phase 7: Polish
 
-- [ ] T032–T034 Doc sync / full quickstart note
+- [x] T032 [P] Sync AI tooling docs for optional `tikr-clerk` model (`docs/ai-tooling.md`, `README.md`, `docker/.env.example`)
+- [x] T033 [P] Document Mac ship-proof path (`scripts/ship-proof-local.sh` + alt ports) in this tasks file + action-items
+- [x] T034 Quickstart note: prefer `./scripts/ship-proof-local.sh` on host with `:5000`/`:11434` conflicts
 - [x] T035 `/speckit-converge` run
 - [x] T036 Open PR — https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/72
 
@@ -99,7 +101,19 @@
 
 ---
 
+## Phase 9: Document tagging + Assistant polish (2026-07-20)
+
+- [x] T041 [P] Extract `DocumentTagPromptBuilder` + low-temperature tagging in `src/TIKR.Infrastructure/Services/`
+- [x] T042 [P] Add `DocumentTagHeuristics` gap-fill for folder/tags when Ollama is sparse
+- [x] T043 [US2] Backfill `FullTextContent` on tag via storage + extraction backend in `HybridAiService`
+- [x] T044 [P] Unit tests for heuristics, prompt builder, and HybridAi tagging paths
+- [x] T045 [P] Optional `tikr-clerk` Modelfile + `scripts/create-tikr-clerk-model.sh`
+- [x] T046 Fix Assistant streaming (full accumulated text + `FormatStreamingHtml`) in `Assistant.razor` / `PageWorkflowHelpers.cs`
+
+---
+
 ## Notes
 
 - Prefer `./scripts/ship-proof-local.sh` over raw `ci-smoke.sh` on this Mac
 - Do not expand into Requirements Phase 2 UI or Phase 6 Smart Components
+- **Still open for Deb sign-off (out of this PR merge):** T031 Dell Setup.exe + Paige + backup owner
