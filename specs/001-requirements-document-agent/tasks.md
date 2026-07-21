@@ -60,8 +60,8 @@
 
 - [x] T025 [P] [US4] Playwright — **4/4 passed** via `ship-proof-local.sh` (tour disabled in `e2e-helpers.ts`; SfUploader settle + `setInputFiles` with Browse fallback)
 - [x] T026 [P] [US4] CI includes Playwright gate (`ci-smoke.sh`)
-- [ ] T027 [US4] Coverage script after coverlet run
-- [ ] T028 [US4] Function inventory refresh
+- [x] T027 [US4] Coverage script after coverlet run — **passed** (`check_coverage.py`: Shared 95.2%, Infra 91.3%, Api 99.4%, Web testable 89.3%)
+- [x] T028 [US4] Function inventory refresh — regenerated with Syncfusion config catalog + PdfViewer skill; evidence in `docs/function-inventory.generated.md`
 - [x] T029 [P] [US4] Clerk install doc: AI Scan + Documents download
 - [ ] T030 [US4] Phase 0 PR #3 docs remaining items
 - [ ] T031 [US4] Phase 0 PR #4 Deb walkthrough sign-off
@@ -79,9 +79,9 @@
 ## Phase 8: Convergence (2026-07-21)
 
 - [x] T037 Quote `TIKR_STORAGE_LABEL` + trunk ignore Spec Kit paths
-- [ ] T038 [P] [US3] Optional StructuredTables assertion in licensed API test
+- [x] T038 [P] [US3] Optional StructuredTables assertion in licensed API test — asserts count ≥ 0; when JSON present must be array/object shaped
 - [x] T039 [US4] Clerk windows install walkthrough bullets
-- [ ] T040 [US2] Document accepted auto-open dialog UX (research Decision 4)
+- [x] T040 [US2] Document accepted auto-open dialog UX (research Decision 4)
 
 ### Ship-proof evidence (2026-07-21)
 

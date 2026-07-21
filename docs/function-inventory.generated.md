@@ -2,7 +2,7 @@
 <!-- Do NOT edit manually. Lightweight function tracker for proof + minimal viable. -->
 
 # Function Inventory — TIKR
-Generated: 2026-07-21T01:12:07.116207+00:00
+Generated: 2026-07-21T01:16:51.864468+00:00
 
 **Summary:** 605 tracked functions | 593 with proof | 12 without proof
 Focus on the ones without proof for your key paths.
@@ -715,7 +715,7 @@ Live validation oracle: Cursor MCP **`sf-blazor-mcp`** → `sf_blazor_component`
 | API Endpoint | CouncilPacketEndpointTests.GenerateCouncilPacket_WithoutLicense_ReturnsServiceUnavailable | tests/TIKR.Api.Tests/Endpoints/CouncilPacketEndpointTests.cs:20 | tests/TIKR.Api.Tests/Endpoints/CouncilPacketEndpointTests.cs | has logic |
 | API Endpoint | DocumentAgentEndpointTests.AgentScan_ExtractsTxtFixture | tests/TIKR.Api.Tests/Endpoints/DocumentAgentEndpointTests.cs:38 | tests/TIKR.Api.Tests/Endpoints/DocumentAgentEndpointTests.cs | small body |
 | API Endpoint | DocumentAgentEndpointTests.AgentScan_ReturnsStubExtractionForUpload | tests/TIKR.Api.Tests/Endpoints/DocumentAgentEndpointTests.cs:22 | tests/TIKR.Api.Tests/Endpoints/DocumentAgentEndpointTests.cs | has logic |
-| API Endpoint | DocumentAgentSyncfusionLicensedTests.AgentScan_ExtractsDocxFixture_WhenLicensed | tests/TIKR.Api.Tests/Endpoints/DocumentAgentSyncfusionLicensedTests.cs:50 | tests/TIKR.Api.Tests/Endpoints/DocumentAgentSyncfusionLicens... | has logic |
+| API Endpoint | DocumentAgentSyncfusionLicensedTests.AgentScan_ExtractsDocxFixture_WhenLicensed | tests/TIKR.Api.Tests/Endpoints/DocumentAgentSyncfusionLicensedTests.cs:58 | tests/TIKR.Api.Tests/Endpoints/DocumentAgentSyncfusionLicens... | has logic |
 | API Endpoint | DocumentAgentSyncfusionLicensedTests.AgentScan_ExtractsPdfFixture_WhenLicensed | tests/TIKR.Api.Tests/Endpoints/DocumentAgentSyncfusionLicensedTests.cs:25 | tests/TIKR.Api.Tests/Endpoints/DocumentAgentSyncfusionLicens... | has logic |
 | API Endpoint | DocumentGenerationEndpointTests.GenerateComplianceReport_WithoutLicense_ReturnsServiceUnavailable | tests/TIKR.Api.Tests/Endpoints/DocumentGenerationEndpointTests.cs:27 | tests/TIKR.Api.Tests/Endpoints/DocumentGenerationEndpointTes... | has logic |
 | API Endpoint | DocumentGenerationEndpointTests.GenerateCouncilAgenda_WithoutLicense_ReturnsServiceUnavailable | tests/TIKR.Api.Tests/Endpoints/DocumentGenerationEndpointTests.cs:17 | tests/TIKR.Api.Tests/Endpoints/DocumentGenerationEndpointTes... | has logic |

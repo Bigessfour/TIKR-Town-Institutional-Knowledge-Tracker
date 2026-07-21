@@ -39,14 +39,17 @@ All technical context items resolved from existing TIKR codebase and docs — no
 
 ## Decision 4: Apply flow and table mapping
 
-**Decision**: Clerk reviews extraction in banner; **Apply** calls `RequirementWorkflowHelpers.ApplyAgentExtraction` → opens create dialog pre-filled. Structured tables appended to `Description` when `StructuredTables` differs from `ExtractedText`.
+**Decision**: After a successful agent-scan, the Requirements page **auto-opens** the Add requirement dialog pre-filled via `RequirementWorkflowHelpers.ApplyAgentExtraction` (same helper as an explicit Apply). Clerk still reviews and must Save — no auto-persist. Structured tables append to `Description` when `StructuredTables` differs from `ExtractedText`.
 
-**Rationale**: Minimal change, no schema migration; matches FR-003 (no auto-save without review).
+**Rationale**: One fewer click for Deb after upload; still satisfies FR-003 (no auto-save without review). Auto-open is the accepted clerk UX (shipped + Playwright-covered).
 
 **Alternatives considered**:
 
+- Banner-only + explicit Apply button before dialog (rejected for ship — extra step; may return in Phase 2 polish)
 - New Requirement columns for table JSON (deferred — Phase 2 schema)
 - Auto-save requirement on scan (rejected — spec edge case: clerk must confirm)
+
+**Accepted UX note (T040)**: Auto-open create dialog after scan is intentional; do not treat as a bug vs the earlier “banner then Apply” wording.
 
 ## Decision 5: Testing strategy
 

@@ -22,7 +22,10 @@ This file owns **status, checkboxes, priorities, verification evidence**. The ge
 - [x] **`/speckit-converge`:** Phase 8 appended T037–T040 in `specs/001-requirements-document-agent/tasks.md`
 - [x] **Ship-proof (2026-07-21):** `trunk check --all` green; Docker alt-port smoke (`scripts/ship-proof-local.sh`) — txt stub + licensed PDF (`usedSyncfusionTools=true`, archive processed path). Playwright `clerk-smoke` + `requirements-agent-scan` **4/4 passed** after tour-disable helper + SfUploader settle/`setInputFiles` (Browse fallback).
 - [x] T025 UI E2E flakes fixed (`tests/e2e/e2e-helpers.ts`, clerk-smoke + requirements-agent-scan)
-- [ ] T027–T028 inventory/coverage, T030–T031 Phase 0 sign-off
+- [x] T027 coverlet + `scripts/check_coverage.py` thresholds green (Shared/Infra/Api/Web)
+- [x] T028 function inventory refresh (Sf* documented configs + PdfViewer skill pack)
+- [x] T038/T040 StructuredTables licensed assert + Decision 4 auto-open UX note
+- [ ] T030–T031 Phase 0 Deb walkthrough / sign-off; T032–T034 doc sync
 
 
 ---
