@@ -65,7 +65,24 @@ public sealed class SyncfusionDocumentAgentExtractor
 
         var orchestrated = await _orchestrator.TryExtractAsync(workName, fileName, cancellationToken);
         if (orchestrated is not null)
+        {
+            // Orchestrator returns text; still fill StructuredTables for PDFs when empty.
+            if (string.IsNullOrWhiteSpace(orchestrated.StructuredTables)
+                && Path.GetExtension(fileName).Equals(".pdf", StringComparison.OrdinalIgnoreCase))
+            {
+                var (tables, tableJson) = TryExtractTables(workName, fileName);
+                if (!string.IsNullOrWhiteSpace(tableJson))
+                {
+                    return orchestrated with
+                    {
+                        TablesExtractedCount = tables > 0 ? tables : orchestrated.TablesExtractedCount,
+                        StructuredTables = tableJson
+                    };
+                }
+            }
+
             return orchestrated;
+        }
 
         var ext = Path.GetExtension(fileName).ToLowerInvariant();
         return ext switch
@@ -84,8 +101,8 @@ public sealed class SyncfusionDocumentAgentExtractor
     private AgentExtractionResult ExtractPdf(string workName, string originalFileName)
     {
         var text = UnwrapPayload(_pdfTools.ExtractText(workName, startPageIndex: 0, endPageIndex: -1));
-        var tables = TryCountTables(workName, originalFileName);
-        return new AgentExtractionResult(text, tables, UsedSyncfusionTools: true);
+        var (tables, tableJson) = TryExtractTables(workName, originalFileName);
+        return new AgentExtractionResult(text, tables, UsedSyncfusionTools: true, tableJson);
     }
 
     private AgentExtractionResult ExtractWord(string workName)
@@ -138,7 +155,7 @@ public sealed class SyncfusionDocumentAgentExtractor
         return _storage.Exists(sibling) ? sibling : null;
     }
 
-    private int TryCountTables(string workName, string originalFileName)
+    private (int Count, string? Json) TryExtractTables(string workName, string originalFileName)
     {
         try
         {
@@ -151,22 +168,25 @@ public sealed class SyncfusionDocumentAgentExtractor
                 outputFilePath: string.Empty);
             var json = UnwrapPayload(result);
             if (string.IsNullOrWhiteSpace(json))
-                return DocumentAgentService.InferTableCount(originalFileName);
+                return (DocumentAgentService.InferTableCount(originalFileName), null);
 
             using var doc = JsonDocument.Parse(json);
             if (doc.RootElement.ValueKind == JsonValueKind.Array)
-                return doc.RootElement.GetArrayLength();
+                return (doc.RootElement.GetArrayLength(), json);
 
             if (doc.RootElement.TryGetProperty("tables", out var tables) && tables.ValueKind == JsonValueKind.Array)
-                return tables.GetArrayLength();
+                return (tables.GetArrayLength(), json);
         }
         catch
         {
             // Best-effort — clerk still gets text.
         }
 
-        return DocumentAgentService.InferTableCount(originalFileName);
+        return (DocumentAgentService.InferTableCount(originalFileName), null);
     }
+
+    private int TryCountTables(string workName, string originalFileName) =>
+        TryExtractTables(workName, originalFileName).Count;
 
     private static string UnwrapPayload(AgentToolResult result)
     {

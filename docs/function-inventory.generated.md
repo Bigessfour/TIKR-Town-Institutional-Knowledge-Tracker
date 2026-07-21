@@ -2,10 +2,28 @@
 <!-- Do NOT edit manually. Lightweight function tracker for proof + minimal viable. -->
 
 # Function Inventory — TIKR
-Generated: 2026-07-09T13:56:47.219193+00:00
+Generated: 2026-07-21T01:48:10.947768+00:00
 
-**Summary:** 568 tracked functions | 568 with proof | 0 without proof
+**Summary:** 626 tracked functions | 614 with proof | 12 without proof
 Focus on the ones without proof for your key paths.
+
+## Functions without proof (review these)
+- Core Service: ClerkTourService.ClerkTourJsCallbacks @ src/TIKR.Web/Services/ClerkTourService.cs:148
+- Core Service: ClerkTourService.IsAutoTourDisabledForUiAsync @ src/TIKR.Web/Services/ClerkTourService.cs:23
+- Core Service: ClerkTourService.MarkCompletedAsync @ src/TIKR.Web/Services/ClerkTourService.cs:61
+- Core Service: ClerkTourJsCallbacks.NavigateForTourAsync @ src/TIKR.Web/Services/ClerkTourService.cs:152
+- Core Service: ClerkTourJsCallbacks.OnTourFinishedFromJs @ src/TIKR.Web/Services/ClerkTourService.cs:165
+- Core Service: ClerkTourService.SetAutoTourDisabledAsync @ src/TIKR.Web/Services/ClerkTourService.cs:53
+- Core Service: ClerkTourService.ShouldAutoStartAsync @ src/TIKR.Web/Services/ClerkTourService.cs:25
+- Core Service: ClerkTourService.StartFullTourAsync @ src/TIKR.Web/Services/ClerkTourService.cs:37
+- Core Service: ClerkTourService.StartGlobalTourAsync @ src/TIKR.Web/Services/ClerkTourService.cs:34
+- Core Service: ClerkTourService.StartPageTourAsync @ src/TIKR.Web/Services/ClerkTourService.cs:40
+- Core Service: ClerkUserGuideService.GetMarkdownAsync @ src/TIKR.Web/Services/ClerkUserGuideService.cs:11
+- Core Service: ClerkUserGuideService.GetSectionsAsync @ src/TIKR.Web/Services/ClerkUserGuideService.cs:23
+
+Note: Many items here are internal static helpers or simple services.
+They may be sufficiently covered by higher-level endpoint or E2E tests.
+Use this list to decide where to add focused proof or document coverage.
 
 ## Detected Packages & Major Components
 - ★ Microsoft.Extensions.AI (10.7.0) — TIKR.Infrastructure.csproj
@@ -58,11 +76,576 @@ Focus on the ones without proof for your key paths.
 ## UI / Component Elements in Use (sampled)
 SfAIAssistView, SfAccordion, SfButton, SfCard, SfCheckBox, SfContextMenu, SfDataForm, SfDatePicker, SfDialog, SfDropDownList, SfGrid, SfPdfViewer2, SfRichTextEditor, SfSchedule, SfSpeechToText, SfSplitter, SfTab, SfTextBox, SfTooltip, SfTreeView, SfUploader
 
+## UI / Theme / Layout / JS Interop Surfaces
+Detected theme, layout, error UI, and JS interop touchpoints (not every CSS rule).
+
+| Kind | Path | Signal |
+|------|------|--------|
+| layout | `src/TIKR.Web/Components/Routes.razor` | `MainLayout` |
+| theme | `src/TIKR.Web/Components/App.razor` | `bootstrap5` |
+| layout | `src/TIKR.Web/Components/App.razor` | `InteractiveServer` |
+| error-ui | `src/TIKR.Web/Components/Layout/MainLayout.razor` | `ErrorBoundary` |
+| js-interop | `src/TIKR.Web/Components/Shared/ClerkUserGuideDialog.razor` | `InvokeAsync` |
+| theme | `src/TIKR.Web/Components/Shared/TikrThemeSelector.razor` | `ThemeService` |
+| js-interop | `src/TIKR.Web/Components/Shared/TikrThemeSelector.razor` | `InvokeAsync` |
+| js-interop | `src/TIKR.Web/Components/Shared/ClerkToastHost.razor` | `InvokeAsync` |
+| js-interop | `src/TIKR.Web/Components/Shared/TikrOfflineBanner.razor` | `InvokeAsync` |
+| error-ui | `src/TIKR.Web/Components/Shared/TikrOfflineBanner.razor` | `role="alert"` |
+| js-interop | `src/TIKR.Web/Components/Shared/TikrKeyboardShortcuts.razor` | `IJSRuntime` |
+| js-interop | `src/TIKR.Web/Components/Shared/ConfirmDeleteDialog.razor` | `InvokeAsync` |
+| js-interop | `src/TIKR.Web/Components/Shared/TikrStatusFooter.razor` | `InvokeAsync` |
+| layout | `src/TIKR.Web/Components/Pages/NotFound.razor` | `MainLayout` |
+| theme | `src/TIKR.Web/Components/Pages/Settings.razor` | `tikr-theme` |
+| layout | `src/TIKR.Web/Components/Pages/Settings.razor` | `InteractiveServer` |
+| js-interop | `src/TIKR.Web/Components/Pages/Calendar.razor` | `InvokeAsync` |
+| layout | `src/TIKR.Web/Components/Pages/Calendar.razor` | `InteractiveServer` |
+| js-interop | `src/TIKR.Web/Components/Pages/Documents.razor` | `IJSRuntime` |
+| layout | `src/TIKR.Web/Components/Pages/Documents.razor` | `InteractiveServer` |
+| theme | `src/TIKR.Web/Components/Pages/Assistant.razor` | `data-theme` |
+| layout | `src/TIKR.Web/Components/Pages/Assistant.razor` | `InteractiveServer` |
+| layout | `src/TIKR.Web/Components/Pages/Account.razor` | `InteractiveServer` |
+| js-interop | `src/TIKR.Web/Components/Pages/Requirements.razor` | `IJSRuntime` |
+| error-ui | `src/TIKR.Web/Components/Pages/Requirements.razor` | `tikr-error-state` |
+| layout | `src/TIKR.Web/Components/Pages/Requirements.razor` | `InteractiveServer` |
+| layout | `src/TIKR.Web/Components/Pages/Login.razor` | `InteractiveServer` |
+| layout | `src/TIKR.Web/Components/Pages/Users.razor` | `InteractiveServer` |
+| layout | `src/TIKR.Web/Components/Pages/Home.razor` | `InteractiveServer` |
+| js-interop | `src/TIKR.Web/Components/Pages/Vault.razor` | `IJSRuntime` |
+| layout | `src/TIKR.Web/Components/Pages/Vault.razor` | `InteractiveServer` |
+| error-ui | `src/TIKR.Web/SyncfusionLicenseBootstrap.cs` | `onError` |
+| theme | `src/TIKR.Web/Program.cs` | `ThemeService` |
+| layout | `src/TIKR.Web/Program.cs` | `AddSyncfusionBlazor` |
+| js-interop | `src/TIKR.Web/Services/ClerkTourService.cs` | `IJSRuntime` |
+| theme | `src/TIKR.Web/Services/ThemeService.cs` | `ThemeService` |
+| js-interop | `src/TIKR.Web/Services/ThemeService.cs` | `IJSRuntime` |
+| error-ui | `src/TIKR.Web/Services/TikrApiClient.cs` | `onError` |
+| js-interop | `src/TIKR.Web/wwwroot/js/tikr-shortcuts.js` | `window.tikrShortcuts` |
+| js-interop | `src/TIKR.Web/wwwroot/js/tikr-download.js` | `window.tikrDownload` |
+| js-interop | `src/TIKR.Web/wwwroot/js/tikr-tour.js` | `window.tikrTour` |
+| theme | `src/TIKR.Web/wwwroot/js/tikr-theme.js` | `tikr-theme` |
+| js-interop | `src/TIKR.Web/wwwroot/js/tikr-theme.js` | `window.tikrTheme` |
+| theme | `src/TIKR.Web/wwwroot/css/tikr-clerk-polish.css` | `tikr-theme` |
+| error-ui | `src/TIKR.Web/wwwroot/css/tikr-clerk-polish.css` | `tikr-error-state` |
+| layout | `src/TIKR.Web/wwwroot/css/tikr-clerk-polish.css` | `MainLayout` |
+
+Theme oracle (MCP): `sf_blazor_style` with `theme="bootstrap5.3"` (or fluent2/material3/tailwind3) for documented theme switch + CSS variable guidance.
+
+## Syncfusion Controls & Documented Configurations
+Instances: **125** across **21** control types. Skill catalog: `apm_modules/syncfusion/blazor-ui-components-skills/skills; apm_modules/syncfusion/pdf-viewer-sdk-skills/skills`.
+
+Each control lists **documented** configuration topics from the local Syncfusion skill `references/*.md` (same corpus as agent skills). Status **configured** = markup attrs/children heuristically match the topic; **documented-available** = in Syncfusion docs but not clearly wired in this repo (often intentional N/A for scoped use).
+
+Live validation oracle: Cursor MCP **`sf-blazor-mcp`** → `sf_blazor_component` / `sf_blazor_assistant` / `sf_blazor_style` (see `./scripts/run-sf-blazor-mcp.sh`, needs `SYNCFUSION_API_KEY`).
+
+| Control | Count | MCP id | Skill | Topics configured / total |
+|---------|------:|--------|-------|---------------------------|
+| `SfAIAssistView` | 1 | `aiassistview` | `syncfusion-blazor-ai-assistview` | 4/12 |
+| `SfAccordion` | 3 | `accordion` | `syncfusion-blazor-accordion` | 2/7 |
+| `SfButton` | 56 | `button` | `syncfusion-blazor-buttons` | 3/3 |
+| `SfCard` | 12 | `card` | `syncfusion-blazor-card` | 4/6 |
+| `SfCheckBox` | 2 | `checkbox` | `syncfusion-blazor-buttons` | 0/3 |
+| `SfContextMenu` | 1 | `contextmenu` | `syncfusion-blazor-context-menu` | 4/8 |
+| `SfDataForm` | 4 | `dataform` | `syncfusion-blazor-data-form` | 3/9 |
+| `SfDatePicker` | 2 | `datepicker` | `syncfusion-blazor-calendars` | 2/10 |
+| `SfDialog` | 6 | `dialog` | `syncfusion-blazor-popups` | 8/8 |
+| `SfDropDownList` | 5 | `dropdownlist` | `syncfusion-blazor-dropdowns` | 5/10 |
+| `SfGrid` | 8 | `datagrid` | `syncfusion-blazor-datagrid` | 22/48 |
+| `SfPdfViewer2` | 1 | `pdfviewer` | `syncfusion-blazor-pdf-viewer` | 3/65 |
+| `SfRichTextEditor` | 1 | `richtexteditor` | `syncfusion-blazor-rich-text-editor` | 1/16 |
+| `SfSchedule` | 1 | `scheduler` | `syncfusion-blazor-scheduler` | 6/27 |
+| `SfSpeechToText` | 1 | `speechtotext` | `syncfusion-blazor-speech-to-text` | 4/9 |
+| `SfSplitter` | 1 | `splitter` | `syncfusion-blazor-splitter` | 4/9 |
+| `SfTab` | 1 | `tabs` | `syncfusion-blazor-tabs` | 5/9 |
+| `SfTextBox` | 14 | `textbox` | `syncfusion-blazor-inputs` | 3/8 |
+| `SfTooltip` | 2 | `tooltip` | `syncfusion-blazor-popups` | 2/8 |
+| `SfTreeView` | 1 | `treeview` | `syncfusion-blazor-treeview` | 4/11 |
+| `SfUploader` | 2 | `fileupload` | `syncfusion-blazor-inputs` | 10/10 |
+
+### `SfAIAssistView` (1×)
+- MCP check: `sf_blazor_component components=["aiassistview"] query="Validate TIKR SfAIAssistView markup against documented properties/events/child tags"`
+- Attrs seen: `EnableStreaming, Height, ID, Prompt, PromptPlaceholder, PromptRequested, ResponseStopped, Width, ref`
+- Child tags: `CardContent, CardHeader, SfButton, SfCard`
+- Sample locations: `src/TIKR.Web/Components/Pages/Assistant.razor:33`
+
+| Documented configuration | Status |
+|--------------------------|--------|
+| `getting-started` | configured |
+| `prompt-configuration` | configured |
+| `prompt-suggestions` | configured |
+| `streaming` | configured |
+| `advanced-features` | documented-available |
+| `ai-service-integration` | documented-available |
+| `attachments` | documented-available |
+| `customization-styling` | documented-available |
+| `methods-api` | documented-available |
+| `multi-view-support` | documented-available |
+| `templates` | documented-available |
+| `toolbars` | documented-available |
+
+### `SfAccordion` (3×)
+- MCP check: `sf_blazor_component components=["accordion"] query="Validate TIKR SfAccordion markup against documented properties/events/child tags"`
+- Attrs seen: `CssClass`
+- Child tags: `AccordionItem, ChildContent, ContentTemplate, HeaderTemplate, SfGrid, SfSpeechToText, TabHeader, TabItem`
+- Sample locations: `src/TIKR.Web/Components/Pages/Vault.razor:104`, `src/TIKR.Web/Components/Pages/Vault.razor:155`, `src/TIKR.Web/Components/Pages/Vault.razor:204`
+
+| Documented configuration | Status |
+|--------------------------|--------|
+| `content-rendering` | configured |
+| `getting-started` | configured |
+| `accessibility-animations` | documented-available |
+| `customization-styling` | documented-available |
+| `data-binding-events` | documented-available |
+| `expand-modes` | documented-available |
+| `how-to-scenarios` | documented-available |
+
+### `SfButton` (56×)
+- MCP check: `sf_blazor_component components=["button"] query="Validate TIKR SfButton markup against documented properties/events/child tags"`
+- Attrs seen: `Content, CssClass, Disabled, IconCss, IsPrimary, OnClick, Type, label`
+- Child tags: `AccordionItem, AiSuggestionBanner, CardContent, CardHeader, ChildContent, ConfirmDeleteDialog, Content, ContentTemp, ContentTemplate, DataAnnotationsValidator, DialogTemplates, EditForm, EmptyRecordTemplate, FormItem, FormItems, GridColumn, GridColumns, GridEvents, GridSelectionSettings, GridTemplates`
+- Sample locations: `src/TIKR.Web/Components/Shared/PageHelp.razor:5`, `src/TIKR.Web/Components/Shared/PageHelp.razor:14`, `src/TIKR.Web/Components/Shared/PageTourButton.razor:4`, `src/TIKR.Web/Components/Shared/ConfirmDeleteDialog.razor:8`, `src/TIKR.Web/Components/Shared/ConfirmDeleteDialog.razor:9`, `src/TIKR.Web/Components/Pages/Settings.razor:34`
+
+| Documented configuration | Status |
+|--------------------------|--------|
+| `button-advanced-features` | configured |
+| `button-features` | configured |
+| `button-styling` | configured |
+
+### `SfCard` (12×)
+- MCP check: `sf_blazor_component components=["card"] query="Validate TIKR SfCard markup against documented properties/events/child tags"`
+- Attrs seen: `CssClass`
+- Child tags: `AuditLog, CardContent, CardHeader, DashboardPriority, DataAnnotationsValidator, EditForm, FormItem, FormItems, SfAIAssistView, SfButton, SfCheckBox, SfDataForm, SfTextBox, Template, TikrThemeSelector, TourAnchor, ValidationSummary`
+- Sample locations: `src/TIKR.Web/Components/Pages/Settings.razor:25`, `src/TIKR.Web/Components/Pages/Settings.razor:47`, `src/TIKR.Web/Components/Pages/Settings.razor:64`, `src/TIKR.Web/Components/Pages/Settings.razor:81`, `src/TIKR.Web/Components/Pages/Settings.razor:93`, `src/TIKR.Web/Components/Pages/Settings.razor:110`
+
+| Documented configuration | Status |
+|--------------------------|--------|
+| `action-buttons-and-footers` | configured |
+| `building-card-structure` | configured |
+| `card-layouts-and-orientation` | configured |
+| `getting-started` | configured |
+| `api-reference` | documented-available |
+| `styling-and-customization` | documented-available |
+
+### `SfCheckBox` (2×)
+- MCP check: `sf_blazor_component components=["checkbox"] query="Validate TIKR SfCheckBox markup against documented properties/events/child tags"`
+- Attrs seen: `Checked, Checked:after, Label`
+- Child tags: `CardContent, CardHeader, Content, DialogTemplates, SfButton, SfCard, SfDatePicker, SfDialog, SfTextBox`
+- Sample locations: `src/TIKR.Web/Components/Pages/Settings.razor:41`, `src/TIKR.Web/Components/Pages/Requirements.razor:217`
+
+| Documented configuration | Status |
+|--------------------------|--------|
+| `checkbox-advanced-features` | documented-available |
+| `checkbox-features` | documented-available |
+| `checkbox-styling` | documented-available |
+
+### `SfContextMenu` (1×)
+- MCP check: `sf_blazor_component components=["contextmenu"] query="Validate TIKR SfContextMenu markup against documented properties/events/child tags"`
+- Attrs seen: `CssClass, TValue, Target`
+- Child tags: `ConfirmDeleteDialog, DocumentDto, Guid, MenuEvents, MenuItem, MenuItems`
+- Sample locations: `src/TIKR.Web/Components/Pages/Documents.razor:254`
+
+| Documented configuration | Status |
+|--------------------------|--------|
+| `data-binding` | configured |
+| `events-and-interactions` | configured |
+| `getting-started` | configured |
+| `menu-item-management` | configured |
+| `advanced-features` | documented-available |
+| `customization-and-nesting` | documented-available |
+| `icons-and-navigation` | documented-available |
+| `styling-and-appearance` | documented-available |
+
+### `SfDataForm` (4×)
+- MCP check: `sf_blazor_component components=["dataform"] query="Validate TIKR SfDataForm markup against documented properties/events/child tags"`
+- Attrs seen: `ColumnCount, Model, Width`
+- Child tags: `FormItem, FormItems, SfButton, SfDatePicker, SfDropDownList, SfTextBox, Template`
+- Sample locations: `src/TIKR.Web/Components/Pages/Account.razor:30`, `src/TIKR.Web/Components/Pages/Requirements.razor:183`, `src/TIKR.Web/Components/Pages/Login.razor:26`, `src/TIKR.Web/Components/Pages/Users.razor:57`
+
+| Documented configuration | Status |
+|--------------------------|--------|
+| `form-items` | configured |
+| `getting-started` | configured |
+| `templates` | configured |
+| `autogeneration` | documented-available |
+| `data-binding` | documented-available |
+| `events` | documented-available |
+| `layout-customization` | documented-available |
+| `localization` | documented-available |
+| `validation` | documented-available |
+
+### `SfDatePicker` (2×)
+- MCP check: `sf_blazor_component components=["datepicker"] query="Validate TIKR SfDatePicker markup against documented properties/events/child tags"`
+- Attrs seen: `Format, Placeholder, TValue, Value`
+- Child tags: `FooterTemplate, FormItem, SfButton, SfDropDownList, SfTextBox, Template`
+- Sample locations: `src/TIKR.Web/Components/Pages/Requirements.razor:193`, `src/TIKR.Web/Components/Pages/Requirements.razor:237`
+
+| Documented configuration | Status |
+|--------------------------|--------|
+| `datepicker-data-binding` | configured |
+| `datepicker-getting-started` | configured |
+| `datepicker-accessibility` | documented-available |
+| `datepicker-advanced-features` | documented-available |
+| `datepicker-date-formats-and-input` | documented-available |
+| `datepicker-date-range-and-constraints` | documented-available |
+| `datepicker-events` | documented-available |
+| `datepicker-server-vs-webassembly` | documented-available |
+| `datepicker-styling-and-appearance` | documented-available |
+| `datepicker-troubleshooting` | documented-available |
+
+### `SfDialog` (6×)
+- MCP check: `sf_blazor_component components=["dialog"] query="Validate TIKR SfDialog markup against documented properties/events/child tags"`
+- Attrs seen: `CssClass, Header, IsModal, ShowCloseIcon, Visible, Width`
+- Child tags: `Content, DataAnnotationsValidator, DialogTemplates, EditForm, FooterTemplate, FormItem, FormItems, SfButton, SfDataForm, SfDatePicker, SfDropDownList, SfTextBox, Template, TikrKeyboardShortcuts, ValidationSummary`
+- Sample locations: `src/TIKR.Web/Components/Shared/ClerkUserGuideDialog.razor:4`, `src/TIKR.Web/Components/Shared/TikrKeyboardShortcuts.razor:5`, `src/TIKR.Web/Components/Shared/ConfirmDeleteDialog.razor:1`, `src/TIKR.Web/Components/Pages/Requirements.razor:177`, `src/TIKR.Web/Components/Pages/Requirements.razor:232`, `src/TIKR.Web/Components/Pages/Users.razor:51`
+
+| Documented configuration | Status |
+|--------------------------|--------|
+| `dialog-advanced-customization` | configured |
+| `dialog-behavior` | configured |
+| `dialog-buttons` | configured |
+| `dialog-events` | configured |
+| `dialog-getting-started` | configured |
+| `dialog-methods` | configured |
+| `dialog-positioning-visibility` | configured |
+| `dialog-templates` | configured |
+
+### `SfDropDownList` (5×)
+- MCP check: `sf_blazor_component components=["dropdownlist"] query="Validate TIKR SfDropDownList markup against documented properties/events/child tags"`
+- Attrs seen: `DataSource, Placeholder, TItem, TValue, Value, ValueChange`
+- Child tags: `AiSuggestionBanner, Content, DialogTemplates, FormItem, SfButton, SfCheckBox, SfDialog, Template, UserSummaryDto`
+- Sample locations: `src/TIKR.Web/Components/Pages/Requirements.razor:58`, `src/TIKR.Web/Components/Pages/Requirements.razor:64`, `src/TIKR.Web/Components/Pages/Requirements.razor:201`, `src/TIKR.Web/Components/Pages/Requirements.razor:208`, `src/TIKR.Web/Components/Pages/Users.razor:68`
+
+| Documented configuration | Status |
+|--------------------------|--------|
+| `dropdown-list-data-binding` | configured |
+| `dropdown-list-form-validation` | configured |
+| `dropdown-list-getting-started` | configured |
+| `dropdown-list-selection-and-value-binding` | configured |
+| `dropdown-list-templates-and-rendering` | configured |
+| `dropdown-list-accessibility` | documented-available |
+| `dropdown-list-advanced-features` | documented-available |
+| `dropdown-list-customization-and-styling` | documented-available |
+| `dropdown-list-filtering-and-searching` | documented-available |
+| `dropdown-list-localization-and-rtl` | documented-available |
+
+### `SfGrid` (8×)
+- MCP check: `sf_blazor_component components=["datagrid"] query="Validate TIKR SfGrid markup against documented properties/events/child tags"`
+- Attrs seen: `AllowFiltering, AllowPaging, AllowSelection, AllowSorting, CssClass, DataSource, Height, PageSize, TValue, ref`
+- Child tags: `CalendarEvent, Content, DialogTemplates, DocumentDto, EditForm, EmptyRecordTemplate, GridCol, GridColumn, GridColumns, GridEvents, GridSelectionSettings, GridTemplates, KnowledgeEntryDto, RequirementDto, SfButto, SfButton, SfDialog, Template, VaultVoiceNote`
+- Sample locations: `src/TIKR.Web/Components/Pages/Calendar.razor:65`, `src/TIKR.Web/Components/Pages/Documents.razor:121`, `src/TIKR.Web/Components/Pages/Requirements.razor:133`, `src/TIKR.Web/Components/Pages/Users.razor:25`, `src/TIKR.Web/Components/Pages/Vault.razor:79`, `src/TIKR.Web/Components/Pages/Vault.razor:131`
+
+| Documented configuration | Status |
+|--------------------------|--------|
+| `column-chooser` | configured |
+| `column-headers` | configured |
+| `column-menu` | configured |
+| `column-rendering` | configured |
+| `column-reorder` | configured |
+| `column-resizing` | configured |
+| `column-spanning` | configured |
+| `column-template` | configured |
+| `column-validation` | configured |
+| `columns` | configured |
+| `data-binding` | configured |
+| `data-binding-advanced` | configured |
+| `events` | configured |
+| `filtering` | configured |
+| `foreignKey-column` | configured |
+| `frozen-column` | configured |
+| `getting-started` | configured |
+| `paging` | configured |
+| `selection` | configured |
+| `sorting` | configured |
+| `templates-interactive` | configured |
+| `templates-structural` | configured |
+| `adaptive-layout` | documented-available |
+| `aggregates` | documented-available |
+| `cell` | documented-available |
+| `clipboard` | documented-available |
+| `context-menu` | documented-available |
+| `custom-adaptor` | documented-available |
+| `editing` | documented-available |
+| `editing-patterns` | documented-available |
+| `editing-validation` | documented-available |
+| `excel-export` | documented-available |
+| `getting-started-app-types` | documented-available |
+| `grouping` | documented-available |
+| `infinite-scrolling` | documented-available |
+| `odatav4-adaptor` | documented-available |
+| `pdf-export` | documented-available |
+| `performance` | documented-available |
+| `print` | documented-available |
+| `row-features` | documented-available |
+| `scrolling` | documented-available |
+| `searching` | documented-available |
+| `state-management` | documented-available |
+| `style-and-appearance` | documented-available |
+| `toolbar` | documented-available |
+| `url-adaptor` | documented-available |
+| `virtual-scrolling` | documented-available |
+| `web-api-adaptor` | documented-available |
+
+### `SfPdfViewer2` (1×)
+- MCP check: `sf_blazor_component components=["pdfviewer"] query="Validate TIKR SfPdfViewer2 markup against documented properties/events/child tags"`
+- Attrs seen: `DocumentPath, EnableDownload, EnablePrint, Height, Width`
+- Sample locations: `src/TIKR.Web/Components/Pages/Documents.razor:221`
+
+| Documented configuration | Status |
+|--------------------------|--------|
+| `document-properties` | configured |
+| `getting-started` | configured |
+| `print` | configured |
+| `annotation-enum-properties` | documented-available |
+| `annotation-events` | documented-available |
+| `annotation-general-enum-properties` | documented-available |
+| `annotation-methods` | documented-available |
+| `annotation-properties` | documented-available |
+| `annotation-selector-settings` | documented-available |
+| `annotation-settings` | documented-available |
+| `annotation-settings-enum-properties` | documented-available |
+| `area-annotation-settings` | documented-available |
+| `arrow-annotation-settings` | documented-available |
+| `azure-container-deployment` | documented-available |
+| `circle-annotation-settings` | documented-available |
+| `command-manager` | documented-available |
+| `command-panel` | documented-available |
+| `contextmenu-settings` | documented-available |
+| `custom-stamp-annotation-settings` | documented-available |
+| `distance-annotation-settings` | documented-available |
+| `file-save-properties` | documented-available |
+| `form-designer-events` | documented-available |
+| `form-field-properties` | documented-available |
+| `form-field-settings` | documented-available |
+| `form-fields-enum-properties` | documented-available |
+| `free-text-annotation-settings` | documented-available |
+| `general-enum-properties` | documented-available |
+| `handwritten-signature-settings` | documented-available |
+| `highlight-annotation-settings` | documented-available |
+| `ink-annotation-settings` | documented-available |
+| `keyboard-enum-properties` | documented-available |
+| `line-annotation-settings` | documented-available |
+| `magnification` | documented-available |
+| `measurement-annotations-settings` | documented-available |
+| `navigation-methods` | documented-available |
+| `navigation-properties` | documented-available |
+| `navigation-toolbar-settings` | documented-available |
+| `page-organizer` | documented-available |
+| `page-organizer-settings` | documented-available |
+| `pdf-annotation-enum-properties` | documented-available |
+| `pdfviewer-methods` | documented-available |
+| `pdfviewer-properties` | documented-available |
+| `perimeter-annotation-settings` | documented-available |
+| `polygon-annotation-settings` | documented-available |
+| `programmatical-annotation-methods` | documented-available |
+| `programmatical-form-field-methods` | documented-available |
+| `radius-annotation-settings` | documented-available |
+| `rectangle-annotation-settings` | documented-available |
+| `redaction-settings` | documented-available |
+| `signature-annotation-events` | documented-available |
+| `squiggly-annotation-settings` | documented-available |
+| `stamp-annotation-settings` | documented-available |
+| `stickynotes-annotation-settings` | documented-available |
+| `strikethrough-annotation-settings` | documented-available |
+| `text-search` | documented-available |
+| `text-selection-and-extraction` | documented-available |
+| `thumbnail-bookmark` | documented-available |
+| `tile-rendering` | documented-available |
+| `toolbar-enum-properties` | documented-available |
+| `toolbar-methods` | documented-available |
+| … | +5 more topics in skill catalog |
+
+### `SfRichTextEditor` (1×)
+- MCP check: `sf_blazor_component components=["richtexteditor"] query="Validate TIKR SfRichTextEditor markup against documented properties/events/child tags"`
+- Attrs seen: `Height, Value`
+- Child tags: `ConfirmDeleteDialog, KnowledgeEntryDto, SfButton, VaultVoiceNote`
+- Sample locations: `src/TIKR.Web/Components/Pages/Vault.razor:281`
+
+| Documented configuration | Status |
+|--------------------------|--------|
+| `getting-started` | configured |
+| `accessibility-globalization` | documented-available |
+| `built-in-tools` | documented-available |
+| `custom-tools` | documented-available |
+| `data-binding` | documented-available |
+| `editor-modes` | documented-available |
+| `events` | documented-available |
+| `images-and-media` | documented-available |
+| `import-export` | documented-available |
+| `inline-mode` | documented-available |
+| `methods` | documented-available |
+| `paste-and-cleanup` | documented-available |
+| `properties` | documented-available |
+| `tables` | documented-available |
+| `text-formatting` | documented-available |
+| `toolbar` | documented-available |
+
+### `SfSchedule` (1×)
+- MCP check: `sf_blazor_component components=["scheduler"] query="Validate TIKR SfSchedule markup against documented properties/events/child tags"`
+- Attrs seen: `Height, Readonly, TValue`
+- Child tags: `FieldDescription, FieldEndTime, FieldStartTime, FieldSubject, GridColumn, GridColumns, ScheduleEventSettings, ScheduleField, ScheduleView, ScheduleViews, SfGrid`
+- Sample locations: `src/TIKR.Web/Components/Pages/Calendar.razor:45`
+
+| Documented configuration | Status |
+|--------------------------|--------|
+| `data-binding` | configured |
+| `events` | configured |
+| `getting-started` | configured |
+| `recurring-events` | configured |
+| `row-auto-height` | configured |
+| `views` | configured |
+| `appointment-customization` | documented-available |
+| `appointment-drag-and-drop` | documented-available |
+| `appointment-resizing` | documented-available |
+| `appointments` | documented-available |
+| `cell-customization` | documented-available |
+| `clipboard` | documented-available |
+| `crud-actions` | documented-available |
+| `dimensions` | documented-available |
+| `editor-template` | documented-available |
+| `exporting` | documented-available |
+| `header-bar` | documented-available |
+| `header-rows` | documented-available |
+| `localization` | documented-available |
+| `resources` | documented-available |
+| `scheduler-styling` | documented-available |
+| `state-persistence` | documented-available |
+| `timescale` | documented-available |
+| `timezone` | documented-available |
+| `virtual-scrolling` | documented-available |
+| `webassembly-performance` | documented-available |
+| `working-hours` | documented-available |
+
+### `SfSpeechToText` (1×)
+- MCP check: `sf_blazor_component components=["speechtotext"] query="Validate TIKR SfSpeechToText markup against documented properties/events/child tags"`
+- Attrs seen: `AllowInterimResults, ButtonSettings, Language, StopStateText, Transcript`
+- Child tags: `GridEvents, GridSelectionSettings, SfButton, SfGrid, SfTextBox, VaultVoiceNote`
+- Sample locations: `src/TIKR.Web/Components/Pages/Vault.razor:229`
+
+| Documented configuration | Status |
+|--------------------------|--------|
+| `button-customization` | configured |
+| `getting-started` | configured |
+| `interim-results-and-options` | configured |
+| `transcript-and-language` | configured |
+| `browser-support` | documented-available |
+| `error-handling` | documented-available |
+| `listening-states` | documented-available |
+| `methods` | documented-available |
+| `tooltip-configuration` | documented-available |
+
+### `SfSplitter` (1×)
+- MCP check: `sf_blazor_component components=["splitter"] query="Validate TIKR SfSplitter markup against documented properties/events/child tags"`
+- Attrs seen: `Height, SeparatorSize, Width`
+- Child tags: `GridSelectionSettings, SfGrid, SfTreeView, SplitterPane, SplitterPanes, TreeViewEvents, TreeViewFieldsSettings`
+- Sample locations: `src/TIKR.Web/Components/Pages/Documents.razor:107`
+
+| Documented configuration | Status |
+|--------------------------|--------|
+| `events-and-interactions` | configured |
+| `getting-started` | configured |
+| `pane-configuration` | configured |
+| `split-panes` | configured |
+| `advanced-scenarios` | documented-available |
+| `api-reference` | documented-available |
+| `resizing-and-expand-collapse` | documented-available |
+| `state-management` | documented-available |
+| `styling-and-theming` | documented-available |
+
+### `SfTab` (1×)
+- MCP check: `sf_blazor_component components=["tabs"] query="Validate TIKR SfTab markup against documented properties/events/child tags"`
+- Attrs seen: `CssClass`
+- Child tags: `ChildContent, ContentTemplate, EmptyRecordTemplate, GridC, GridColumns, GridEvents, GridSelectionSettings, GridTemplates, KnowledgeEntryDto, SfGrid, TabHeader, TabItem, TabItems`
+- Sample locations: `src/TIKR.Web/Components/Pages/Vault.razor:69`
+
+| Documented configuration | Status |
+|--------------------------|--------|
+| `content-render-modes` | configured |
+| `getting-started` | configured |
+| `orientation-and-header-placement` | configured |
+| `tab-item-management` | configured |
+| `tab-selection-and-navigation` | configured |
+| `accessibility-and-localization` | documented-available |
+| `advanced-features-and-customization` | documented-available |
+| `animations` | documented-available |
+| `styling-and-theming` | documented-available |
+
+### `SfTextBox` (14×)
+- MCP check: `sf_blazor_component components=["textbox"] query="Validate TIKR SfTextBox markup against documented properties/events/child tags"`
+- Attrs seen: `CssClass, Input, Multiline, Placeholder, Type, Value, label`
+- Child tags: `ConfirmDeleteDialog, EmptyRecordTemplate, FooterTemplate, FormItem, GridColumn, GridColumns, GridEvents, GridSelectionSettings, GridTemplates, RequirementDto, SfButton, SfDatePicker, SfDropDownList, SfGrid, Template, UserSummaryDto, VaultVoiceNote`
+- Sample locations: `src/TIKR.Web/Components/Shared/ClerkUserGuideDialog.razor:8`, `src/TIKR.Web/Components/Pages/Documents.razor:72`, `src/TIKR.Web/Components/Pages/Account.razor:34`, `src/TIKR.Web/Components/Pages/Account.razor:39`, `src/TIKR.Web/Components/Pages/Account.razor:44`, `src/TIKR.Web/Components/Pages/Requirements.razor:54`
+
+| Documented configuration | Status |
+|--------------------------|--------|
+| `textbox-events-handling` | configured |
+| `textbox-getting-started` | configured |
+| `textbox-input-configuration` | configured |
+| `textbox-accessibility-troubleshooting` | documented-available |
+| `textbox-advanced-features` | documented-available |
+| `textbox-data-binding-validation` | documented-available |
+| `textbox-styling-appearance` | documented-available |
+| `textbox-types-and-sizing` | documented-available |
+
+### `SfTooltip` (2×)
+- MCP check: `sf_blazor_component components=["tooltip"] query="Validate TIKR SfTooltip markup against documented properties/events/child tags"`
+- Attrs seen: `Content, Position`
+- Child tags: `SfButton`
+- Sample locations: `src/TIKR.Web/Components/Shared/PageHelp.razor:4`, `src/TIKR.Web/Components/Shared/PageHelp.razor:13`
+
+| Documented configuration | Status |
+|--------------------------|--------|
+| `tooltip-content` | configured |
+| `tooltip-getting-started` | configured |
+| `tooltip-accessibility` | documented-available |
+| `tooltip-customization-and-styling` | documented-available |
+| `tooltip-dimensions` | documented-available |
+| `tooltip-open-modes` | documented-available |
+| `tooltip-positioning` | documented-available |
+| `tooltip-target-configuration` | documented-available |
+
+### `SfTreeView` (1×)
+- MCP check: `sf_blazor_component components=["treeview"] query="Validate TIKR SfTreeView markup against documented properties/events/child tags"`
+- Attrs seen: `AllowMultiSelection, CssClass, TValue`
+- Child tags: `Document, GridEvents, GridSelectionSettings, SfGrid, SplitterPane, TreeViewEvents, TreeViewFieldsSettings`
+- Sample locations: `src/TIKR.Web/Components/Pages/Documents.razor:112`
+
+| Documented configuration | Status |
+|--------------------------|--------|
+| `data-binding` | configured |
+| `events-handling` | configured |
+| `getting-started` | configured |
+| `node-selection` | configured |
+| `advanced-features` | documented-available |
+| `authorization-authentication` | documented-available |
+| `checkbox-features` | documented-available |
+| `customization-styling` | documented-available |
+| `expand-collapse-actions` | documented-available |
+| `navigation-patterns` | documented-available |
+| `node-editing` | documented-available |
+
+### `SfUploader` (2×)
+- MCP check: `sf_blazor_component components=["fileupload"] query="Validate TIKR SfUploader markup against documented properties/events/child tags"`
+- Attrs seen: `AllowedExtensions, AutoUpload, MaxFileCount, MaxFileSize, Multiple`
+- Child tags: `ActionsContent, AiSuggestionBanner, ChildContent, SfButton, SfDropDownList, SfTextBox, UploaderEvents`
+- Sample locations: `src/TIKR.Web/Components/Pages/Documents.razor:28`, `src/TIKR.Web/Components/Pages/Requirements.razor:43`
+
+| Documented configuration | Status |
+|--------------------------|--------|
+| `file-upload-advanced-features` | configured |
+| `file-upload-configuration` | configured |
+| `file-upload-customization` | configured |
+| `file-upload-events-and-handlers` | configured |
+| `file-upload-file-source-options` | configured |
+| `file-upload-file-upload-methods` | configured |
+| `file-upload-getting-started` | configured |
+| `file-upload-localization-accessibility` | configured |
+| `file-upload-platform-specific-setup` | configured |
+| `file-upload-validation` | configured |
+
 ## Tracked Functions (lightweight discovery)
 
 | Category | Function | Location | Proof of Function | Minimal Impl Signal |
 |----------|----------|----------|-------------------|---------------------|
-| AI Tool / Orchestrator | IDocumentAgentExtractionBackend.AgentExtractionResult | src/TIKR.Shared/Interfaces/IDocumentAgentExtractionBackend.cs:2 | tests/TIKR.Infrastructure.Tests/Services/DocumentAgentServic... | stub / thin |
+| AI Tool / Orchestrator | IDocumentAgentExtractionBackend.AgentExtractionResult | src/TIKR.Shared/Interfaces/IDocumentAgentExtractionBackend.cs:2 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceTest... | stub / thin |
 | AI Tool / Orchestrator | AgentScanPdfFixture.CreateMinimalClerkReportPdf | src/TIKR.SyncfusionDocuments/AgentScanPdfFixture.cs:14 | tests/TIKR.Api.Tests/Endpoints/DocumentAgentSyncfusionLicens... | has logic |
 | AI Tool / Orchestrator | AgentScanPdfFixture.EnsureMinimalClerkReportPdfAsync | src/TIKR.SyncfusionDocuments/AgentScanPdfFixture.cs:30 | tests/TIKR.Api.Tests/Endpoints/DocumentAgentSyncfusionLicens... | has logic |
 | API Endpoint | AuthEndpoints.MapAuthEndpoints | src/TIKR.Api/AuthEndpoints.cs:11 | tests/TIKR.Api.Tests/Endpoints/AuthEndpointTests.cs | has logic |
@@ -92,6 +675,7 @@ SfAIAssistView, SfAccordion, SfButton, SfCard, SfCheckBox, SfContextMenu, SfData
 | API Endpoint | TikrApiClient.GenerateMeetingMinutesDocxAsync | src/TIKR.Web/Services/TikrApiClient.cs:219 | tests/TIKR.SyncfusionDocuments.Tests/SyncfusionDocumentGener... | small body |
 | API Endpoint | TikrApiClient.GetAbsoluteDocumentContentUri | src/TIKR.Web/Services/TikrApiClient.cs:101 | tests/TIKR.Web.Tests/Components/VaultPageTests.cs, tests/TIK... | has logic |
 | API Endpoint | TikrApiClient.GetAiStatusAsync | src/TIKR.Web/Services/TikrApiClient.cs:33 | tests/TIKR.Web.Tests/Components/VaultPageTests.cs, tests/TIK... | small body |
+| API Endpoint | TikrApiClient.GetClerkTourStateAsync | src/TIKR.Web/Services/TikrApiClient.cs:325 | tests/TIKR.Web.Tests/Components/VaultPageTests.cs, tests/TIK... | has logic |
 | API Endpoint | TikrApiClient.GetDashboardPrioritiesAsync | src/TIKR.Web/Services/TikrApiClient.cs:10 | tests/TIKR.Web.Tests/Components/VaultPageTests.cs, tests/TIK... | small body |
 | API Endpoint | TikrApiClient.GetDocumentContentAsync | src/TIKR.Web/Services/TikrApiClient.cs:107 | tests/TIKR.Web.Tests/Components/VaultPageTests.cs, tests/TIK... | has logic |
 | API Endpoint | TikrApiClient.GetDocumentContentUrl | src/TIKR.Web/Services/TikrApiClient.cs:99 | tests/TIKR.Web.Tests/Components/VaultPageTests.cs, tests/TIK... | has logic |
@@ -109,6 +693,7 @@ SfAIAssistView, SfAccordion, SfButton, SfCard, SfCheckBox, SfContextMenu, SfData
 | API Endpoint | TikrApiClient.SemanticSearchDocumentsAsync | src/TIKR.Web/Services/TikrApiClient.cs:115 | tests/TIKR.Web.Tests/Components/VaultPageTests.cs, tests/TIK... | has logic |
 | API Endpoint | TikrApiClient.SemanticSearchKnowledgeAsync | src/TIKR.Web/Services/TikrApiClient.cs:131 | tests/TIKR.Web.Tests/Components/VaultPageTests.cs, tests/TIK... | has logic |
 | API Endpoint | TikrApiClient.TagDocumentAsync | src/TIKR.Web/Services/TikrApiClient.cs:48 | tests/TIKR.Web.Tests/Components/VaultPageTests.cs, tests/TIK... | has logic |
+| API Endpoint | TikrApiClient.UpdateClerkTourStateAsync | src/TIKR.Web/Services/TikrApiClient.cs:337 | tests/TIKR.Web.Tests/Components/VaultPageTests.cs, tests/TIK... | has logic |
 | API Endpoint | TikrApiClient.UpdateKnowledgeEntryAsync | src/TIKR.Web/Services/TikrApiClient.cs:81 | tests/TIKR.Web.Tests/Components/VaultPageTests.cs, tests/TIK... | has logic |
 | API Endpoint | TikrApiClient.UpdateRequirementAsync | src/TIKR.Web/Services/TikrApiClient.cs:18 | tests/TIKR.Web.Tests/Components/VaultPageTests.cs, tests/TIK... | has logic |
 | API Endpoint | TikrApiClient.UpdateUserAsync | src/TIKR.Web/Services/TikrApiClient.cs:161 | tests/TIKR.Web.Tests/Components/VaultPageTests.cs, tests/TIK... | has logic |
@@ -121,15 +706,16 @@ SfAIAssistView, SfAccordion, SfButton, SfCard, SfCheckBox, SfContextMenu, SfData
 | API Endpoint | AiSemanticEndpointTests.SemanticSearch_ReturnsHitsFromStub | tests/TIKR.Api.Tests/Endpoints/AiSemanticEndpointTests.cs:19 | tests/TIKR.Api.Tests/Endpoints/AiSemanticEndpointTests.cs | has logic |
 | API Endpoint | AiSemanticEndpointTests.TagDocument_ReturnsOkFromStub | tests/TIKR.Api.Tests/Endpoints/AiSemanticEndpointTests.cs:75 | tests/TIKR.Api.Tests/Endpoints/AiSemanticEndpointTests.cs | stub / thin |
 | API Endpoint | AuditEndpointTests.GetAudit_ReturnsNewestFirstWithLimit | tests/TIKR.Api.Tests/Endpoints/AuditEndpointTests.cs:18 | tests/TIKR.Api.Tests/Endpoints/AuditEndpointTests.cs | has logic |
-| API Endpoint | AuthEndpointTests.Admin_CanCreateClerkUser | tests/TIKR.Api.Tests/Endpoints/AuthEndpointTests.cs:69 | tests/TIKR.Api.Tests/Endpoints/AuthEndpointTests.cs | has logic |
+| API Endpoint | AuthEndpointTests.Admin_CanCreateClerkUser | tests/TIKR.Api.Tests/Endpoints/AuthEndpointTests.cs:88 | tests/TIKR.Api.Tests/Endpoints/AuthEndpointTests.cs | has logic |
 | API Endpoint | AuthEndpointTests.Login_WithSeededAdmin_ReturnsToken | tests/TIKR.Api.Tests/Endpoints/AuthEndpointTests.cs:31 | tests/TIKR.Api.Tests/Endpoints/AuthEndpointTests.cs | has logic |
+| API Endpoint | AuthEndpointTests.MeTour_CanReadAndUpdateTourPreferences | tests/TIKR.Api.Tests/Endpoints/AuthEndpointTests.cs:69 | tests/TIKR.Api.Tests/Endpoints/AuthEndpointTests.cs | has logic |
 | API Endpoint | AuthEndpointTests.PostRequirement_WithToken_AuditsUserEmail | tests/TIKR.Api.Tests/Endpoints/AuthEndpointTests.cs:46 | tests/TIKR.Api.Tests/Endpoints/AuthEndpointTests.cs | has logic |
 | API Endpoint | AuthEndpointTests.Requirements_WithoutToken_ReturnsUnauthorized | tests/TIKR.Api.Tests/Endpoints/AuthEndpointTests.cs:24 | tests/TIKR.Api.Tests/Endpoints/AuthEndpointTests.cs | has logic |
 | API Endpoint | CouncilPacketLicensedTests.GenerateCouncilPacket_WhenLicensed_PersistsPdfAndDocx | tests/TIKR.Api.Tests/Endpoints/CouncilPacketEndpointTests.cs:39 | tests/TIKR.Api.Tests/Endpoints/CouncilPacketEndpointTests.cs | has logic |
 | API Endpoint | CouncilPacketEndpointTests.GenerateCouncilPacket_WithoutLicense_ReturnsServiceUnavailable | tests/TIKR.Api.Tests/Endpoints/CouncilPacketEndpointTests.cs:20 | tests/TIKR.Api.Tests/Endpoints/CouncilPacketEndpointTests.cs | has logic |
 | API Endpoint | DocumentAgentEndpointTests.AgentScan_ExtractsTxtFixture | tests/TIKR.Api.Tests/Endpoints/DocumentAgentEndpointTests.cs:38 | tests/TIKR.Api.Tests/Endpoints/DocumentAgentEndpointTests.cs | small body |
 | API Endpoint | DocumentAgentEndpointTests.AgentScan_ReturnsStubExtractionForUpload | tests/TIKR.Api.Tests/Endpoints/DocumentAgentEndpointTests.cs:22 | tests/TIKR.Api.Tests/Endpoints/DocumentAgentEndpointTests.cs | has logic |
-| API Endpoint | DocumentAgentSyncfusionLicensedTests.AgentScan_ExtractsDocxFixture_WhenLicensed | tests/TIKR.Api.Tests/Endpoints/DocumentAgentSyncfusionLicensedTests.cs:50 | tests/TIKR.Api.Tests/Endpoints/DocumentAgentSyncfusionLicens... | has logic |
+| API Endpoint | DocumentAgentSyncfusionLicensedTests.AgentScan_ExtractsDocxFixture_WhenLicensed | tests/TIKR.Api.Tests/Endpoints/DocumentAgentSyncfusionLicensedTests.cs:58 | tests/TIKR.Api.Tests/Endpoints/DocumentAgentSyncfusionLicens... | has logic |
 | API Endpoint | DocumentAgentSyncfusionLicensedTests.AgentScan_ExtractsPdfFixture_WhenLicensed | tests/TIKR.Api.Tests/Endpoints/DocumentAgentSyncfusionLicensedTests.cs:25 | tests/TIKR.Api.Tests/Endpoints/DocumentAgentSyncfusionLicens... | has logic |
 | API Endpoint | DocumentGenerationEndpointTests.GenerateComplianceReport_WithoutLicense_ReturnsServiceUnavailable | tests/TIKR.Api.Tests/Endpoints/DocumentGenerationEndpointTests.cs:27 | tests/TIKR.Api.Tests/Endpoints/DocumentGenerationEndpointTes... | has logic |
 | API Endpoint | DocumentGenerationEndpointTests.GenerateCouncilAgenda_WithoutLicense_ReturnsServiceUnavailable | tests/TIKR.Api.Tests/Endpoints/DocumentGenerationEndpointTests.cs:17 | tests/TIKR.Api.Tests/Endpoints/DocumentGenerationEndpointTes... | has logic |
@@ -213,7 +799,7 @@ SfAIAssistView, SfAccordion, SfButton, SfCard, SfCheckBox, SfContextMenu, SfData
 | API Endpoint | TikrApiClientTests.UpdateRequirementAsync_SendsPut | tests/TIKR.Web.Tests/Services/TikrApiClientTests.cs:61 | tests/TIKR.Web.Tests/Services/TikrApiClientTests.cs | has logic |
 | API Endpoint | TikrApiClientTests.UpdateUserAsync_DeserializesSuccess | tests/TIKR.Web.Tests/Services/TikrApiClientTests.cs:417 | tests/TIKR.Web.Tests/Services/TikrApiClientTests.cs | small body |
 | API Endpoint | TikrApiClientTests.UploadDocumentAsync_PostsMultipart | tests/TIKR.Web.Tests/Services/TikrApiClientTests.cs:135 | tests/TIKR.Web.Tests/Services/TikrApiClientTests.cs | has logic |
-| Blazor Component Logic | TikrOfflineBanner.Dispose | src/TIKR.Web/Components/Shared/TikrOfflineBanner.razor:17 | tests/TIKR.Web.Tests/Components/AssistantPageTests.cs, tests... | small body |
+| Blazor Component Logic | TikrOfflineBanner.Dispose | src/TIKR.Web/Components/Shared/TikrOfflineBanner.razor:16 | tests/TIKR.Web.Tests/Components/AssistantPageTests.cs, tests... | small body |
 | Core Service | IdentityServiceCollectionExtensions.AddTikrIdentity | src/TIKR.Infrastructure/IdentityServiceCollectionExtensions.cs:19 | tests/TIKR.Infrastructure.Tests/Identity/IdentitySeederTests... | has logic |
 | Core Service | AgentStorageCrypto.Decrypt | src/TIKR.Infrastructure/Services/AgentStorageCrypto.cs:33 | tests/TIKR.Infrastructure.Tests/Services/AgentStorageCryptoT... | has logic |
 | Core Service | AgentStorageCrypto.Encrypt | src/TIKR.Infrastructure/Services/AgentStorageCrypto.cs:14 | tests/TIKR.Infrastructure.Tests/Services/AgentStorageCryptoT... | has logic |
@@ -224,16 +810,17 @@ SfAIAssistView, SfAccordion, SfButton, SfCard, SfCheckBox, SfContextMenu, SfData
 | Core Service | DocumentService.DeleteAsync | src/TIKR.Infrastructure/Services/DocumentService.cs:82 | tests/TIKR.Api.Tests/Endpoints/KnowledgeAndDocumentsEndpoint... | has logic |
 | Core Service | DocumentService.PrepareDocumentUploadAsync | src/TIKR.Infrastructure/Services/DocumentService.cs:39 | tests/TIKR.Api.Tests/Endpoints/KnowledgeAndDocumentsEndpoint... | has logic |
 | Core Service | DocumentService.UploadAsync | src/TIKR.Infrastructure/Services/DocumentService.cs:14 | tests/TIKR.Api.Tests/Endpoints/KnowledgeAndDocumentsEndpoint... | has logic |
+| Core Service | DocumentTagPromptBuilder.Build | src/TIKR.Infrastructure/Services/DocumentTagPromptBuilder.cs:13 | tests/TIKR.Infrastructure.Tests/Services/DocumentTagPromptBu... | small body |
 | Core Service | DocumentTextExtractionService.CanExtract | src/TIKR.Infrastructure/Services/DocumentTextExtractionService.cs:16 | tests/TIKR.Infrastructure.Tests/Services/DocumentTextExtract... | has logic |
 | Core Service | GrokService.CompleteAsync | src/TIKR.Infrastructure/Services/GrokService.cs:15 | tests/TIKR.Infrastructure.Tests/Services/GrokServiceTests.cs... | has logic |
-| Core Service | HybridAiService.AskAdvancedAsync | src/TIKR.Infrastructure/Services/HybridAiService.cs:192 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceTest... | small body |
-| Core Service | HybridAiService.EmbedDocumentAsync | src/TIKR.Infrastructure/Services/HybridAiService.cs:65 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceTest... | small body |
-| Core Service | HybridAiService.EmbedKnowledgeEntryAsync | src/TIKR.Infrastructure/Services/HybridAiService.cs:113 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceTest... | small body |
-| Core Service | HybridAiService.GetDashboardPrioritiesAsync | src/TIKR.Infrastructure/Services/HybridAiService.cs:160 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceTest... | has logic |
-| Core Service | HybridAiService.GetStatusAsync | src/TIKR.Infrastructure/Services/HybridAiService.cs:248 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceTest... | has logic |
-| Core Service | HybridAiService.SemanticSearchDocumentsAsync | src/TIKR.Infrastructure/Services/HybridAiService.cs:81 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceTest... | has logic |
-| Core Service | HybridAiService.SemanticSearchKnowledgeAsync | src/TIKR.Infrastructure/Services/HybridAiService.cs:129 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceTest... | small body |
-| Core Service | HybridAiService.TagDocumentAsync | src/TIKR.Infrastructure/Services/HybridAiService.cs:18 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceTest... | small body |
+| Core Service | HybridAiService.AskAdvancedAsync | src/TIKR.Infrastructure/Services/HybridAiService.cs:244 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceTest... | small body |
+| Core Service | HybridAiService.EmbedDocumentAsync | src/TIKR.Infrastructure/Services/HybridAiService.cs:117 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceTest... | small body |
+| Core Service | HybridAiService.EmbedKnowledgeEntryAsync | src/TIKR.Infrastructure/Services/HybridAiService.cs:165 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceTest... | small body |
+| Core Service | HybridAiService.GetDashboardPrioritiesAsync | src/TIKR.Infrastructure/Services/HybridAiService.cs:212 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceTest... | has logic |
+| Core Service | HybridAiService.GetStatusAsync | src/TIKR.Infrastructure/Services/HybridAiService.cs:300 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceTest... | has logic |
+| Core Service | HybridAiService.SemanticSearchDocumentsAsync | src/TIKR.Infrastructure/Services/HybridAiService.cs:133 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceTest... | has logic |
+| Core Service | HybridAiService.SemanticSearchKnowledgeAsync | src/TIKR.Infrastructure/Services/HybridAiService.cs:181 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceTest... | small body |
+| Core Service | HybridAiService.TagDocumentAsync | src/TIKR.Infrastructure/Services/HybridAiService.cs:22 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceTest... | small body |
 | Core Service | KnowledgeService.CreateAsync | src/TIKR.Infrastructure/Services/KnowledgeService.cs:13 | tests/TIKR.Api.Tests/Endpoints/KnowledgeAndDocumentsEndpoint... | has logic |
 | Core Service | KnowledgeService.DeleteAsync | src/TIKR.Infrastructure/Services/KnowledgeService.cs:62 | tests/TIKR.Api.Tests/Endpoints/KnowledgeAndDocumentsEndpoint... | small body |
 | Core Service | KnowledgeService.UpdateAsync | src/TIKR.Infrastructure/Services/KnowledgeService.cs:42 | tests/TIKR.Api.Tests/Endpoints/KnowledgeAndDocumentsEndpoint... | small body |
@@ -248,6 +835,7 @@ SfAIAssistView, SfAccordion, SfButton, SfCard, SfCheckBox, SfContextMenu, SfData
 | Core Service | OllamaChatClientFactory.CreateChatClient | src/TIKR.Infrastructure/Services/OllamaChatClientFactory.cs:16 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceVaul... | small body |
 | Core Service | OllamaChatClientFactory.CreateEmbeddingGenerator | src/TIKR.Infrastructure/Services/OllamaChatClientFactory.cs:19 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceVaul... | has logic |
 | Core Service | OllamaChatClientFactory.IsAvailableAsync | src/TIKR.Infrastructure/Services/OllamaChatClientFactory.cs:22 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceVaul... | has logic |
+| Core Service | OllamaHttpProbe.CreateClient | src/TIKR.Infrastructure/Services/OllamaHttpProbe.cs:11 | tests/TIKR.Api.Tests/Endpoints/DocumentAgentSyncfusionLicens... | has logic |
 | Core Service | RequirementService.CreateAsync | src/TIKR.Infrastructure/Services/RequirementService.cs:13 | tests/TIKR.Api.Tests/Endpoints/KnowledgeAndDocumentsEndpoint... | has logic |
 | Core Service | RequirementService.DeleteAsync | src/TIKR.Infrastructure/Services/RequirementService.cs:60 | tests/TIKR.Api.Tests/Endpoints/KnowledgeAndDocumentsEndpoint... | small body |
 | Core Service | RequirementService.LinkDocumentAsync | src/TIKR.Infrastructure/Services/RequirementService.cs:73 | tests/TIKR.Api.Tests/Endpoints/RequirementsEndpointTests.cs | small body |
@@ -270,8 +858,25 @@ SfAIAssistView, SfAccordion, SfButton, SfCard, SfCheckBox, SfContextMenu, SfData
 | Core Service | SyncfusionDocumentGenerationService.GenerateMeetingMinutesDocxAsync | src/TIKR.SyncfusionDocuments/SyncfusionDocumentGenerationService.cs:79 | tests/TIKR.SyncfusionDocuments.Tests/SyncfusionDocumentGener... | has logic |
 | Core Service | AuthSessionService.LoginAsync | src/TIKR.Web/Services/AuthSessionService.cs:17 | tests/TIKR.Api.Tests/Endpoints/AuthEndpointTests.cs, tests/T... | small body |
 | Core Service | AuthSessionService.LogoutAsync | src/TIKR.Web/Services/AuthSessionService.cs:43 | tests/TIKR.Web.Tests/Components/LoginPageTests.cs, tests/TIK... | has logic |
+| Core Service | ClerkGuideContent.ClerkGuideSection | src/TIKR.Web/Services/ClerkGuideContent.cs:5 | tests/TIKR.Web.Tests/Services/ClerkGuideContentTests.cs | has logic |
+| Core Service | ClerkGuideContent.Filter | src/TIKR.Web/Services/ClerkGuideContent.cs:41 | tests/TIKR.Web.Tests/Helpers/DocumentLibraryLogicTests.cs, t... | has logic |
+| Core Service | ClerkGuideContent.ParseSections | src/TIKR.Web/Services/ClerkGuideContent.cs:11 | tests/TIKR.Web.Tests/Services/ClerkGuideContentTests.cs | has logic |
+| Core Service | ClerkGuideContent.ToHtml | src/TIKR.Web/Services/ClerkGuideContent.cs:38 | tests/TIKR.Web.Tests/Services/ClerkGuideContentTests.cs | has logic |
 | Core Service | ClerkToastService.ClerkToastMessage | src/TIKR.Web/Services/ClerkToastService.cs:2 | tests/TIKR.Web.Tests/Services/ClerkToastServiceTests.cs | has logic |
 | Core Service | ClerkToastService.Show | src/TIKR.Web/Services/ClerkToastService.cs:10 | tests/TIKR.Web.Tests/Components/VaultPageTests.cs, tests/TIK... | small body |
+| Core Service | ClerkTourService.ClerkTourJsCallbacks | src/TIKR.Web/Services/ClerkTourService.cs:148 | NO PROOF FOUND | has logic |
+| Core Service | ClerkTourService.IsAutoTourDisabledForUiAsync | src/TIKR.Web/Services/ClerkTourService.cs:23 | NO PROOF FOUND | has logic |
+| Core Service | ClerkTourService.MarkCompletedAsync | src/TIKR.Web/Services/ClerkTourService.cs:61 | NO PROOF FOUND | has logic |
+| Core Service | ClerkTourJsCallbacks.NavigateForTourAsync | src/TIKR.Web/Services/ClerkTourService.cs:152 | NO PROOF FOUND | has logic |
+| Core Service | ClerkTourJsCallbacks.OnTourFinishedFromJs | src/TIKR.Web/Services/ClerkTourService.cs:165 | NO PROOF FOUND | small body |
+| Core Service | ClerkTourService.SetAutoTourDisabledAsync | src/TIKR.Web/Services/ClerkTourService.cs:53 | NO PROOF FOUND | has logic |
+| Core Service | ClerkTourService.ShouldAutoStartAsync | src/TIKR.Web/Services/ClerkTourService.cs:25 | NO PROOF FOUND | has logic |
+| Core Service | ClerkTourService.StartFullTourAsync | src/TIKR.Web/Services/ClerkTourService.cs:37 | NO PROOF FOUND | has logic |
+| Core Service | ClerkTourService.StartGlobalTourAsync | src/TIKR.Web/Services/ClerkTourService.cs:34 | NO PROOF FOUND | has logic |
+| Core Service | ClerkTourService.StartPageTourAsync | src/TIKR.Web/Services/ClerkTourService.cs:40 | NO PROOF FOUND | has logic |
+| Core Service | ClerkUserGuideService.GetMarkdownAsync | src/TIKR.Web/Services/ClerkUserGuideService.cs:11 | NO PROOF FOUND | has logic |
+| Core Service | ClerkUserGuideService.GetSectionsAsync | src/TIKR.Web/Services/ClerkUserGuideService.cs:23 | NO PROOF FOUND | has logic |
+| Core Service | ClerkUserGuideService.Open | src/TIKR.Web/Services/ClerkUserGuideService.cs:9 | tests/TIKR.SyncfusionDocuments.Tests/SyncfusionDocumentGener... | has logic |
 | Core Service | ColoradoResourceCatalog.ColoradoResource | src/TIKR.Web/Services/ColoradoResourceCatalog.cs:5 | tests/TIKR.Web.Tests/Components/AssistantPageTests.cs, tests... | small body |
 | Core Service | ColoradoResourceCatalog.LoadFromFile | src/TIKR.Web/Services/ColoradoResourceCatalog.cs:50 | tests/TIKR.Web.Tests/Components/AssistantPageTests.cs, tests... | has logic |
 | Core Service | ColoradoResourceCatalog.ToSystemPromptBlock | src/TIKR.Web/Services/ColoradoResourceCatalog.cs:38 | tests/TIKR.Web.Tests/Components/AssistantPageTests.cs, tests... | has logic |
@@ -295,7 +900,7 @@ SfAIAssistView, SfAccordion, SfButton, SfCard, SfCheckBox, SfContextMenu, SfData
 | Core Service | FakeArchiveGenerator.ConvertWordToPdfAsync | tests/TIKR.Infrastructure.Tests/Services/DocumentAgentServiceTests.cs:104 | tests/TIKR.Infrastructure.Tests/Services/DocumentAgentServic... | stub / thin |
 | Core Service | FakeArchiveGenerator.CreateAgentArchivePdfAsync | tests/TIKR.Infrastructure.Tests/Services/DocumentAgentServiceTests.cs:97 | tests/TIKR.Infrastructure.Tests/Services/DocumentAgentServic... | small body |
 | Core Service | InMemoryFileStorage.DeleteAsync | tests/TIKR.Infrastructure.Tests/Services/DocumentAgentServiceTests.cs:141 | tests/TIKR.Api.Tests/Endpoints/KnowledgeAndDocumentsEndpoint... | small body |
-| Core Service | TrueSyncfusionStubBackend.ExtractAsync | tests/TIKR.Infrastructure.Tests/Services/DocumentAgentServiceTests.cs:116 | tests/TIKR.Infrastructure.Tests/Services/DocumentTextExtract... | small body |
+| Core Service | TrueSyncfusionStubBackend.ExtractAsync | tests/TIKR.Infrastructure.Tests/Services/DocumentAgentServiceTests.cs:116 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceTest... | small body |
 | Core Service | FakeArchiveGenerator.GenerateClerkMemoDocxAsync | tests/TIKR.Infrastructure.Tests/Services/DocumentAgentServiceTests.cs:102 | tests/TIKR.Infrastructure.Tests/Services/DocumentAgentServic... | stub / thin |
 | Core Service | FakeArchiveGenerator.GenerateComplianceReportXlsxAsync | tests/TIKR.Infrastructure.Tests/Services/DocumentAgentServiceTests.cs:103 | tests/TIKR.Infrastructure.Tests/Services/DocumentAgentServic... | stub / thin |
 | Core Service | FakeArchiveGenerator.GenerateCouncilAgendaPdfAsync | tests/TIKR.Infrastructure.Tests/Services/DocumentAgentServiceTests.cs:99 | tests/TIKR.SyncfusionDocuments.Tests/SyncfusionDocumentGener... | stub / thin |
@@ -310,6 +915,13 @@ SfAIAssistView, SfAccordion, SfButton, SfCard, SfCheckBox, SfContextMenu, SfData
 | Core Service | DocumentAgentServiceTests.ProcessUploadAsync_WithTrueSyncfusionBackendAndGenerator_SetsDualStoragePaths | tests/TIKR.Infrastructure.Tests/Services/DocumentAgentServiceTests.cs:71 | tests/TIKR.Infrastructure.Tests/Services/DocumentAgentServic... | small body |
 | Core Service | InMemoryFileStorage.SaveAsync | tests/TIKR.Infrastructure.Tests/Services/DocumentAgentServiceTests.cs:132 | tests/TIKR.Infrastructure.Tests/Services/NasAgentDocumentSto... | has logic |
 | Core Service | DocumentAgentServiceTests.StubInference_MapsFilenameToCategory | tests/TIKR.Infrastructure.Tests/Services/DocumentAgentServiceTests.cs:14 | tests/TIKR.Infrastructure.Tests/Services/DocumentAgentServic... | small body |
+| Core Service | DocumentTagHeuristicsTests.FillGaps_DoesNotOverrideAiFolderOrTags | tests/TIKR.Infrastructure.Tests/Services/DocumentTagHeuristicsTests.cs:24 | tests/TIKR.Infrastructure.Tests/Services/DocumentTagHeuristi... | has logic |
+| Core Service | DocumentTagHeuristicsTests.FillGaps_InfersFolderFromFilename | tests/TIKR.Infrastructure.Tests/Services/DocumentTagHeuristicsTests.cs:16 | tests/TIKR.Infrastructure.Tests/Services/DocumentTagHeuristi... | has logic |
+| Core Service | DocumentTagHeuristicsTests.FillGaps_UsesContentWhenFilenameGeneric | tests/TIKR.Infrastructure.Tests/Services/DocumentTagHeuristicsTests.cs:37 | tests/TIKR.Infrastructure.Tests/Services/DocumentTagHeuristi... | has logic |
+| Core Service | DocumentTagPromptBuilderTests.Build_IncludesFewShotExamples | tests/TIKR.Infrastructure.Tests/Services/DocumentTagPromptBuilderTests.cs:20 | tests/TIKR.Infrastructure.Tests/Services/DocumentTagPromptBu... | has logic |
+| Core Service | DocumentTagPromptBuilderTests.Build_IncludesFileNameAndPreview | tests/TIKR.Infrastructure.Tests/Services/DocumentTagPromptBuilderTests.cs:37 | tests/TIKR.Infrastructure.Tests/Services/DocumentTagPromptBu... | has logic |
+| Core Service | DocumentTagPromptBuilderTests.Build_IncludesFolderVocabulary | tests/TIKR.Infrastructure.Tests/Services/DocumentTagPromptBuilderTests.cs:11 | tests/TIKR.Infrastructure.Tests/Services/DocumentTagPromptBu... | has logic |
+| Core Service | DocumentTagPromptBuilderTests.TaggingTemperature_IsLowForDeterminism | tests/TIKR.Infrastructure.Tests/Services/DocumentTagPromptBuilderTests.cs:46 | tests/TIKR.Infrastructure.Tests/Services/DocumentTagPromptBu... | small body |
 | Core Service | DocumentTextExtractionServiceTests.CanExtract_RecognizesTextExtensions | tests/TIKR.Infrastructure.Tests/Services/DocumentTextExtractionServiceTests.cs:12 | tests/TIKR.Infrastructure.Tests/Services/DocumentTextExtract... | small body |
 | Core Service | DocumentTextExtractionServiceTests.TryExtractAsync_ReturnsNullForPdf | tests/TIKR.Infrastructure.Tests/Services/DocumentTextExtractionServiceTests.cs:24 | tests/TIKR.Infrastructure.Tests/Services/DocumentTextExtract... | small body |
 | Core Service | DocumentTextExtractionServiceTests.TryExtractAsync_ReturnsUtf8TextForTxt | tests/TIKR.Infrastructure.Tests/Services/DocumentTextExtractionServiceTests.cs:16 | tests/TIKR.Infrastructure.Tests/Services/DocumentTextExtract... | has logic |
@@ -317,43 +929,49 @@ SfAIAssistView, SfAccordion, SfButton, SfCard, SfCheckBox, SfContextMenu, SfData
 | Core Service | GrokServiceTests.CompleteAsync_ReturnsNullOnHttpError | tests/TIKR.Infrastructure.Tests/Services/GrokServiceTests.cs:75 | tests/TIKR.Infrastructure.Tests/Services/GrokServiceTests.cs | stub / thin |
 | Core Service | GrokServiceTests.CompleteAsync_ReturnsNullWhenDisabled | tests/TIKR.Infrastructure.Tests/Services/GrokServiceTests.cs:41 | tests/TIKR.Infrastructure.Tests/Services/GrokServiceTests.cs | stub / thin |
 | Core Service | GrokServiceTests.IsEnabled_RequiresFlagAndApiKey | tests/TIKR.Infrastructure.Tests/Services/GrokServiceTests.cs:16 | tests/TIKR.Infrastructure.Tests/Services/GrokServiceTests.cs | has logic |
-| Core Service | HybridAiServiceSemanticSearchTests.CosineSimilarity_IdenticalVectors_ReturnsOne | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceSemanticSearchTests.cs:18 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceSema... | has logic |
-| Core Service | HybridAiServiceSemanticSearchTests.CosineSimilarity_MismatchedLengths_ReturnsZero | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceSemanticSearchTests.cs:33 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceSema... | has logic |
-| Core Service | HybridAiServiceSemanticSearchTests.CosineSimilarity_OrthogonalVectors_ReturnsZero | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceSemanticSearchTests.cs:25 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceSema... | has logic |
-| Core Service | HybridAiServiceSemanticSearchTests.EmbedDocumentAsync_ReturnsFailureWhenGeneratorThrows | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceSemanticSearchTests.cs:75 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceSema... | has logic |
-| Core Service | HybridAiServiceSemanticSearchTests.EmbedDocumentAsync_StoresEmbeddingBytes | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceSemanticSearchTests.cs:48 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceSema... | has logic |
-| Core Service | HybridAiServiceSemanticSearchTests.EmbedDocumentAsync_ThrowsWhenDocumentMissing | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceSemanticSearchTests.cs:170 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceSema... | small body |
-| Core Service | HybridAiServiceSemanticSearchTests.PackUnpackFloats_RoundTrips | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceSemanticSearchTests.cs:39 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceSema... | has logic |
-| Core Service | HybridAiServiceSemanticSearchTests.SemanticSearchDocumentsAsync_ClampsTopK | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceSemanticSearchTests.cs:181 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceSema... | has logic |
-| Core Service | HybridAiServiceSemanticSearchTests.SemanticSearchDocumentsAsync_EmptyQuery_ReturnsEmpty | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceSemanticSearchTests.cs:160 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceSema... | has logic |
-| Core Service | HybridAiServiceSemanticSearchTests.SemanticSearchDocumentsAsync_RanksByCosineSimilarity | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceSemanticSearchTests.cs:101 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceSema... | small body |
-| Core Service | HybridAiServiceSemanticSearchTests.SemanticSearchDocumentsAsync_ReturnsEmptyWhenGeneratorFails | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceSemanticSearchTests.cs:146 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceSema... | has logic |
-| Core Service | HybridAiServiceSemanticSearchTests.SemanticSearchDocumentsAsync_SkipsDocumentsWithoutEmbedding | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceSemanticSearchTests.cs:122 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceSema... | has logic |
-| Core Service | HybridAiServiceTests.AskAdvancedAsync_FallsBackToOllamaWhenGrokDisabled | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceTests.cs:140 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceTest... | has logic |
-| Core Service | HybridAiServiceTests.AskAdvancedAsync_ReturnsFallbackWhenGrokReturnsNull | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceTests.cs:257 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceTest... | stub / thin |
-| Core Service | HybridAiServiceTests.AskAdvancedAsync_ReturnsGrokResponse | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceTests.cs:153 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceTest... | has logic |
-| Core Service | HybridAiServiceTests.AskAdvancedAsync_UsesPromptOnlyWhenContextMissing | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceTests.cs:275 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceTest... | stub / thin |
-| Core Service | HybridAiServiceTests.GetDashboardPrioritiesAsync_AssignsMediumPriority | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceTests.cs:228 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceTest... | has logic |
-| Core Service | HybridAiServiceTests.GetDashboardPrioritiesAsync_BucketsByDueDate | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceTests.cs:108 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceTest... | has logic |
-| Core Service | HybridAiServiceTests.GetDashboardPrioritiesAsync_CapsAtTenItems | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceTests.cs:242 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceTest... | has logic |
-| Core Service | HybridAiServiceTests.GetDashboardPrioritiesAsync_ExcludesCompletedRequirements | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceTests.cs:196 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceTest... | has logic |
-| Core Service | HybridAiServiceTests.GetDashboardPrioritiesAsync_ExcludesRequirementsOlderThan30Days | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceTests.cs:212 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceTest... | has logic |
-| Core Service | HybridAiServiceTests.GetDashboardPrioritiesAsync_ReturnsPlaceholderWhenEmpty | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceTests.cs:128 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceTest... | has logic |
-| Core Service | HybridAiServiceTests.GetStatusAsync_ReportsOllamaAndGrokState | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceTests.cs:166 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceTest... | has logic |
-| Core Service | HybridAiServiceTests.GetStatusAsync_ReportsOllamaUnavailable | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceTests.cs:183 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceTest... | has logic |
-| Core Service | HybridAiServiceTests.TagDocumentAsync_ParsesJsonAndPersistsTags | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceTests.cs:31 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceTest... | has logic |
-| Core Service | HybridAiServiceTests.TagDocumentAsync_PersistsEmbeddingWhenEmbedderSucceeds | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceTests.cs:301 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceTest... | has logic |
-| Core Service | HybridAiServiceTests.TagDocumentAsync_ThrowsWhenDocumentMissing | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceTests.cs:21 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceTest... | has logic |
-| Core Service | HybridAiServiceTests.TagDocumentAsync_UsesFallbackTagsOnMalformedJson | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceTests.cs:62 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceTest... | has logic |
-| Core Service | HybridAiServiceTests.TagDocumentAsync_WhenOllamaReturnsEmpty_LeavesTagsEmpty | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceTests.cs:85 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceTest... | has logic |
-| Core Service | HybridAiServiceVaultRagTests.EmbedKnowledgeEntryAsync_ReturnsFailureWhenGeneratorThrows | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceVaultRagTests.cs:56 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceVaul... | has logic |
-| Core Service | HybridAiServiceVaultRagTests.EmbedKnowledgeEntryAsync_StoresEmbeddingBytes | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceVaultRagTests.cs:18 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceVaul... | has logic |
-| Core Service | HybridAiServiceVaultRagTests.EmbedKnowledgeEntryAsync_ThrowsWhenEntryMissing | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceVaultRagTests.cs:45 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceVaul... | small body |
-| Core Service | HybridAiServiceVaultRagTests.SemanticSearchKnowledgeAsync_ClampsTopK | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceVaultRagTests.cs:137 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceVaul... | has logic |
-| Core Service | HybridAiServiceVaultRagTests.SemanticSearchKnowledgeAsync_EmptyQuery_ReturnsEmpty | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceVaultRagTests.cs:126 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceVaul... | small body |
-| Core Service | HybridAiServiceVaultRagTests.SemanticSearchKnowledgeAsync_RanksByCosineSimilarity | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceVaultRagTests.cs:74 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceVaul... | small body |
-| Core Service | HybridAiServiceVaultRagTests.SemanticSearchKnowledgeAsync_ReturnsEmptyWhenGeneratorFails | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceVaultRagTests.cs:112 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceVaul... | has logic |
-| Core Service | HybridAiServiceVaultRagTests.SemanticSearchKnowledgeAsync_SkipsEntriesWithoutEmbedding | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceVaultRagTests.cs:95 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceVaul... | has logic |
+| Core Service | HybridAiServiceSemanticSearchTests.CosineSimilarity_IdenticalVectors_ReturnsOne | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceSemanticSearchTests.cs:19 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceSema... | has logic |
+| Core Service | HybridAiServiceSemanticSearchTests.CosineSimilarity_MismatchedLengths_ReturnsZero | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceSemanticSearchTests.cs:34 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceSema... | has logic |
+| Core Service | HybridAiServiceSemanticSearchTests.CosineSimilarity_OrthogonalVectors_ReturnsZero | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceSemanticSearchTests.cs:26 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceSema... | has logic |
+| Core Service | HybridAiServiceSemanticSearchTests.EmbedDocumentAsync_ReturnsFailureWhenGeneratorThrows | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceSemanticSearchTests.cs:76 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceSema... | has logic |
+| Core Service | HybridAiServiceSemanticSearchTests.EmbedDocumentAsync_StoresEmbeddingBytes | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceSemanticSearchTests.cs:49 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceSema... | has logic |
+| Core Service | HybridAiServiceSemanticSearchTests.EmbedDocumentAsync_ThrowsWhenDocumentMissing | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceSemanticSearchTests.cs:171 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceSema... | small body |
+| Core Service | HybridAiServiceSemanticSearchTests.PackUnpackFloats_RoundTrips | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceSemanticSearchTests.cs:40 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceSema... | has logic |
+| Core Service | HybridAiServiceSemanticSearchTests.SemanticSearchDocumentsAsync_ClampsTopK | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceSemanticSearchTests.cs:182 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceSema... | has logic |
+| Core Service | HybridAiServiceSemanticSearchTests.SemanticSearchDocumentsAsync_EmptyQuery_ReturnsEmpty | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceSemanticSearchTests.cs:161 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceSema... | small body |
+| Core Service | HybridAiServiceSemanticSearchTests.SemanticSearchDocumentsAsync_RanksByCosineSimilarity | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceSemanticSearchTests.cs:102 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceSema... | small body |
+| Core Service | HybridAiServiceSemanticSearchTests.SemanticSearchDocumentsAsync_ReturnsEmptyWhenGeneratorFails | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceSemanticSearchTests.cs:147 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceSema... | small body |
+| Core Service | HybridAiServiceSemanticSearchTests.SemanticSearchDocumentsAsync_SkipsDocumentsWithoutEmbedding | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceSemanticSearchTests.cs:123 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceSema... | has logic |
+| Core Service | HybridAiServiceTests.AskAdvancedAsync_DoesNotForceTaggingTemperature | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceTests.cs:89 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceTest... | stub / thin |
+| Core Service | HybridAiServiceTests.AskAdvancedAsync_FallsBackToOllamaWhenGrokDisabled | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceTests.cs:276 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceTest... | has logic |
+| Core Service | HybridAiServiceTests.AskAdvancedAsync_ReturnsFallbackWhenGrokReturnsNull | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceTests.cs:393 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceTest... | stub / thin |
+| Core Service | HybridAiServiceTests.AskAdvancedAsync_ReturnsGrokResponse | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceTests.cs:289 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceTest... | has logic |
+| Core Service | HybridAiServiceTests.AskAdvancedAsync_UsesPromptOnlyWhenContextMissing | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceTests.cs:411 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceTest... | stub / thin |
+| Core Service | HybridAiServiceTests.BuildEmbeddingText_IncludesFullTextBody | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceTests.cs:464 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceTest... | has logic |
+| Core Service | HybridAiServiceTests.GetDashboardPrioritiesAsync_AssignsMediumPriority | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceTests.cs:364 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceTest... | has logic |
+| Core Service | HybridAiServiceTests.GetDashboardPrioritiesAsync_BucketsByDueDate | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceTests.cs:244 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceTest... | has logic |
+| Core Service | HybridAiServiceTests.GetDashboardPrioritiesAsync_CapsAtTenItems | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceTests.cs:378 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceTest... | has logic |
+| Core Service | HybridAiServiceTests.GetDashboardPrioritiesAsync_ExcludesCompletedRequirements | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceTests.cs:332 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceTest... | has logic |
+| Core Service | HybridAiServiceTests.GetDashboardPrioritiesAsync_ExcludesRequirementsOlderThan30Days | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceTests.cs:348 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceTest... | has logic |
+| Core Service | HybridAiServiceTests.GetDashboardPrioritiesAsync_ReturnsPlaceholderWhenEmpty | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceTests.cs:264 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceTest... | has logic |
+| Core Service | HybridAiServiceTests.GetStatusAsync_ReportsOllamaAndGrokState | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceTests.cs:302 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceTest... | has logic |
+| Core Service | HybridAiServiceTests.GetStatusAsync_ReportsOllamaUnavailable | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceTests.cs:319 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceTest... | has logic |
+| Core Service | HybridAiServiceTests.TagDocumentAsync_BackfillsFullTextFromExtractor | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceTests.cs:172 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceTest... | has logic |
+| Core Service | HybridAiServiceTests.TagDocumentAsync_DoesNotPersistStubExtractorPlaceholder | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceTests.cs:211 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceTest... | has logic |
+| Core Service | HybridAiServiceTests.TagDocumentAsync_ParsesJsonAndPersistsTags | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceTests.cs:32 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceTest... | has logic |
+| Core Service | HybridAiServiceTests.TagDocumentAsync_PersistsEmbeddingWhenEmbedderSucceeds | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceTests.cs:437 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceTest... | has logic |
+| Core Service | HybridAiServiceTests.TagDocumentAsync_ResumeFilename_UsesHeuristicsWhenOllamaEmpty | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceTests.cs:149 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceTest... | has logic |
+| Core Service | HybridAiServiceTests.TagDocumentAsync_ThrowsWhenDocumentMissing | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceTests.cs:22 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceTest... | has logic |
+| Core Service | HybridAiServiceTests.TagDocumentAsync_UsesFallbackTagsOnMalformedJson | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceTests.cs:103 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceTest... | has logic |
+| Core Service | HybridAiServiceTests.TagDocumentAsync_UsesLowTemperature | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceTests.cs:63 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceTest... | has logic |
+| Core Service | HybridAiServiceTests.TagDocumentAsync_WhenOllamaReturnsEmpty_LeavesTagsEmpty | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceTests.cs:126 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceTest... | has logic |
+| Core Service | HybridAiServiceVaultRagTests.EmbedKnowledgeEntryAsync_ReturnsFailureWhenGeneratorThrows | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceVaultRagTests.cs:57 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceVaul... | small body |
+| Core Service | HybridAiServiceVaultRagTests.EmbedKnowledgeEntryAsync_StoresEmbeddingBytes | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceVaultRagTests.cs:19 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceVaul... | has logic |
+| Core Service | HybridAiServiceVaultRagTests.EmbedKnowledgeEntryAsync_ThrowsWhenEntryMissing | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceVaultRagTests.cs:46 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceVaul... | small body |
+| Core Service | HybridAiServiceVaultRagTests.SemanticSearchKnowledgeAsync_ClampsTopK | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceVaultRagTests.cs:138 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceVaul... | has logic |
+| Core Service | HybridAiServiceVaultRagTests.SemanticSearchKnowledgeAsync_EmptyQuery_ReturnsEmpty | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceVaultRagTests.cs:127 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceVaul... | small body |
+| Core Service | HybridAiServiceVaultRagTests.SemanticSearchKnowledgeAsync_RanksByCosineSimilarity | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceVaultRagTests.cs:75 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceVaul... | small body |
+| Core Service | HybridAiServiceVaultRagTests.SemanticSearchKnowledgeAsync_ReturnsEmptyWhenGeneratorFails | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceVaultRagTests.cs:113 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceVaul... | small body |
+| Core Service | HybridAiServiceVaultRagTests.SemanticSearchKnowledgeAsync_SkipsEntriesWithoutEmbedding | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceVaultRagTests.cs:96 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceVaul... | has logic |
 | Core Service | LocalFileStorageServiceTests.DeleteAsync_DoesNotThrowWhenMissing | tests/TIKR.Infrastructure.Tests/Services/LocalFileStorageServiceTests.cs:56 | tests/TIKR.Infrastructure.Tests/Services/LocalFileStorageSer... | has logic |
 | Core Service | LocalFileStorageServiceTests.DeleteAsync_RemovesExistingFile | tests/TIKR.Infrastructure.Tests/Services/LocalFileStorageServiceTests.cs:44 | tests/TIKR.Infrastructure.Tests/Services/LocalFileStorageSer... | has logic |
 | Core Service | LocalFileStorageServiceTests.Dispose | tests/TIKR.Infrastructure.Tests/Services/LocalFileStorageServiceTests.cs:82 | tests/TIKR.Infrastructure.Tests/Services/LocalFileStorageSer... | small body |
@@ -432,6 +1050,8 @@ SfAIAssistView, SfAccordion, SfButton, SfCard, SfCheckBox, SfContextMenu, SfData
 | Core Service | AuthServicesTests.TikrAuthenticationStateProvider_ReturnsAnonymousWhenNoCookie | tests/TIKR.Web.Tests/Services/AuthServicesTests.cs:74 | tests/TIKR.Web.Tests/Services/AuthServicesTests.cs | has logic |
 | Core Service | AuthServicesTests.TikrAuthenticationStateProvider_ReturnsAnonymousWhenTokenInvalid | tests/TIKR.Web.Tests/Services/AuthServicesTests.cs:87 | tests/TIKR.Web.Tests/Services/AuthServicesTests.cs | has logic |
 | Core Service | AuthServicesTests.TikrAuthenticationStateProvider_ReturnsAuthenticatedWhenValidJwtCookie | tests/TIKR.Web.Tests/Services/AuthServicesTests.cs:58 | tests/TIKR.Web.Tests/Services/AuthServicesTests.cs | has logic |
+| Core Service | ClerkGuideContentTests.Filter_matches_title_or_body | tests/TIKR.Web.Tests/Services/ClerkGuideContentTests.cs:26 | tests/TIKR.Web.Tests/Services/ClerkGuideContentTests.cs | has logic |
+| Core Service | ClerkGuideContentTests.ParseSections_splits_on_h2_headings | tests/TIKR.Web.Tests/Services/ClerkGuideContentTests.cs:8 | tests/TIKR.Web.Tests/Services/ClerkGuideContentTests.cs | has logic |
 | Core Service | ClerkToastServiceTests.Show_RaisesOnShowEvent | tests/TIKR.Web.Tests/Services/ClerkToastServiceTests.cs:9 | tests/TIKR.Web.Tests/Services/ClerkToastServiceTests.cs | has logic |
 | Core Service | ColoradoResourceCatalogTests.LoadFromFile_MissingPath_ReturnsEmptyCatalog | tests/TIKR.Web.Tests/Services/ColoradoResourceCatalogTests.cs:39 | tests/TIKR.Web.Tests/Services/ColoradoResourceCatalogTests.c... | has logic |
 | Core Service | ColoradoResourceCatalogTests.LoadFromFile_ShippedFixture_IsNonEmpty | tests/TIKR.Web.Tests/Services/ColoradoResourceCatalogTests.cs:79 | tests/TIKR.Web.Tests/Services/ColoradoResourceCatalogTests.c... | has logic |
@@ -449,20 +1069,25 @@ SfAIAssistView, SfAccordion, SfButton, SfCard, SfCheckBox, SfContextMenu, SfData
 | Other Public | TikrConfiguration.GetChatModel | src/TIKR.Shared/Configuration/TikrConfiguration.cs:20 | tests/TIKR.Shared.Tests/Configuration/TikrConfigurationTests... | has logic |
 | Other Public | TikrConfiguration.GetDatabaseProvider | src/TIKR.Shared/Configuration/TikrConfiguration.cs:8 | tests/TIKR.Shared.Tests/Configuration/TikrConfigurationTests... | small body |
 | Other Public | TikrConfiguration.GetFileStoragePath | src/TIKR.Shared/Configuration/TikrConfiguration.cs:10 | tests/TIKR.Shared.Tests/Configuration/TikrConfigurationTests... | has logic |
-| Other Public | TikrConfiguration.GetGrokModel | src/TIKR.Shared/Configuration/TikrConfiguration.cs:36 | tests/TIKR.Shared.Tests/Configuration/TikrConfigurationTests... | has logic |
-| Other Public | TikrConfiguration.GetJwtExpirationHours | src/TIKR.Shared/Configuration/TikrConfiguration.cs:70 | tests/TIKR.Shared.Tests/Configuration/TikrConfigurationTests... | small body |
-| Other Public | TikrConfiguration.GetJwtSigningKey | src/TIKR.Shared/Configuration/TikrConfiguration.cs:57 | tests/TIKR.Shared.Tests/Configuration/TikrConfigurationTests... | has logic |
+| Other Public | TikrConfiguration.GetGrokModel | src/TIKR.Shared/Configuration/TikrConfiguration.cs:39 | tests/TIKR.Shared.Tests/Configuration/TikrConfigurationTests... | has logic |
+| Other Public | TikrConfiguration.GetJwtExpirationHours | src/TIKR.Shared/Configuration/TikrConfiguration.cs:73 | tests/TIKR.Shared.Tests/Configuration/TikrConfigurationTests... | small body |
+| Other Public | TikrConfiguration.GetJwtSigningKey | src/TIKR.Shared/Configuration/TikrConfiguration.cs:60 | tests/TIKR.Shared.Tests/Configuration/TikrConfigurationTests... | has logic |
 | Other Public | TikrConfiguration.GetOllamaHost | src/TIKR.Shared/Configuration/TikrConfiguration.cs:15 | tests/TIKR.Shared.Tests/Configuration/TikrConfigurationTests... | has logic |
 | Other Public | TikrConfiguration.GetUseGrok | src/TIKR.Shared/Configuration/TikrConfiguration.cs:25 | tests/TIKR.Shared.Tests/Configuration/TikrConfigurationTests... | has logic |
-| Other Public | TikrConfiguration.GetUseSyncfusionAgentOrchestration | src/TIKR.Shared/Configuration/TikrConfiguration.cs:83 | tests/TIKR.Shared.Tests/Configuration/TikrConfigurationTests... | small body |
-| Other Public | TikrConfiguration.GetUseSyncfusionAgentTools | src/TIKR.Shared/Configuration/TikrConfiguration.cs:75 | tests/TIKR.Shared.Tests/Configuration/TikrConfigurationTests... | small body |
-| Other Public | TikrConfiguration.IsAuthEnabled | src/TIKR.Shared/Configuration/TikrConfiguration.cs:41 | tests/TIKR.Shared.Tests/Configuration/TikrConfigurationTests... | has logic |
-| Other Public | CouncilPacketGenerator.Build | src/TIKR.SyncfusionDocuments/CouncilPacketGenerator.cs:15 | tests/TIKR.SyncfusionDocuments.Tests/SyncfusionDocumentGener... | small body |
+| Other Public | TikrConfiguration.GetUseSyncfusionAgentOrchestration | src/TIKR.Shared/Configuration/TikrConfiguration.cs:86 | tests/TIKR.Shared.Tests/Configuration/TikrConfigurationTests... | small body |
+| Other Public | TikrConfiguration.GetUseSyncfusionAgentTools | src/TIKR.Shared/Configuration/TikrConfiguration.cs:78 | tests/TIKR.Shared.Tests/Configuration/TikrConfigurationTests... | small body |
+| Other Public | TikrConfiguration.IsAuthEnabled | src/TIKR.Shared/Configuration/TikrConfiguration.cs:44 | tests/TIKR.Shared.Tests/Configuration/TikrConfigurationTests... | has logic |
+| Other Public | CouncilPacketGenerator.Build | src/TIKR.SyncfusionDocuments/CouncilPacketGenerator.cs:15 | tests/TIKR.Infrastructure.Tests/Services/DocumentTagPromptBu... | small body |
 | Other Public | DependencyInjection.AddSyncfusionDocumentGeneration | src/TIKR.SyncfusionDocuments/DependencyInjection.cs:9 | tests/TIKR.Web.Tests/Components/SettingsPageTests.cs, tests/... | small body |
 | Other Public | SyncfusionDocumentLicense.GetStatus | src/TIKR.SyncfusionDocuments/SyncfusionDocumentLicense.cs:14 | tests/TIKR.Infrastructure.Tests/Services/SyncfusionDocumentL... | small body |
 | Other Public | SyncfusionDocumentLicense.RegisterFromConfiguration | src/TIKR.SyncfusionDocuments/SyncfusionDocumentLicense.cs:9 | tests/TIKR.Infrastructure.Tests/Services/SyncfusionDocumentL... | small body |
 | Other Public | SyncfusionLicenseBootstrap.RegisterIfConfigured | src/TIKR.SyncfusionDocuments/SyncfusionLicenseBootstrap.cs:10 | tests/TIKR.SyncfusionDocuments.Tests/SyncfusionLicenseBootst... | has logic |
-| Other Public | SyncfusionLicenseBootstrap.RegisterIfConfigured | src/TIKR.Web/SyncfusionLicenseBootstrap.cs:10 | tests/TIKR.SyncfusionDocuments.Tests/SyncfusionLicenseBootst... | has logic |
+| Other Public | ClerkTourCatalog.ClerkTourStep | src/TIKR.Web/ClerkTour/ClerkTourCatalog.cs:2 | tests/TIKR.Web.Tests/ClerkTour/ClerkTourCatalogTests.cs | has logic |
+| Other Public | ClerkTourCatalog.GetFullTourSteps | src/TIKR.Web/ClerkTour/ClerkTourCatalog.cs:36 | tests/TIKR.Web.Tests/ClerkTour/ClerkTourCatalogTests.cs | has logic |
+| Other Public | ClerkTourCatalog.GetGlobalSteps | src/TIKR.Web/ClerkTour/ClerkTourCatalog.cs:14 | tests/TIKR.Web.Tests/ClerkTour/ClerkTourCatalogTests.cs | small body |
+| Other Public | ClerkTourCatalog.GetPageSteps | src/TIKR.Web/ClerkTour/ClerkTourCatalog.cs:24 | tests/TIKR.Web.Tests/ClerkTour/ClerkTourCatalogTests.cs | has logic |
+| Other Public | SyncfusionLicenseBootstrap.RegisterIfConfigured | src/TIKR.Web/SyncfusionLicenseBootstrap.cs:11 | tests/TIKR.SyncfusionDocuments.Tests/SyncfusionLicenseBootst... | has logic |
+| Other Public | SyncfusionLicenseBootstrap.RegisterIfConfigured | src/TIKR.Web/SyncfusionLicenseBootstrap.cs:58 | tests/TIKR.SyncfusionDocuments.Tests/SyncfusionLicenseBootst... | small body |
 | Other Public | DbSeederTests.SeedAsync_IncludesKnownColoradoDeadlines | tests/TIKR.Infrastructure.Tests/Data/DbSeederTests.cs:39 | tests/TIKR.Infrastructure.Tests/Data/DbSeederTests.cs | has logic |
 | Other Public | DbSeederTests.SeedAsync_InsertsFifteenColoradoDeadlines | tests/TIKR.Infrastructure.Tests/Data/DbSeederTests.cs:15 | tests/TIKR.Infrastructure.Tests/Data/DbSeederTests.cs | has logic |
 | Other Public | DbSeederTests.SeedAsync_IsIdempotent | tests/TIKR.Infrastructure.Tests/Data/DbSeederTests.cs:28 | tests/TIKR.Infrastructure.Tests/Data/DbSeederTests.cs | has logic |
@@ -470,48 +1095,57 @@ SfAIAssistView, SfAccordion, SfButton, SfCard, SfCheckBox, SfContextMenu, SfData
 | Other Public | IdentitySeederTests.SeedAsync_Skips_WhenAuthDisabled | tests/TIKR.Infrastructure.Tests/Identity/IdentitySeederTests.cs:63 | tests/TIKR.Infrastructure.Tests/Identity/IdentitySeederTests... | has logic |
 | Other Public | EnvLoaderTests.LoadDevelopmentEnv_LoadsExistingEnvFiles | tests/TIKR.Shared.Tests/Configuration/EnvLoaderTests.cs:9 | tests/TIKR.Shared.Tests/Configuration/EnvLoaderTests.cs | has logic |
 | Other Public | EnvLoaderTests.LoadDevelopmentEnv_NoOpWhenFilesMissing | tests/TIKR.Shared.Tests/Configuration/EnvLoaderTests.cs:36 | tests/TIKR.Shared.Tests/Configuration/EnvLoaderTests.cs | has logic |
-| Other Public | TikrConfigurationTests.GetAdminBootstrapEmail_ReturnsValue | tests/TIKR.Shared.Tests/Configuration/TikrConfigurationTests.cs:200 | tests/TIKR.Shared.Tests/Configuration/TikrConfigurationTests... | has logic |
-| Other Public | TikrConfigurationTests.GetAdminBootstrapPassword_ReturnsValue | tests/TIKR.Shared.Tests/Configuration/TikrConfigurationTests.cs:209 | tests/TIKR.Shared.Tests/Configuration/TikrConfigurationTests... | has logic |
-| Other Public | TikrConfigurationTests.GetChatModel_UsesDefaultsAndOverrides | tests/TIKR.Shared.Tests/Configuration/TikrConfigurationTests.cs:64 | tests/TIKR.Shared.Tests/Configuration/TikrConfigurationTests... | has logic |
+| Other Public | TikrConfigurationTests.GetAdminBootstrapEmail_ReturnsValue | tests/TIKR.Shared.Tests/Configuration/TikrConfigurationTests.cs:212 | tests/TIKR.Shared.Tests/Configuration/TikrConfigurationTests... | has logic |
+| Other Public | TikrConfigurationTests.GetAdminBootstrapPassword_ReturnsValue | tests/TIKR.Shared.Tests/Configuration/TikrConfigurationTests.cs:221 | tests/TIKR.Shared.Tests/Configuration/TikrConfigurationTests... | has logic |
+| Other Public | TikrConfigurationTests.GetChatModel_UsesDefaultsAndOverrides | tests/TIKR.Shared.Tests/Configuration/TikrConfigurationTests.cs:70 | tests/TIKR.Shared.Tests/Configuration/TikrConfigurationTests... | has logic |
 | Other Public | TikrConfigurationTests.GetDatabaseProvider_DefaultsToSqlite | tests/TIKR.Shared.Tests/Configuration/TikrConfigurationTests.cs:17 | tests/TIKR.Shared.Tests/Configuration/TikrConfigurationTests... | has logic |
 | Other Public | TikrConfigurationTests.GetDatabaseProvider_ReadsEnvironmentKey | tests/TIKR.Shared.Tests/Configuration/TikrConfigurationTests.cs:24 | tests/TIKR.Shared.Tests/Configuration/TikrConfigurationTests... | has logic |
 | Other Public | TikrConfigurationTests.GetFileStoragePath_FallsBackToFlatEnvKey | tests/TIKR.Shared.Tests/Configuration/TikrConfigurationTests.cs:43 | tests/TIKR.Shared.Tests/Configuration/TikrConfigurationTests... | has logic |
-| Other Public | TikrConfigurationTests.GetFileStoragePath_UsesDefaultWhenUnset | tests/TIKR.Shared.Tests/Configuration/TikrConfigurationTests.cs:126 | tests/TIKR.Shared.Tests/Configuration/TikrConfigurationTests... | has logic |
+| Other Public | TikrConfigurationTests.GetFileStoragePath_UsesDefaultWhenUnset | tests/TIKR.Shared.Tests/Configuration/TikrConfigurationTests.cs:138 | tests/TIKR.Shared.Tests/Configuration/TikrConfigurationTests... | has logic |
 | Other Public | TikrConfigurationTests.GetFileStoragePath_UsesNestedConfigFirst | tests/TIKR.Shared.Tests/Configuration/TikrConfigurationTests.cs:33 | tests/TIKR.Shared.Tests/Configuration/TikrConfigurationTests... | has logic |
-| Other Public | TikrConfigurationTests.GetGrokApiKey_FallsBackToXaiApiKey | tests/TIKR.Shared.Tests/Configuration/TikrConfigurationTests.cs:111 | tests/TIKR.Shared.Tests/Configuration/TikrConfigurationTests... | has logic |
-| Other Public | TikrConfigurationTests.GetGrokApiKey_ReadsKey | tests/TIKR.Shared.Tests/Configuration/TikrConfigurationTests.cs:102 | tests/TIKR.Shared.Tests/Configuration/TikrConfigurationTests... | has logic |
-| Other Public | TikrConfigurationTests.GetGrokApiKey_ReturnsNullWhenUnset | tests/TIKR.Shared.Tests/Configuration/TikrConfigurationTests.cs:120 | tests/TIKR.Shared.Tests/Configuration/TikrConfigurationTests... | has logic |
-| Other Public | TikrConfigurationTests.GetGrokModel_UsesDefaultsAndOverrides | tests/TIKR.Shared.Tests/Configuration/TikrConfigurationTests.cs:133 | tests/TIKR.Shared.Tests/Configuration/TikrConfigurationTests... | has logic |
-| Other Public | TikrConfigurationTests.GetJwtExpirationHours_UsesDefaultOrOverride | tests/TIKR.Shared.Tests/Configuration/TikrConfigurationTests.cs:231 | tests/TIKR.Shared.Tests/Configuration/TikrConfigurationTests... | has logic |
-| Other Public | TikrConfigurationTests.GetJwtSigningKey_ReturnsConfiguredKey | tests/TIKR.Shared.Tests/Configuration/TikrConfigurationTests.cs:184 | tests/TIKR.Shared.Tests/Configuration/TikrConfigurationTests... | has logic |
-| Other Public | TikrConfigurationTests.GetJwtSigningKey_ReturnsDevFallbackWhenAuthDisabled | tests/TIKR.Shared.Tests/Configuration/TikrConfigurationTests.cs:193 | tests/TIKR.Shared.Tests/Configuration/TikrConfigurationTests... | has logic |
-| Other Public | TikrConfigurationTests.GetJwtSigningKey_ThrowsWhenAuthEnabledAndKeyMissing | tests/TIKR.Shared.Tests/Configuration/TikrConfigurationTests.cs:172 | tests/TIKR.Shared.Tests/Configuration/TikrConfigurationTests... | has logic |
+| Other Public | TikrConfigurationTests.GetGrokApiKey_FallsBackToXaiApiKey | tests/TIKR.Shared.Tests/Configuration/TikrConfigurationTests.cs:123 | tests/TIKR.Shared.Tests/Configuration/TikrConfigurationTests... | has logic |
+| Other Public | TikrConfigurationTests.GetGrokApiKey_ReadsKey | tests/TIKR.Shared.Tests/Configuration/TikrConfigurationTests.cs:114 | tests/TIKR.Shared.Tests/Configuration/TikrConfigurationTests... | has logic |
+| Other Public | TikrConfigurationTests.GetGrokApiKey_ReturnsNullWhenUnset | tests/TIKR.Shared.Tests/Configuration/TikrConfigurationTests.cs:132 | tests/TIKR.Shared.Tests/Configuration/TikrConfigurationTests... | has logic |
+| Other Public | TikrConfigurationTests.GetGrokModel_UsesDefaultsAndOverrides | tests/TIKR.Shared.Tests/Configuration/TikrConfigurationTests.cs:145 | tests/TIKR.Shared.Tests/Configuration/TikrConfigurationTests... | has logic |
+| Other Public | TikrConfigurationTests.GetJwtExpirationHours_UsesDefaultOrOverride | tests/TIKR.Shared.Tests/Configuration/TikrConfigurationTests.cs:243 | tests/TIKR.Shared.Tests/Configuration/TikrConfigurationTests... | has logic |
+| Other Public | TikrConfigurationTests.GetJwtSigningKey_ReturnsConfiguredKey | tests/TIKR.Shared.Tests/Configuration/TikrConfigurationTests.cs:196 | tests/TIKR.Shared.Tests/Configuration/TikrConfigurationTests... | has logic |
+| Other Public | TikrConfigurationTests.GetJwtSigningKey_ReturnsDevFallbackWhenAuthDisabled | tests/TIKR.Shared.Tests/Configuration/TikrConfigurationTests.cs:205 | tests/TIKR.Shared.Tests/Configuration/TikrConfigurationTests... | has logic |
+| Other Public | TikrConfigurationTests.GetJwtSigningKey_ThrowsWhenAuthEnabledAndKeyMissing | tests/TIKR.Shared.Tests/Configuration/TikrConfigurationTests.cs:184 | tests/TIKR.Shared.Tests/Configuration/TikrConfigurationTests... | has logic |
 | Other Public | TikrConfigurationTests.GetOllamaHost_UsesDefaultsAndOverrides | tests/TIKR.Shared.Tests/Configuration/TikrConfigurationTests.cs:52 | tests/TIKR.Shared.Tests/Configuration/TikrConfigurationTests... | has logic |
-| Other Public | TikrConfigurationTests.GetUseGrok_ParsesFlatEnvKey | tests/TIKR.Shared.Tests/Configuration/TikrConfigurationTests.cs:79 | tests/TIKR.Shared.Tests/Configuration/TikrConfigurationTests... | has logic |
-| Other Public | TikrConfigurationTests.GetUseGrok_PrefersNestedAiSection | tests/TIKR.Shared.Tests/Configuration/TikrConfigurationTests.cs:88 | tests/TIKR.Shared.Tests/Configuration/TikrConfigurationTests... | has logic |
-| Other Public | TikrConfigurationTests.IsAuthEnabled_FalseWhenExplicitlyDisabled | tests/TIKR.Shared.Tests/Configuration/TikrConfigurationTests.cs:155 | tests/TIKR.Shared.Tests/Configuration/TikrConfigurationTests... | has logic |
-| Other Public | TikrConfigurationTests.IsAuthEnabled_FalseWhenNoCreds | tests/TIKR.Shared.Tests/Configuration/TikrConfigurationTests.cs:166 | tests/TIKR.Shared.Tests/Configuration/TikrConfigurationTests... | has logic |
-| Other Public | TikrConfigurationTests.IsAuthEnabled_TrueWhenAdminBootstrapCredsPresent | tests/TIKR.Shared.Tests/Configuration/TikrConfigurationTests.cs:145 | tests/TIKR.Shared.Tests/Configuration/TikrConfigurationTests... | has logic |
-| Other Public | TikrConfigurationTests.IsAuthEnabled_TrueWhenExplicitlyEnabled | tests/TIKR.Shared.Tests/Configuration/TikrConfigurationTests.cs:218 | tests/TIKR.Shared.Tests/Configuration/TikrConfigurationTests... | has logic |
+| Other Public | TikrConfigurationTests.GetUseGrok_ParsesFlatEnvKey | tests/TIKR.Shared.Tests/Configuration/TikrConfigurationTests.cs:85 | tests/TIKR.Shared.Tests/Configuration/TikrConfigurationTests... | has logic |
+| Other Public | TikrConfigurationTests.GetUseGrok_PrefersUseGrokEnvOverAiSection | tests/TIKR.Shared.Tests/Configuration/TikrConfigurationTests.cs:94 | tests/TIKR.Shared.Tests/Configuration/TikrConfigurationTests... | has logic |
+| Other Public | TikrConfigurationTests.IsAuthEnabled_FalseWhenExplicitlyDisabled | tests/TIKR.Shared.Tests/Configuration/TikrConfigurationTests.cs:167 | tests/TIKR.Shared.Tests/Configuration/TikrConfigurationTests... | has logic |
+| Other Public | TikrConfigurationTests.IsAuthEnabled_FalseWhenNoCreds | tests/TIKR.Shared.Tests/Configuration/TikrConfigurationTests.cs:178 | tests/TIKR.Shared.Tests/Configuration/TikrConfigurationTests... | has logic |
+| Other Public | TikrConfigurationTests.IsAuthEnabled_TrueWhenAdminBootstrapCredsPresent | tests/TIKR.Shared.Tests/Configuration/TikrConfigurationTests.cs:157 | tests/TIKR.Shared.Tests/Configuration/TikrConfigurationTests... | has logic |
+| Other Public | TikrConfigurationTests.IsAuthEnabled_TrueWhenExplicitlyEnabled | tests/TIKR.Shared.Tests/Configuration/TikrConfigurationTests.cs:230 | tests/TIKR.Shared.Tests/Configuration/TikrConfigurationTests... | has logic |
 | Other Public | SyncfusionLicenseBootstrapTests.RegisterIfConfigured_ReturnsFalseWhenKeyMissing | tests/TIKR.SyncfusionDocuments.Tests/SyncfusionLicenseBootstrapTests.cs:10 | tests/TIKR.SyncfusionDocuments.Tests/SyncfusionLicenseBootst... | has logic |
 | Other Public | SyncfusionLicenseBootstrapTests.RegisterIfConfigured_ReturnsTrueWhenKeyPresent | tests/TIKR.SyncfusionDocuments.Tests/SyncfusionLicenseBootstrapTests.cs:17 | tests/TIKR.SyncfusionDocuments.Tests/SyncfusionLicenseBootst... | has logic |
-| Other Public | AssistantPageTests.Assistant_LoadsDeadlineContextFromApi | tests/TIKR.Web.Tests/Components/AssistantPageTests.cs:81 | tests/TIKR.Web.Tests/Components/AssistantPageTests.cs | has logic |
-| Other Public | AssistantPageTests.Assistant_MainChatPrompt_ReceivesStreamedResponse | tests/TIKR.Web.Tests/Components/AssistantPageTests.cs:94 | tests/TIKR.Web.Tests/Components/AssistantPageTests.cs | small body |
-| Other Public | AssistantPageTests.Assistant_ShowsAdvancedAiNoteWhenNoPriorPrompt | tests/TIKR.Web.Tests/Components/AssistantPageTests.cs:58 | tests/TIKR.Web.Tests/Components/AssistantPageTests.cs | has logic |
-| Other Public | AssistantPageTests.Assistant_ShowsContextUnavailableWhenPrioritiesFail | tests/TIKR.Web.Tests/Components/AssistantPageTests.cs:71 | tests/TIKR.Web.Tests/Components/AssistantPageTests.cs | stub / thin |
-| Other Public | AssistantPageTests.Assistant_ShowsUnavailableMessageWhenAskAdvancedFails | tests/TIKR.Web.Tests/Components/AssistantPageTests.cs:28 | tests/TIKR.Web.Tests/Components/AssistantPageTests.cs | stub / thin |
-| Other Public | StubChatClient.Dispose | tests/TIKR.Web.Tests/Components/AssistantPageTests.cs:147 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceVaul... | stub / thin |
-| Other Public | StubChatClient.GetResponseAsync | tests/TIKR.Web.Tests/Components/AssistantPageTests.cs:128 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceVaul... | stub / thin |
-| Other Public | StubChatClient.GetStreamingResponseAsync | tests/TIKR.Web.Tests/Components/AssistantPageTests.cs:131 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceVaul... | stub / thin |
-| Other Public | CalendarPageTests.Calendar_LoadsRequirementsIntoGrid | tests/TIKR.Web.Tests/Components/CalendarPageTests.cs:25 | tests/TIKR.Web.Tests/Components/CalendarPageTests.cs | has logic |
+| Other Public | ClerkTourCatalogTests.CurrentVersion_is_set_for_deployment_bump | tests/TIKR.Web.Tests/ClerkTour/ClerkTourCatalogTests.cs:35 | tests/TIKR.Web.Tests/ClerkTour/ClerkTourCatalogTests.cs | small body |
+| Other Public | ClerkTourCatalogTests.Each_clerk_route_has_page_tour_steps | tests/TIKR.Web.Tests/ClerkTour/ClerkTourCatalogTests.cs:25 | tests/TIKR.Web.Tests/ClerkTour/ClerkTourCatalogTests.cs | has logic |
+| Other Public | ClerkTourCatalogTests.Full_tour_steps_reference_defined_tour_ids | tests/TIKR.Web.Tests/ClerkTour/ClerkTourCatalogTests.cs:8 | tests/TIKR.Web.Tests/ClerkTour/ClerkTourCatalogTests.cs | has logic |
+| Other Public | AssistantPageTests.Assistant_LoadsDeadlineContextFromApi | tests/TIKR.Web.Tests/Components/AssistantPageTests.cs:80 | tests/TIKR.Web.Tests/Components/AssistantPageTests.cs | has logic |
+| Other Public | AssistantPageTests.Assistant_MainChatPrompt_AccumulatesMultiChunkStream | tests/TIKR.Web.Tests/Components/AssistantPageTests.cs:117 | tests/TIKR.Web.Tests/Components/AssistantPageTests.cs | stub / thin |
+| Other Public | AssistantPageTests.Assistant_MainChatPrompt_ReceivesStreamedResponse | tests/TIKR.Web.Tests/Components/AssistantPageTests.cs:93 | tests/TIKR.Web.Tests/Components/AssistantPageTests.cs | small body |
+| Other Public | AssistantPageTests.Assistant_ShowsAdvancedAiNoteWhenNoPriorPrompt | tests/TIKR.Web.Tests/Components/AssistantPageTests.cs:57 | tests/TIKR.Web.Tests/Components/AssistantPageTests.cs | has logic |
+| Other Public | AssistantPageTests.Assistant_ShowsContextUnavailableWhenPrioritiesFail | tests/TIKR.Web.Tests/Components/AssistantPageTests.cs:70 | tests/TIKR.Web.Tests/Components/AssistantPageTests.cs | stub / thin |
+| Other Public | AssistantPageTests.Assistant_ShowsUnavailableMessageWhenAskAdvancedFails | tests/TIKR.Web.Tests/Components/AssistantPageTests.cs:27 | tests/TIKR.Web.Tests/Components/AssistantPageTests.cs | stub / thin |
+| Other Public | StubChatClient.Dispose | tests/TIKR.Web.Tests/Components/AssistantPageTests.cs:180 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceVaul... | stub / thin |
+| Other Public | MultiChunkStubChatClient.Dispose | tests/TIKR.Web.Tests/Components/AssistantPageTests.cs:209 | tests/TIKR.Infrastructure.Tests/Services/LocalFileStorageSer... | stub / thin |
+| Other Public | AssistantPageTests.FormatStreamingHtml_EncodesAndPreservesAccumulatedText | tests/TIKR.Web.Tests/Components/AssistantPageTests.cs:108 | tests/TIKR.Web.Tests/Components/AssistantPageTests.cs | stub / thin |
+| Other Public | StubChatClient.GetResponseAsync | tests/TIKR.Web.Tests/Components/AssistantPageTests.cs:161 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceVaul... | stub / thin |
+| Other Public | MultiChunkStubChatClient.GetResponseAsync | tests/TIKR.Web.Tests/Components/AssistantPageTests.cs:187 | tests/TIKR.Web.Tests/Components/AssistantPageTests.cs | small body |
+| Other Public | StubChatClient.GetStreamingResponseAsync | tests/TIKR.Web.Tests/Components/AssistantPageTests.cs:164 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceVaul... | stub / thin |
+| Other Public | MultiChunkStubChatClient.GetStreamingResponseAsync | tests/TIKR.Web.Tests/Components/AssistantPageTests.cs:190 | tests/TIKR.Web.Tests/Components/AssistantPageTests.cs | has logic |
+| Other Public | CalendarPageTests.Calendar_LoadsRequirementsIntoGrid | tests/TIKR.Web.Tests/Components/CalendarPageTests.cs:31 | tests/TIKR.Web.Tests/Components/CalendarPageTests.cs | has logic |
+| Other Public | CalendarPageTests.Calendar_WhenBlazorLicenseInvalid_ShowsMessageAndSkipsSchedule | tests/TIKR.Web.Tests/Components/CalendarPageTests.cs:48 | tests/TIKR.Web.Tests/Components/CalendarPageTests.cs | has logic |
 | Other Public | ConfirmDeleteDialogTests.ConfirmDeleteDialog_ShowsItemNameAndAuditNote | tests/TIKR.Web.Tests/Components/ConfirmDeleteDialogTests.cs:13 | tests/TIKR.Web.Tests/Components/ConfirmDeleteDialogTests.cs | has logic |
 | Other Public | DocumentsPageTests.Documents_LoadsDocumentListFromApi | tests/TIKR.Web.Tests/Components/DocumentsPageTests.cs:25 | tests/TIKR.Web.Tests/Components/DocumentsPageTests.cs | has logic |
 | Other Public | DocumentsPageTests.Documents_ShowsSemanticSearchToggle | tests/TIKR.Web.Tests/Components/DocumentsPageTests.cs:41 | tests/TIKR.Web.Tests/Components/DocumentsPageTests.cs | has logic |
 | Other Public | ErrorPageTests.Error_ShowsRequestIdFromHttpContext | tests/TIKR.Web.Tests/Components/ErrorPageTests.cs:11 | tests/TIKR.Web.Tests/Components/ErrorPageTests.cs | has logic |
-| Other Public | HomePageTests.Home_AppliesMediumPriorityCssClass | tests/TIKR.Web.Tests/Components/HomePageTests.cs:39 | tests/TIKR.Web.Tests/Components/HomePageTests.cs | has logic |
-| Other Public | HomePageTests.Home_HandlesApiFailureGracefully | tests/TIKR.Web.Tests/Components/HomePageTests.cs:52 | tests/TIKR.Web.Tests/Components/HomePageTests.cs | stub / thin |
-| Other Public | HomePageTests.Home_RendersPriorityCardsFromApi | tests/TIKR.Web.Tests/Components/HomePageTests.cs:23 | tests/TIKR.Web.Tests/Components/HomePageTests.cs | has logic |
-| Other Public | HomePageTests.Home_ShowsEmptyStateWhenApiReturnsEmpty | tests/TIKR.Web.Tests/Components/HomePageTests.cs:63 | tests/TIKR.Web.Tests/Components/HomePageTests.cs | stub / thin |
+| Other Public | HomePageTests.Home_AppliesMediumPriorityCssClass | tests/TIKR.Web.Tests/Components/HomePageTests.cs:38 | tests/TIKR.Web.Tests/Components/HomePageTests.cs | has logic |
+| Other Public | HomePageTests.Home_HandlesApiFailureGracefully | tests/TIKR.Web.Tests/Components/HomePageTests.cs:51 | tests/TIKR.Web.Tests/Components/HomePageTests.cs | stub / thin |
+| Other Public | HomePageTests.Home_RendersPriorityCardsFromApi | tests/TIKR.Web.Tests/Components/HomePageTests.cs:22 | tests/TIKR.Web.Tests/Components/HomePageTests.cs | has logic |
+| Other Public | HomePageTests.Home_ShowsEmptyStateWhenApiReturnsEmpty | tests/TIKR.Web.Tests/Components/HomePageTests.cs:62 | tests/TIKR.Web.Tests/Components/HomePageTests.cs | stub / thin |
 | Other Public | KnowledgePageTests.Knowledge_RedirectsToVault | tests/TIKR.Web.Tests/Components/KnowledgePageTests.cs:12 | tests/TIKR.Web.Tests/Components/KnowledgePageTests.cs | has logic |
 | Other Public | FakeAuthSessionService.LoginAsync | tests/TIKR.Web.Tests/Components/LoginPageTests.cs:44 | tests/TIKR.Api.Tests/Endpoints/AuthEndpointTests.cs, tests/T... | small body |
 | Other Public | LoginPageTests.Login_RendersSignInForm_WhenAuthEnabled | tests/TIKR.Web.Tests/Components/LoginPageTests.cs:20 | tests/TIKR.Web.Tests/Components/LoginPageTests.cs | has logic |
@@ -520,16 +1154,20 @@ SfAIAssistView, SfAccordion, SfButton, SfCard, SfCheckBox, SfContextMenu, SfData
 | Other Public | PageHelpTests.PageHelp_RendersHelpButton | tests/TIKR.Web.Tests/Components/PageHelpTests.cs:17 | tests/TIKR.Web.Tests/Components/PageHelpTests.cs | small body |
 | Other Public | RequirementsPageTests.Requirements_LoadsGridWithSeededData | tests/TIKR.Web.Tests/Components/RequirementsPageTests.cs:21 | tests/TIKR.Web.Tests/Components/RequirementsPageTests.cs | has logic |
 | Other Public | RequirementsPageTests.Requirements_RendersAgentScanUploadControl | tests/TIKR.Web.Tests/Components/RequirementsPageTests.cs:38 | tests/TIKR.Web.Tests/Components/RequirementsPageTests.cs | has logic |
+| Other Public | RequirementsPageTests.Requirements_RendersDeleteActionForNonSeededRows | tests/TIKR.Web.Tests/Components/RequirementsPageTests.cs:77 | tests/TIKR.Web.Tests/Components/RequirementsPageTests.cs | has logic |
 | Other Public | RequirementsPageTests.Requirements_RendersDocumentGenerationActions | tests/TIKR.Web.Tests/Components/RequirementsPageTests.cs:50 | tests/TIKR.Web.Tests/Components/RequirementsPageTests.cs | has logic |
 | Other Public | RequirementsPageTests.Requirements_UsesSfDatePickerWhenDialogOpen | tests/TIKR.Web.Tests/Components/RequirementsPageTests.cs:64 | tests/TIKR.Web.Tests/Components/RequirementsPageTests.cs | has logic |
 | Other Public | SettingsPageTests.Settings_RendersOllamaStatusWhenApiResponds | tests/TIKR.Web.Tests/Components/SettingsPageTests.cs:17 | tests/TIKR.Web.Tests/Components/SettingsPageTests.cs | stub / thin |
-| Other Public | SettingsPageTests.Settings_ShowsUnavailableMessageWhenApiFails | tests/TIKR.Web.Tests/Components/SettingsPageTests.cs:57 | tests/TIKR.Web.Tests/Components/SettingsPageTests.cs | stub / thin |
+| Other Public | SettingsPageTests.Settings_ShowsUnavailableMessageWhenApiFails | tests/TIKR.Web.Tests/Components/SettingsPageTests.cs:60 | tests/TIKR.Web.Tests/Components/SettingsPageTests.cs | stub / thin |
 | Other Public | TikrKeyboardShortcutsTests.NavigateRequested_UpdatesLocation | tests/TIKR.Web.Tests/Components/TikrKeyboardShortcutsTests.cs:14 | tests/TIKR.Web.Tests/Components/TikrKeyboardShortcutsTests.c... | has logic |
 | Other Public | TikrOfflineBannerTests.OfflineBanner_HiddenWhenApiOnline | tests/TIKR.Web.Tests/Components/TikrOfflineBannerTests.cs:28 | tests/TIKR.Web.Tests/Components/TikrOfflineBannerTests.cs | has logic |
 | Other Public | TikrOfflineBannerTests.OfflineBanner_ShowsWhenApiOffline | tests/TIKR.Web.Tests/Components/TikrOfflineBannerTests.cs:15 | tests/TIKR.Web.Tests/Components/TikrOfflineBannerTests.cs | has logic |
 | Other Public | TikrStatusFooterTests.StatusFooter_RendersLocalNasMessageWhenApiResponds | tests/TIKR.Web.Tests/Components/TikrStatusFooterTests.cs:14 | tests/TIKR.Web.Tests/Components/TikrStatusFooterTests.cs | stub / thin |
+| Other Public | TikrThemeSelectorTests.Renders_native_select_with_three_theme_options | tests/TIKR.Web.Tests/Components/TikrThemeSelectorTests.cs:16 | tests/TIKR.Web.Tests/Components/TikrThemeSelectorTests.cs | has logic |
 | Other Public | UsersPageTests.Users_RendersGridWithSeededUsers | tests/TIKR.Web.Tests/Components/UsersPageTests.cs:29 | tests/TIKR.Web.Tests/Components/UsersPageTests.cs | stub / thin |
 | Other Public | VaultPageTests.Vault_ShowsEmergencyBanner | tests/TIKR.Web.Tests/Components/VaultPageTests.cs:16 | tests/TIKR.Web.Tests/Components/VaultPageTests.cs | stub / thin |
+| Other Public | SyncfusionLicenseBootstrapTests.RegisterIfConfigured_ReturnsFalseWhenKeyIsNotValidForBlazorPlatform | tests/TIKR.Web.Tests/SyncfusionLicenseBootstrapTests.cs:17 | tests/TIKR.SyncfusionDocuments.Tests/SyncfusionLicenseBootst... | has logic |
+| Other Public | SyncfusionLicenseBootstrapTests.RegisterIfConfigured_ReturnsFalseWhenKeyMissing | tests/TIKR.Web.Tests/SyncfusionLicenseBootstrapTests.cs:10 | tests/TIKR.SyncfusionDocuments.Tests/SyncfusionLicenseBootst... | has logic |
 | Workflow Helper | RequirementUrgencyHelper.GetLabel | src/TIKR.Shared/Helpers/RequirementUrgencyHelper.cs:25 | tests/TIKR.Web.Tests/Helpers/RequirementWorkflowHelpersTests... | has logic |
 | Workflow Helper | RequirementUrgencyHelper.GetUrgency | src/TIKR.Shared/Helpers/RequirementUrgencyHelper.cs:8 | tests/TIKR.Web.Tests/Helpers/RequirementWorkflowHelpersTests... | has logic |
 | Workflow Helper | DisplayFormat.FormatBytes | src/TIKR.Web/Helpers/DisplayFormat.cs:20 | tests/TIKR.Web.Tests/Helpers/DisplayFormatTests.cs | has logic |
@@ -551,31 +1189,32 @@ SfAIAssistView, SfAccordion, SfButton, SfCard, SfCheckBox, SfContextMenu, SfData
 | Workflow Helper | LocalStatusFooterHelper.BuildConnectionHint | src/TIKR.Web/Helpers/LocalStatusFooterHelper.cs:28 | tests/TIKR.Web.Tests/Helpers/LocalStatusFooterHelperTests.cs | small body |
 | Workflow Helper | LocalStatusFooterHelper.BuildFooterMessage | src/TIKR.Web/Helpers/LocalStatusFooterHelper.cs:25 | tests/TIKR.Web.Tests/Helpers/LocalStatusFooterHelperTests.cs | small body |
 | Workflow Helper | LocalStatusFooterHelper.FormatLastSaved | src/TIKR.Web/Helpers/LocalStatusFooterHelper.cs:7 | tests/TIKR.Web.Tests/Helpers/LocalStatusFooterHelperTests.cs | has logic |
-| Workflow Helper | VaultCopyBuilder.BuildCopyAllText | src/TIKR.Web/Helpers/PageWorkflowHelpers.cs:34 | tests/TIKR.Web.Tests/Helpers/PageWorkflowHelpersTests.cs | has logic |
-| Workflow Helper | AssistantPromptBuilder.BuildSystemPrompt | src/TIKR.Web/Helpers/PageWorkflowHelpers.cs:9 | tests/TIKR.Web.Tests/Helpers/PageWorkflowHelpersTests.cs | small body |
-| Workflow Helper | DocumentUiMessages.BulkDelete | src/TIKR.Web/Helpers/PageWorkflowHelpers.cs:74 | tests/TIKR.Web.Tests/Helpers/PageWorkflowHelpersTests.cs | small body |
-| Workflow Helper | DocumentUiMessages.BulkRetag | src/TIKR.Web/Helpers/PageWorkflowHelpers.cs:75 | tests/TIKR.Web.Tests/Helpers/PageWorkflowHelpersTests.cs | small body |
-| Workflow Helper | DocumentUiMessages.CanConvertToPdf | src/TIKR.Web/Helpers/PageWorkflowHelpers.cs:105 | tests/TIKR.Web.Tests/Helpers/PageWorkflowHelpersTests.cs | has logic |
-| Workflow Helper | DocumentUiMessages.ConvertToPdfInProgress | src/TIKR.Web/Helpers/PageWorkflowHelpers.cs:92 | tests/TIKR.Web.Tests/Helpers/PageWorkflowHelpersTests.cs | small body |
-| Workflow Helper | DocumentUiMessages.ConvertToPdfSuccess | src/TIKR.Web/Helpers/PageWorkflowHelpers.cs:94 | tests/TIKR.Web.Tests/Helpers/PageWorkflowHelpersTests.cs | small body |
-| Workflow Helper | DocumentUiMessages.CouncilPacketBuilding | src/TIKR.Web/Helpers/PageWorkflowHelpers.cs:96 | tests/TIKR.Web.Tests/Helpers/PageWorkflowHelpersTests.cs | small body |
-| Workflow Helper | DocumentUiMessages.CouncilPacketSaving | src/TIKR.Web/Helpers/PageWorkflowHelpers.cs:99 | tests/TIKR.Web.Tests/Helpers/PageWorkflowHelpersTests.cs | has logic |
-| Workflow Helper | DocumentUiMessages.CouncilPacketSuccess | src/TIKR.Web/Helpers/PageWorkflowHelpers.cs:102 | tests/TIKR.Web.Tests/Helpers/PageWorkflowHelpersTests.cs | has logic |
-| Workflow Helper | DocumentUiMessages.DownloadFailed | src/TIKR.Web/Helpers/PageWorkflowHelpers.cs:78 | tests/TIKR.Web.Tests/Helpers/PageWorkflowHelpersTests.cs | small body |
-| Workflow Helper | DocumentUiMessages.DownloadInProgress | src/TIKR.Web/Helpers/PageWorkflowHelpers.cs:79 | tests/TIKR.Web.Tests/Helpers/PageWorkflowHelpersTests.cs | small body |
-| Workflow Helper | DocumentUiMessages.DownloadLargeFileWarning | src/TIKR.Web/Helpers/PageWorkflowHelpers.cs:80 | tests/TIKR.Web.Tests/Helpers/PageWorkflowHelpersTests.cs | small body |
-| Workflow Helper | DocumentUiMessages.DownloadSuccess | src/TIKR.Web/Helpers/PageWorkflowHelpers.cs:77 | tests/TIKR.Web.Tests/Helpers/PageWorkflowHelpersTests.cs | small body |
-| Workflow Helper | DocumentUiMessages.ExtractToVaultInProgress | src/TIKR.Web/Helpers/PageWorkflowHelpers.cs:112 | tests/TIKR.Web.Tests/Helpers/PageWorkflowHelpersTests.cs | small body |
-| Workflow Helper | DocumentUiMessages.ExtractToVaultSuccess | src/TIKR.Web/Helpers/PageWorkflowHelpers.cs:114 | tests/TIKR.Web.Tests/Helpers/PageWorkflowHelpersTests.cs | small body |
-| Workflow Helper | VaultCopyBuilder.FilterCategory | src/TIKR.Web/Helpers/PageWorkflowHelpers.cs:63 | tests/TIKR.Web.Tests/Helpers/PageWorkflowHelpersTests.cs | has logic |
-| Workflow Helper | AssistantPromptBuilder.FormatDeadlineContext | src/TIKR.Web/Helpers/PageWorkflowHelpers.cs:25 | tests/TIKR.Web.Tests/Helpers/PageWorkflowHelpersTests.cs | has logic |
-| Workflow Helper | DocumentUiMessages.GenerationFailed | src/TIKR.Web/Helpers/PageWorkflowHelpers.cs:87 | tests/TIKR.Web.Tests/Helpers/PageWorkflowHelpersTests.cs | small body |
-| Workflow Helper | DocumentUiMessages.GenerationInProgress | src/TIKR.Web/Helpers/PageWorkflowHelpers.cs:83 | tests/TIKR.Web.Tests/Helpers/PageWorkflowHelpersTests.cs | small body |
-| Workflow Helper | DocumentUiMessages.GenerationSuccess | src/TIKR.Web/Helpers/PageWorkflowHelpers.cs:85 | tests/TIKR.Web.Tests/Helpers/PageWorkflowHelpersTests.cs | small body |
-| Workflow Helper | DocumentUiMessages.SemanticSearchFailed | src/TIKR.Web/Helpers/PageWorkflowHelpers.cs:82 | tests/TIKR.Web.Tests/Helpers/PageWorkflowHelpersTests.cs | small body |
-| Workflow Helper | DocumentUiMessages.SuggestionAccepted | src/TIKR.Web/Helpers/PageWorkflowHelpers.cs:76 | tests/TIKR.Web.Tests/Helpers/PageWorkflowHelpersTests.cs | small body |
-| Workflow Helper | DocumentUiMessages.UploadFailure | src/TIKR.Web/Helpers/PageWorkflowHelpers.cs:73 | tests/TIKR.Web.Tests/Helpers/PageWorkflowHelpersTests.cs | small body |
-| Workflow Helper | DocumentUiMessages.UploadSuccess | src/TIKR.Web/Helpers/PageWorkflowHelpers.cs:72 | tests/TIKR.Web.Tests/Helpers/PageWorkflowHelpersTests.cs | small body |
+| Workflow Helper | VaultCopyBuilder.BuildCopyAllText | src/TIKR.Web/Helpers/PageWorkflowHelpers.cs:42 | tests/TIKR.Web.Tests/Helpers/PageWorkflowHelpersTests.cs | has logic |
+| Workflow Helper | AssistantPromptBuilder.BuildSystemPrompt | src/TIKR.Web/Helpers/PageWorkflowHelpers.cs:9 | tests/TIKR.Web.Tests/Components/AssistantPageTests.cs, tests... | small body |
+| Workflow Helper | DocumentUiMessages.BulkDelete | src/TIKR.Web/Helpers/PageWorkflowHelpers.cs:82 | tests/TIKR.Web.Tests/Helpers/PageWorkflowHelpersTests.cs | small body |
+| Workflow Helper | DocumentUiMessages.BulkRetag | src/TIKR.Web/Helpers/PageWorkflowHelpers.cs:83 | tests/TIKR.Web.Tests/Helpers/PageWorkflowHelpersTests.cs | small body |
+| Workflow Helper | DocumentUiMessages.CanConvertToPdf | src/TIKR.Web/Helpers/PageWorkflowHelpers.cs:113 | tests/TIKR.Web.Tests/Helpers/PageWorkflowHelpersTests.cs | has logic |
+| Workflow Helper | DocumentUiMessages.ConvertToPdfInProgress | src/TIKR.Web/Helpers/PageWorkflowHelpers.cs:100 | tests/TIKR.Web.Tests/Helpers/PageWorkflowHelpersTests.cs | small body |
+| Workflow Helper | DocumentUiMessages.ConvertToPdfSuccess | src/TIKR.Web/Helpers/PageWorkflowHelpers.cs:102 | tests/TIKR.Web.Tests/Helpers/PageWorkflowHelpersTests.cs | small body |
+| Workflow Helper | DocumentUiMessages.CouncilPacketBuilding | src/TIKR.Web/Helpers/PageWorkflowHelpers.cs:104 | tests/TIKR.Web.Tests/Helpers/PageWorkflowHelpersTests.cs | small body |
+| Workflow Helper | DocumentUiMessages.CouncilPacketSaving | src/TIKR.Web/Helpers/PageWorkflowHelpers.cs:107 | tests/TIKR.Web.Tests/Helpers/PageWorkflowHelpersTests.cs | has logic |
+| Workflow Helper | DocumentUiMessages.CouncilPacketSuccess | src/TIKR.Web/Helpers/PageWorkflowHelpers.cs:110 | tests/TIKR.Web.Tests/Helpers/PageWorkflowHelpersTests.cs | has logic |
+| Workflow Helper | DocumentUiMessages.DownloadFailed | src/TIKR.Web/Helpers/PageWorkflowHelpers.cs:86 | tests/TIKR.Web.Tests/Helpers/PageWorkflowHelpersTests.cs | small body |
+| Workflow Helper | DocumentUiMessages.DownloadInProgress | src/TIKR.Web/Helpers/PageWorkflowHelpers.cs:87 | tests/TIKR.Web.Tests/Helpers/PageWorkflowHelpersTests.cs | small body |
+| Workflow Helper | DocumentUiMessages.DownloadLargeFileWarning | src/TIKR.Web/Helpers/PageWorkflowHelpers.cs:88 | tests/TIKR.Web.Tests/Helpers/PageWorkflowHelpersTests.cs | small body |
+| Workflow Helper | DocumentUiMessages.DownloadSuccess | src/TIKR.Web/Helpers/PageWorkflowHelpers.cs:85 | tests/TIKR.Web.Tests/Helpers/PageWorkflowHelpersTests.cs | small body |
+| Workflow Helper | DocumentUiMessages.ExtractToVaultInProgress | src/TIKR.Web/Helpers/PageWorkflowHelpers.cs:120 | tests/TIKR.Web.Tests/Helpers/PageWorkflowHelpersTests.cs | small body |
+| Workflow Helper | DocumentUiMessages.ExtractToVaultSuccess | src/TIKR.Web/Helpers/PageWorkflowHelpers.cs:122 | tests/TIKR.Web.Tests/Helpers/PageWorkflowHelpersTests.cs | small body |
+| Workflow Helper | VaultCopyBuilder.FilterCategory | src/TIKR.Web/Helpers/PageWorkflowHelpers.cs:71 | tests/TIKR.Web.Tests/Helpers/PageWorkflowHelpersTests.cs | has logic |
+| Workflow Helper | AssistantPromptBuilder.FormatDeadlineContext | src/TIKR.Web/Helpers/PageWorkflowHelpers.cs:25 | tests/TIKR.Web.Tests/Components/AssistantPageTests.cs, tests... | small body |
+| Workflow Helper | AssistantPromptBuilder.FormatStreamingHtml | src/TIKR.Web/Helpers/PageWorkflowHelpers.cs:36 | tests/TIKR.Web.Tests/Components/AssistantPageTests.cs, tests... | has logic |
+| Workflow Helper | DocumentUiMessages.GenerationFailed | src/TIKR.Web/Helpers/PageWorkflowHelpers.cs:95 | tests/TIKR.Web.Tests/Helpers/PageWorkflowHelpersTests.cs | small body |
+| Workflow Helper | DocumentUiMessages.GenerationInProgress | src/TIKR.Web/Helpers/PageWorkflowHelpers.cs:91 | tests/TIKR.Web.Tests/Helpers/PageWorkflowHelpersTests.cs | small body |
+| Workflow Helper | DocumentUiMessages.GenerationSuccess | src/TIKR.Web/Helpers/PageWorkflowHelpers.cs:93 | tests/TIKR.Web.Tests/Helpers/PageWorkflowHelpersTests.cs | small body |
+| Workflow Helper | DocumentUiMessages.SemanticSearchFailed | src/TIKR.Web/Helpers/PageWorkflowHelpers.cs:90 | tests/TIKR.Web.Tests/Helpers/PageWorkflowHelpersTests.cs | small body |
+| Workflow Helper | DocumentUiMessages.SuggestionAccepted | src/TIKR.Web/Helpers/PageWorkflowHelpers.cs:84 | tests/TIKR.Web.Tests/Helpers/PageWorkflowHelpersTests.cs | small body |
+| Workflow Helper | DocumentUiMessages.UploadFailure | src/TIKR.Web/Helpers/PageWorkflowHelpers.cs:81 | tests/TIKR.Web.Tests/Helpers/PageWorkflowHelpersTests.cs | small body |
+| Workflow Helper | DocumentUiMessages.UploadSuccess | src/TIKR.Web/Helpers/PageWorkflowHelpers.cs:80 | tests/TIKR.Web.Tests/Helpers/PageWorkflowHelpersTests.cs | small body |
 | Workflow Helper | RequirementWorkflowHelpers.ApplyAgentExtraction | src/TIKR.Web/Helpers/RequirementWorkflowHelpers.cs:92 | tests/TIKR.Web.Tests/Helpers/RequirementWorkflowHelpersTests... | small body |
 | Workflow Helper | RequirementWorkflowHelpers.BuildCsv | src/TIKR.Web/Helpers/RequirementWorkflowHelpers.cs:56 | tests/TIKR.Web.Tests/Helpers/RequirementWorkflowHelpersTests... | has logic |
 | Workflow Helper | RequirementWorkflowHelpers.FilterRequirements | src/TIKR.Web/Helpers/RequirementWorkflowHelpers.cs:25 | tests/TIKR.Web.Tests/Helpers/RequirementWorkflowHelpersTests... | has logic |
@@ -586,9 +1225,9 @@ SfAIAssistView, SfAccordion, SfButton, SfCard, SfCheckBox, SfContextMenu, SfData
 | Workflow Helper | RequirementWorkflowHelpers.GetUrgencyCssClass | src/TIKR.Web/Helpers/RequirementWorkflowHelpers.cs:15 | tests/TIKR.Web.Tests/Helpers/RequirementWorkflowHelpersTests... | has logic |
 | Workflow Helper | RequirementWorkflowHelpers.GetUrgencyLabel | src/TIKR.Web/Helpers/RequirementWorkflowHelpers.cs:12 | tests/TIKR.Web.Tests/Helpers/RequirementWorkflowHelpersTests... | has logic |
 | Workflow Helper | RequirementWorkflowHelpers.ToCreateRequest | src/TIKR.Web/Helpers/RequirementWorkflowHelpers.cs:125 | tests/TIKR.Web.Tests/Helpers/RequirementWorkflowHelpersTests... | small body |
-| Workflow Helper | StubChatClient.Dispose | tests/TIKR.Infrastructure.Tests/Helpers/StubChatClient.cs:22 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceVaul... | small body |
-| Workflow Helper | StubChatClient.GetResponseAsync | tests/TIKR.Infrastructure.Tests/Helpers/StubChatClient.cs:8 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceVaul... | has logic |
-| Workflow Helper | StubChatClient.GetStreamingResponseAsync | tests/TIKR.Infrastructure.Tests/Helpers/StubChatClient.cs:14 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceVaul... | stub / thin |
+| Workflow Helper | StubChatClient.Dispose | tests/TIKR.Infrastructure.Tests/Helpers/StubChatClient.cs:27 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceVaul... | small body |
+| Workflow Helper | StubChatClient.GetResponseAsync | tests/TIKR.Infrastructure.Tests/Helpers/StubChatClient.cs:10 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceVaul... | has logic |
+| Workflow Helper | StubChatClient.GetStreamingResponseAsync | tests/TIKR.Infrastructure.Tests/Helpers/StubChatClient.cs:19 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceVaul... | stub / thin |
 | Workflow Helper | StubEmbeddingGenerator.Dispose | tests/TIKR.Infrastructure.Tests/Helpers/StubEmbeddingGenerator.cs:30 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceVaul... | small body |
 | Workflow Helper | StubEmbeddingGenerator.GenerateAsync | tests/TIKR.Infrastructure.Tests/Helpers/StubEmbeddingGenerator.cs:12 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceTest... | stub / thin |
 | Workflow Helper | TestDbContextFactory.CreateMigratedAsync | tests/TIKR.Infrastructure.Tests/Helpers/TestDbContextFactory.cs:10 | tests/TIKR.Infrastructure.Tests/Data/DbSeederTests.cs, tests... | has logic |
@@ -615,21 +1254,23 @@ SfAIAssistView, SfAccordion, SfButton, SfCard, SfCheckBox, SfContextMenu, SfData
 | Workflow Helper | LocalStatusFooterHelperTests.FormatLastSaved_UsesFriendlyAge | tests/TIKR.Web.Tests/Helpers/LocalStatusFooterHelperTests.cs:23 | tests/TIKR.Web.Tests/Helpers/LocalStatusFooterHelperTests.cs | has logic |
 | Workflow Helper | PageWorkflowHelpersTests.BuildSystemPrompt_IncludesCatalogWhenPresent | tests/TIKR.Web.Tests/Helpers/PageWorkflowHelpersTests.cs:12 | tests/TIKR.Web.Tests/Helpers/PageWorkflowHelpersTests.cs | has logic |
 | Workflow Helper | PageWorkflowHelpersTests.BuildSystemPrompt_OmitsCatalogBlockWhenEmpty | tests/TIKR.Web.Tests/Helpers/PageWorkflowHelpersTests.cs:24 | tests/TIKR.Web.Tests/Helpers/PageWorkflowHelpersTests.cs | has logic |
-| Workflow Helper | PageWorkflowHelpersTests.DocumentUiMessages_FormatsUserFacingStrings | tests/TIKR.Web.Tests/Helpers/PageWorkflowHelpersTests.cs:71 | tests/TIKR.Web.Tests/Helpers/PageWorkflowHelpersTests.cs | has logic |
-| Workflow Helper | PageWorkflowHelpersTests.FilterCategory_OrdersBySortOrder | tests/TIKR.Web.Tests/Helpers/PageWorkflowHelpersTests.cs:57 | tests/TIKR.Web.Tests/Helpers/PageWorkflowHelpersTests.cs | has logic |
+| Workflow Helper | PageWorkflowHelpersTests.DocumentUiMessages_FormatsUserFacingStrings | tests/TIKR.Web.Tests/Helpers/PageWorkflowHelpersTests.cs:80 | tests/TIKR.Web.Tests/Helpers/PageWorkflowHelpersTests.cs | has logic |
+| Workflow Helper | PageWorkflowHelpersTests.FilterCategory_OrdersBySortOrder | tests/TIKR.Web.Tests/Helpers/PageWorkflowHelpersTests.cs:66 | tests/TIKR.Web.Tests/Helpers/PageWorkflowHelpersTests.cs | has logic |
 | Workflow Helper | PageWorkflowHelpersTests.FormatDeadlineContext_IncludesDueDates | tests/TIKR.Web.Tests/Helpers/PageWorkflowHelpersTests.cs:31 | tests/TIKR.Web.Tests/Helpers/PageWorkflowHelpersTests.cs | has logic |
-| Workflow Helper | PageWorkflowHelpersTests.VaultCopyBuilder_IncludesAllSections | tests/TIKR.Web.Tests/Helpers/PageWorkflowHelpersTests.cs:41 | tests/TIKR.Web.Tests/Helpers/PageWorkflowHelpersTests.cs | has logic |
+| Workflow Helper | PageWorkflowHelpersTests.FormatStreamingHtml_EncodesMarkup | tests/TIKR.Web.Tests/Helpers/PageWorkflowHelpersTests.cs:41 | tests/TIKR.Web.Tests/Helpers/PageWorkflowHelpersTests.cs | has logic |
+| Workflow Helper | PageWorkflowHelpersTests.VaultCopyBuilder_IncludesAllSections | tests/TIKR.Web.Tests/Helpers/PageWorkflowHelpersTests.cs:50 | tests/TIKR.Web.Tests/Helpers/PageWorkflowHelpersTests.cs | has logic |
+| Workflow Helper | RequirementWorkflowHelpersTests.ApplyAgentExtraction_AppendsStructuredTablesToDescription | tests/TIKR.Web.Tests/Helpers/RequirementWorkflowHelpersTests.cs:122 | tests/TIKR.Web.Tests/Helpers/RequirementWorkflowHelpersTests... | has logic |
 | Workflow Helper | RequirementWorkflowHelpersTests.ApplyAgentExtraction_MapsAgentResultToCreateRequest | tests/TIKR.Web.Tests/Helpers/RequirementWorkflowHelpersTests.cs:100 | tests/TIKR.Web.Tests/Helpers/RequirementWorkflowHelpersTests... | has logic |
 | Workflow Helper | RequirementWorkflowHelpersTests.BuildCsv_EscapesCommasAndQuotes | tests/TIKR.Web.Tests/Helpers/RequirementWorkflowHelpersTests.cs:83 | tests/TIKR.Web.Tests/Helpers/RequirementWorkflowHelpersTests... | has logic |
 | Workflow Helper | RequirementWorkflowHelpersTests.FilterRequirements_AppliesSearchCategoryAndUrgency | tests/TIKR.Web.Tests/Helpers/RequirementWorkflowHelpersTests.cs:46 | tests/TIKR.Web.Tests/Helpers/RequirementWorkflowHelpersTests... | has logic |
 | Workflow Helper | RequirementWorkflowHelpersTests.FilterRequirements_ExcludesCompletedByDefault | tests/TIKR.Web.Tests/Helpers/RequirementWorkflowHelpersTests.cs:70 | tests/TIKR.Web.Tests/Helpers/RequirementWorkflowHelpersTests... | has logic |
-| Workflow Helper | RequirementWorkflowHelpersTests.FormatAgentScanMessage_IncludesTableCount | tests/TIKR.Web.Tests/Helpers/RequirementWorkflowHelpersTests.cs:122 | tests/TIKR.Web.Tests/Helpers/RequirementWorkflowHelpersTests... | has logic |
-| Workflow Helper | RequirementWorkflowHelpersTests.GetExtractionSourceLabel_ReflectsSyncfusionFlag | tests/TIKR.Web.Tests/Helpers/RequirementWorkflowHelpersTests.cs:132 | tests/TIKR.Web.Tests/Helpers/RequirementWorkflowHelpersTests... | stub / thin |
-| Workflow Helper | RequirementWorkflowHelpersTests.GetLabel_MapsAllUrgencyLevels | tests/TIKR.Web.Tests/Helpers/RequirementWorkflowHelpersTests.cs:159 | tests/TIKR.Web.Tests/Helpers/RequirementWorkflowHelpersTests... | small body |
+| Workflow Helper | RequirementWorkflowHelpersTests.FormatAgentScanMessage_IncludesTableCount | tests/TIKR.Web.Tests/Helpers/RequirementWorkflowHelpersTests.cs:144 | tests/TIKR.Web.Tests/Helpers/RequirementWorkflowHelpersTests... | has logic |
+| Workflow Helper | RequirementWorkflowHelpersTests.GetExtractionSourceLabel_ReflectsSyncfusionFlag | tests/TIKR.Web.Tests/Helpers/RequirementWorkflowHelpersTests.cs:154 | tests/TIKR.Web.Tests/Helpers/RequirementWorkflowHelpersTests... | stub / thin |
+| Workflow Helper | RequirementWorkflowHelpersTests.GetLabel_MapsAllUrgencyLevels | tests/TIKR.Web.Tests/Helpers/RequirementWorkflowHelpersTests.cs:181 | tests/TIKR.Web.Tests/Helpers/RequirementWorkflowHelpersTests... | small body |
 | Workflow Helper | RequirementWorkflowHelpersTests.GetUrgencyCssClass_MapsKnownLevels | tests/TIKR.Web.Tests/Helpers/RequirementWorkflowHelpersTests.cs:39 | tests/TIKR.Web.Tests/Helpers/RequirementWorkflowHelpersTests... | has logic |
 | Workflow Helper | RequirementWorkflowHelpersTests.GetUrgency_MapsDayWindows | tests/TIKR.Web.Tests/Helpers/RequirementWorkflowHelpersTests.cs:30 | tests/TIKR.Web.Tests/Helpers/RequirementWorkflowHelpersTests... | has logic |
 | Workflow Helper | RequirementWorkflowHelpersTests.GetUrgency_ReturnsCompleted_WhenMarkedDone | tests/TIKR.Web.Tests/Helpers/RequirementWorkflowHelpersTests.cs:15 | tests/TIKR.Web.Tests/Helpers/RequirementWorkflowHelpersTests... | has logic |
-| Workflow Helper | RequirementWorkflowHelpersTests.ToCreateRequest_PreservesRequirementFields | tests/TIKR.Web.Tests/Helpers/RequirementWorkflowHelpersTests.cs:143 | tests/TIKR.Web.Tests/Helpers/RequirementWorkflowHelpersTests... | has logic |
+| Workflow Helper | RequirementWorkflowHelpersTests.ToCreateRequest_PreservesRequirementFields | tests/TIKR.Web.Tests/Helpers/RequirementWorkflowHelpersTests.cs:165 | tests/TIKR.Web.Tests/Helpers/RequirementWorkflowHelpersTests... | has logic |
 
 ## Philosophy (solo superpower)
 - Track **individual functions** so nothing falls through the cracks.

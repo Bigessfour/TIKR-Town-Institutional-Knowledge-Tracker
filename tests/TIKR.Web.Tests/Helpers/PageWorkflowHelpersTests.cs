@@ -38,6 +38,15 @@ public class PageWorkflowHelpersTests
     }
 
     [Fact]
+    public void FormatStreamingHtml_EncodesMarkup()
+    {
+        var html = AssistantPromptBuilder.FormatStreamingHtml("Hello <world> & more");
+        html.Should().Contain("tikr-assist-stream");
+        html.Should().Contain("Hello &lt;world&gt; &amp; more");
+        html.Should().NotContain("<world>");
+    }
+
+    [Fact]
     public void VaultCopyBuilder_IncludesAllSections()
     {
         var howTo = new[] { new KnowledgeEntryDto(Guid.NewGuid(), "Open safe", "Combo", KnowledgeCategory.HowTo, 0) };

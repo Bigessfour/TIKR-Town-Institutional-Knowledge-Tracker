@@ -35,7 +35,7 @@ public class DocumentAgentService(
         var category = InferCategory(title);
 
         string? processedPath = null;
-        string? structuredTables = extraction.ExtractedText; // basic; enhanced below if tables available
+        var structuredTables = extraction.StructuredTables;
 
         // 3. Grok Heavy recommended: create clean stamped PDF archive copy + dual storage (original + processed)
         // when Syncfusion tools were used for extraction. The archive generator always returns a
