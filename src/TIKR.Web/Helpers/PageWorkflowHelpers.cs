@@ -27,6 +27,14 @@ public static class AssistantPromptBuilder
         string.Join("\n", priorities.Select(p =>
             $"- {p.Title} ({p.Priority}): {p.Reason}" +
             (p.DueDate.HasValue ? $" — due {p.DueDate.Value:MMM d}" : "")));
+
+    /// <summary>
+    /// Plain-text streaming preview for SfAIAssistView. UpdateResponseAsync replaces the bubble;
+    /// callers must pass the full accumulated markdown each time. Partial Markdig HTML mid-stream
+    /// breaks incomplete fences/lists, so we HTML-encode until the final render.
+    /// </summary>
+    public static string FormatStreamingHtml(string markdown) =>
+        $"<div class=\"tikr-assist-stream\">{System.Net.WebUtility.HtmlEncode(markdown)}</div>";
 }
 
 public static class VaultCopyBuilder

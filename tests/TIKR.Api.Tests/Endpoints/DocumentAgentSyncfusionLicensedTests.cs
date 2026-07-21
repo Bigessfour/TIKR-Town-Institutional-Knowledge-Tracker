@@ -44,6 +44,14 @@ public class DocumentAgentSyncfusionLicensedTests : IClassFixture<SyncfusionAgen
         body.ProcessedStoragePath.Should().NotBeNullOrWhiteSpace();
         body.ProcessedStoragePath.Should().Contain(".ai-archive.pdf");
         body.ProcessedStoragePath.Should().NotBe(body.OriginalStoragePath);
+
+        // T038: TablesExtractedCount may be heuristic; StructuredTables is optional JSON when extract succeeds.
+        body.TablesExtractedCount.Should().BeGreaterThanOrEqualTo(0);
+        if (!string.IsNullOrWhiteSpace(body.StructuredTables))
+        {
+            body.StructuredTables!.TrimStart().Should().MatchRegex(@"^[\[\{]");
+            body.StructuredTables.Should().NotBe(body.ExtractedText);
+        }
     }
 
     [Fact]

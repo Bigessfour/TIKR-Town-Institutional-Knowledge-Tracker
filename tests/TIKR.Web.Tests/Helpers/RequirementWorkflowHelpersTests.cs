@@ -119,6 +119,28 @@ public class RequirementWorkflowHelpersTests
     }
 
     [Fact]
+    public void ApplyAgentExtraction_AppendsStructuredTablesToDescription()
+    {
+        var result = new DocumentAgentResult(
+            "Periodic Report",
+            "Extracted filing text",
+            null,
+            RecurrenceType.Annual,
+            RequirementCategory.Compliance,
+            2,
+            "agent/report.pdf",
+            true,
+            UsedSyncfusionTools: true,
+            StructuredTables: "[{\"col\":\"Due Date\",\"val\":\"2026-12-01\"}]");
+
+        var request = RequirementWorkflowHelpers.ApplyAgentExtraction(result);
+
+        request.Description.Should().Contain("Extracted filing text");
+        request.Description.Should().Contain("[Structured tables from document]");
+        request.Description.Should().Contain("Due Date");
+    }
+
+    [Fact]
     public void FormatAgentScanMessage_IncludesTableCount()
     {
         var result = new DocumentAgentResult(
