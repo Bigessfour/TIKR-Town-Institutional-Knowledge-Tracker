@@ -4,13 +4,18 @@ namespace TIKR.Infrastructure.Tests.Helpers;
 
 internal sealed class StubChatClient(string responseText) : IChatClient
 {
+    public ChatOptions? LastOptions { get; private set; }
+
     public ChatClientMetadata Metadata { get; } = new("stub");
 
     public Task<ChatResponse> GetResponseAsync(
         IEnumerable<ChatMessage> messages,
         ChatOptions? options = null,
-        CancellationToken cancellationToken = default) =>
-        Task.FromResult(new ChatResponse(new ChatMessage(ChatRole.Assistant, responseText)));
+        CancellationToken cancellationToken = default)
+    {
+        LastOptions = options;
+        return Task.FromResult(new ChatResponse(new ChatMessage(ChatRole.Assistant, responseText)));
+    }
 
     public IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(
         IEnumerable<ChatMessage> messages,

@@ -139,6 +139,20 @@ Web reads Ollama settings from the same env/appsettings keys as the API:
 - `OLLAMA_HOST` / `AI:OllamaHost`
 - `OLLAMA_CHAT_MODEL` / `AI:ChatModel`
 
+#### Optional: `tikr-clerk` model (clerk-tuned tagging)
+
+Document tagging uses a few-shot prompt plus low temperature (`~0.15`) in `HybridAiService`. For a stronger default SYSTEM prompt at the model layer, create a custom Ollama model from `docker/ollama/Modelfile.tikr-clerk` (FROM `llama3.2:3b`):
+
+```bash
+# Host Ollama
+./scripts/create-tikr-clerk-model.sh
+
+# Or Docker Ollama
+docker exec -i tikr-ollama ollama create tikr-clerk -f - < docker/ollama/Modelfile.tikr-clerk
+```
+
+Then set `OLLAMA_CHAT_MODEL=tikr-clerk` in `docker/.env` (or host env) and restart `tikr-api` / Web so they pick up the model name. Default remains `llama3.2:3b` if you skip this step.
+
 ---
 
 ## Part C — vNext roadmap (Smart Components)

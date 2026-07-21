@@ -1,6 +1,10 @@
 namespace TIKR.Shared.Interfaces;
 
-public record AgentExtractionResult(string ExtractedText, int TablesExtractedCount, bool UsedSyncfusionTools);
+public record AgentExtractionResult(
+    string ExtractedText,
+    int TablesExtractedCount,
+    bool UsedSyncfusionTools,
+    string? StructuredTables = null);
 
 /// <summary>
 /// Pluggable extraction for agent-scan. Stub heuristics today; Syncfusion AgentTools in 10C-A2+.
