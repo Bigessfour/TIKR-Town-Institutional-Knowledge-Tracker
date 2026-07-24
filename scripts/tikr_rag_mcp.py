@@ -335,9 +335,16 @@ def main() -> None:
         method = msg.get("method", "")
         params = msg.get("params") or {}
 
+        # JSON-RPC notifications have no id — never reply (Cursor sends
+        # notifications/initialized after initialize; answering breaks the client).
+        if "id" not in msg or method.startswith("notifications/"):
+            continue
+
         try:
             if method == "initialize":
                 result = handle_initialize(params)
+            elif method == "ping":
+                result = {}
             elif method == "tools/list":
                 result = handle_list_tools()
             elif method == "tools/call":
