@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 using TIKR.Infrastructure.Data;
 using TIKR.Shared.Entities;
+using TIKR.Shared.Enums;
 using TIKR.Shared.Interfaces;
 
 namespace TIKR.Infrastructure.Services;
@@ -91,6 +93,11 @@ public class DocumentService(TikrDbContext db) : IDocumentService
         if (entity is null) throw new KeyNotFoundException($"Document {id} not found.");
 
         using var tx = await db.Database.BeginTransactionAsync(ct);
+        var chunks = await db.EmbeddingChunks
+            .Where(c => c.SourceType == EmbeddingSourceType.Document && c.SourceId == id)
+            .ToListAsync(ct);
+        if (chunks.Count > 0)
+            db.EmbeddingChunks.RemoveRange(chunks);
         db.Documents.Remove(entity);
         await audit.LogAsync("Delete", nameof(Document), id, entity.FileName, currentUser.UserId, ct);
         await db.SaveChangesAsync(ct);

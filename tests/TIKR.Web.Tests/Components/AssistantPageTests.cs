@@ -144,9 +144,15 @@ public class AssistantPageTests : ClerkTestContext
         var handler = new StubHandler((req, _) =>
         {
             var path = req.RequestUri!.PathAndQuery;
-            var json = path.Contains("dashboard-priorities", StringComparison.Ordinal)
-                ? prioritiesJson
-                : """{"ollamaAvailable":true,"ollamaModel":"llama3.2:3b","grokEnabled":false}""";
+            var json = path switch
+            {
+                _ when path.Contains("dashboard-priorities", StringComparison.Ordinal) => prioritiesJson,
+                _ when path.Contains("semantic-search-knowledge", StringComparison.Ordinal) =>
+                    """{"query":"","considered":0,"hits":[],"embeddingAvailable":true}""",
+                _ when path.Contains("semantic-search", StringComparison.Ordinal) =>
+                    """{"query":"","considered":0,"hits":[],"embeddingAvailable":true}""",
+                _ => """{"ollamaAvailable":true,"ollamaModel":"llama3.2:3b","grokEnabled":false}"""
+            };
             return new HttpResponseMessage(HttpStatusCode.OK)
             {
                 Content = new StringContent(json, Encoding.UTF8, "application/json")

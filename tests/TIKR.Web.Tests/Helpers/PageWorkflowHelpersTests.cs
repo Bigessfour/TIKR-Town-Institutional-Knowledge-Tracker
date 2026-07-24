@@ -47,6 +47,55 @@ public class PageWorkflowHelpersTests
     }
 
     [Fact]
+    public void BuildSystemPrompt_RequiresGroundedAnswers()
+    {
+        var catalog = new ColoradoResourceCatalog([], null);
+        AssistantPromptBuilder.BuildSystemPrompt(catalog)
+            .Should().Contain("ONLY from that context")
+            .And.Contain("Sources");
+    }
+
+    [Fact]
+    public void FormatDocumentRagBlock_MarksUnavailable()
+    {
+        var block = AssistantPromptBuilder.FormatDocumentRagBlock(
+            new SemanticSearchResponse("q", 0, [], EmbeddingAvailable: false),
+            out var unavailable);
+        unavailable.Should().BeTrue();
+        block.Should().BeNull();
+    }
+
+    [Fact]
+    public void BuildUserMessageWithRag_IncludesCitationsAndNoHitGuidance()
+    {
+        var msg = AssistantPromptBuilder.BuildUserMessageWithRag(
+            "What is the fee?",
+            deadlineContext: null,
+            docContext: "Relevant documents:\n- Source: fee.pdf\n  $125",
+            vaultContext: null,
+            searchUnavailable: false,
+            citations: ["fee.pdf"]);
+
+        msg.Should().Contain("Question: What is the fee?");
+        msg.Should().Contain("fee.pdf");
+        msg.Should().Contain("Required Sources");
+    }
+
+    [Fact]
+    public void BuildUserMessageWithRag_WhenSearchDown_WarnsClerk()
+    {
+        var msg = AssistantPromptBuilder.BuildUserMessageWithRag(
+            "help",
+            null,
+            null,
+            null,
+            searchUnavailable: true,
+            citations: []);
+
+        msg.Should().Contain("temporarily unavailable");
+    }
+
+    [Fact]
     public void VaultCopyBuilder_IncludesAllSections()
     {
         var howTo = new[] { new KnowledgeEntryDto(Guid.NewGuid(), "Open safe", "Combo", KnowledgeCategory.HowTo, 0) };

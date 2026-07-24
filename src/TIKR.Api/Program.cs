@@ -570,6 +570,9 @@ api.MapPost("/ai/embed-knowledge/{id:guid}", async (Guid id, IHybridAiService ai
     }
 });
 
+api.MapPost("/ai/reindex-embeddings", async (IHybridAiService ai) =>
+    Results.Ok(await ai.ReindexAllEmbeddingsAsync()));
+
 api.MapPost("/ai/agent-scan", async (HttpRequest request, IDocumentAgentService agent) =>
 {
     if (!request.HasFormContentType)

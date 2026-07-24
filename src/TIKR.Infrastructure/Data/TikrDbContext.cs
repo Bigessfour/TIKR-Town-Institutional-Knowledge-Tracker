@@ -16,6 +16,7 @@ public class TikrDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<KnowledgeEntry> KnowledgeEntries => Set<KnowledgeEntry>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
     public DbSet<RequirementDocument> RequirementDocuments => Set<RequirementDocument>();
+    public DbSet<EmbeddingChunk> EmbeddingChunks => Set<EmbeddingChunk>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -58,6 +59,17 @@ public class TikrDbContext : IdentityDbContext<ApplicationUser>
                 .WithMany()
                 .HasForeignKey(e => e.DocumentId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<EmbeddingChunk>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Content).IsRequired();
+            entity.Property(e => e.ContentHash).HasMaxLength(64).IsRequired();
+            entity.Property(e => e.DisplayName).HasMaxLength(500);
+            entity.Property(e => e.Facet).HasMaxLength(200);
+            entity.HasIndex(e => new { e.SourceType, e.SourceId });
+            entity.HasIndex(e => new { e.SourceType, e.Facet });
         });
     }
 }

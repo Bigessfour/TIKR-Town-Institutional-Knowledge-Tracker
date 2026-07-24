@@ -12,4 +12,5 @@ public interface IHybridAiService
     Task<EmbedDocumentResponse> EmbedDocumentAsync(Guid documentId, CancellationToken cancellationToken = default);
     Task<SemanticSearchKnowledgeResponse> SemanticSearchKnowledgeAsync(SemanticSearchRequest request, CancellationToken cancellationToken = default);
     Task<EmbedKnowledgeEntryResponse> EmbedKnowledgeEntryAsync(Guid entryId, CancellationToken cancellationToken = default);
+    Task<ReindexEmbeddingsResponse> ReindexAllEmbeddingsAsync(CancellationToken cancellationToken = default);
 }

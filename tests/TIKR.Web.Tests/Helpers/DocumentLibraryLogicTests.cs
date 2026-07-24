@@ -85,4 +85,12 @@ public class DocumentLibraryLogicTests
 
         DocumentLibraryLogic.DescribeSemanticResults(response).Should().Be(expected);
     }
+
+    [Fact]
+    public void DescribeSemanticResults_WhenEmbeddingUnavailable()
+    {
+        var response = new SemanticSearchResponse("q", 0, [], EmbeddingAvailable: false);
+        DocumentLibraryLogic.DescribeSemanticResults(response)
+            .Should().Contain("nomic-embed-text");
+    }
 }

@@ -87,6 +87,9 @@ public static class DocumentLibraryLogic
         if (result is null)
             return "Semantic search unavailable (is Ollama running?).";
 
+        if (!result.EmbeddingAvailable)
+            return "Semantic search unavailable (is Ollama running with nomic-embed-text?).";
+
         if (result.Hits.Count == 0)
             return $"No semantic matches yet. {result.Considered} document(s) embedded so far.";
 

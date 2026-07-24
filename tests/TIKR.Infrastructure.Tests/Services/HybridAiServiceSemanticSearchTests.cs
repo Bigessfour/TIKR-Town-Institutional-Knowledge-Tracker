@@ -5,6 +5,7 @@ using TIKR.Infrastructure.Services;
 using TIKR.Infrastructure.Tests.Helpers;
 using TIKR.Shared.DTOs;
 using TIKR.Shared.Entities;
+using TIKR.Shared.Enums;
 using TIKR.Shared.Interfaces;
 using TIKR.Shared.TestFixtures;
 
@@ -110,8 +111,9 @@ public class HybridAiServiceSemanticSearchTests
         var ollama = CreateOllamaFactoryWithEmbedder(text => Vector(text));
         var sut = new HybridAiService(db, ollama, DisabledGrok, Mock.Of<IFileStorageService>(), Mock.Of<IDocumentAgentExtractionBackend>(), NullLogger<HybridAiService>.Instance);
 
-        var response = await sut.SemanticSearchDocumentsAsync(new SemanticSearchRequest("budget", 2));
+        var response = await sut.SemanticSearchDocumentsAsync(new SemanticSearchRequest("budget", 2, MinScore: 0));
 
+        response.EmbeddingAvailable.Should().BeTrue();
         response.Considered.Should().Be(3);
         response.Hits.Should().HaveCount(2);
         // The budget doc shares the "budget" token and must rank first.
@@ -137,7 +139,7 @@ public class HybridAiServiceSemanticSearchTests
         var ollama = CreateOllamaFactoryWithEmbedder(text => Vector(text));
         var sut = new HybridAiService(db, ollama, DisabledGrok, Mock.Of<IFileStorageService>(), Mock.Of<IDocumentAgentExtractionBackend>(), NullLogger<HybridAiService>.Instance);
 
-        var response = await sut.SemanticSearchDocumentsAsync(new SemanticSearchRequest("budget", 5));
+        var response = await sut.SemanticSearchDocumentsAsync(new SemanticSearchRequest("budget", 5, MinScore: 0));
         response.Considered.Should().Be(1);
         response.Hits.Should().ContainSingle()
             .Which.FileName.Should().Be("with-embedding.pdf");
@@ -155,6 +157,207 @@ public class HybridAiServiceSemanticSearchTests
 
         var response = await sut.SemanticSearchDocumentsAsync(new SemanticSearchRequest("query", 3));
         response.Hits.Should().BeEmpty();
+        response.EmbeddingAvailable.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task SemanticSearchDocumentsAsync_FiltersBelowMinScore()
+    {
+        await using var db = await TestDbContextFactory.CreateMigratedAsync();
+        SeedWithEmbedding(db, "budget.pdf", "annual operating budget");
+        await db.SaveChangesAsync();
+
+        var ollama = CreateOllamaFactoryWithEmbedder(text => Vector(text));
+        var sut = new HybridAiService(db, ollama, DisabledGrok, Mock.Of<IFileStorageService>(), Mock.Of<IDocumentAgentExtractionBackend>(), NullLogger<HybridAiService>.Instance);
+
+        var response = await sut.SemanticSearchDocumentsAsync(new SemanticSearchRequest("zzzzunrelated", 5, MinScore: 0.99));
+        response.Hits.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task EmbedDocumentAsync_IndexesChunksForLongText()
+    {
+        await using var db = await TestDbContextFactory.CreateMigratedAsync();
+        var marker = "UNIQUE_LATE_SECTION_MARKER_XYZ";
+        var body = new string('a', 4500) + " " + marker + " building permit late fee schedule";
+        var doc = new Document
+        {
+            Id = Guid.NewGuid(),
+            FileName = "long-ordinance.pdf",
+            StoragePath = "p/long.pdf",
+            FullTextContent = body,
+            UploadedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
+        db.Documents.Add(doc);
+        await db.SaveChangesAsync();
+
+        var ollama = CreateOllamaFactoryWithEmbedder(text => Vector(text));
+        var sut = new HybridAiService(db, ollama, DisabledGrok, Mock.Of<IFileStorageService>(), Mock.Of<IDocumentAgentExtractionBackend>(), NullLogger<HybridAiService>.Instance);
+
+        var embedded = await sut.EmbedDocumentAsync(doc.Id);
+        embedded.Embedded.Should().BeTrue();
+
+        var chunkCount = db.EmbeddingChunks.Count(c => c.SourceId == doc.Id);
+        chunkCount.Should().BeGreaterThan(1);
+
+        var response = await sut.SemanticSearchDocumentsAsync(new SemanticSearchRequest(marker, 3, MinScore: 0));
+        response.Hits.Should().Contain(h => h.DocumentId == doc.Id && h.Snippet != null && h.Snippet.Contains(marker));
+    }
+
+    [Fact]
+    public async Task SemanticSearchDocumentsAsync_ExactFileNameRanksFirst()
+    {
+        await using var db = await TestDbContextFactory.CreateMigratedAsync();
+        SeedWithEmbedding(db, "fee-schedule-2026.pdf", "municipal fees and charges overview");
+        SeedWithEmbedding(db, "other.pdf", "municipal fees and charges overview");
+        await db.SaveChangesAsync();
+
+        var ollama = CreateOllamaFactoryWithEmbedder(text => Vector(text));
+        var sut = new HybridAiService(db, ollama, DisabledGrok, Mock.Of<IFileStorageService>(), Mock.Of<IDocumentAgentExtractionBackend>(), NullLogger<HybridAiService>.Instance);
+
+        var response = await sut.SemanticSearchDocumentsAsync(new SemanticSearchRequest("fee-schedule-2026", 2, MinScore: 0));
+        response.Hits[0].FileName.Should().Be("fee-schedule-2026.pdf");
+    }
+
+    [Fact]
+    public async Task SemanticSearchDocumentsAsync_FolderFilterExcludesOthers()
+    {
+        await using var db = await TestDbContextFactory.CreateMigratedAsync();
+        var permits = SeedWithEmbedding(db, "a.pdf", "permit fee");
+        permits.SuggestedFolder = "Permits";
+        var other = SeedWithEmbedding(db, "b.pdf", "permit fee");
+        other.SuggestedFolder = "Minutes";
+        await db.SaveChangesAsync();
+
+        var ollama = CreateOllamaFactoryWithEmbedder(text => Vector(text));
+        var sut = new HybridAiService(db, ollama, DisabledGrok, Mock.Of<IFileStorageService>(), Mock.Of<IDocumentAgentExtractionBackend>(), NullLogger<HybridAiService>.Instance);
+
+        var response = await sut.SemanticSearchDocumentsAsync(new SemanticSearchRequest("permit", 5, MinScore: 0, Folder: "Permits"));
+        response.Hits.Should().ContainSingle().Which.DocumentId.Should().Be(permits.Id);
+    }
+
+    [Fact]
+    public async Task SemanticSearchDocumentsAsync_MergesChunkedAndLegacySources()
+    {
+        await using var db = await TestDbContextFactory.CreateMigratedAsync();
+        var legacy = SeedWithEmbedding(db, "legacy-budget.pdf", "annual operating budget legacy");
+        var chunked = new Document
+        {
+            Id = Guid.NewGuid(),
+            FileName = "chunked-budget.pdf",
+            StoragePath = "p/chunked.pdf",
+            FullTextContent = "annual operating budget chunked",
+            UploadedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
+        db.Documents.Add(chunked);
+        await db.SaveChangesAsync();
+
+        var ollama = CreateOllamaFactoryWithEmbedder(text => Vector(text));
+        var sut = new HybridAiService(db, ollama, DisabledGrok, Mock.Of<IFileStorageService>(), Mock.Of<IDocumentAgentExtractionBackend>(), NullLogger<HybridAiService>.Instance);
+        (await sut.EmbedDocumentAsync(chunked.Id)).Embedded.Should().BeTrue();
+
+        var response = await sut.SemanticSearchDocumentsAsync(new SemanticSearchRequest("budget", 5, MinScore: 0));
+        response.Considered.Should().Be(2);
+        response.Hits.Select(h => h.DocumentId).Should().Contain([legacy.Id, chunked.Id]);
+    }
+
+    [Fact]
+    public async Task DocumentDelete_RemovesEmbeddingChunks()
+    {
+        await using var db = await TestDbContextFactory.CreateMigratedAsync();
+        var doc = new Document
+        {
+            Id = Guid.NewGuid(),
+            FileName = "gone.pdf",
+            StoragePath = "p/gone.pdf",
+            FullTextContent = "delete me content",
+            UploadedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
+        db.Documents.Add(doc);
+        await db.SaveChangesAsync();
+
+        var ollama = CreateOllamaFactoryWithEmbedder(text => Vector(text));
+        var ai = new HybridAiService(db, ollama, DisabledGrok, Mock.Of<IFileStorageService>(), Mock.Of<IDocumentAgentExtractionBackend>(), NullLogger<HybridAiService>.Instance);
+        (await ai.EmbedDocumentAsync(doc.Id)).Embedded.Should().BeTrue();
+        db.EmbeddingChunks.Count(c => c.SourceId == doc.Id).Should().BeGreaterThan(0);
+
+        var docs = new DocumentService(db);
+        var audit = new Mock<IAuditService>();
+        audit.Setup(a => a.LogAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<Guid?>(), It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+        var user = new Mock<ICurrentUserService>();
+        user.SetupGet(u => u.UserId).Returns("tester");
+
+        await docs.DeleteAsync(doc.Id, Mock.Of<IFileStorageService>(), audit.Object, user.Object);
+        db.EmbeddingChunks.Count(c => c.SourceId == doc.Id).Should().Be(0);
+    }
+
+    [Fact]
+    public async Task EmbedDocumentAsync_SkipsWhenContentHashUnchanged()
+    {
+        await using var db = await TestDbContextFactory.CreateMigratedAsync();
+        var doc = new Document
+        {
+            Id = Guid.NewGuid(),
+            FileName = "stable.pdf",
+            StoragePath = "p/stable.pdf",
+            FullTextContent = "unchanged content for hash skip",
+            UploadedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
+        db.Documents.Add(doc);
+        await db.SaveChangesAsync();
+
+        var calls = 0;
+        var ollama = CreateOllamaFactoryWithEmbedder(text =>
+        {
+            calls++;
+            return Vector(text);
+        });
+        var sut = new HybridAiService(db, ollama, DisabledGrok, Mock.Of<IFileStorageService>(), Mock.Of<IDocumentAgentExtractionBackend>(), NullLogger<HybridAiService>.Instance);
+
+        (await sut.EmbedDocumentAsync(doc.Id)).Embedded.Should().BeTrue();
+        var firstCalls = calls;
+        firstCalls.Should().BeGreaterThan(0);
+
+        (await sut.EmbedDocumentAsync(doc.Id)).Embedded.Should().BeTrue();
+        calls.Should().Be(firstCalls);
+    }
+
+    [Fact]
+    public async Task ReindexAllEmbeddingsAsync_IndexesDocumentsAndKnowledge()
+    {
+        await using var db = await TestDbContextFactory.CreateMigratedAsync();
+        db.Documents.Add(new Document
+        {
+            Id = Guid.NewGuid(),
+            FileName = "a.pdf",
+            StoragePath = "p/a.pdf",
+            FullTextContent = "reindex me document",
+            UploadedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        });
+        db.KnowledgeEntries.Add(new KnowledgeEntry
+        {
+            Id = Guid.NewGuid(),
+            Title = "How to reindex",
+            Content = "reindex me vault",
+            Category = KnowledgeCategory.HowTo,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        });
+        await db.SaveChangesAsync();
+
+        var ollama = CreateOllamaFactoryWithEmbedder(text => Vector(text));
+        var sut = new HybridAiService(db, ollama, DisabledGrok, Mock.Of<IFileStorageService>(), Mock.Of<IDocumentAgentExtractionBackend>(), NullLogger<HybridAiService>.Instance);
+
+        var result = await sut.ReindexAllEmbeddingsAsync();
+        result.DocumentsEmbedded.Should().Be(1);
+        result.KnowledgeEmbedded.Should().Be(1);
+        db.EmbeddingChunks.Should().NotBeEmpty();
     }
 
     [Fact]
@@ -189,10 +392,10 @@ public class HybridAiServiceSemanticSearchTests
         var ollama = CreateOllamaFactoryWithEmbedder(text => Vector(text));
         var sut = new HybridAiService(db, ollama, DisabledGrok, Mock.Of<IFileStorageService>(), Mock.Of<IDocumentAgentExtractionBackend>(), NullLogger<HybridAiService>.Instance);
 
-        var low = await sut.SemanticSearchDocumentsAsync(new SemanticSearchRequest("budget", 0));
+        var low = await sut.SemanticSearchDocumentsAsync(new SemanticSearchRequest("budget", 0, MinScore: 0));
         low.Hits.Should().HaveCountLessThanOrEqualTo(1);
 
-        var high = await sut.SemanticSearchDocumentsAsync(new SemanticSearchRequest("budget", 100));
+        var high = await sut.SemanticSearchDocumentsAsync(new SemanticSearchRequest("budget", 100, MinScore: 0));
         high.Hits.Should().HaveCountLessThanOrEqualTo(20);
     }
 

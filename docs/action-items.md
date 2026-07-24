@@ -121,7 +121,8 @@ See updated "without proof" section in generated (now empty). Real verification 
 
 ## Core Services & Public Methods — Status
 
-- [x] `IHybridAiService` + impl (8 public methods): Tag, Priorities, AskAdvanced (Ollama first + Grok fallback by prompt context), Status, `SemanticSearch*` (docs + knowledge), `Embed*`. Phase 3/9. Tests: `HybridAiService*Tests.cs`. (Logic update 2026-07-08 for validate-first per user query.)
+- [x] `IHybridAiService` + impl: Tag, Priorities, AskAdvanced, Status, `SemanticSearch*` (docs + knowledge; chunked hybrid + minScore), `Embed*`, `ReindexAllEmbeddingsAsync`. Spec `002-bulletproof-clerk-rag`. Tests: `HybridAiService*Tests.cs`, `TextChunkerTests.cs`.
+- [x] `POST /api/ai/reindex-embeddings` + `TikrApiClient.ReindexEmbeddingsAsync`. Proof: `ReindexAllEmbeddingsAsync_IndexesDocumentsAndKnowledge`.
 - [x] `IDocumentAgentService` + `DocumentAgentService.ProcessUploadAsync` (stub + Syncfusion path via backend). 10B/10C. Tests + fixtures.
 - [x] `IDocumentService` + `DocumentService.UploadAsync` / `PrepareDocumentUploadAsync` (prep extraction+storage via IFileStorage + tx+audit persist). Thin API audit item #3. Proof: DocumentsEndpointTests.Upload* (9 tests passing post-refactor) + endpoint integration via /api/documents POST delegating to service (covers both methods since Upload calls Prepare). Inventory now tracks PrepareDocumentUploadAsync.
 - [x] `SyncfusionDocumentAgentOrchestrator.TryExtractAsync` + `SyncfusionDocumentAgentToolRegistry` (A3 orchestration + full clerk tool set). feature/phase10c-document-tool-coverage.

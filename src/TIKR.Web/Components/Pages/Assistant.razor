@@ -6,7 +6,9 @@
 @inject ColoradoResourceCatalog ResourceCatalog
 @using Markdig
 @using Microsoft.Extensions.AI
+@using TIKR.Shared.DTOs
 @using TIKR.Web.Components.Shared
+@using TIKR.Web.Helpers
 
 <div class="page-header">
     <div class="page-header-main">
@@ -154,45 +156,38 @@
                 return;
             }
 
-            // RAG context (best effort)
-            string? docContext = null;
+            SemanticSearchResponse? docSearch = null;
+            SemanticSearchKnowledgeResponse? vaultSearch = null;
+            var searchUnavailable = false;
             try
             {
-                var search = await Api.SemanticSearchDocumentsAsync(args.Prompt, topK: 3);
-                if (search is { Hits.Count: > 0 })
-                {
-                    docContext = string.Join("\n", search.Hits.Select(h =>
-                        $"- {h.FileName}" +
-                        (string.IsNullOrWhiteSpace(h.SuggestedFolder) ? "" : $" [{h.SuggestedFolder}]") +
-                        (string.IsNullOrWhiteSpace(h.Snippet) ? "" : $": {h.Snippet}")));
-                }
+                docSearch = await Api.SemanticSearchDocumentsAsync(args.Prompt, topK: 5);
             }
-            catch { docContext = null; }
+            catch
+            {
+                searchUnavailable = true;
+            }
 
-            string? vaultContext = null;
             try
             {
-                var vault = await Api.SemanticSearchKnowledgeAsync(args.Prompt, topK: 3);
-                if (vault is { Hits.Count: > 0 })
-                {
-                    vaultContext = string.Join("\n", vault.Hits.Select(h =>
-                        $"- {h.Title} [{h.Category}]" +
-                        (string.IsNullOrWhiteSpace(h.Snippet) ? "" : $": {h.Snippet}")));
-                }
+                vaultSearch = await Api.SemanticSearchKnowledgeAsync(args.Prompt, topK: 5);
             }
-            catch { vaultContext = null; }
+            catch
+            {
+                searchUnavailable = true;
+            }
 
-            var contextBlocks = new List<string>();
-            if (!string.IsNullOrWhiteSpace(_contextSummary))
-                contextBlocks.Add($"Upcoming priorities:\n{_contextSummary}");
-            if (!string.IsNullOrWhiteSpace(docContext))
-                contextBlocks.Add($"Relevant documents:\n{docContext}");
-            if (!string.IsNullOrWhiteSpace(vaultContext))
-                contextBlocks.Add($"Relevant institutional knowledge:\n{vaultContext}");
-
-            var userMessage = contextBlocks.Count == 0
-                ? args.Prompt
-                : string.Join("\n\n", contextBlocks) + $"\n\nQuestion: {args.Prompt}";
+            var docContext = AssistantPromptBuilder.FormatDocumentRagBlock(docSearch, out var docsDown);
+            var vaultContext = AssistantPromptBuilder.FormatVaultRagBlock(vaultSearch, out var vaultDown);
+            searchUnavailable = searchUnavailable || docsDown || vaultDown;
+            var citations = AssistantPromptBuilder.CollectCitationLabels(docSearch, vaultSearch);
+            var userMessage = AssistantPromptBuilder.BuildUserMessageWithRag(
+                args.Prompt,
+                _contextSummary,
+                docContext,
+                vaultContext,
+                searchUnavailable,
+                citations);
 
             var messages = new List<Microsoft.Extensions.AI.ChatMessage>
             {
@@ -218,6 +213,15 @@
 
                 await SafeUpdateResponseAsync(AssistantPromptBuilder.FormatStreamingHtml(markdownBuilder.ToString()));
                 lastUiPush = DateTime.UtcNow;
+            }
+
+            if (citations.Count > 0 && !markdownBuilder.ToString().Contains("Sources", StringComparison.OrdinalIgnoreCase))
+            {
+                markdownBuilder.AppendLine();
+                markdownBuilder.AppendLine();
+                markdownBuilder.AppendLine("**Sources**");
+                foreach (var c in citations)
+                    markdownBuilder.AppendLine($"- {c}");
             }
 
             var html = Markdown.ToHtml(markdownBuilder.ToString());

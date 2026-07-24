@@ -11,7 +11,11 @@ public static class AssistantPromptBuilder
         const string basePrompt =
             "You are TIKR, a helpful AI assistant for a one-person Colorado municipal town clerk. " +
             "Answer concisely about deadlines, documents, procedures, and institutional knowledge. " +
-            "If unsure, say so and recommend the most relevant source below by name and URL; " +
+            "When document or vault context is provided, answer ONLY from that context. " +
+            "If the context is missing, empty, or does not contain the answer, say you do not have matching " +
+            "documents or institutional knowledge in TIKR — do not invent procedures or fees. " +
+            "When you use context, end with a Sources section listing the document filenames and vault titles used. " +
+            "If unsure, say so and recommend the most relevant external source below by name and URL; " +
             "for binding legal questions, always advise consulting the town attorney.";
 
         var catalogBlock = catalog.ToSystemPromptBlock();
@@ -21,6 +25,70 @@ public static class AssistantPromptBuilder
         return basePrompt +
             "\n\nTrusted external sources for Colorado municipal clerks (cite name + URL when referring users out):\n" +
             catalogBlock;
+    }
+
+    /// <summary>
+    /// Packs retrieved passages for the chat model. Returns null when search is unavailable.
+    /// </summary>
+    public static string? FormatDocumentRagBlock(SemanticSearchResponse? search, out bool searchUnavailable)
+    {
+        searchUnavailable = search is { EmbeddingAvailable: false };
+        if (search is null || searchUnavailable || search.Hits is not { Count: > 0 })
+            return null;
+
+        return "Relevant documents:\n" + string.Join("\n\n", search.Hits.Select(h =>
+            $"- Source: {h.FileName}" +
+            (string.IsNullOrWhiteSpace(h.SuggestedFolder) ? "" : $" [{h.SuggestedFolder}]") +
+            (h.ChunkIndex is int idx ? $" (passage {idx + 1})" : "") +
+            (string.IsNullOrWhiteSpace(h.Snippet) ? "" : $"\n  {h.Snippet}")));
+    }
+
+    public static string? FormatVaultRagBlock(SemanticSearchKnowledgeResponse? search, out bool searchUnavailable)
+    {
+        searchUnavailable = search is { EmbeddingAvailable: false };
+        if (search is null || searchUnavailable || search.Hits is not { Count: > 0 })
+            return null;
+
+        return "Relevant institutional knowledge:\n" + string.Join("\n\n", search.Hits.Select(h =>
+            $"- Source: {h.Title} [{h.Category}]" +
+            (h.ChunkIndex is int idx ? $" (passage {idx + 1})" : "") +
+            (string.IsNullOrWhiteSpace(h.Snippet) ? "" : $"\n  {h.Snippet}")));
+    }
+
+    public static IReadOnlyList<string> CollectCitationLabels(
+        SemanticSearchResponse? docs,
+        SemanticSearchKnowledgeResponse? vault)
+    {
+        var labels = new List<string>();
+        if (docs?.Hits is { Count: > 0 })
+            labels.AddRange(docs.Hits.Select(h => h.FileName).Where(n => !string.IsNullOrWhiteSpace(n)));
+        if (vault?.Hits is { Count: > 0 })
+            labels.AddRange(vault.Hits.Select(h => h.Title).Where(n => !string.IsNullOrWhiteSpace(n)));
+        return labels.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+    }
+
+    public static string BuildUserMessageWithRag(
+        string question,
+        string? deadlineContext,
+        string? docContext,
+        string? vaultContext,
+        bool searchUnavailable,
+        IReadOnlyList<string> citations)
+    {
+        var blocks = new List<string>();
+        if (searchUnavailable)
+            blocks.Add("Note: Document/vault search is temporarily unavailable (local embedding service offline). Answer only from deadlines below if present; otherwise say you cannot search TIKR knowledge right now.");
+        if (!string.IsNullOrWhiteSpace(deadlineContext))
+            blocks.Add($"Upcoming priorities:\n{deadlineContext}");
+        if (!string.IsNullOrWhiteSpace(docContext))
+            blocks.Add(docContext);
+        if (!string.IsNullOrWhiteSpace(vaultContext))
+            blocks.Add(vaultContext);
+        if (citations.Count > 0)
+            blocks.Add("Required Sources to cite if used:\n" + string.Join("\n", citations.Select(c => $"- {c}")));
+        if (blocks.Count == 0)
+            return question + "\n\n(No matching documents or vault entries were retrieved. If you cannot answer from general clerk practice, say so.)";
+        return string.Join("\n\n", blocks) + $"\n\nQuestion: {question}";
     }
 
     public static string FormatDeadlineContext(IReadOnlyList<DashboardPriority> priorities) =>

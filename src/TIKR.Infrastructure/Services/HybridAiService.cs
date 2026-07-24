@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using TIKR.Infrastructure.Data;
 using TIKR.Shared.DTOs;
 using TIKR.Shared.Entities;
+using TIKR.Shared.Enums;
 using TIKR.Shared.Interfaces;
 
 namespace TIKR.Infrastructure.Services;
@@ -19,6 +20,10 @@ public class HybridAiService(
 {
     private const int TagPreviewChars = 4000;
     private const int MaxPersistedExtractChars = 100_000;
+    internal const double DefaultMinScore = 0.38;
+    private const double VectorWeight = 0.7;
+    private const double KeywordWeight = 0.3;
+    private const int PassageSnippetChars = 1000;
 
     public async Task<TagDocumentResponse> TagDocumentAsync(Guid documentId, CancellationToken cancellationToken = default)
     {
@@ -64,11 +69,9 @@ public class HybridAiService(
         document.SuggestedFolder = folder;
         document.UpdatedAt = DateTime.UtcNow;
 
-        // Best-effort: refresh embedding from the just-tagged content so semantic search stays current.
+        // Best-effort: refresh chunk embeddings so semantic search stays current.
         // Never block tagging if the embedding model is unavailable.
-        var embedding = await TryGenerateEmbeddingAsync(BuildEmbeddingText(document), cancellationToken);
-        if (embedding is not null)
-            document.Embedding = PackFloats(embedding);
+        await TryIndexDocumentChunksAsync(document, cancellationToken);
 
         await db.SaveChangesAsync(cancellationToken);
 
@@ -120,12 +123,10 @@ public class HybridAiService(
         var document = await db.Documents.FindAsync([documentId], cancellationToken)
             ?? throw new KeyNotFoundException($"Document {documentId} not found.");
 
-        var text = BuildEmbeddingText(document);
-        var vector = await TryGenerateEmbeddingAsync(text, cancellationToken);
-        if (vector is null)
+        var ok = await TryIndexDocumentChunksAsync(document, cancellationToken);
+        if (!ok)
             return new EmbedDocumentResponse(documentId, false, "Embedding generator unavailable (is Ollama running with nomic-embed-text?)");
 
-        document.Embedding = PackFloats(vector);
         document.UpdatedAt = DateTime.UtcNow;
         await db.SaveChangesAsync(cancellationToken);
         return new EmbedDocumentResponse(documentId, true, null);
@@ -134,33 +135,62 @@ public class HybridAiService(
     public async Task<SemanticSearchResponse> SemanticSearchDocumentsAsync(SemanticSearchRequest request, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(request.Query))
-            return new SemanticSearchResponse(request.Query, 0, []);
+            return new SemanticSearchResponse(request.Query, 0, [], EmbeddingAvailable: true);
 
         var topK = Math.Clamp(request.TopK, 1, 20);
+        var minScore = request.MinScore ?? DefaultMinScore;
 
         var queryVector = await TryGenerateEmbeddingAsync(request.Query, cancellationToken);
         if (queryVector is null)
-            return new SemanticSearchResponse(request.Query, 0, []);
+            return new SemanticSearchResponse(request.Query, 0, [], EmbeddingAvailable: false);
 
-        // Embeddings live on Documents; pull only rows with an embedding so we don't ship raw bytes for nothing.
+        var chunkQuery = db.EmbeddingChunks.Where(c => c.SourceType == EmbeddingSourceType.Document);
+        if (!string.IsNullOrWhiteSpace(request.Folder))
+            chunkQuery = chunkQuery.Where(c => c.Facet == request.Folder);
+
+        var chunks = await chunkQuery.ToListAsync(cancellationToken);
+        var chunkSourceIds = chunks.Select(c => c.SourceId).Distinct().ToHashSet();
+
+        var chunkHits = RankChunks(chunks, request.Query, queryVector, minScore)
+            .GroupBy(x => x.SourceId)
+            .Select(g => g.OrderByDescending(x => x.Score).First())
+            .Select(x => new SemanticSearchHit(
+                x.SourceId,
+                x.DisplayName ?? "document",
+                x.Facet,
+                BuildSnippet(x.Content, request.Query, PassageSnippetChars),
+                x.Score,
+                x.ChunkIndex));
+
+        // Legacy whole-document vectors for sources not yet chunk-indexed.
         var docs = await db.Documents
             .Where(d => d.Embedding != null)
             .Select(d => new { d.Id, d.FileName, d.SuggestedFolder, d.FullTextContent, d.Embedding })
             .ToListAsync(cancellationToken);
 
-        var hits = docs
+        if (!string.IsNullOrWhiteSpace(request.Folder))
+            docs = docs.Where(d => d.SuggestedFolder == request.Folder).ToList();
+
+        var legacyDocs = docs.Where(d => !chunkSourceIds.Contains(d.Id)).ToList();
+        var legacyHits = legacyDocs
             .Select(d =>
             {
                 var vec = UnpackFloats(d.Embedding!);
-                var score = CosineSimilarity(queryVector, vec);
-                var snippet = BuildSnippet(d.FullTextContent ?? d.FileName, request.Query, 240);
+                var cosine = CosineSimilarity(queryVector, vec);
+                var keyword = KeywordOverlap(request.Query, $"{d.FileName} {d.FullTextContent}");
+                var score = BlendScore(cosine, keyword);
+                var snippet = BuildSnippet(d.FullTextContent ?? d.FileName, request.Query, PassageSnippetChars);
                 return new SemanticSearchHit(d.Id, d.FileName, d.SuggestedFolder, snippet, score);
             })
+            .Where(h => h.Score >= minScore);
+
+        var hits = chunkHits.Concat(legacyHits)
             .OrderByDescending(h => h.Score)
             .Take(topK)
             .ToList();
 
-        return new SemanticSearchResponse(request.Query, docs.Count, hits);
+        var considered = chunkSourceIds.Count + legacyDocs.Count;
+        return new SemanticSearchResponse(request.Query, considered, hits, EmbeddingAvailable: true);
     }
 
     public async Task<EmbedKnowledgeEntryResponse> EmbedKnowledgeEntryAsync(Guid entryId, CancellationToken cancellationToken = default)
@@ -168,12 +198,10 @@ public class HybridAiService(
         var entry = await db.KnowledgeEntries.FindAsync([entryId], cancellationToken)
             ?? throw new KeyNotFoundException($"Knowledge entry {entryId} not found.");
 
-        var text = BuildKnowledgeEmbeddingText(entry);
-        var vector = await TryGenerateEmbeddingAsync(text, cancellationToken);
-        if (vector is null)
+        var ok = await TryIndexKnowledgeChunksAsync(entry, cancellationToken);
+        if (!ok)
             return new EmbedKnowledgeEntryResponse(entryId, false, "Embedding generator unavailable (is Ollama running with nomic-embed-text?)");
 
-        entry.Embedding = PackFloats(vector);
         entry.UpdatedAt = DateTime.UtcNow;
         await db.SaveChangesAsync(cancellationToken);
         return new EmbedKnowledgeEntryResponse(entryId, true, null);
@@ -182,32 +210,103 @@ public class HybridAiService(
     public async Task<SemanticSearchKnowledgeResponse> SemanticSearchKnowledgeAsync(SemanticSearchRequest request, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(request.Query))
-            return new SemanticSearchKnowledgeResponse(request.Query, 0, []);
+            return new SemanticSearchKnowledgeResponse(request.Query, 0, [], EmbeddingAvailable: true);
 
         var topK = Math.Clamp(request.TopK, 1, 20);
+        var minScore = request.MinScore ?? DefaultMinScore;
 
         var queryVector = await TryGenerateEmbeddingAsync(request.Query, cancellationToken);
         if (queryVector is null)
-            return new SemanticSearchKnowledgeResponse(request.Query, 0, []);
+            return new SemanticSearchKnowledgeResponse(request.Query, 0, [], EmbeddingAvailable: false);
+
+        var chunkQuery = db.EmbeddingChunks.Where(c => c.SourceType == EmbeddingSourceType.Knowledge);
+        if (!string.IsNullOrWhiteSpace(request.Category))
+            chunkQuery = chunkQuery.Where(c => c.Facet == request.Category);
+
+        var chunks = await chunkQuery.ToListAsync(cancellationToken);
+        var chunkSourceIds = chunks.Select(c => c.SourceId).Distinct().ToHashSet();
+
+        var chunkHits = RankChunks(chunks, request.Query, queryVector, minScore)
+            .GroupBy(x => x.SourceId)
+            .Select(g => g.OrderByDescending(x => x.Score).First())
+            .Select(x => new SemanticSearchKnowledgeHit(
+                x.SourceId,
+                x.DisplayName ?? "entry",
+                x.Facet ?? "Unknown",
+                BuildSnippet(x.Content, request.Query, PassageSnippetChars),
+                x.Score,
+                x.ChunkIndex));
 
         var entries = await db.KnowledgeEntries
             .Where(e => e.Embedding != null)
             .Select(e => new { e.Id, e.Title, e.Category, e.Content, e.Embedding })
             .ToListAsync(cancellationToken);
 
-        var hits = entries
+        if (!string.IsNullOrWhiteSpace(request.Category))
+            entries = entries.Where(e => e.Category.ToString() == request.Category).ToList();
+
+        var legacyEntries = entries.Where(e => !chunkSourceIds.Contains(e.Id)).ToList();
+        var legacyHits = legacyEntries
             .Select(e =>
             {
                 var vec = UnpackFloats(e.Embedding!);
-                var score = CosineSimilarity(queryVector, vec);
-                var snippet = BuildSnippet(e.Content, request.Query, 240);
+                var cosine = CosineSimilarity(queryVector, vec);
+                var keyword = KeywordOverlap(request.Query, $"{e.Title} {e.Content}");
+                var score = BlendScore(cosine, keyword);
+                var snippet = BuildSnippet(e.Content, request.Query, PassageSnippetChars);
                 return new SemanticSearchKnowledgeHit(e.Id, e.Title, e.Category.ToString(), snippet, score);
             })
+            .Where(h => h.Score >= minScore);
+
+        var hits = chunkHits.Concat(legacyHits)
             .OrderByDescending(h => h.Score)
             .Take(topK)
             .ToList();
 
-        return new SemanticSearchKnowledgeResponse(request.Query, entries.Count, hits);
+        var considered = chunkSourceIds.Count + legacyEntries.Count;
+        return new SemanticSearchKnowledgeResponse(request.Query, considered, hits, EmbeddingAvailable: true);
+    }
+
+    public async Task<ReindexEmbeddingsResponse> ReindexAllEmbeddingsAsync(CancellationToken cancellationToken = default)
+    {
+        var errors = new List<string>();
+        var docs = await db.Documents.ToListAsync(cancellationToken);
+        var entries = await db.KnowledgeEntries.ToListAsync(cancellationToken);
+        var docsOk = 0;
+        var knowledgeOk = 0;
+
+        foreach (var doc in docs)
+        {
+            try
+            {
+                if (await TryIndexDocumentChunksAsync(doc, cancellationToken))
+                    docsOk++;
+                else
+                    errors.Add($"Document {doc.Id}: Embedding generator unavailable");
+            }
+            catch (Exception ex)
+            {
+                errors.Add($"Document {doc.Id}: {ex.Message}");
+            }
+        }
+
+        foreach (var entry in entries)
+        {
+            try
+            {
+                if (await TryIndexKnowledgeChunksAsync(entry, cancellationToken))
+                    knowledgeOk++;
+                else
+                    errors.Add($"Knowledge {entry.Id}: Embedding generator unavailable");
+            }
+            catch (Exception ex)
+            {
+                errors.Add($"Knowledge {entry.Id}: {ex.Message}");
+            }
+        }
+
+        await db.SaveChangesAsync(cancellationToken);
+        return new ReindexEmbeddingsResponse(docs.Count, docsOk, entries.Count, knowledgeOk, errors);
     }
 
     public async Task<IReadOnlyList<DashboardPriority>> GetDashboardPrioritiesAsync(CancellationToken cancellationToken = default)
@@ -407,6 +506,146 @@ public class HybridAiService(
         }
         if (normA == 0 || normB == 0) return 0;
         return dot / (Math.Sqrt(normA) * Math.Sqrt(normB));
+    }
+
+    internal static double KeywordOverlap(string query, string text)
+    {
+        var qTokens = Tokenize(query);
+        if (qTokens.Count == 0) return 0;
+        var tTokens = Tokenize(text);
+        if (tTokens.Count == 0) return 0;
+        var overlap = qTokens.Count(t => tTokens.Contains(t));
+        return (double)overlap / qTokens.Count;
+    }
+
+    internal static double BlendScore(double cosine, double keyword) =>
+        (VectorWeight * cosine) + (KeywordWeight * keyword);
+
+    private static HashSet<string> Tokenize(string text) =>
+        text.ToLowerInvariant()
+            .Split([' ', '\n', '\r', '\t', '.', ',', ';', ':', '/', '-', '_', '(', ')'], StringSplitOptions.RemoveEmptyEntries)
+            .Where(t => t.Length > 1)
+            .ToHashSet(StringComparer.Ordinal);
+
+    private async Task<bool> TryIndexDocumentChunksAsync(Document document, CancellationToken cancellationToken)
+    {
+        var sourceText = BuildEmbeddingText(document);
+        if (string.IsNullOrWhiteSpace(sourceText))
+            return false;
+
+        var sourceHash = TextChunker.Sha256Hex(sourceText);
+        var existing = await db.EmbeddingChunks
+            .Where(c => c.SourceType == EmbeddingSourceType.Document && c.SourceId == document.Id)
+            .ToListAsync(cancellationToken);
+
+        if (existing.Count > 0 && existing.All(c => c.ContentHash == sourceHash))
+            return true;
+
+        var passages = TextChunker.Chunk(sourceText);
+        if (passages.Count == 0)
+            return false;
+
+        var vectors = new List<float[]>();
+        foreach (var passage in passages)
+        {
+            var vector = await TryGenerateEmbeddingAsync(passage, cancellationToken);
+            if (vector is null)
+                return false;
+            vectors.Add(vector);
+        }
+
+        if (existing.Count > 0)
+            db.EmbeddingChunks.RemoveRange(existing);
+
+        for (var i = 0; i < passages.Count; i++)
+        {
+            db.EmbeddingChunks.Add(new EmbeddingChunk
+            {
+                Id = Guid.NewGuid(),
+                SourceType = EmbeddingSourceType.Document,
+                SourceId = document.Id,
+                ChunkIndex = i,
+                Content = passages[i],
+                Embedding = PackFloats(vectors[i]),
+                ContentHash = sourceHash,
+                DisplayName = document.FileName,
+                Facet = document.SuggestedFolder,
+                UpdatedAt = DateTime.UtcNow
+            });
+        }
+
+        // Legacy summary vector: first chunk (keeps older consumers / diagnostics working).
+        document.Embedding = PackFloats(vectors[0]);
+        return true;
+    }
+
+    private async Task<bool> TryIndexKnowledgeChunksAsync(KnowledgeEntry entry, CancellationToken cancellationToken)
+    {
+        var sourceText = BuildKnowledgeEmbeddingText(entry);
+        if (string.IsNullOrWhiteSpace(sourceText))
+            return false;
+
+        var sourceHash = TextChunker.Sha256Hex(sourceText);
+        var existing = await db.EmbeddingChunks
+            .Where(c => c.SourceType == EmbeddingSourceType.Knowledge && c.SourceId == entry.Id)
+            .ToListAsync(cancellationToken);
+
+        if (existing.Count > 0 && existing.All(c => c.ContentHash == sourceHash))
+            return true;
+
+        var passages = TextChunker.Chunk(sourceText);
+        if (passages.Count == 0)
+            return false;
+
+        var vectors = new List<float[]>();
+        foreach (var passage in passages)
+        {
+            var vector = await TryGenerateEmbeddingAsync(passage, cancellationToken);
+            if (vector is null)
+                return false;
+            vectors.Add(vector);
+        }
+
+        if (existing.Count > 0)
+            db.EmbeddingChunks.RemoveRange(existing);
+
+        var facet = entry.Category.ToString();
+        for (var i = 0; i < passages.Count; i++)
+        {
+            db.EmbeddingChunks.Add(new EmbeddingChunk
+            {
+                Id = Guid.NewGuid(),
+                SourceType = EmbeddingSourceType.Knowledge,
+                SourceId = entry.Id,
+                ChunkIndex = i,
+                Content = passages[i],
+                Embedding = PackFloats(vectors[i]),
+                ContentHash = sourceHash,
+                DisplayName = entry.Title,
+                Facet = facet,
+                UpdatedAt = DateTime.UtcNow
+            });
+        }
+
+        entry.Embedding = PackFloats(vectors[0]);
+        return true;
+    }
+
+    private static IEnumerable<(Guid SourceId, string? DisplayName, string? Facet, string Content, int ChunkIndex, double Score)> RankChunks(
+        IReadOnlyList<EmbeddingChunk> chunks,
+        string query,
+        float[] queryVector,
+        double minScore)
+    {
+        foreach (var chunk in chunks)
+        {
+            var cosine = CosineSimilarity(queryVector, UnpackFloats(chunk.Embedding));
+            var keyword = KeywordOverlap(query, $"{chunk.DisplayName} {chunk.Content}");
+            var score = BlendScore(cosine, keyword);
+            if (score < minScore)
+                continue;
+            yield return (chunk.SourceId, chunk.DisplayName, chunk.Facet, chunk.Content, chunk.ChunkIndex, score);
+        }
     }
 
     private static string? BuildSnippet(string text, string query, int maxLen)

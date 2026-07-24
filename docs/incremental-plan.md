@@ -84,13 +84,13 @@ Living roadmap for TIKR development. Agents and contributors: read the **current
 
 ### 5A — Fix CI (code)
 
-| Step | Action | Status |
-|------|--------|--------|
-| 1 | Fix `.gitignore`: `data/` → `/data/` so `src/TIKR.Infrastructure/Data/` is tracked | done |
-| 2 | Commit EF Core `TikrDbContext` + Migrations | done |
-| 3 | Run `dotnet format TIKR.sln`; verify `dotnet test` + Trunk on PR | done |
-| 4 | Merge PR `fix/ci-green-main` with green **TIKR CI** + **Trunk** | done ([PR #9](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/9)) |
-| 5 | Triage Dependabot PRs after `main` is green — see [dependabot-policy.md](dependabot-policy.md) | done |
+| Step | Action                                                                                         | Status                                                                                         |
+| ---- | ---------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| 1    | Fix `.gitignore`: `data/` → `/data/` so `src/TIKR.Infrastructure/Data/` is tracked             | done                                                                                           |
+| 2    | Commit EF Core `TikrDbContext` + Migrations                                                    | done                                                                                           |
+| 3    | Run `dotnet format TIKR.sln`; verify `dotnet test` + Trunk on PR                               | done                                                                                           |
+| 4    | Merge PR `fix/ci-green-main` with green **TIKR CI** + **Trunk**                                | done ([PR #9](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/9)) |
+| 5    | Triage Dependabot PRs after `main` is green — see [dependabot-policy.md](dependabot-policy.md) | done                                                                                           |
 
 **Verify locally:**
 
@@ -211,6 +211,7 @@ Update this section when env changes.
 - [x] `Documents.razor` Semantic toggle wired to the new endpoint
 - [x] `Assistant.razor` prepends top-K semantically relevant **doc + vault** snippets (closes the original "hit by a bus" gap end-to-end)
 - [x] Full-text extraction for plain-text uploads (`.txt`, `.md`, `.csv` via `DocumentTextExtractionService`)
+- [x] Spec `002-bulletproof-clerk-rag`: chunked `EmbeddingChunks`, hybrid keyword+vector search, minScore gate, grounded assistant citations, `POST /api/ai/reindex-embeddings`
 - [ ] PDF preview (Syncfusion `SfPdfViewer` — deferred)
 - [ ] Rich DOCX editor / Spreadsheet preview (Syncfusion DocumentEditor / Spreadsheet — deferred)
 - [ ] IMAP or forward-to-folder email ingestion scaffold
@@ -225,14 +226,14 @@ Update this section when env changes.
 
 **Goal:** `/requirements` CRUD hub + incremental NAS-local document agent without breaking MVP grid.
 
-| Slice | Status | PR |
-|-------|--------|-----|
-| **10A** Requirements grid MVP | done | [#30](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/30) |
-| **10B** MVP agent stub + AI Scan | done | [#31](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/31) |
-| **10C A1+A2** Agent storage, AES, Syncfusion Storage Mode extraction | done on `main` | [#35](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/35) |
-| **10C-D** E2E proof (fixtures, Playwright, licensed workflow) | done on `main` | [#36](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/36) |
-| **10C A3** Ollama + Microsoft.Extensions.AI function loop over Storage Mode tools | done | `SyncfusionDocumentAgentOrchestrator`, `USE_SYNCFUSION_AGENT_ORCHESTRATION` |
-| **10C-F** Clerk document tool coverage (PDF ops, Word, Excel, PPT, Office→PDF registry + deterministic paths) | done | `SyncfusionDocumentAgentToolRegistry`, `feature/phase10c-document-tool-coverage` |
+| Slice                                                                                                                                                                                                 | Status                                                          | PR                                                                                                                                                                                                             |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **10A** Requirements grid MVP                                                                                                                                                                         | done                                                            | [#30](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/30)                                                                                                                         |
+| **10B** MVP agent stub + AI Scan                                                                                                                                                                      | done                                                            | [#31](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/31)                                                                                                                         |
+| **10C A1+A2** Agent storage, AES, Syncfusion Storage Mode extraction                                                                                                                                  | done on `main`                                                  | [#35](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/35)                                                                                                                         |
+| **10C-D** E2E proof (fixtures, Playwright, licensed workflow)                                                                                                                                         | done on `main`                                                  | [#36](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/36)                                                                                                                         |
+| **10C A3** Ollama + Microsoft.Extensions.AI function loop over Storage Mode tools                                                                                                                     | done                                                            | `SyncfusionDocumentAgentOrchestrator`, `USE_SYNCFUSION_AGENT_ORCHESTRATION`                                                                                                                                    |
+| **10C-F** Clerk document tool coverage (PDF ops, Word, Excel, PPT, Office→PDF registry + deterministic paths)                                                                                         | done                                                            | `SyncfusionDocumentAgentToolRegistry`, `feature/phase10c-document-tool-coverage`                                                                                                                               |
 | **10C-G (Grok Heavy rec)** Agent scan PDF archive: clean tagged PDF copy + "AI Processed - [Date] - TIKR Vault" stamp + dual (orig + processed) NAS storage + structured tables -> Requirement fields | **in progress / implemented** (core changes + tests + trackers) | Extend DocumentAgentService + CreateAgentArchivePdfAsync in SyncfusionDocuments; updated OnAgentUploadAsync + Apply, DTOs. RAG + inventory used for visibility on tiny functions. See action-items for proofs. |
 
 **Key paths:** `src/TIKR.Web/Components/Pages/Requirements.razor`, `src/TIKR.Infrastructure/Services/DocumentAgentService.cs`, `src/TIKR.SyncfusionDocuments/*`, `src/TIKR.Shared/DTOs/DocumentAgentDto.cs`
@@ -247,13 +248,13 @@ Update this section when env changes.
 
 ### PR sequence
 
-| # | Slice | Status |
-|---|-------|--------|
-| 1 | UI polish + NAS footer (#33) | done |
-| 2 | Test & accessibility pass (#34 + #48) | **done** — keyboard nav + bUnit + blocking Playwright E2E in CI; `FullyTested` CI filter deferred until coverage targets pass with subset |
-| 3 | Documentation & clerk touches | done ([deb-nas-install.md](deb-nas-install.md), [ship-to-production.md](ship-to-production.md)) |
-| 4 | Health UI closure + Done Detector sign-off | in progress (Layer 1+2 automated gates done; awaiting recorded Deb walkthrough) |
-| Vault Export | Generate Complete Handover Package (PDF) | done (last feature - project complete) |
+| #            | Slice                                      | Status                                                                                                                                    |
+| ------------ | ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| 1            | UI polish + NAS footer (#33)               | done                                                                                                                                      |
+| 2            | Test & accessibility pass (#34 + #48)      | **done** — keyboard nav + bUnit + blocking Playwright E2E in CI; `FullyTested` CI filter deferred until coverage targets pass with subset |
+| 3            | Documentation & clerk touches              | done ([deb-nas-install.md](deb-nas-install.md), [ship-to-production.md](ship-to-production.md))                                           |
+| 4            | Health UI closure + Done Detector sign-off | in progress (Layer 1+2 automated gates done; awaiting recorded Deb walkthrough)                                                           |
+| Vault Export | Generate Complete Handover Package (PDF)   | done (last feature - project complete)                                                                                                    |
 
 ### Acceptance criteria (combined PR #33 + follow-ups)
 
@@ -297,26 +298,26 @@ When inventory is clean, use `./scripts/done-detector.sh` + complete the Project
 
 ### Phases 1–9 summary
 
-| Phase | Status | Notes |
-|-------|--------|-------|
-| 1 Scaffold | done | |
-| 2 Tests | done | 235+ tests; coverage floors in CI |
-| 3 Syncfusion AI | done | `/assistant`, HybridAiService |
-| 4 GitHub + Trunk | done | |
-| 5 Hardening | done | 5B Actions `GITHUB_TOKEN` manual only |
-| 6 Smart Components | planned | post-ship |
-| 7 Coverage | done | Playwright → Phase 0 |
-| 8 Auth | done | optional multi-user |
-| 9 Search/docs | done (core) | RAG + semantic UI; PDF/IMAP deferred |
+| Phase              | Status      | Notes                                 |
+| ------------------ | ----------- | ------------------------------------- |
+| 1 Scaffold         | done        |                                       |
+| 2 Tests            | done        | 235+ tests; coverage floors in CI     |
+| 3 Syncfusion AI    | done        | `/assistant`, HybridAiService         |
+| 4 GitHub + Trunk   | done        |                                       |
+| 5 Hardening        | done        | 5B Actions `GITHUB_TOKEN` manual only |
+| 6 Smart Components | planned     | post-ship                             |
+| 7 Coverage         | done        | Playwright → Phase 0                  |
+| 8 Auth             | done        | optional multi-user                   |
+| 9 Search/docs      | done (core) | RAG + semantic UI; PDF/IMAP deferred  |
 
 ### Open acceptance criteria (by phase)
 
-| Phase | Item | Blocks ship? |
-|-------|------|--------------|
-| **5B** | GitHub **Settings → Actions:** read-only default `GITHUB_TOKEN` | No |
-| **9** | Plain-text `FullTextContent` on upload | done ([#32](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/32)) |
-| **9** | PDF/DOCX preview, IMAP ingestion | No (deferred) |
-| **0** | Playwright E2E + polish checklist | **partial** — E2E CI gate done ([#48](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/48)); PRs 3–4 (docs + sign-off) remain |
+| Phase  | Item                                                            | Blocks ship?                                                                                                                                              |
+| ------ | --------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **5B** | GitHub **Settings → Actions:** read-only default `GITHUB_TOKEN` | No                                                                                                                                                        |
+| **9**  | Plain-text `FullTextContent` on upload                          | done ([#32](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/32))                                                             |
+| **9**  | PDF/DOCX preview, IMAP ingestion                                | No (deferred)                                                                                                                                             |
+| **0**  | Playwright E2E + polish checklist                               | **partial** — E2E CI gate done ([#48](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/48)); PRs 3–4 (docs + sign-off) remain |
 
 Remaining polish, accessibility, E2E coverage, and agent tooling are tracked in **Phase 0** above.
 
@@ -333,7 +334,7 @@ Technical debt and UX consolidation. Safe to tackle in small PRs after #27 merge
 ### Navigation and pages
 
 - [x] **Retire legacy `/knowledge` page** — replaced with redirect to `/vault`
-- [x] **Point sidebar nav to `/vault`** 
+- [x] **Point sidebar nav to `/vault`**
 - [x] **Redirect `/knowledge` → `/vault`**
 - [x] **Requirements page** — MVP shipped at `/requirements` ([requirements-working-tree.md](requirements-working-tree.md)); calendar remains timeline view
 

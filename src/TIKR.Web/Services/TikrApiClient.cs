@@ -145,6 +145,14 @@ public class TikrApiClient(HttpClient http)
             : null;
     }
 
+    public async Task<ReindexEmbeddingsResponse?> ReindexEmbeddingsAsync()
+    {
+        var response = await http.PostAsync("/api/ai/reindex-embeddings", content: null);
+        return response.IsSuccessStatusCode
+            ? await response.Content.ReadFromJsonAsync<ReindexEmbeddingsResponse>()
+            : null;
+    }
+
     public async Task<UserProfileDto?> GetProfileAsync() =>
         await http.GetFromJsonAsync<UserProfileDto>("/api/auth/me");
 

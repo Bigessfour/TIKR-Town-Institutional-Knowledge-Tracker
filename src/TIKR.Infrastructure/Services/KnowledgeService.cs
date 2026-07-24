@@ -1,6 +1,8 @@
+using Microsoft.EntityFrameworkCore;
 using TIKR.Infrastructure.Data;
 using TIKR.Shared.DTOs;
 using TIKR.Shared.Entities;
+using TIKR.Shared.Enums;
 using TIKR.Shared.Interfaces;
 
 namespace TIKR.Infrastructure.Services;
@@ -66,6 +68,11 @@ public class KnowledgeService(TikrDbContext db) : IKnowledgeService
         if (entity is null) throw new KeyNotFoundException($"Knowledge entry {id} not found.");
 
         using var tx = await db.Database.BeginTransactionAsync(ct);
+        var chunks = await db.EmbeddingChunks
+            .Where(c => c.SourceType == EmbeddingSourceType.Knowledge && c.SourceId == id)
+            .ToListAsync(ct);
+        if (chunks.Count > 0)
+            db.EmbeddingChunks.RemoveRange(chunks);
         db.KnowledgeEntries.Remove(entity);
         await audit.LogAsync("Delete", nameof(KnowledgeEntry), id, entity.Title, currentUser.UserId, ct);
         await db.SaveChangesAsync(ct);
