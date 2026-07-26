@@ -33,20 +33,20 @@ This file owns **status, checkboxes, priorities, verification evidence**. The ge
 Shipped: circuit-scoped multi-turn memory + follow-up retrieval rewrite + Clear conversation on `/assistant` (`AssistantPromptBuilder`, `PageWorkflowHelpersTests`).
 
 - [x] **Requirement SubmitTo/Contact fields** — Add SubmitTo / ContactName / Email / Phone on `Requirement`; expose in Calendar appointment editor + Requirements dialog; include in Assistant deadline context and handover PDF (SfSchedule is UI-only; Requirements DB is the store)
-- [ ] **Confirm-first document classification** — On upload / library scan / AI Scan: ask recurring vs transitory; only embed/index recurring (or exclude transient from long-term RAG)
-- [ ] **Requirements document attach UI** — Wire existing `RequirementDocuments` API; show linked prior filings; pass links into handover package
-- [ ] **Ask Advanced + RAG** — Same doc/vault pack as local chat (stop deadline-only Grok path)
-- [ ] **AI Scan extract-with-confirm** — Propose due date + contact/email/phone → clerk confirms → write Requirement fields
+- [x] **Confirm-first document classification** — Upload checkbox “Keep for future Assistant context”; `Document.IsTransient` skips long-term RAG embed/search
+- [x] **Requirements document attach UI** — Link/unlink in Requirements edit dialog; handover package loads real linked docs + contact lines in PDF
+- [x] **Ask Advanced + RAG** — Same doc/vault pack as local chat (`BuildRagContextAsync`)
+- [x] **AI Scan extract-with-confirm** — `DueOutFieldParser` proposes due date / submit-to / contact → dialog prefill → clerk Save confirms
 
 ### High-accuracy corpus compilation (200+ docs — completeness over speed)
 
 **Policy:** Prefer accurate OCR → chunk → embed → verify over throughput. Initial town library may take days/weeks; that is acceptable. Do not optimize scan for “finish tonight.”
 
-- [ ] **Remove / raise per-run import caps** — `LibraryScanService.DefaultMaxImportsPerRun` currently throttles how many new files import per scan; for Deb’s bulk library, raise or make configurable with a high default, and keep resume-via-fingerprint so weeks of scanning are safe
-- [ ] **Methodical queue + progress** — Persist scan cursor / last-processed path; Settings UI shows scanned/imported/failed/remaining; never skip failures silently — retry queue for tag/embed/OCR failures
-- [ ] **Accuracy-first chunk/embed settings** — Tune `TextChunker` (smaller chunks / more overlap) and reindex pass after OCR improvements; verify distinctive phrases retrieve before marking a doc “done”
-- [ ] **OCR completeness gate** — Scanned PDFs with sparse text must run OCR before embed; docs without usable `FullTextContent` stay in a “needs attention” list until fixed
-- [ ] **Weekly corpus health** — Report: % docs with chunks, % vault with chunks, failed fingerprints, Assistant smoke queries against known filings
+- [x] **Remove / raise per-run import caps** — `TIKR_LIBRARY_SCAN_MAX_IMPORTS` (default 500; `0` = unlimited); fingerprint resume retained
+- [x] **Methodical queue + progress** — Settings shows scan errors + Corpus health (chunk coverage, sparse/needs-attention list); resume via fingerprints across poller runs
+- [x] **Accuracy-first chunk/embed settings** — `TextChunker` defaults 500/120 overlap; reindex after OCR/import still via Settings
+- [x] **OCR completeness gate** — Sparse `FullTextContent` fails embed (needs attention) until text/OCR is usable; transient docs skip RAG
+- [x] **Weekly corpus health** — `GET /api/ai/corpus-health` + Settings **Corpus health** button
 
 
 ---

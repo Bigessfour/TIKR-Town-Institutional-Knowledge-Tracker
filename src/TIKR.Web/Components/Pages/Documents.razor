@@ -32,6 +32,10 @@
         <UploaderEvents ValueChange="OnUpload"></UploaderEvents>
     </SfUploader>
     <div class="uploader-hint">Drag &amp; drop today's mail here or click to browse (PDF, Office, text supported)</div>
+    <div class="mt-2">
+        <SfCheckBox @bind-Checked="_keepForAssistantContext"
+                    Label="Keep for future Assistant context (uncheck if this filing is one-time / transitory)" />
+    </div>
 </div>
 
 <!-- AI banners (appear after upload + auto-tag) -->
@@ -340,6 +344,7 @@
     private string? _statusMessage;
     private bool _showUploadBanner;
     private TagDocumentResponse? _lastTagSuggestion;
+    private bool _keepForAssistantContext = true;
     private HashSet<Guid>? _semanticHitIds; // when non-null, VisibleDocuments is restricted + ordered by these
 
     private bool _confirmDeleteVisible;
@@ -480,7 +485,7 @@
             if (file.File is null) continue;
 
             await using var stream = file.File.OpenReadStream(long.MaxValue);
-            var uploadResp = await Api.UploadDocumentAsync(stream, file.FileInfo.Name);
+            var uploadResp = await Api.UploadDocumentAsync(stream, file.FileInfo.Name, isTransient: !_keepForAssistantContext);
 
             if (uploadResp.IsSuccessStatusCode)
             {

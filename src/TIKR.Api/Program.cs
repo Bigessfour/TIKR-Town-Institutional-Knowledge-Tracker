@@ -278,11 +278,15 @@ api.MapPost("/documents", async (HttpRequest request, IFileStorageService storag
     if (file.Length > 100 * 1024 * 1024) return Results.BadRequest("File too large (max 100MB).");
     if (string.IsNullOrWhiteSpace(file.FileName)) return Results.BadRequest("Invalid filename.");
 
+    var isTransient = bool.TryParse(form["isTransient"], out var transientFlag) && transientFlag;
+
     // Delegate to centralized DocumentService (thin endpoint)
     try
     {
         await using var fileStream = file.OpenReadStream();
-        var entity = await documentService.UploadAsync(fileStream, file.FileName, file.ContentType, file.Length, storage, audit, currentUser);
+        var entity = await documentService.UploadAsync(
+            fileStream, file.FileName, file.ContentType, file.Length, storage, audit, currentUser,
+            isTransient: isTransient);
         return Results.Created($"/api/documents/{entity.Id}", MapDocument(entity));
     }
     catch (ArgumentException ex)
@@ -355,6 +359,7 @@ api.MapGet("/vault/handover-package", async (IConfiguration config, TikrDbContex
         var knowledge = await db.KnowledgeEntries.OrderBy(k => k.SortOrder).ThenBy(k => k.Title).ToListAsync();
         var requirements = await db.Requirements.OrderBy(r => r.DueDate).ToListAsync();
         var documents = await db.Documents.OrderByDescending(d => d.UploadedAt).ToListAsync();
+        var links = await CouncilPacketEndpoints.LoadRequirementLinksAsync(db);
 
         // Calendar snapshot: upcoming active requirements
         var calendarSnapshot = requirements
@@ -368,7 +373,7 @@ api.MapGet("/vault/handover-package", async (IConfiguration config, TikrDbContex
             town,
             DateTime.UtcNow,
             knowledge.Select(MapKnowledge).ToList(),
-            requirements.Select(r => CouncilPacketEndpoints.MapRequirement(r, [])).ToList(),
+            requirements.Select(r => CouncilPacketEndpoints.MapRequirement(r, links.GetValueOrDefault(r.Id, []))).ToList(),
             documents.Select(MapDocument).ToList(),
             calendarSnapshot);
 
@@ -661,6 +666,9 @@ api.MapPost("/ai/embed-knowledge/{id:guid}", async (Guid id, IHybridAiService ai
 api.MapPost("/ai/reindex-embeddings", async (IHybridAiService ai) =>
     Results.Ok(await ai.ReindexAllEmbeddingsAsync()));
 
+api.MapGet("/ai/corpus-health", async (IHybridAiService ai) =>
+    Results.Ok(await ai.GetCorpusHealthAsync()));
+
 api.MapPost("/ai/agent-scan", async (HttpRequest request, IDocumentAgentService agent) =>
 {
     if (!request.HasFormContentType)
@@ -682,7 +690,7 @@ app.Lifetime.ApplicationStopped.Register(Log.CloseAndFlush);
 app.Run();
 
 static DocumentDto MapDocument(Document d) =>
-    new(d.Id, d.FileName, d.ContentType, d.FileSizeBytes, d.AiTags, d.SuggestedFolder, d.UploadedAt, d.FullTextContent);
+    new(d.Id, d.FileName, d.ContentType, d.FileSizeBytes, d.AiTags, d.SuggestedFolder, d.UploadedAt, d.FullTextContent, d.IsTransient);
 
 static KnowledgeEntryDto MapKnowledge(KnowledgeEntry k) =>
     new(k.Id, k.Title, k.Content, k.Category, k.SortOrder);

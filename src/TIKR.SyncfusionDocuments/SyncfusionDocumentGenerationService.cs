@@ -407,8 +407,26 @@ public sealed class SyncfusionDocumentGenerationService(
         y += 14;
         foreach (var r in request.Requirements.Where(x => !x.IsCompleted).Take(10))
         {
+            var contact = string.Join(" · ", new[]
+            {
+                string.IsNullOrWhiteSpace(r.SubmitTo) ? null : $"Submit: {r.SubmitTo}",
+                string.IsNullOrWhiteSpace(r.ContactName) ? null : r.ContactName,
+                string.IsNullOrWhiteSpace(r.ContactPhone) ? null : r.ContactPhone
+            }.Where(s => s is not null));
             graphics.DrawString($"• {r.DueDate} {r.Title}", body, PdfBrushes.Black, new PointF(45, y));
             y += 11;
+            if (!string.IsNullOrWhiteSpace(contact))
+            {
+                graphics.DrawString("  " + contact, small, PdfBrushes.Black, new PointF(50, y));
+                y += 10;
+            }
+            foreach (var linked in r.LinkedDocuments.Take(3))
+            {
+                graphics.DrawString($"  ↳ {linked.FileName}", small, PdfBrushes.Black, new PointF(50, y));
+                y += 10;
+                if (y > 700) { page = document.Pages.Add(); graphics = page.Graphics; y = 40; }
+            }
+            if (y > 700) { page = document.Pages.Add(); graphics = page.Graphics; y = 40; }
         }
 
         // Calendar

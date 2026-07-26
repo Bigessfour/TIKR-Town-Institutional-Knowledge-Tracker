@@ -29,7 +29,8 @@ public interface IDocumentService
         IFileStorageService storage,
         IAuditService audit,
         ICurrentUserService currentUser,
-        CancellationToken ct = default);
+        CancellationToken ct = default,
+        bool isTransient = false);
 
     // Future: other CRUD if needed beyond thin endpoints; queries can stay direct for now.
 

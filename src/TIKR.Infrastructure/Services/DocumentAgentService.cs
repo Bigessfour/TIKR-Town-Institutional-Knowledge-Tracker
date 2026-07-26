@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging;
 using TIKR.Shared.DTOs;
 using TIKR.Shared.Enums;
+using TIKR.Shared.Helpers;
 using TIKR.Shared.Interfaces;
 
 namespace TIKR.Infrastructure.Services;
@@ -33,6 +34,8 @@ public class DocumentAgentService(
 
         var title = DeriveTitle(fileName);
         var category = InferCategory(title);
+        var parsed = DueOutFieldParser.Parse(
+            string.Join("\n", new[] { extraction.ExtractedText, extraction.StructuredTables }.Where(s => !string.IsNullOrWhiteSpace(s))));
 
         string? processedPath = null;
         var structuredTables = extraction.StructuredTables;
@@ -65,7 +68,7 @@ public class DocumentAgentService(
         return new DocumentAgentResult(
             SuggestedTitle: title,
             ExtractedText: extraction.ExtractedText,
-            SuggestedDueDate: DateOnly.FromDateTime(DateTime.UtcNow.AddMonths(1)),
+            SuggestedDueDate: parsed.DueDate ?? DateOnly.FromDateTime(DateTime.UtcNow.AddMonths(1)),
             SuggestedRecurrence: RecurrenceType.Annual,
             SuggestedCategory: category,
             TablesExtractedCount: extraction.TablesExtractedCount,
@@ -74,7 +77,11 @@ public class DocumentAgentService(
             UsedSyncfusionTools: extraction.UsedSyncfusionTools,
             OriginalStoragePath: originalPath,
             ProcessedStoragePath: processedPath,
-            StructuredTables: structuredTables);
+            StructuredTables: structuredTables,
+            SuggestedSubmitTo: parsed.SubmitTo,
+            SuggestedContactName: parsed.ContactName,
+            SuggestedContactEmail: parsed.ContactEmail,
+            SuggestedContactPhone: parsed.ContactPhone);
     }
 
     internal static string DeriveTitle(string fileName)

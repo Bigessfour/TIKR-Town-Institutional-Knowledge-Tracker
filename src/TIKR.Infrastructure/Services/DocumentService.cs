@@ -22,7 +22,8 @@ public class DocumentService(TikrDbContext db) : IDocumentService
         IFileStorageService storage,
         IAuditService audit,
         ICurrentUserService currentUser,
-        CancellationToken ct = default)
+        CancellationToken ct = default,
+        bool isTransient = false)
     {
         // Centralized validation (best practice)
         if (content == null) throw new ArgumentException("No file uploaded.");
@@ -30,6 +31,7 @@ public class DocumentService(TikrDbContext db) : IDocumentService
         if (string.IsNullOrWhiteSpace(fileName)) throw new ArgumentException("Invalid filename.");
 
         var (entity, _, _) = await PrepareDocumentUploadAsync(content, fileName, contentType, length, storage, ct);
+        entity.IsTransient = isTransient;
 
         using var tx = await db.Database.BeginTransactionAsync(ct);
         db.Documents.Add(entity);

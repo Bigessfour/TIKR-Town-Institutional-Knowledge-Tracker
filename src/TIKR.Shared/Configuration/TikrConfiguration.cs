@@ -116,6 +116,17 @@ public static class TikrConfiguration
             : 300;
 
     /// <summary>
+    /// Max new imports per library scan pass. Default 500 (accuracy-first bulk corpus; resume via fingerprints).
+    /// Set <c>TIKR_LIBRARY_SCAN_MAX_IMPORTS=0</c> for unlimited per run.
+    /// </summary>
+    public static int GetLibraryScanMaxImportsPerRun(IConfiguration configuration)
+    {
+        if (!int.TryParse(configuration["TIKR_LIBRARY_SCAN_MAX_IMPORTS"], out var max) || max < 0)
+            return 500;
+        return max == 0 ? int.MaxValue : max;
+    }
+
+    /// <summary>
     /// When true, forgot-password responses include the reset token (local/dev without SMTP).
     /// Defaults to true in Development; otherwise require explicit env flag.
     /// </summary>

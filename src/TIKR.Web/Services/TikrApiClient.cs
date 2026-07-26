@@ -40,11 +40,15 @@ public class TikrApiClient(HttpClient http)
     public async Task<DocumentSdkStatusDto?> GetDocumentSdkStatusAsync() =>
         await http.GetFromJsonAsync<DocumentSdkStatusDto>("/api/system/document-sdk-status");
 
-    public async Task<HttpResponseMessage> UploadDocumentAsync(Stream content, string fileName) =>
-        await http.PostAsync("/api/documents", new MultipartFormDataContent
+    public async Task<HttpResponseMessage> UploadDocumentAsync(Stream content, string fileName, bool isTransient = false)
+    {
+        var multipart = new MultipartFormDataContent
         {
-            { new StreamContent(content), "file", fileName }
-        });
+            { new StreamContent(content), "file", fileName },
+            { new StringContent(isTransient ? "true" : "false"), "isTransient" }
+        };
+        return await http.PostAsync("/api/documents", multipart);
+    }
 
     public async Task<TagDocumentResponse?> TagDocumentAsync(Guid documentId)
     {
@@ -249,6 +253,15 @@ public class TikrApiClient(HttpClient http)
             ? await response.Content.ReadFromJsonAsync<RequirementDto>()
             : null;
     }
+
+    public async Task<bool> UnlinkRequirementDocumentAsync(Guid requirementId, Guid documentId)
+    {
+        var response = await http.DeleteAsync($"/api/requirements/{requirementId}/documents/{documentId}");
+        return response.IsSuccessStatusCode;
+    }
+
+    public async Task<CorpusHealthResponse?> GetCorpusHealthAsync() =>
+        await http.GetFromJsonAsync<CorpusHealthResponse>("/api/ai/corpus-health");
 
     public Task<DocumentGenerationResponse> GenerateComplianceReportXlsxAsync(ComplianceReportRequest? request = null) =>
         PostGeneratedDocumentAsync("/api/documents/generate/compliance-report", request);

@@ -149,6 +149,12 @@ public class HybridAiService(
             chunkQuery = chunkQuery.Where(c => c.Facet == request.Folder);
 
         var chunks = await chunkQuery.ToListAsync(cancellationToken);
+        var transientIds = await db.Documents
+            .Where(d => d.IsTransient)
+            .Select(d => d.Id)
+            .ToListAsync(cancellationToken);
+        var transientSet = transientIds.ToHashSet();
+        chunks = chunks.Where(c => !transientSet.Contains(c.SourceId)).ToList();
         var chunkSourceIds = chunks.Select(c => c.SourceId).Distinct().ToHashSet();
 
         var chunkHits = RankChunks(chunks, request.Query, queryVector, minScore)
@@ -164,7 +170,7 @@ public class HybridAiService(
 
         // Legacy whole-document vectors for sources not yet chunk-indexed.
         var docs = await db.Documents
-            .Where(d => d.Embedding != null)
+            .Where(d => d.Embedding != null && !d.IsTransient)
             .Select(d => new { d.Id, d.FileName, d.SuggestedFolder, d.FullTextContent, d.Embedding })
             .ToListAsync(cancellationToken);
 
@@ -307,6 +313,52 @@ public class HybridAiService(
 
         await db.SaveChangesAsync(cancellationToken);
         return new ReindexEmbeddingsResponse(docs.Count, docsOk, entries.Count, knowledgeOk, errors);
+    }
+
+    public async Task<CorpusHealthResponse> GetCorpusHealthAsync(CancellationToken cancellationToken = default)
+    {
+        var documents = await db.Documents
+            .Select(d => new { d.Id, d.FileName, d.IsTransient, d.FullTextContent })
+            .ToListAsync(cancellationToken);
+        var knowledge = await db.KnowledgeEntries.Select(k => k.Id).ToListAsync(cancellationToken);
+
+        var docChunkIds = await db.EmbeddingChunks
+            .Where(c => c.SourceType == EmbeddingSourceType.Document)
+            .Select(c => c.SourceId)
+            .Distinct()
+            .ToListAsync(cancellationToken);
+        var knowledgeChunkIds = await db.EmbeddingChunks
+            .Where(c => c.SourceType == EmbeddingSourceType.Knowledge)
+            .Select(c => c.SourceId)
+            .Distinct()
+            .ToListAsync(cancellationToken);
+
+        var docChunkSet = docChunkIds.ToHashSet();
+        var knowledgeChunkSet = knowledgeChunkIds.ToHashSet();
+
+        var recurring = documents.Where(d => !d.IsTransient).ToList();
+        var withChunks = recurring.Count(d => docChunkSet.Contains(d.Id));
+        var sparse = documents
+            .Where(d => !d.IsTransient && IsSparseForEmbedding(d.FullTextContent))
+            .Select(d => d.FileName)
+            .OrderBy(n => n)
+            .Take(25)
+            .ToList();
+
+        var knowledgeWithChunks = knowledge.Count(id => knowledgeChunkSet.Contains(id));
+        var docPct = recurring.Count == 0 ? 100.0 : Math.Round(100.0 * withChunks / recurring.Count, 1);
+        var knowledgePct = knowledge.Count == 0 ? 100.0 : Math.Round(100.0 * knowledgeWithChunks / knowledge.Count, 1);
+
+        return new CorpusHealthResponse(
+            DocumentsTotal: documents.Count,
+            DocumentsWithChunks: withChunks,
+            DocumentsTransient: documents.Count(d => d.IsTransient),
+            DocumentsSparseText: sparse.Count,
+            KnowledgeTotal: knowledge.Count,
+            KnowledgeWithChunks: knowledgeWithChunks,
+            DocumentsChunkCoveragePercent: docPct,
+            KnowledgeChunkCoveragePercent: knowledgePct,
+            NeedsAttention: sparse);
     }
 
     public async Task<IReadOnlyList<DashboardPriority>> GetDashboardPrioritiesAsync(CancellationToken cancellationToken = default)
@@ -525,6 +577,10 @@ public class HybridAiService(
     internal static double BlendScore(double cosine, double keyword) =>
         (VectorWeight * cosine) + (KeywordWeight * keyword);
 
+    /// <summary>Matches SyncfusionDocumentOcrService.NeedsOcr letter threshold for embed completeness gate.</summary>
+    internal static bool IsSparseForEmbedding(string? text, int minLetterChars = 48) =>
+        string.IsNullOrWhiteSpace(text) || text.Count(char.IsLetter) < minLetterChars;
+
     private static HashSet<string> Tokenize(string text) =>
         text.ToLowerInvariant()
             .Split([' ', '\n', '\r', '\t', '.', ',', ';', ':', '/', '-', '_', '(', ')'], StringSplitOptions.RemoveEmptyEntries)
@@ -533,9 +589,15 @@ public class HybridAiService(
 
     private async Task<bool> TryIndexDocumentChunksAsync(Document document, CancellationToken cancellationToken)
     {
+        if (document.IsTransient)
+            return true; // Transitory filings are kept on disk but excluded from long-term Assistant RAG.
+
         var sourceText = BuildEmbeddingText(document);
-        if (string.IsNullOrWhiteSpace(sourceText))
+        if (string.IsNullOrWhiteSpace(sourceText) || IsSparseForEmbedding(sourceText))
+        {
+            // Sparse / missing text: do not pretend the corpus is complete until OCR/backfill succeeds.
             return false;
+        }
 
         var sourceHash = TextChunker.Sha256Hex(sourceText);
         var existing = await db.EmbeddingChunks

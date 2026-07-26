@@ -159,8 +159,9 @@
 
             if (!useLocal)
             {
-                // Fallback path
-                var fallbackResult = await Api.AskAdvancedAsync(args.Prompt, _contextSummary);
+                // Fallback path — still pack RAG so Advanced/Grok stays grounded.
+                var fallbackContext = await BuildRagContextAsync(args.Prompt);
+                var fallbackResult = await Api.AskAdvancedAsync(args.Prompt, fallbackContext);
                 var fallbackText = fallbackResult?.Answer ?? "Advanced AI fallback unavailable.";
                 var fallbackHtml = Markdown.ToHtml(fallbackText);
                 args.Response = fallbackHtml;
@@ -258,7 +259,8 @@
         {
             try
             {
-                var fb = await Api.AskAdvancedAsync(args.Prompt, _contextSummary);
+                var fbContext = await BuildRagContextAsync(args.Prompt);
+                var fb = await Api.AskAdvancedAsync(args.Prompt, fbContext);
                 var fbText = fb?.Answer ?? $"Local AI unavailable: {ex.Message}. Is Ollama running?";
                 var fbHtml = Markdown.ToHtml(fbText);
                 args.Response = fbHtml;
@@ -329,7 +331,8 @@
             return;
         }
 
-        var result = await Api.AskAdvancedAsync(_lastPrompt, _contextSummary);
+        var context = await BuildRagContextAsync(_lastPrompt);
+        var result = await Api.AskAdvancedAsync(_lastPrompt, context);
         if (result is null)
         {
             _advancedNote = "Advanced AI unavailable. Enable USE_GROK=true and GROK_API_KEY on the API.";
@@ -338,11 +341,51 @@
         }
 
         _advancedNote = result.UsedGrok
-            ? "Grok response shown below."
-            : "Advanced AI response shown below.";
+            ? "Grok response shown below (with document/vault context)."
+            : "Advanced AI response shown below (with document/vault context).";
 
         _advancedAnswer = Markdown.ToHtml(result.Answer);
         StateHasChanged();
+    }
+
+    private async Task<string> BuildRagContextAsync(string prompt)
+    {
+        var retrievalQuery = AssistantPromptBuilder.BuildRetrievalQuery(
+            prompt,
+            AssistantPromptBuilder.GetRecentUserTexts(_modelHistory, take: 2));
+
+        SemanticSearchResponse? docSearch = null;
+        SemanticSearchKnowledgeResponse? vaultSearch = null;
+        var searchUnavailable = false;
+        try
+        {
+            docSearch = await Api.SemanticSearchDocumentsAsync(retrievalQuery, topK: 5);
+        }
+        catch
+        {
+            searchUnavailable = true;
+        }
+
+        try
+        {
+            vaultSearch = await Api.SemanticSearchKnowledgeAsync(retrievalQuery, topK: 5, category: ResolveVaultCategoryFilter());
+        }
+        catch
+        {
+            searchUnavailable = true;
+        }
+
+        var docContext = AssistantPromptBuilder.FormatDocumentRagBlock(docSearch, out var docsDown);
+        var vaultContext = AssistantPromptBuilder.FormatVaultRagBlock(vaultSearch, out var vaultDown);
+        searchUnavailable = searchUnavailable || docsDown || vaultDown;
+        var citations = AssistantPromptBuilder.CollectCitationLabels(docSearch, vaultSearch);
+        return AssistantPromptBuilder.BuildUserMessageWithRag(
+            prompt,
+            _contextSummary,
+            docContext,
+            vaultContext,
+            searchUnavailable,
+            citations);
     }
 
     public void Dispose()

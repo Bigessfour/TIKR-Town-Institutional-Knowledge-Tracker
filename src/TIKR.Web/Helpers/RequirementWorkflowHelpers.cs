@@ -120,7 +120,11 @@ public static class RequirementWorkflowHelpers
             description,
             dueDate,
             result.SuggestedRecurrence,
-            result.SuggestedCategory);
+            result.SuggestedCategory,
+            result.SuggestedSubmitTo,
+            result.SuggestedContactName,
+            result.SuggestedContactEmail,
+            result.SuggestedContactPhone);
     }
 
     public static string FormatAgentScanMessage(DocumentAgentResult result)

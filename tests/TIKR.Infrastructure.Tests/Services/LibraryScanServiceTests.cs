@@ -213,5 +213,8 @@ public class LibraryScanServiceTests
 
         public Task<ReindexEmbeddingsResponse> ReindexAllEmbeddingsAsync(CancellationToken cancellationToken = default) =>
             Task.FromResult(new ReindexEmbeddingsResponse(0, 0, 0, 0, []));
+
+        public Task<CorpusHealthResponse> GetCorpusHealthAsync(CancellationToken cancellationToken = default) =>
+            Task.FromResult(new CorpusHealthResponse(0, 0, 0, 0, 0, 0, 100, 100, []));
     }
 }

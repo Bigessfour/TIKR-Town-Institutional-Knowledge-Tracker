@@ -165,7 +165,44 @@
             <SfButton CssClass="tikr-action-btn e-outline" Disabled="@_libraryBusy" OnClick="ReindexEmbeddingsAsync">
                 Reindex embeddings
             </SfButton>
+            <SfButton CssClass="tikr-action-btn e-outline" Disabled="@_libraryBusy" OnClick="RefreshCorpusHealthAsync">
+                Corpus health
+            </SfButton>
         </div>
+        @if (_corpusHealth is not null)
+        {
+            <div class="mt-3">
+                <p><strong>Corpus health:</strong>
+                    docs @_corpusHealth.DocumentsWithChunks / @_corpusHealth.DocumentsTotal chunked
+                    (@_corpusHealth.DocumentsChunkCoveragePercent%),
+                    transient @_corpusHealth.DocumentsTransient,
+                    sparse @_corpusHealth.DocumentsSparseText;
+                    vault @_corpusHealth.KnowledgeWithChunks / @_corpusHealth.KnowledgeTotal
+                    (@_corpusHealth.KnowledgeChunkCoveragePercent%)</p>
+                @if (_corpusHealth.NeedsAttention.Count > 0)
+                {
+                    <p class="text-muted mb-1">Needs attention (sparse text / OCR):</p>
+                    <ul>
+                        @foreach (var name in _corpusHealth.NeedsAttention.Take(10))
+                        {
+                            <li>@name</li>
+                        }
+                    </ul>
+                }
+            </div>
+        }
+        @if (_libraryStatus?.LastResult?.Errors is { Count: > 0 } scanErrors)
+        {
+            <div class="mt-2">
+                <p class="text-muted mb-1">Last scan errors:</p>
+                <ul>
+                    @foreach (var err in scanErrors.Take(8))
+                    {
+                        <li>@err</li>
+                    }
+                </ul>
+            </div>
+        }
     </CardContent>
 </SfCard>
 
@@ -201,6 +238,7 @@
     private LocalStorageStatusDto? _localStatus;
     private DocumentSdkStatusDto? _documentSdkStatus;
     private LibraryScanStatusDto? _libraryStatus;
+    private CorpusHealthResponse? _corpusHealth;
     private List<AuditLog> _audit = [];
     private bool _autoTourDisabled;
     private bool _libraryBusy;
@@ -274,6 +312,28 @@
         catch (Exception ex)
         {
             _libraryMessage = $"Reindex error: {ex.Message}";
+        }
+        finally
+        {
+            _libraryBusy = false;
+        }
+    }
+
+    private async Task RefreshCorpusHealthAsync()
+    {
+        _libraryBusy = true;
+        _libraryMessage = "Loading corpus health…";
+        try
+        {
+            _corpusHealth = await Api.GetCorpusHealthAsync();
+            _libraryMessage = _corpusHealth is null
+                ? "Corpus health unavailable."
+                : $"Corpus health refreshed — {_corpusHealth.DocumentsChunkCoveragePercent}% of recurring docs chunked.";
+        }
+        catch (Exception ex)
+        {
+            _libraryMessage = $"Corpus health error: {ex.Message}";
+            _corpusHealth = null;
         }
         finally
         {

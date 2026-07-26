@@ -8,8 +8,8 @@ namespace TIKR.Infrastructure.Services;
 /// </summary>
 public static class TextChunker
 {
-    public const int DefaultChunkSize = 700;
-    public const int DefaultOverlap = 100;
+    public const int DefaultChunkSize = 500;
+    public const int DefaultOverlap = 120;
 
     public static IReadOnlyList<string> Chunk(
         string text,

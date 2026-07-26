@@ -15,6 +15,11 @@ public class Document
     // Null until embedding generation runs successfully against Ollama.
     public byte[]? Embedding { get; set; }
 
+    /// <summary>
+    /// When true, document is transitory (not kept in long-term Assistant RAG). Default false = recurring / keep for context.
+    /// </summary>
+    public bool IsTransient { get; set; }
+
     public DateTime UploadedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 }

@@ -235,6 +235,45 @@ else
                         }
                     </FormItems>
                 </SfDataForm>
+                @if (_editingId is not null)
+                {
+                    <div class="mt-3 border-top pt-3">
+                        <h5 class="mb-2">Linked documents</h5>
+                        @if (_linkedDocuments.Count == 0)
+                        {
+                            <p class="text-muted">No prior filings linked yet.</p>
+                        }
+                        else
+                        {
+                            <ul class="mb-2">
+                                @foreach (var linked in _linkedDocuments)
+                                {
+                                    <li class="d-flex justify-content-between align-items-center gap-2 mb-1">
+                                        <span>@linked.FileName</span>
+                                        <SfButton CssClass="tikr-action-btn e-small" Content="Unlink"
+                                                  OnClick="() => UnlinkDocumentAsync(linked.DocumentId)" />
+                                    </li>
+                                }
+                            </ul>
+                        }
+                        <div class="d-flex flex-wrap gap-2 align-items-center">
+                            <SfDropDownList TValue="Guid?" TItem="DocumentDto"
+                                            DataSource="@_attachCandidates"
+                                            @bind-Value="_attachDocumentId"
+                                            Placeholder="Select document to attach"
+                                            Width="280px">
+                                <DropDownListFieldSettings Value="Id" Text="@nameof(DocumentDto.FileName)" />
+                            </SfDropDownList>
+                            <SfButton CssClass="tikr-action-btn" Content="Attach"
+                                      Disabled="@(_attachDocumentId is null || _attachBusy)"
+                                      OnClick="AttachDocumentAsync" />
+                        </div>
+                        @if (!string.IsNullOrWhiteSpace(_attachMessage))
+                        {
+                            <p class="mt-2 text-muted">@_attachMessage</p>
+                        }
+                    </div>
+                }
                 <div class="mt-3">
                     <SfButton CssClass="tikr-action-btn" OnClick="CloseDialog">Cancel</SfButton>
                     <SfButton Type="ButtonType.Submit" CssClass="tikr-action-btn primary">Save</SfButton>
@@ -294,6 +333,11 @@ else
     private DocumentAgentResult? _lastAgentResult;
     private DateTime? _formDueDate = DateTime.Today.AddMonths(1);
     private readonly RequirementFormModel _form = new();
+    private List<RequirementLinkedDocumentDto> _linkedDocuments = [];
+    private List<DocumentDto> _attachCandidates = [];
+    private Guid? _attachDocumentId;
+    private bool _attachBusy;
+    private string? _attachMessage;
     private const string _smartReqRole =
         "Colorado municipal town clerk filling statutory deadline forms for a small town board";
     private static readonly string[] _smartReqPhrases =
@@ -389,13 +433,18 @@ else
         _form.ContactEmail = null;
         _form.ContactPhone = null;
         _formDueDate = DateTime.Today.AddMonths(1);
+        _linkedDocuments = [];
+        _attachCandidates = [];
+        _attachDocumentId = null;
+        _attachMessage = null;
         _showDialog = true;
     }
 
-    private void OpenEditDialog(RequirementDto item)
+    private async Task OpenEditDialog(RequirementDto item)
     {
         _editingId = item.Id;
         _error = null;
+        _attachMessage = null;
         _form.Title = item.Title;
         _form.Description = item.Description;
         _form.Recurrence = item.Recurrence;
@@ -406,7 +455,69 @@ else
         _form.ContactEmail = item.ContactEmail;
         _form.ContactPhone = item.ContactPhone;
         _formDueDate = item.DueDate.ToDateTime(TimeOnly.MinValue);
+        _linkedDocuments = item.LinkedDocuments.ToList();
+        _attachDocumentId = null;
         _showDialog = true;
+        try
+        {
+            _attachCandidates = await Api.GetDocumentsAsync();
+        }
+        catch
+        {
+            _attachCandidates = [];
+        }
+    }
+
+    private async Task AttachDocumentAsync()
+    {
+        if (_editingId is null || _attachDocumentId is null)
+            return;
+
+        _attachBusy = true;
+        _attachMessage = null;
+        try
+        {
+            var updated = await Api.LinkRequirementDocumentAsync(_editingId.Value, _attachDocumentId.Value);
+            if (updated is null)
+            {
+                _attachMessage = "Could not attach document.";
+                return;
+            }
+
+            _linkedDocuments = updated.LinkedDocuments.ToList();
+            _attachDocumentId = null;
+            _attachMessage = "Document linked.";
+            await LoadAsync();
+        }
+        finally
+        {
+            _attachBusy = false;
+        }
+    }
+
+    private async Task UnlinkDocumentAsync(Guid documentId)
+    {
+        if (_editingId is null)
+            return;
+
+        _attachBusy = true;
+        _attachMessage = null;
+        try
+        {
+            if (!await Api.UnlinkRequirementDocumentAsync(_editingId.Value, documentId))
+            {
+                _attachMessage = "Could not unlink document.";
+                return;
+            }
+
+            _linkedDocuments = _linkedDocuments.Where(d => d.DocumentId != documentId).ToList();
+            _attachMessage = "Document unlinked.";
+            await LoadAsync();
+        }
+        finally
+        {
+            _attachBusy = false;
+        }
     }
 
     private void CloseDialog() => _showDialog = false;

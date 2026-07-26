@@ -20,7 +20,9 @@ public sealed class LibraryScanService(
     IConfiguration configuration,
     ILogger<LibraryScanService> logger) : ILibraryScanService
 {
-    public const int DefaultMaxImportsPerRun = 25;
+    public const int DefaultMaxImportsPerRun = 500;
+
+    public int MaxImportsPerRun => TikrConfiguration.GetLibraryScanMaxImportsPerRun(configuration);
 
     private static readonly HashSet<string> AllowedExtensions = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -114,7 +116,7 @@ public sealed class LibraryScanService(
             ct.ThrowIfCancellationRequested();
             scanned++;
 
-            if (imported >= DefaultMaxImportsPerRun)
+            if (imported >= MaxImportsPerRun)
             {
                 skipped++;
                 continue;
