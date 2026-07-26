@@ -48,12 +48,31 @@ public class DocumentsPageTests : ClerkTestContext
         cut.Markup.Should().Contain("Full-text search");
     }
 
+    [Fact]
+    public void Documents_RendersPreviewPaneHost()
+    {
+        RegisterApi("[]");
+        SetRendererInfo(new RendererInfo("Server", true));
+
+        var cut = RenderComponent<Documents>();
+        cut.Markup.Should().Contain("preview-pane");
+        cut.Markup.Should().Contain("Select a document in the list to see details and actions.");
+    }
+
     private void RegisterApi(string docsJson, string? searchJson = null)
     {
         searchJson ??= JsonSerializer.Serialize(new SemanticSearchResponse("q", 0, []));
         var handler = new StubHandler((req, _) =>
         {
             var path = req.RequestUri!.PathAndQuery;
+            if (path.Contains("/content", StringComparison.OrdinalIgnoreCase))
+            {
+                return new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new ByteArrayContent("%PDF-1.4"u8.ToArray())
+                };
+            }
+
             var json = path.Contains("semantic-search", StringComparison.Ordinal) ? searchJson : docsJson;
             return new HttpResponseMessage(HttpStatusCode.OK)
             {

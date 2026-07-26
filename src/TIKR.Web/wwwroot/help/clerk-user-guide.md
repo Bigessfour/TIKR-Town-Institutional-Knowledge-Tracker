@@ -17,11 +17,11 @@ The **Dashboard** shows what needs attention today: statutory deadlines and open
 - **Print / PDF exports** — council packet, agenda, compliance Excel, and meeting minutes when Document SDK is licensed (see Settings).
 - **AI Scan file upload** — upload a PDF or Word file; TIKR extracts candidate requirements (review before saving).
 
-Statutory dates also appear on the **Calendar** (read-only). Change due dates on Requirements, then refresh Calendar.
+Statutory dates also appear on the **Calendar**. You can create, edit, move, or delete appointments there; changes save to Requirements.
 
 ## Calendar
 
-**Deadline Calendar** is a read-only schedule of due dates from the database. Switch **Month** or **Agenda** view. Use **Today** to jump to the current period. To change a deadline, go to **Requirements** and edit the item there.
+**Deadline Calendar** shows due dates from the database in **Month**, **Week**, and **Agenda** views. Double-click a day to add a deadline, drag an event to move it, or open an event to edit title/description/date. Colorado default (seeded) deadlines can be moved or edited but not deleted. Use **Requirements** for recurrence, category, completion, and document links.
 
 ## Document library
 

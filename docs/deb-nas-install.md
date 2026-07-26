@@ -78,6 +78,19 @@ Walkthrough script for demos and training: [demo-deb.md](demo-deb.md).
 
 ---
 
+## Import existing town documents (optional)
+
+If Deb/Paige already have a shared folder of ordinances, minutes, or forms on the NAS:
+
+1. Bind-mount that folder into the API container (e.g. `/volume1/town-docs` → `/data/town-docs`).
+2. In `docker/.env` set `TIKR_LIBRARY_SCAN_PATH=/data/town-docs` (optional poll interval `TIKR_LIBRARY_SCAN_INTERVAL_SECONDS=300`).
+3. Restart API, then open **Settings → NAS document library → Scan library now**.
+4. Ask questions about those files on **AI Assistant** (`/assistant`). Use **Reindex embeddings** if Ollama was offline during the scan.
+
+Source files stay in place; TIKR copies them into its document store and builds searchable embeddings. Details: [ai-tooling.md](ai-tooling.md).
+
+---
+
 ## Where your data lives (“if I’m gone”)
 
 | Data | Location |

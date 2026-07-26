@@ -4,4 +4,5 @@ public static class TikrAuthPolicies
 {
     public const string AdminOnly = "AdminOnly";
     public const string Authenticated = "Authenticated";
+    public const string CanWrite = "CanWrite";
 }

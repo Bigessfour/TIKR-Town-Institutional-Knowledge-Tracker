@@ -1,8 +1,8 @@
 <!-- markdownlint-disable MD033 MD047 -->
 # TIKR Function Tree (Visual Overview — Maintained Layer)
 
-**Auto-generated raw data:** [function-inventory.generated.md](./function-inventory.generated.md)  
-**Human overlay + status:** [action-items.md](./action-items.md)  
+**Auto-generated raw data:** [function-inventory.generated.md](./function-inventory.generated.md)
+**Human overlay + status:** [action-items.md](./action-items.md)
 **Update when structure changes.** Seed from script output + existing `docs/diagrams/03-clerk-feature-map.mmd` and `04-api-surface.mmd`.
 
 > This is the **maintained visual** complement to the hybrid inventory. Use Mermaid for clerk + agent comprehension.
@@ -17,7 +17,7 @@ flowchart TB
         Dashboard["/ (Home)\nUrgency pills • AI summary • Quick actions • Due grid"]
         Requirements["/requirements\nGrid CRUD • CSV • AI Scan • Packet export • Print"]
         Documents["/documents\nUpload • Folders/Tree • Semantic search • Download/Preview • Convert"]
-        Assistant["/assistant\nSfAIAssistView + RAG (doc + vault snippets)"]
+        Assistant["/assistant\nSfAIAssistView + session multi-turn\n+ RAG (doc + vault snippets)"]
         Vault["/vault\nHow-To • Contacts • Tribal • RTE • Copy for new clerk • Voice"]
         Calendar["/calendar\nSfSchedule timeline"]
         Settings["/settings + /users\nAudit • Health (NAS/Ollama/SDK) • Theme • Users (admin)"]

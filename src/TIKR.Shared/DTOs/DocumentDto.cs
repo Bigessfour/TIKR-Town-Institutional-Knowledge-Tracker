@@ -8,7 +8,8 @@ public record DocumentDto(
     string? AiTags,
     string? SuggestedFolder,
     DateTime UploadedAt,
-    string? FullTextContent = null);
+    string? FullTextContent = null,
+    bool IsTransient = false);
 
 public record DocumentSearchResult(
     Guid Id,
@@ -17,3 +18,15 @@ public record DocumentSearchResult(
     string? SuggestedFolder,
     DateTime UploadedAt,
     string? Snippet);
+
+/// <summary>Corpus completeness snapshot for high-accuracy library compilation.</summary>
+public record CorpusHealthResponse(
+    int DocumentsTotal,
+    int DocumentsWithChunks,
+    int DocumentsTransient,
+    int DocumentsSparseText,
+    int KnowledgeTotal,
+    int KnowledgeWithChunks,
+    double DocumentsChunkCoveragePercent,
+    double KnowledgeChunkCoveragePercent,
+    IReadOnlyList<string> NeedsAttention);

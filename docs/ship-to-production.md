@@ -37,7 +37,7 @@ Clerk walkthrough and user guide: [clerk-tour-deployment.md](clerk-tour-deployme
 | Condensed Syncfusion / UI pass | Maintainer | Note date in [syncfusion-control-audit.md](syncfusion-control-audit.md) |
 | Layer 2 Done Detector | Maintainer | [action-items.md](action-items.md) Project-Level gate |
 
-**Post-ship (do not block tag):** full axe pass, SfPdfViewer preview, IMAP, 10C-C badge, licensed NAS agent smoke — tracked under **Post-ship / v1.1+** in action-items.
+**Post-ship (do not block tag):** full axe pass, Word/Spreadsheet edit+save, IMAP, 10C-C badge, licensed NAS agent smoke — tracked under **Post-ship / v1.1+** in action-items. (PDF/Word/Spreadsheet **preview** shipped.)
 
 ---
 

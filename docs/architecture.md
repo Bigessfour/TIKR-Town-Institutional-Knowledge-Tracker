@@ -105,7 +105,7 @@ flowchart TB
 
     subgraph defer["Deferred vNext"]
         smart["Phase 6 Smart Paste / TextArea / Scheduler NL"]
-        pdf["Phase 9 IMAP ingestion, rich DOCX preview"]
+        pdf["Phase 9 IMAP ingestion; Word/Excel edit+save"]
         req2["Requirements TreeGrid, Stepper, bulk import"]
         authv["Auth SMTP reset, Viewer role"]
     end
@@ -409,7 +409,7 @@ Auth is **off by default** (single-clerk open access). Set bootstrap credentials
 
 See [incremental-plan.md](incremental-plan.md) and the **Deferred vNext** subgraph in [diagrams/03-clerk-feature-map.mmd](diagrams/03-clerk-feature-map.mmd).
 
-- Phase 6 — Smart Paste, Smart TextArea, Scheduler natural-language recurring
-- Phase 9 deferred — IMAP ingestion, rich DOCX / Spreadsheet preview
-- Auth vNext — email password reset (SMTP), read-only `Viewer` role
+- Phase 6 — Smart Paste, Smart TextArea, Scheduler natural-language recurring (shipped)
+- Phase 9 — forward-to-folder email scaffold shipped; Word/Spreadsheet edit+save shipped
+- Auth vNext — local MVP shipped (`Viewer`, refresh, local reset); SMTP email deferred
 - Requirements Phase 2 — TreeGrid, Stepper wizard, requirement ↔ document links

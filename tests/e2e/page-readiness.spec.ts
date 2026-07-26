@@ -78,7 +78,7 @@ test.describe('TIKR page readiness (nav + primary controls)', () => {
       await expect(page.getByRole('gridcell', { name: 'sample-doc.txt' }).first()).toBeVisible();
       await page.locator('.e-gridcontent .e-checkbox-wrapper').first().click();
     }).toPass({ timeout: 30_000 });
-    await expect(page.locator('.preview-pane')).toContainText(/sample-doc|Uploaded|Size/i, { timeout: 15_000 });
+    await expect(page.locator('.preview-pane')).toContainText(/sample-doc|Uploaded|Size|Full text/i, { timeout: 15_000 });
   });
 
   test('vault tabs and copy affordance', async ({ page }) => {

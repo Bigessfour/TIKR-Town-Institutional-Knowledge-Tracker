@@ -12,9 +12,10 @@ public record DocumentAgentResult(
     string StoragePath,
     bool ProcessedLocally,
     bool UsedSyncfusionTools,
-    // New for Grok Heavy recommended archive extension (10C-G):
-    // dual storage of original + clean stamped PDF archive copy
     string? OriginalStoragePath = null,
     string? ProcessedStoragePath = null,
-    // Structured table data (JSON) for mapping into Requirement form fields where possible
-    string? StructuredTables = null);
+    string? StructuredTables = null,
+    string? SuggestedSubmitTo = null,
+    string? SuggestedContactName = null,
+    string? SuggestedContactEmail = null,
+    string? SuggestedContactPhone = null);

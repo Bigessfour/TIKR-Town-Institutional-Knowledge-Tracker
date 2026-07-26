@@ -8,7 +8,7 @@
 <div class="page-header">
     <div class="page-header-main">
         <h2>Users</h2>
-        <p>Manage clerk accounts for this town</p>
+        <p>Manage clerk and viewer accounts for this town</p>
     </div>
     <PageHelp HelpText="Add admin or clerk accounts for multi-user towns. All accounts authenticate against the local NAS database." />
 </div>
@@ -82,7 +82,7 @@
 @code {
     private List<UserSummaryDto> _users = [];
     private readonly CreateUserFormModel _createModel = new();
-    private readonly List<string> _roles = [TikrRoles.Admin, TikrRoles.Clerk];
+    private readonly List<string> _roles = [TikrRoles.Admin, TikrRoles.Clerk, TikrRoles.Viewer];
     private bool _showDialog;
     private string? _error;
 

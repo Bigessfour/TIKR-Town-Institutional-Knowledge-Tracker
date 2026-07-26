@@ -273,13 +273,18 @@ In Development, the app also loads `.env` and `docker/.env` from the repo root i
 | `ConnectionStrings__Default`         | API             | `Data Source=tikr.db`    | Database connection                                                                      |
 | `FILE_STORAGE_PATH`                  | API             | `data/documents`         | Document storage path                                                                    |
 | `OLLAMA_HOST`                        | API             | `http://localhost:11434` | Ollama server URL                                                                        |
-| `OLLAMA_CHAT_MODEL`                  | API             | `llama3.2:3b`            | Chat model name (optional: `tikr-clerk` — see [docs/ai-tooling.md](docs/ai-tooling.md)) |
+| `OLLAMA_CHAT_MODEL`                  | API             | `llama3.2:3b`            | Chat model name (optional: `tikr-clerk` — see [docs/ai-tooling.md](docs/ai-tooling.md))  |
 | `USE_GROK`                           | API             | `false`                  | Enable xAI Grok for advanced AI                                                          |
 | `GROK_API_KEY`                       | API             | —                        | xAI API key (required if USE_GROK=true)                                                  |
 | `GROK_MODEL`                         | API             | `grok-4.3`               | xAI chat model ([docs](https://docs.x.ai/docs/models); aliases: `grok-latest`)           |
 | `USE_SYNCFUSION_AGENT_TOOLS`         | API             | `false`                  | Enable Syncfusion Document SDK agent-scan (PDF/Word/Excel/PPT)                           |
 | `USE_SYNCFUSION_AGENT_ORCHESTRATION` | API             | `false`                  | Ollama tool loop over Syncfusion tools (requires agent tools + Ollama)                   |
 | `TIKR_AGENT_STORAGE_KEY`             | API             | —                        | Optional AES-256-GCM for agent-scan blobs on NAS                                         |
+| `TIKR_LIBRARY_SCAN_PATH`             | API             | —                        | Existing NAS document library root (recursive scan → copy → tag/embed for Assistant)     |
+| `TIKR_LIBRARY_SCAN_INTERVAL_SECONDS` | API             | `300`                    | Background library scan poll interval                                                    |
+| `TIKR_OCR_ENABLED`                   | API             | `true`                   | OCR scanned PDF/Word when native text is sparse (Syncfusion Tesseract)                   |
+| `TIKR_TESSADATA_PATH`                | API             | —                        | Optional Tesseract language data folder override                                         |
+| `TIKR_EMAIL_INBOX_PATH`              | API             | —                        | Forward-to-folder email drop inbox                                                       |
 
 Document SDK setup: [docs/sf-document-agent-tools.md](docs/sf-document-agent-tools.md) · NAS smoke tracker: [docs/nas-agent-tools-setup.md](docs/nas-agent-tools-setup.md)
 

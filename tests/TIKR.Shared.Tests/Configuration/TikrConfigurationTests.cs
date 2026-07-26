@@ -235,6 +235,48 @@ public class TikrConfigurationTests
         })).Should().BeTrue();
     }
 
+    [Fact]
+    public void GetLibraryScanPath_ReadsAndTrims()
+    {
+        TikrConfiguration.GetLibraryScanPath(BuildConfig([])).Should().BeNull();
+
+        TikrConfiguration.GetLibraryScanPath(BuildConfig(new Dictionary<string, string?>
+        {
+            ["TIKR_LIBRARY_SCAN_PATH"] = "  /volume1/town-docs  "
+        })).Should().Be("/volume1/town-docs");
+    }
+
+    [Fact]
+    public void GetLibraryScanIntervalSeconds_DefaultsAndOverrides()
+    {
+        TikrConfiguration.GetLibraryScanIntervalSeconds(BuildConfig([])).Should().Be(300);
+
+        TikrConfiguration.GetLibraryScanIntervalSeconds(BuildConfig(new Dictionary<string, string?>
+        {
+            ["TIKR_LIBRARY_SCAN_INTERVAL_SECONDS"] = "120"
+        })).Should().Be(120);
+    }
+
+    [Fact]
+    public void GetOcrEnabled_DefaultsTrue_CanDisable()
+    {
+        TikrConfiguration.GetOcrEnabled(BuildConfig([])).Should().BeTrue();
+        TikrConfiguration.GetOcrEnabled(BuildConfig(new Dictionary<string, string?>
+        {
+            ["TIKR_OCR_ENABLED"] = "false"
+        })).Should().BeFalse();
+    }
+
+    [Fact]
+    public void GetTessDataPath_ReadsOptionalOverride()
+    {
+        TikrConfiguration.GetTessDataPath(BuildConfig([])).Should().BeNull();
+        TikrConfiguration.GetTessDataPath(BuildConfig(new Dictionary<string, string?>
+        {
+            ["TIKR_TESSADATA_PATH"] = " /opt/tessdata "
+        })).Should().Be("/opt/tessdata");
+    }
+
     [Theory]
     [InlineData(null, 8)]
     [InlineData("24", 24)]

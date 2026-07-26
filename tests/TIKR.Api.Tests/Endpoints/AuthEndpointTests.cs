@@ -103,6 +103,90 @@ public class AuthEndpointTests : IClassFixture<AuthEnabledWebApplicationFactory>
         users.Should().Contain(u => u.Email == TestAuthFixtures.ClerkEmail && u.Roles.Contains("Clerk"));
     }
 
+    [Fact]
+    public async Task Login_ReturnsRefreshToken_AndRefreshIssuesNewAccessToken()
+    {
+        var loginResponse = await _client.PostAsJsonAsync("/api/auth/login", new LoginRequest(
+            AuthEnabledWebApplicationFactory.AdminEmail,
+            AuthEnabledWebApplicationFactory.AdminPassword));
+        var login = await loginResponse.Content.ReadFromJsonAsync<LoginResponse>();
+        login!.RefreshToken.Should().NotBeNullOrWhiteSpace();
+
+        var refreshResponse = await _client.PostAsJsonAsync("/api/auth/refresh",
+            new RefreshTokenRequest(login.RefreshToken!));
+        refreshResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var refreshed = await refreshResponse.Content.ReadFromJsonAsync<LoginResponse>();
+        refreshed!.AccessToken.Should().NotBeNullOrWhiteSpace();
+        refreshed.AccessToken.Should().NotBe(login.AccessToken);
+    }
+
+    [Fact]
+    public async Task ForgotAndResetPassword_WorksWithoutSmtp()
+    {
+        var forgot = await _client.PostAsJsonAsync("/api/auth/forgot-password",
+            new ForgotPasswordRequest(AuthEnabledWebApplicationFactory.AdminEmail));
+        forgot.StatusCode.Should().Be(HttpStatusCode.OK);
+        var payload = await forgot.Content.ReadFromJsonAsync<ForgotPasswordResponse>();
+        payload!.ResetToken.Should().NotBeNullOrWhiteSpace();
+
+        var newPassword = "ResetPass1!";
+        var reset = await _client.PostAsJsonAsync("/api/auth/reset-password",
+            new ResetPasswordRequest(
+                AuthEnabledWebApplicationFactory.AdminEmail,
+                payload.ResetToken!,
+                newPassword));
+        reset.StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        var login = await _client.PostAsJsonAsync("/api/auth/login", new LoginRequest(
+            AuthEnabledWebApplicationFactory.AdminEmail,
+            newPassword));
+        login.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        // Restore bootstrap password for other tests in this fixture.
+        var restoreForgot = await _client.PostAsJsonAsync("/api/auth/forgot-password",
+            new ForgotPasswordRequest(AuthEnabledWebApplicationFactory.AdminEmail));
+        var restorePayload = await restoreForgot.Content.ReadFromJsonAsync<ForgotPasswordResponse>();
+        await _client.PostAsJsonAsync("/api/auth/reset-password",
+            new ResetPasswordRequest(
+                AuthEnabledWebApplicationFactory.AdminEmail,
+                restorePayload!.ResetToken!,
+                AuthEnabledWebApplicationFactory.AdminPassword));
+    }
+
+    [Fact]
+    public async Task Viewer_CanReadButNotWrite()
+    {
+        var adminToken = await LoginAsync();
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", adminToken);
+
+        var viewerEmail = $"viewer-{Guid.NewGuid():N}@town.gov";
+        var create = await _client.PostAsJsonAsync("/api/auth/users", new CreateUserRequest(
+            viewerEmail,
+            TestAuthFixtures.NewUserPassword,
+            "Read Only",
+            "Viewer"));
+        create.StatusCode.Should().Be(HttpStatusCode.Created);
+
+        _client.DefaultRequestHeaders.Authorization = null;
+        var login = await _client.PostAsJsonAsync("/api/auth/login", new LoginRequest(
+            viewerEmail, TestAuthFixtures.NewUserPassword));
+        var viewerLogin = await login.Content.ReadFromJsonAsync<LoginResponse>();
+        viewerLogin!.Roles.Should().Contain("Viewer");
+        _client.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", viewerLogin.AccessToken);
+
+        var get = await _client.GetAsync("/api/requirements");
+        get.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var post = await _client.PostAsJsonAsync("/api/requirements", new CreateRequirementRequest(
+            "Viewer blocked",
+            "Should fail",
+            DateOnly.FromDateTime(DateTime.UtcNow.AddDays(1)),
+            TIKR.Shared.Enums.RecurrenceType.None,
+            TIKR.Shared.Enums.RequirementCategory.Custom));
+        post.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
     private async Task<string> LoginAsync()
     {
         var response = await _client.PostAsJsonAsync("/api/auth/login", new LoginRequest(

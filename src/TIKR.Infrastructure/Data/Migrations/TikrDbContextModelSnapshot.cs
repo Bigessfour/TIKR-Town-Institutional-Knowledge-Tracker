@@ -283,6 +283,9 @@ namespace TIKR.Infrastructure.Data.Migrations
                     b.Property<string>("FullTextContent")
                         .HasColumnType("TEXT");
 
+                    b.Property<bool>("IsTransient")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("StoragePath")
                         .IsRequired()
                         .HasMaxLength(1000)
@@ -300,6 +303,54 @@ namespace TIKR.Infrastructure.Data.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Documents");
+                });
+
+            modelBuilder.Entity("TIKR.Shared.Entities.EmbeddingChunk", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("ChunkIndex")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ContentHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("DisplayName")
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<byte[]>("Embedding")
+                        .IsRequired()
+                        .HasColumnType("BLOB");
+
+                    b.Property<string>("Facet")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("SourceId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("SourceType")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SourceType", "Facet");
+
+                    b.HasIndex("SourceType", "SourceId");
+
+                    b.ToTable("EmbeddingChunks");
                 });
 
             modelBuilder.Entity("TIKR.Shared.Entities.KnowledgeEntry", b =>
@@ -337,6 +388,38 @@ namespace TIKR.Infrastructure.Data.Migrations
                     b.ToTable("KnowledgeEntries");
                 });
 
+            modelBuilder.Entity("TIKR.Shared.Entities.LibraryImportRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ContentFingerprint")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("DocumentId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("ImportedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("RelativePath")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DocumentId");
+
+                    b.HasIndex("RelativePath")
+                        .IsUnique();
+
+                    b.ToTable("LibraryImportRecords");
+                });
+
             modelBuilder.Entity("TIKR.Shared.Entities.Requirement", b =>
                 {
                     b.Property<Guid>("Id")
@@ -345,6 +428,18 @@ namespace TIKR.Infrastructure.Data.Migrations
 
                     b.Property<int>("Category")
                         .HasColumnType("INTEGER");
+
+                    b.Property<string>("ContactEmail")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ContactName")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ContactPhone")
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("TEXT");
@@ -366,6 +461,10 @@ namespace TIKR.Infrastructure.Data.Migrations
 
                     b.Property<int>("Recurrence")
                         .HasColumnType("INTEGER");
+
+                    b.Property<string>("SubmitTo")
+                        .HasMaxLength(300)
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("Title")
                         .IsRequired()

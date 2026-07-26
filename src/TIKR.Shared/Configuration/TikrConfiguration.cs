@@ -91,11 +91,81 @@ public static class TikrConfiguration
         configuration["TIKR_AGENT_STORAGE_KEY"];
 
     /// <summary>
+    /// Local folder for forward-to-folder / IMAP drop ingestion. When set, a background poller ingests files into Documents.
+    /// </summary>
+    public static string? GetEmailInboxPath(IConfiguration configuration)
+    {
+        var path = configuration["TIKR_EMAIL_INBOX_PATH"];
+        return string.IsNullOrWhiteSpace(path) ? null : path.Trim();
+    }
+
+    /// <summary>
+    /// Root folder of an existing NAS document library to scan (copy into TIKR + tag/embed).
+    /// Bind-mount this path into the API container. Source files are never moved or deleted.
+    /// </summary>
+    public static string? GetLibraryScanPath(IConfiguration configuration)
+    {
+        var path = configuration["TIKR_LIBRARY_SCAN_PATH"];
+        return string.IsNullOrWhiteSpace(path) ? null : path.Trim();
+    }
+
+    /// <summary>Background poll interval for NAS library scan. Default 300 seconds.</summary>
+    public static int GetLibraryScanIntervalSeconds(IConfiguration configuration) =>
+        int.TryParse(configuration["TIKR_LIBRARY_SCAN_INTERVAL_SECONDS"], out var seconds) && seconds > 0
+            ? seconds
+            : 300;
+
+    /// <summary>
+    /// Max new imports per library scan pass. Default 500 (accuracy-first bulk corpus; resume via fingerprints).
+    /// Set <c>TIKR_LIBRARY_SCAN_MAX_IMPORTS=0</c> for unlimited per run.
+    /// </summary>
+    public static int GetLibraryScanMaxImportsPerRun(IConfiguration configuration)
+    {
+        if (!int.TryParse(configuration["TIKR_LIBRARY_SCAN_MAX_IMPORTS"], out var max) || max < 0)
+            return 500;
+        return max == 0 ? int.MaxValue : max;
+    }
+
+    /// <summary>
+    /// When true, forgot-password responses include the reset token (local/dev without SMTP).
+    /// Defaults to true in Development; otherwise require explicit env flag.
+    /// </summary>
+    public static bool ExposePasswordResetToken(IConfiguration configuration, bool isDevelopment)
+    {
+        if (bool.TryParse(configuration["TIKR_AUTH_EXPOSE_RESET_TOKEN"], out var explicitFlag))
+            return explicitFlag;
+        return isDevelopment;
+    }
+
+    public static int GetJwtRefreshExpirationDays(IConfiguration configuration) =>
+        int.TryParse(configuration["TIKR_JWT_REFRESH_DAYS"], out var days) && days > 0
+            ? days
+            : 14;
+
+    /// <summary>
     /// Runtime Syncfusion license key (Blazor UI + Document SDK). Set via docker/.env, user-secrets, or CI secret — never commit.
     /// </summary>
     public static string? GetSyncfusionLicenseKey(IConfiguration configuration)
     {
         var key = configuration["SYNCFUSION_LICENSE_KEY"];
         return string.IsNullOrWhiteSpace(key) ? null : key.Trim();
+    }
+
+    /// <summary>
+    /// When true (default), sparse PDF/Word extractions are enriched via Syncfusion PDF OCR (Tesseract).
+    /// Disable with <c>TIKR_OCR_ENABLED=false</c> if OCR natives are unavailable.
+    /// </summary>
+    public static bool GetOcrEnabled(IConfiguration configuration)
+    {
+        if (bool.TryParse(configuration["TIKR_OCR_ENABLED"], out var enabled))
+            return enabled;
+        return true;
+    }
+
+    /// <summary>Optional override for Tesseract language data folder (eng.traineddata).</summary>
+    public static string? GetTessDataPath(IConfiguration configuration)
+    {
+        var path = configuration["TIKR_TESSADATA_PATH"];
+        return string.IsNullOrWhiteSpace(path) ? null : path.Trim();
     }
 }

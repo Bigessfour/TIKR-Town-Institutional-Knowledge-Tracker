@@ -6,18 +6,18 @@ Living checklist for Requirements Manager work. Tracks MVP (ship now) vs deferre
 
 ## Where we are
 
-| Layer | Truth |
-|-------|--------|
-| **`main`** | 10A–10C A1+A2+A3+D merged; Phase 0 #33–#34 + Playwright CI gate [#48](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/48). **296+ tests**. Licensed agent-scan smoke in CI when `SYNCFUSION_LICENSE_KEY` set; plain-text stub path always available. Playwright E2E blocking in **TIKR CI**. |
-| **Active branch** | None required for ship gate — Phase 0 PRs 3–4 (docs + sign-off) next. |
-| **Next** | Phase 0 PR #3 (Deb handover docs), PR #4 (recorded walkthrough), manual NAS licensed PDF smoke optional. |
+| Layer             | Truth                                                                                                                                                                                                                                                                                                                     |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **`main`**        | 10A–10C A1+A2+A3+D merged; Phase 0 #33–#34 + Playwright CI gate [#48](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/48). **296+ tests**. Licensed agent-scan smoke in CI when `SYNCFUSION_LICENSE_KEY` set; plain-text stub path always available. Playwright E2E blocking in **TIKR CI**. |
+| **Active branch** | None required for ship gate — Phase 0 PRs 3–4 (docs + sign-off) next.                                                                                                                                                                                                                                                     |
+| **Next**          | Phase 0 PR #3 (Deb handover docs), PR #4 (recorded walkthrough), manual NAS licensed PDF smoke optional.                                                                                                                                                                                                                  |
 
 **Repo reality**
 
 - No local `RequirementService` — use `TikrApiClient` + `RequirementWorkflowHelpers`
 - Entity: [`src/TIKR.Shared/Entities/Requirement.cs`](../src/TIKR.Shared/Entities/Requirement.cs)
 - DTOs: [`src/TIKR.Shared/DTOs/RequirementDto.cs`](../src/TIKR.Shared/DTOs/RequirementDto.cs)
-- [`Calendar.razor`](../src/TIKR.Web/Components/Pages/Calendar.razor) remains the timeline/schedule consumer; `/requirements` is the CRUD hub
+- [`Calendar.razor`](../src/TIKR.Web/Components/Pages/Calendar.razor) — interactive SfSchedule (create/edit/move/delete → Requirements API); `/requirements` remains the full CRUD hub (recurrence, category, completion, docs)
 
 **Syncfusion reference:** [AI Agent Tools for Document SDK](https://www.syncfusion.com/explore/ai-agent-tools-for-document-sdk/) — Storage Mode on NAS. Configuration: [sf-document-agent-tools.md](sf-document-agent-tools.md). **A2** (on `main`) wires deterministic PDF/Word extraction; **A3** adds Ollama tool orchestration (not started).
 
@@ -49,17 +49,17 @@ Living checklist for Requirements Manager work. Tracks MVP (ship now) vs deferre
 
 **Goal:** Replace stub inference with [Syncfusion Document SDK AI Agent Tools](https://www.syncfusion.com/explore/ai-agent-tools-for-document-sdk/) — AI-callable, deterministic extraction (tables, KV pairs, OCR) on NAS, orchestrated by Ollama locally (no cloud required for core flows).
 
-**NuGet (A2, on `main`):** `Syncfusion.DocumentSDK.AI.AgentTools` (33.2.15). Requires `SYNCFUSION_LICENSE_KEY` (Document SDK entitlement).
+**NuGet (A2, on `main`):** `Syncfusion.DocumentSDK.AI.AgentTools` (34.1.32). Requires `SYNCFUSION_LICENSE_KEY` (Document SDK entitlement).
 
-| Group | Scope | Status |
-|-------|--------|--------|
-| **A1** | `IAgentDocumentStorage`, optional AES (`TIKR_AGENT_STORAGE_KEY`), `IDocumentAgentExtractionBackend`, stub backend uses real plain-text extraction, `USE_SYNCFUSION_AGENT_TOOLS` flag | **done on `main`** ([#35](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/35)) |
-| **A2** | NuGet + `NasSyncfusionDocumentStorage` (`IDocumentStorage`); `SyncfusionDocumentAgentExtractor` (PDF text, Word text, table JSON) | **done on `main`** ([#35](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/35)) — licensed path not CI-proven until #36 + NAS smoke |
-| **A3** | Microsoft Agent Framework loop: Ollama selects tools → validated JSON → requirement mapping | planned |
-| **B** | In-memory vs storage-backed `IDocumentStorage` parity with Syncfusion modes | partial (NAS Storage Mode in A2) |
-| **C** | Requirements UI: show extraction source (stub vs Syncfusion), progress indicator on scan | partial — `UsedSyncfusionTools` on DTO in **PR #36 only**; UI badge not built |
-| **D** | Playwright + API + docker proof for agent-scan | **PR #36 open** — not on `main` yet |
-| **E** | Docs: NAS setup, license, E2E tiers | partial on `main`; E2E tier table completes in **PR #36** |
+| Group  | Scope                                                                                                                                                                                | Status                                                                                                                                                          |
+| ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **A1** | `IAgentDocumentStorage`, optional AES (`TIKR_AGENT_STORAGE_KEY`), `IDocumentAgentExtractionBackend`, stub backend uses real plain-text extraction, `USE_SYNCFUSION_AGENT_TOOLS` flag | **done on `main`** ([#35](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/35))                                                     |
+| **A2** | NuGet + `NasSyncfusionDocumentStorage` (`IDocumentStorage`); `SyncfusionDocumentAgentExtractor` (PDF text, Word text, table JSON)                                                    | **done on `main`** ([#35](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/35)) — licensed path not CI-proven until #36 + NAS smoke |
+| **A3** | Microsoft Agent Framework loop: Ollama selects tools → validated JSON → requirement mapping                                                                                          | planned                                                                                                                                                         |
+| **B**  | In-memory vs storage-backed `IDocumentStorage` parity with Syncfusion modes                                                                                                          | partial (NAS Storage Mode in A2)                                                                                                                                |
+| **C**  | Requirements UI: show extraction source (stub vs Syncfusion), progress indicator on scan                                                                                             | partial — `UsedSyncfusionTools` on DTO in **PR #36 only**; UI badge not built                                                                                   |
+| **D**  | Playwright + API + docker proof for agent-scan                                                                                                                                       | **PR #36 open** — not on `main` yet                                                                                                                             |
+| **E**  | Docs: NAS setup, license, E2E tiers                                                                                                                                                  | partial on `main`; E2E tier table completes in **PR #36**                                                                                                       |
 
 ### A1+A2 (on `main` — merged #35)
 
@@ -86,14 +86,14 @@ Code complete on branch; **not on `main` until merged.**
 
 ### Gap vs Syncfusion product (honest)
 
-| Syncfusion capability | TIKR today |
-|----------------------|------------|
-| PDF/Word agent tools (Storage Mode) | On `main` when `USE_SYNCFUSION_AGENT_TOOLS=true`; not default CI path |
-| Smart Data Extraction → JSON | Table count via `ExtractTableAsJson` |
-| Microsoft Agent Framework `AITool` loop | Not wired (A3) |
-| Storage-backed distributed agents | `NasSyncfusionDocumentStorage` on NAS volume |
-| Included with Document SDK license | Same `SYNCFUSION_LICENSE_KEY` as Blazor |
-| Automated proof of licensed extraction | PR #36 + optional smoke workflow; neither merged/run yet |
+| Syncfusion capability                   | TIKR today                                                            |
+| --------------------------------------- | --------------------------------------------------------------------- |
+| PDF/Word agent tools (Storage Mode)     | On `main` when `USE_SYNCFUSION_AGENT_TOOLS=true`; not default CI path |
+| Smart Data Extraction → JSON            | Table count via `ExtractTableAsJson`                                  |
+| Microsoft Agent Framework `AITool` loop | Not wired (A3)                                                        |
+| Storage-backed distributed agents       | `NasSyncfusionDocumentStorage` on NAS volume                          |
+| Included with Document SDK license      | Same `SYNCFUSION_LICENSE_KEY` as Blazor                               |
+| Automated proof of licensed extraction  | PR #36 + optional smoke workflow; neither merged/run yet              |
 
 ---
 
@@ -146,16 +146,16 @@ Captured from codebase + plan review. Tracks stubs, Phase 0 closure, and non-Req
 
 ### Recommended finish order (lean PRs)
 
-| Order | PR focus | Closes |
-|-------|----------|--------|
+| Order   | PR focus                                                                                                        | Closes                                                                  |
+| ------- | --------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
 | **Now** | **Merge [PR #36](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/36)** — 10C-D E2E | Fixtures, `UsedSyncfusionTools`, agent-scan API/Playwright/docker smoke |
-| 1 | Manual NAS smoke + optional licensed workflow dispatch | Proves PDF/DOCX with `SYNCFUSION_LICENSE_KEY` |
-| 2 | 10C-C UI badge | `FormatAgentScanMessage` shows stub vs Syncfusion |
-| 3 | Phase 0 PR #3 — Docs | Deb handover; honest footer wording ("Last saved" vs "Last backed up") |
-| 4 | Phase 0 PR #4 — Sign-off | Done Detector checklist + recorded walkthrough |
-| 5 | Documents download API + UI | Remove `DownloadPlaceholder` stub |
-| 6 | Documents delete undo | Toast undo parity with Requirements/Vault |
-| Later | Phase 0 Playwright CI gate, `FullyTested` trait, Voice STT, PDF preview, 10C-A3, Phase 6, Requirements Phase 2 | Post-ship / vNext |
+| 1       | Manual NAS smoke + optional licensed workflow dispatch                                                          | Proves PDF/DOCX with `SYNCFUSION_LICENSE_KEY`                           |
+| 2       | 10C-C UI badge                                                                                                  | `FormatAgentScanMessage` shows stub vs Syncfusion                       |
+| 3       | Phase 0 PR #3 — Docs                                                                                            | Deb handover; honest footer wording ("Last saved" vs "Last backed up")  |
+| 4       | Phase 0 PR #4 — Sign-off                                                                                        | Done Detector checklist + recorded walkthrough                          |
+| 5       | Documents download API + UI                                                                                     | Remove `DownloadPlaceholder` stub                                       |
+| 6       | Documents delete undo                                                                                           | Toast undo parity with Requirements/Vault                               |
+| Later   | Phase 0 Playwright CI gate, `FullyTested` trait, Voice STT, PDF preview, 10C-A3, Phase 6, Requirements Phase 2  | Post-ship / vNext                                                       |
 
 ### Phase 0 closure ([incremental-plan.md](incremental-plan.md))
 
@@ -174,11 +174,11 @@ Captured from codebase + plan review. Tracks stubs, Phase 0 closure, and non-Req
 #### High impact — clerk-visible
 
 - [ ] **Document download** — `Documents.razor` `DownloadPlaceholder()`; `PageWorkflowHelpers.DownloadPlaceholder()` — needs `GET /api/documents/{id}/content` streaming from `IFileStorageService`
-- [ ] **PDF/DOCX preview pane** — `Documents.razor` placeholder text; defer `SfPdfViewer` or show extracted text when available
+- [x] **PDF/DOCX/Spreadsheet preview pane** — `Documents.razor` routes by type: `SfPdfViewer2`, `SfDocumentEditorContainer` (read-only), `SfSpreadsheet` (read-only); PDF magic-byte gate
 - [ ] **Voice notes** — `Vault.razor` + `VaultVoiceNoteSimulator` — timer simulates transcription; no mic/Ollama STT yet
 - [ ] **Agent scan PDF/DOCX (stub path)** — **By design** when `USE_SYNCFUSION_AGENT_TOOLS=false` (CI/default docker). Plain `.txt` works. Licensed PDF/Word on `main` via Syncfusion when flag + key set; proof pending NAS smoke / PR #36 merge + licensed workflow
-- [ ] **Agent scan archive + stamp (Grok Heavy rec)** — Planned 10C-G: post-extract clean tagged PDF (orig + processed dual store on NAS), "AI Processed - [Date] - TIKR Vault" stamp, structured tables to form fields. See incremental-plan.md and action-items.md.
-- [ ] **Documents delete — no undo** — `ConfirmDeleteAsync` shows toast without undo callback (Requirements/Vault have undo)
+- [x] **Agent scan archive + stamp (Grok Heavy rec)** — **done (10C-G):** dual orig/processed store; visible stamp is two-line layout (`AI PROCESSED - TIKR VAULT` header + date line) plus PDF metadata. See `SyncfusionDocumentGenerationServiceTests`.
+- [x] **Documents delete — undo** — single delete uses `Toast.Show(..., undo)` to re-upload captured content; bulk remains toast-only (Vault parity)
 - [x] **Extraction source badge (10C-C)** — `FormatAgentScanMessage` + badge in `Requirements.razor` (`extraction-badge-syncfusion` / stub)
 
 #### Medium impact — spec vs implementation
@@ -194,11 +194,11 @@ Captured from codebase + plan review. Tracks stubs, Phase 0 closure, and non-Req
 
 ### Phase 9 / 6 / auth deferred (not Requirements-specific)
 
-- [ ] PDF preview (`SfPdfViewer`), Rich DOCX / Spreadsheet preview
-- [ ] IMAP / forward-to-folder email ingestion
-- [ ] Phase 6 — Smart Paste, Smart TextArea, Scheduler NL recurring
-- [ ] Auth vNext — email password reset (SMTP), token refresh, read-only `Viewer` role
-- [ ] GitHub manual — Settings → Actions read-only default `GITHUB_TOKEN` (Phase 5B)
+- [x] PDF / Word / Spreadsheet preview (`SfPdfViewer2`, DocumentEditor, Spreadsheet — read-only)
+- [x] IMAP / forward-to-folder email ingestion scaffold (`TIKR_EMAIL_INBOX_PATH`)
+- [x] Phase 6 — Smart Paste, Smart TextArea, Calendar NL create
+- [x] Auth vNext local MVP — JWT refresh, `Viewer` role, password reset without SMTP (`TIKR_AUTH_EXPOSE_RESET_TOKEN`); SMTP email deferred
+- [x] GitHub manual — Settings → Actions read-only default `GITHUB_TOKEN` (Phase 5B) — verified 2026-07-25 (`gh api .../actions/permissions/workflow`)
 
 ### Repo hygiene (2026-06-28)
 

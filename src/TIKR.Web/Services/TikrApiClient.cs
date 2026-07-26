@@ -40,11 +40,15 @@ public class TikrApiClient(HttpClient http)
     public async Task<DocumentSdkStatusDto?> GetDocumentSdkStatusAsync() =>
         await http.GetFromJsonAsync<DocumentSdkStatusDto>("/api/system/document-sdk-status");
 
-    public async Task<HttpResponseMessage> UploadDocumentAsync(Stream content, string fileName) =>
-        await http.PostAsync("/api/documents", new MultipartFormDataContent
+    public async Task<HttpResponseMessage> UploadDocumentAsync(Stream content, string fileName, bool isTransient = false)
+    {
+        var multipart = new MultipartFormDataContent
         {
-            { new StreamContent(content), "file", fileName }
-        });
+            { new StreamContent(content), "file", fileName },
+            { new StringContent(isTransient ? "true" : "false"), "isTransient" }
+        };
+        return await http.PostAsync("/api/documents", multipart);
+    }
 
     public async Task<TagDocumentResponse?> TagDocumentAsync(Guid documentId)
     {
@@ -62,8 +66,11 @@ public class TikrApiClient(HttpClient http)
             : null;
     }
 
-    public async Task CreateRequirementAsync(CreateRequirementRequest request) =>
-        await http.PostAsJsonAsync("/api/requirements", request);
+    public async Task CreateRequirementAsync(CreateRequirementRequest request)
+    {
+        var response = await http.PostAsJsonAsync("/api/requirements", request);
+        response.EnsureSuccessStatusCode();
+    }
 
     public async Task DeleteRequirementAsync(Guid id)
     {
@@ -97,6 +104,20 @@ public class TikrApiClient(HttpClient http)
         response.EnsureSuccessStatusCode();
     }
 
+    public async Task<DocumentDto?> ReplaceDocumentContentAsync(Guid id, Stream content, string fileName, string? contentType = null)
+    {
+        using var multipart = new MultipartFormDataContent();
+        var streamContent = new StreamContent(content);
+        if (!string.IsNullOrWhiteSpace(contentType))
+            streamContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(contentType);
+        multipart.Add(streamContent, "file", fileName);
+
+        var response = await http.PutAsync($"/api/documents/{id}/content", multipart);
+        return response.IsSuccessStatusCode
+            ? await response.Content.ReadFromJsonAsync<DocumentDto>()
+            : null;
+    }
+
     public string GetDocumentContentUrl(Guid id) => $"/api/documents/{id}/content";
 
     public Uri GetAbsoluteDocumentContentUri(Guid id)
@@ -113,9 +134,9 @@ public class TikrApiClient(HttpClient http)
             : null;
     }
 
-    public async Task<SemanticSearchResponse?> SemanticSearchDocumentsAsync(string query, int topK = 3)
+    public async Task<SemanticSearchResponse?> SemanticSearchDocumentsAsync(string query, int topK = 3, string? folder = null)
     {
-        var response = await http.PostAsJsonAsync("/api/ai/semantic-search", new SemanticSearchRequest(query, topK));
+        var response = await http.PostAsJsonAsync("/api/ai/semantic-search", new SemanticSearchRequest(query, topK, Folder: folder));
         return response.IsSuccessStatusCode
             ? await response.Content.ReadFromJsonAsync<SemanticSearchResponse>()
             : null;
@@ -129,9 +150,9 @@ public class TikrApiClient(HttpClient http)
             : null;
     }
 
-    public async Task<SemanticSearchKnowledgeResponse?> SemanticSearchKnowledgeAsync(string query, int topK = 3)
+    public async Task<SemanticSearchKnowledgeResponse?> SemanticSearchKnowledgeAsync(string query, int topK = 3, string? category = null)
     {
-        var response = await http.PostAsJsonAsync("/api/ai/semantic-search-knowledge", new SemanticSearchRequest(query, topK));
+        var response = await http.PostAsJsonAsync("/api/ai/semantic-search-knowledge", new SemanticSearchRequest(query, topK, Category: category));
         return response.IsSuccessStatusCode
             ? await response.Content.ReadFromJsonAsync<SemanticSearchKnowledgeResponse>()
             : null;
@@ -142,6 +163,25 @@ public class TikrApiClient(HttpClient http)
         var response = await http.PostAsync($"/api/ai/embed-knowledge/{entryId}", content: null);
         return response.IsSuccessStatusCode
             ? await response.Content.ReadFromJsonAsync<EmbedKnowledgeEntryResponse>()
+            : null;
+    }
+
+    public async Task<ReindexEmbeddingsResponse?> ReindexEmbeddingsAsync()
+    {
+        var response = await http.PostAsync("/api/ai/reindex-embeddings", content: null);
+        return response.IsSuccessStatusCode
+            ? await response.Content.ReadFromJsonAsync<ReindexEmbeddingsResponse>()
+            : null;
+    }
+
+    public async Task<LibraryScanStatusDto?> GetLibraryScanStatusAsync() =>
+        await http.GetFromJsonAsync<LibraryScanStatusDto>("/api/library/scan-status");
+
+    public async Task<LibraryScanResult?> ScanLibraryAsync()
+    {
+        var response = await http.PostAsync("/api/library/scan", content: null);
+        return response.IsSuccessStatusCode
+            ? await response.Content.ReadFromJsonAsync<LibraryScanResult>()
             : null;
     }
 
@@ -213,6 +253,15 @@ public class TikrApiClient(HttpClient http)
             ? await response.Content.ReadFromJsonAsync<RequirementDto>()
             : null;
     }
+
+    public async Task<bool> UnlinkRequirementDocumentAsync(Guid requirementId, Guid documentId)
+    {
+        var response = await http.DeleteAsync($"/api/requirements/{requirementId}/documents/{documentId}");
+        return response.IsSuccessStatusCode;
+    }
+
+    public async Task<CorpusHealthResponse?> GetCorpusHealthAsync() =>
+        await http.GetFromJsonAsync<CorpusHealthResponse>("/api/ai/corpus-health");
 
     public Task<DocumentGenerationResponse> GenerateComplianceReportXlsxAsync(ComplianceReportRequest? request = null) =>
         PostGeneratedDocumentAsync("/api/documents/generate/compliance-report", request);

@@ -1,78 +1,104 @@
 # Windows thumb-drive deploy (Dell laptop test)
 
-Use this path when you want **TIKR on a Windows PC without Docker** — for example copying from a USB stick to a Dell Inspiron before the Synology NAS is ready.
+Use this when you want **TIKR on a Windows PC without Docker** — USB stick → Dell.
 
-**Production for the clerk** remains **Docker on Synology** ([deb-nas-install.md](deb-nas-install.md)). This laptop package is a self-contained smoke test and demo vehicle.
+**Easy path for Deb:** copy `TIKR-Deploy` → run `Install-TIKR.cmd` as Admin → edit `syncfusion-license.txt` → `Start-TIKR.bat`.  
+Full one-pager: [clerk-windows-install.md](clerk-windows-install.md) (Setup.exe when IT builds it).
 
-## What you get
+**NAS production** remains Docker on Synology ([deb-nas-install.md](deb-nas-install.md)).
+
+---
+
+## Mental model (no separate “client vs server” installs)
+
+On the Dell, **both** processes run on the **same PC**:
+
+| Piece | Role | Port |
+|-------|------|------|
+| `TIKR.Web.exe` | UI Deb sees in the browser | `http://localhost:8080` |
+| `TIKR.Api.exe` | Database, documents, AI tagging/search | `http://localhost:5000` |
+| `Data\` | Database + uploaded files | next to the apps (USB mode) |
+
+The browser is the only client. You do **not** install Web on one machine and Api on another for day-1.
+
+When IT ships **`Setup-TIKR.exe`** later, paths split like a normal Windows app:
+
+| What | Path |
+|------|------|
+| Programs (Api + Web + launchers) | `C:\Program Files\TIKR\` |
+| Clerk data (db, documents) | `C:\ProgramData\TIKR\` |
+
+Same two programs — only install locations change.
+
+```mermaid
+flowchart LR
+  Deb[Deb browser] --> Web[TIKR.Web :8080]
+  Web --> Api[TIKR.Api :5000]
+  Api --> Data[(Data / ProgramData)]
+  Api --> Ollama[Ollama :11434]
+```
+
+---
+
+## What you get in `publish/TIKR-Deploy`
 
 | Piece | Role |
 |-------|------|
-| `TIKR.Api.exe` | SQLite, documents, AI API (`http://localhost:5000`) |
-| `TIKR.Web.exe` | Blazor UI (`http://localhost:8080`) |
-| `Data\` | Database + uploads (persists next to the exes) |
-| PowerShell scripts | One-time firewall + secrets; daily start/stop |
+| `TIKR.Api\` | Self-contained Windows API |
+| `TIKR.Web\` | Self-contained Windows Blazor UI |
+| `Data\` | Empty folder for SQLite + uploads (created/filled on first run) |
+| `Install-TIKR.cmd` | **Preferred** one-time setup (firewall + license file + Ollama helper) |
+| `Start-TIKR.bat` | Daily start |
+| `Stop-TIKR.ps1` | Stop both processes |
+| `Ensure-Ollama.ps1` | Install/start Ollama + pull models (best-effort) |
+| `syncfusion-license.txt` | One-line Syncfusion key (edit in Notepad) |
 
-There is **no single `TIKR.exe`** — the app is two processes (same as the optional VM path in [demo-deb.md](demo-deb.md)).
+There is **no single `TIKR.exe`** — two processes by design.
 
-**Guided tour:** already shipped — Settings → **Show me around TIKR**, plus **Tour this page** on each route ([clerk-tour-deployment.md](clerk-tour-deployment.md)). No separate `/tour` page.
+---
 
-## Build the USB package (Mac or dev PC)
+## Build the USB package (Mac)
 
 ```bash
 ./scripts/package-thumb-drive.sh
 # Output: publish/TIKR-Deploy/ and publish/TIKR-Deploy-win-x64.zip
 ```
 
-Copy `publish/TIKR-Deploy` (or the zip) to the thumb drive.
-
-Fast iteration without tests:
+Fast rebuild:
 
 ```bash
 SKIP_TESTS=1 ./scripts/package-thumb-drive.sh
 ```
 
-If Syncfusion fails to start with a single-file exe:
+Copy **`TIKR-Deploy`** (or the zip) to the thumb drive — not the loose `publish/TIKR.Api` / `publish/TIKR.Web` folders alone.
 
-```bash
-PUBLISH_SINGLE_FILE=false ./scripts/package-thumb-drive.sh
-```
+---
 
 ## On the Dell (first time)
 
 1. Copy `TIKR-Deploy` to Desktop (or `C:\TIKR`).
-2. **Run as Administrator:** `Install-TIKR.ps1` (firewall + `tikr-secrets.ps1` template).
-3. Edit `tikr-secrets.ps1` — set `SYNCFUSION_LICENSE_KEY` ([Community license](https://www.syncfusion.com/products/communitylicense)).
-4. Optional but recommended: install [Ollama](https://ollama.com), then:
+2. Right-click **`Install-TIKR.cmd` → Run as administrator**.
+3. Edit **`syncfusion-license.txt`** — one line = Syncfusion Community key.
+4. Double-click **`Start-TIKR.bat`**.
 
-   ```powershell
-   ollama pull llama3.2:3b
-   ollama pull nomic-embed-text
-   ```
+See `README-QuickStart.txt` inside the deploy folder.
 
-5. Double-click `Start-TIKR.bat` → browser opens `http://localhost:8080`.
-
-See `README-QuickStart.txt` inside the deploy folder for clerk-facing steps.
-
-## NAS (Phase 2)
-
-Do **not** rely on the Windows folder for NAS production. Use existing Docker:
-
-- Dev/local build: `docker/docker-compose.yml`
-- Production: `docker/docker-compose.prod.yml` + `docker/.env`
-
-`Deploy-To-NAS.ps1` in the deploy folder is a checklist helper only. Full steps: [deb-nas-install.md](deb-nas-install.md), [docker/README.md](../docker/README.md).
+---
 
 ## Troubleshooting
 
 | Symptom | Check |
 |---------|--------|
-| Blank Syncfusion UI / license banner | `tikr-secrets.ps1` and restart |
-| Settings shows Ollama disconnected | Ollama running on laptop; `OLLAMA_HOST=http://localhost:11434` |
-| Web loads but data errors | API window still open; `http://localhost:5000/health` |
-| HTTPS redirect loop | Use `http://localhost:8080` (not https) |
+| Scripts “do nothing” / flash | Use `Install-TIKR.cmd` and `Start-TIKR.bat`, not raw `.ps1` double-click without Bypass |
+| Missing exe | Package incomplete — rebuild with `package-thumb-drive.sh` and copy whole folder |
+| Trial banner | `syncfusion-license.txt` wrong/empty |
+| Assistant offline | Ollama installed; re-run Install or open https://ollama.com |
+| Web loads, no data | API window still open; `http://localhost:5000/health` |
+
+---
 
 ## Related
 
-- [ship-to-production.md](ship-to-production.md) — GHCR tag and NAS release
-- [scripts/publish-tikr.sh](../scripts/publish-tikr.sh) — publish only (no USB layout)
+- [clerk-windows-install.md](clerk-windows-install.md) — Setup.exe day-1 story  
+- [ship-to-production.md](ship-to-production.md) — NAS/GHCR  
+- [scripts/publish-tikr.sh](../scripts/publish-tikr.sh) — publish only  

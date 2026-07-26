@@ -54,13 +54,25 @@ public static class IdentityServiceCollectionExtensions
                     IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(signingKey)),
                     ClockSkew = TimeSpan.FromMinutes(1)
                 };
+                options.Events = new JwtBearerEvents
+                {
+                    OnTokenValidated = context =>
+                    {
+                        var typ = context.Principal?.FindFirst(JwtTokenService.TokenTypeClaim)?.Value;
+                        if (typ == JwtTokenService.RefreshTokenType)
+                            context.Fail("Refresh token cannot be used as an access token.");
+                        return Task.CompletedTask;
+                    }
+                };
             });
 
         services.AddAuthorizationBuilder()
             .AddPolicy(TikrAuthPolicies.AdminOnly, policy =>
                 policy.RequireRole(TikrRoles.Admin))
             .AddPolicy(TikrAuthPolicies.Authenticated, policy =>
-                policy.RequireAuthenticatedUser());
+                policy.RequireAuthenticatedUser())
+            .AddPolicy(TikrAuthPolicies.CanWrite, policy =>
+                policy.RequireRole(TikrRoles.Admin, TikrRoles.Clerk));
 
         return services;
     }

@@ -278,6 +278,16 @@
 {
     <div class="editor-section">
         <h4>Editing: @SelectedEntry.Title</h4>
+        <p class="text-muted" style="margin:0.25rem 0 0.5rem;">AI sentence assist (Ollama) — press Tab to accept suggestions, then insert into the editor.</p>
+        <SfSmartTextArea UserRole="@_smartVaultRole"
+                         UserPhrases="@_smartVaultPhrases"
+                         @bind-Value="_smartDraft"
+                         Placeholder="Draft a how-to tip for the next clerk…"
+                         RowCount="4"
+                         Width="100%" />
+        <div class="editor-actions" style="margin:0.35rem 0;">
+            <SfButton CssClass="tikr-action-btn" Content="Insert AI draft into editor" OnClick="InsertSmartDraftAsync" Disabled="@(string.IsNullOrWhiteSpace(_smartDraft))" />
+        </div>
         <SfRichTextEditor @bind-Value="EditorContent" Height="220px" />
         <div class="editor-actions">
             <SfButton CssClass="tikr-action-btn primary" Content="Save Changes" OnClick="SaveSelectedEntryAsync" />
@@ -303,6 +313,16 @@
 
     private KnowledgeEntryDto? SelectedEntry;
     private string EditorContent = "";
+    private string _smartDraft = "";
+    private const string _smartVaultRole =
+        "Colorado municipal town clerk writing succession how-to notes for the next clerk in a small town";
+    private static readonly string[] _smartVaultPhrases =
+    [
+        "File with the County Clerk by the statutory deadline.",
+        "Keep a PDF copy in the Document Library under Ordinances.",
+        "Notify the Board of Trustees before the meeting packet goes out.",
+        "Call the town attorney if the statute cite is unclear.",
+    ];
 
     // Selection refs and state (pattern consistent with Documents.razor)
     private SfGrid<KnowledgeEntryDto>? HowToGridRef;
@@ -352,6 +372,19 @@
     {
         SelectedEntry = entry;
         EditorContent = entry.Content;
+        _smartDraft = "";
+    }
+
+    private void InsertSmartDraftAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_smartDraft))
+            return;
+
+        var draftHtml = System.Net.WebUtility.HtmlEncode(_smartDraft).Replace("\n", "<br/>");
+        EditorContent = string.IsNullOrWhiteSpace(EditorContent)
+            ? $"<p>{draftHtml}</p>"
+            : $"{EditorContent}<p>{draftHtml}</p>";
+        _smartDraft = "";
     }
 
     private async Task SaveSelectedEntryAsync()
@@ -369,6 +402,7 @@
     {
         SelectedEntry = null;
         EditorContent = "";
+        _smartDraft = "";
     }
 
     // SfGrid selection event handlers (built-in AllowSelection + events pattern from Documents)

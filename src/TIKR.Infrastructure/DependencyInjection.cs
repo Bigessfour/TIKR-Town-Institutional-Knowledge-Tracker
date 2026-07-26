@@ -55,6 +55,11 @@ public static class DependencyInjection
         services.AddSyncfusionDocumentGeneration(configuration);
         services.AddScoped<ICouncilPacketService, CouncilPacketService>();
         services.AddHttpClient<GrokService>();
+        services.AddSingleton<IEmailIngestionService, FolderEmailIngestionService>();
+        services.AddHostedService<FolderEmailIngestionHostedService>();
+        services.AddSingleton<ILibraryScanService, LibraryScanService>();
+        services.AddHostedService<LibraryScanHostedService>();
+        services.AddSingleton<TownDocumentSearchToolRegistry>();
 
         services.AddSingleton<IOllamaChatClientFactory>(_ =>
             new OllamaChatClientFactory(

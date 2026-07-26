@@ -68,6 +68,42 @@ public class DocumentLibraryLogicTests
             .Should().ContainSingle().Which.Id.Should().Be(uncat);
     }
 
+    [Fact]
+    public void FilterVisible_SemanticMode_UsesHitOrderWithoutDoubleFolderFilter()
+    {
+        var first = Guid.NewGuid();
+        var second = Guid.NewGuid();
+        var docs = new[]
+        {
+            Doc(first, "first.pdf", "Finance"),
+            Doc(second, "second.pdf", "Minutes")
+        };
+        var hits = new HashSet<Guid> { second, first };
+
+        var visible = DocumentLibraryLogic.FilterVisible(docs, "Finance", "semantic", "q", hits).ToList();
+        visible.Select(d => d.Id).Should().ContainInOrder(second, first);
+    }
+
+    [Fact]
+    public void FilterVisible_SemanticMode_UncategorizedStillClientFiltered()
+    {
+        var uncat = Guid.NewGuid();
+        var cat = Guid.NewGuid();
+        var docs = new[] { Doc(uncat, "misc.txt"), Doc(cat, "a.pdf", "Finance") };
+        var hits = new HashSet<Guid> { uncat, cat };
+
+        DocumentLibraryLogic.FilterVisible(docs, "__UNCAT__", "semantic", "q", hits)
+            .Should().ContainSingle().Which.Id.Should().Be(uncat);
+    }
+
+    [Fact]
+    public void MapFolderFilterForApi_MapsAllAndUncategorizedToNull()
+    {
+        DocumentLibraryLogic.MapFolderFilterForApi(null).Should().BeNull();
+        DocumentLibraryLogic.MapFolderFilterForApi("__UNCAT__").Should().BeNull();
+        DocumentLibraryLogic.MapFolderFilterForApi("Finance").Should().Be("Finance");
+    }
+
     [Theory]
     [InlineData(null, "Semantic search unavailable (is Ollama running?).")]
     [InlineData(0, "No semantic matches yet. 2 document(s) embedded so far.")]
@@ -84,5 +120,13 @@ public class DocumentLibraryLogicTests
         };
 
         DocumentLibraryLogic.DescribeSemanticResults(response).Should().Be(expected);
+    }
+
+    [Fact]
+    public void DescribeSemanticResults_WhenEmbeddingUnavailable()
+    {
+        var response = new SemanticSearchResponse("q", 0, [], EmbeddingAvailable: false);
+        DocumentLibraryLogic.DescribeSemanticResults(response)
+            .Should().Contain("nomic-embed-text");
     }
 }

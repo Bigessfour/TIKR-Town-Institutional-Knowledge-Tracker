@@ -1,73 +1,95 @@
 # TIKR for Deb & Paige — Windows install (one pager)
 
-**Canonical day-1 deploy:** put **`Setup-TIKR.exe`** on a thumb drive → on the Dell, double-click Setup → finish.
-Ollama (local AI) is part of that same Setup (not a separate project). Auth stays off for Deb and Paige on this trusted PC.
+**Today (easy mode):** copy the **`TIKR-Deploy`** folder → run **`Install-TIKR.cmd`** as Admin → edit license → **`Start-TIKR.bat`**.
+
+**Later (nicer):** IT builds **`Setup-TIKR.exe`** (Inno Setup) → double-click Setup → Program Files + Start Menu. Same two programs; cleaner paths.
 
 Synology NAS Docker is **Phase 2** — [deb-nas-install.md](deb-nas-install.md).
 
-IT build: [installer/README.md](../installer/README.md) · Tour: [demo-deb.md](demo-deb.md)
+IT build notes: [installer/README.md](../installer/README.md) · Tour: [demo-deb.md](demo-deb.md)
 
 ---
 
-## What you put on the thumb drive
+## Client vs server? (short answer)
 
-| Item                       | Required?                 | Notes                                                  |
-| -------------------------- | ------------------------- | ------------------------------------------------------ |
-| `Setup-TIKR.exe`           | **Yes**                   | Built by IT with Inno Setup from `publish/TIKR-Deploy` |
-| Syncfusion license key     | **Yes** (paste in wizard) | Not a file on the stick if IT prefers typing it        |
-| Whole `TIKR-Deploy` folder | No                        | Only for USB/folder mode without Setup.exe             |
+**Not two installs.** On the Dell, one folder runs **both**:
 
-You do **not** need Deb to copy loose `TIKR.Api` / `TIKR.Web` folders when using Setup.exe.
+| Piece      | What it is              | URL / path              |
+| ---------- | ----------------------- | ----------------------- |
+| `TIKR.Web` | Screens in the browser  | `http://localhost:8080` |
+| `TIKR.Api` | Database, documents, AI | `http://localhost:5000` |
+| Browser    | The only “client”       | Chrome / Edge           |
+
+NAS “server” is a different Phase 2 story (Docker). Do not put this USB folder on the Synology.
 
 ---
 
-## Five steps (first day)
+## Paths: folder mode vs Setup.exe
 
-1. **Thumb drive → Dell** — Copy `Setup-TIKR.exe` (and run it from the stick or Desktop).
-2. **Run Setup** — Accept UAC; keep `C:\Program Files\TIKR`; leave defaults checked (**Ollama**, **Desktop shortcut**, **Start TIKR when I sign in**).
-3. **License** — Paste Syncfusion Community key (clears trial banners).
-4. **Wait for Ollama** — First install may download Ollama + models (`llama3.2:3b`, `nomic-embed-text`) for several minutes (needs internet unless IT bundled `redist\OllamaSetup.exe`).
-5. **Start + tour + backup** — **Start TIKR** → `http://localhost:8080` → Settings → **Show me around TIKR**. Backup owner copies `C:\ProgramData\TIKR` regularly.
+| Mode                       | Programs                 | Your data (backup this) |
+| -------------------------- | ------------------------ | ----------------------- |
+| **USB / folder (now)**     | Inside `TIKR-Deploy\`    | `TIKR-Deploy\Data\`     |
+| **Setup-TIKR.exe (later)** | `C:\Program Files\TIKR\` | `C:\ProgramData\TIKR\`  |
+
+---
+
+## What goes on the thumb drive (today)
+
+| Item                           | Required?      | Notes                                                             |
+| ------------------------------ | -------------- | ----------------------------------------------------------------- |
+| Whole **`TIKR-Deploy`** folder | **Yes**        | IT builds on a Mac (`.sh`). Deb never runs those — no WSL needed. |
+| Syncfusion license key         | **Yes**        | Paste into `syncfusion-license.txt` (one line)                    |
+| `Setup-TIKR.exe`               | Optional later | When IT compiles Inno installer                                   |
+
+Deb only double-clicks: `Install-TIKR.cmd`, `Start-TIKR.bat`, `Stop-TIKR.ps1`.
+
+---
+
+## Three steps (first day — folder mode)
+
+1. Copy **`TIKR-Deploy`** to the Desktop (or `C:\TIKR`).
+2. Right-click **`Install-TIKR.cmd` → Run as administrator** (firewall + license file + Ollama helper).
+3. Open **`syncfusion-license.txt`** in Notepad → paste key → save → double-click **`Start-TIKR.bat`**.
+
+Browser should open `http://localhost:8080`. Keep the two black windows open while working.
+
+One-pager inside the folder: `README-QuickStart.txt`.
 
 ---
 
 ## Every day
 
-| Action                     | How                                                                                                     |
-| -------------------------- | ------------------------------------------------------------------------------------------------------- |
-| Start                      | Automatic after Windows sign-in, or Desktop **Start TIKR** (also ensures Ollama is up)                  |
-| Use                        | `http://localhost:8080`                                                                                 |
-| **Requirements + AI Scan** | **Requirements** → upload a `.txt` report → **AI Scan uploaded doc** → review pre-filled form → save    |
-| **Documents**              | **Documents** → select a file → **Download** (stored on this PC under `C:\ProgramData\TIKR\documents\`) |
-| Stop                       | Start Menu → **Stop TIKR**                                                                              |
+| Action | How                                                |
+| ------ | -------------------------------------------------- |
+| Start  | Double-click **Start-TIKR.bat**                    |
+| Use    | `http://localhost:8080`                            |
+| Stop   | **Stop-TIKR.ps1** or close the two console windows |
 
 ---
 
-## Where data lives
+## Where data lives (folder mode)
 
 ```text
-C:\ProgramData\TIKR\
+TIKR-Deploy\Data\
   tikr.db        — database
   documents\     — uploads
   .dpkeys\       — local app keys
 ```
 
-Ollama models live under the Ollama user folder (separate from ProgramData). Uninstall keeps ProgramData by default.
+Backup = copy the whole `Data` folder (or whole `TIKR-Deploy` if you want the apps too).
 
 ---
 
 ## Auth note (Deb + Paige)
 
-Auth stays **off** for this shared trusted PC. Enable later only if the app leaves that machine (README → Optional multi-user auth).
+Auth stays **off** for this shared trusted PC. Enable later only if the app leaves that machine.
 
 ---
 
-## Alternate: USB folder without Setup.exe
+## When Setup-TIKR.exe exists
 
-Copy `TIKR-Deploy` → run `Install-TIKR.ps1` (Admin) → `Start-TIKR.bat`. Same `Ensure-Ollama.ps1` runs automatically. Prefer Setup.exe for Start Menu / Program Files.
+1. Run Setup → defaults (`C:\Program Files\TIKR`, Ollama, Desktop shortcut).
+2. Paste Syncfusion key in the wizard (or use Start Menu → Start TIKR after install).
+3. Backup owner copies **`C:\ProgramData\TIKR`** regularly.
 
----
-
-## After install
-
-IT smoke: [clerk-windows-smoke.md](clerk-windows-smoke.md) · Handoff: [clerk-windows-handoff.md](clerk-windows-handoff.md).
+Smoke: [clerk-windows-smoke.md](clerk-windows-smoke.md) · Handoff: [clerk-windows-handoff.md](clerk-windows-handoff.md).

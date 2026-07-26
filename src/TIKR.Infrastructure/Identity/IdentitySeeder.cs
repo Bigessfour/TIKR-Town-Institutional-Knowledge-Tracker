@@ -21,7 +21,7 @@ public static class IdentitySeeder
         if (!TikrConfiguration.IsAuthEnabled(configuration))
             return;
 
-        foreach (var role in new[] { TikrRoles.Admin, TikrRoles.Clerk })
+        foreach (var role in new[] { TikrRoles.Admin, TikrRoles.Clerk, TikrRoles.Viewer })
         {
             if (!await roleManager.RoleExistsAsync(role))
                 await roleManager.CreateAsync(new IdentityRole(role));

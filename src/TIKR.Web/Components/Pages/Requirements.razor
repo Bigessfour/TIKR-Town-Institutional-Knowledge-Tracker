@@ -153,6 +153,8 @@ else
             </Template>
         </GridColumn>
         <GridColumn Field="@nameof(RequirementDto.DueDate)" HeaderText="Due Date" Format="d" Width="120" />
+        <GridColumn Field="@nameof(RequirementDto.SubmitTo)" HeaderText="Submit to" Width="140" />
+        <GridColumn Field="@nameof(RequirementDto.ContactName)" HeaderText="Contact" Width="140" />
         <GridColumn Field="@nameof(RequirementDto.Category)" HeaderText="Category" Width="120" />
         <GridColumn Field="@nameof(RequirementDto.Recurrence)" HeaderText="Recurrence" Width="110" />
         <GridColumn Field="@nameof(RequirementDto.IsSystemSeeded)" HeaderText="CO Default" DisplayAsCheckBox="true" Width="100" />
@@ -174,9 +176,13 @@ else
     </div>
 }
 
-<SfDialog @bind-Visible="_showDialog" Width="480px" IsModal="true" ShowCloseIcon="true" Header="@(_editingId is null ? "Add requirement" : "Edit requirement")">
+<SfDialog @bind-Visible="_showDialog" Width="520px" IsModal="true" ShowCloseIcon="true" Header="@(_editingId is null ? "Add requirement" : "Edit requirement")">
     <DialogTemplates>
         <Content>
+            <p class="text-muted" style="margin-top:0;">Copy notes from email or clipboard, then use <strong>Smart Paste</strong> to fill fields (needs Ollama).</p>
+            <div class="mb-2">
+                <SfSmartPasteButton Content="Smart Paste from clipboard" CssClass="tikr-action-btn" />
+            </div>
             <EditForm Model="_form" OnValidSubmit="SaveAsync">
                 <DataAnnotationsValidator />
                 <ValidationSummary />
@@ -185,7 +191,12 @@ else
                         <FormItem Field="@nameof(RequirementFormModel.Title)" LabelText="Title" />
                         <FormItem Field="@nameof(RequirementFormModel.Description)" LabelText="Description">
                             <Template>
-                                <SfTextBox Multiline="true" @bind-Value="_form.Description" Placeholder="Notes, statute cite, filing instructions..." />
+                                <SfSmartTextArea UserRole="@_smartReqRole"
+                                                 UserPhrases="@_smartReqPhrases"
+                                                 @bind-Value="_form.Description"
+                                                 Placeholder="Notes, statute cite, filing instructions..."
+                                                 RowCount="4"
+                                                 Width="100%" />
                             </Template>
                         </FormItem>
                         <FormItem Field="@nameof(RequirementFormModel.DueDate)" LabelText="Due date">
@@ -210,6 +221,10 @@ else
                                                 @bind-Value="_form.Category" />
                             </Template>
                         </FormItem>
+                        <FormItem Field="@nameof(RequirementFormModel.SubmitTo)" LabelText="Submit to" />
+                        <FormItem Field="@nameof(RequirementFormModel.ContactName)" LabelText="Contact name" />
+                        <FormItem Field="@nameof(RequirementFormModel.ContactEmail)" LabelText="Contact email" />
+                        <FormItem Field="@nameof(RequirementFormModel.ContactPhone)" LabelText="Contact phone" />
                         @if (_editingId is not null)
                         {
                             <FormItem Field="@nameof(RequirementFormModel.IsCompleted)" LabelText="Completed">
@@ -220,6 +235,45 @@ else
                         }
                     </FormItems>
                 </SfDataForm>
+                @if (_editingId is not null)
+                {
+                    <div class="mt-3 border-top pt-3">
+                        <h5 class="mb-2">Linked documents</h5>
+                        @if (_linkedDocuments.Count == 0)
+                        {
+                            <p class="text-muted">No prior filings linked yet.</p>
+                        }
+                        else
+                        {
+                            <ul class="mb-2">
+                                @foreach (var linked in _linkedDocuments)
+                                {
+                                    <li class="d-flex justify-content-between align-items-center gap-2 mb-1">
+                                        <span>@linked.FileName</span>
+                                        <SfButton CssClass="tikr-action-btn e-small" Content="Unlink"
+                                                  OnClick="() => UnlinkDocumentAsync(linked.DocumentId)" />
+                                    </li>
+                                }
+                            </ul>
+                        }
+                        <div class="d-flex flex-wrap gap-2 align-items-center">
+                            <SfDropDownList TValue="Guid?" TItem="DocumentDto"
+                                            DataSource="@_attachCandidates"
+                                            @bind-Value="_attachDocumentId"
+                                            Placeholder="Select document to attach"
+                                            Width="280px">
+                                <DropDownListFieldSettings Value="Id" Text="@nameof(DocumentDto.FileName)" />
+                            </SfDropDownList>
+                            <SfButton CssClass="tikr-action-btn" Content="Attach"
+                                      Disabled="@(_attachDocumentId is null || _attachBusy)"
+                                      OnClick="AttachDocumentAsync" />
+                        </div>
+                        @if (!string.IsNullOrWhiteSpace(_attachMessage))
+                        {
+                            <p class="mt-2 text-muted">@_attachMessage</p>
+                        }
+                    </div>
+                }
                 <div class="mt-3">
                     <SfButton CssClass="tikr-action-btn" OnClick="CloseDialog">Cancel</SfButton>
                     <SfButton Type="ButtonType.Submit" CssClass="tikr-action-btn primary">Save</SfButton>
@@ -279,6 +333,19 @@ else
     private DocumentAgentResult? _lastAgentResult;
     private DateTime? _formDueDate = DateTime.Today.AddMonths(1);
     private readonly RequirementFormModel _form = new();
+    private List<RequirementLinkedDocumentDto> _linkedDocuments = [];
+    private List<DocumentDto> _attachCandidates = [];
+    private Guid? _attachDocumentId;
+    private bool _attachBusy;
+    private string? _attachMessage;
+    private const string _smartReqRole =
+        "Colorado municipal town clerk filling statutory deadline forms for a small town board";
+    private static readonly string[] _smartReqPhrases =
+    [
+        "File with the Colorado Secretary of State.",
+        "Due annually; include proof of publication.",
+        "Coordinate with the town attorney before filing.",
+    ];
     private bool _confirmDeleteVisible;
     private RequirementDto? _pendingDelete;
     private string _townName = "Wiley";
@@ -361,21 +428,96 @@ else
         _form.Recurrence = RecurrenceType.Annual;
         _form.Category = RequirementCategory.Custom;
         _form.IsCompleted = false;
+        _form.SubmitTo = null;
+        _form.ContactName = null;
+        _form.ContactEmail = null;
+        _form.ContactPhone = null;
         _formDueDate = DateTime.Today.AddMonths(1);
+        _linkedDocuments = [];
+        _attachCandidates = [];
+        _attachDocumentId = null;
+        _attachMessage = null;
         _showDialog = true;
     }
 
-    private void OpenEditDialog(RequirementDto item)
+    private async Task OpenEditDialog(RequirementDto item)
     {
         _editingId = item.Id;
         _error = null;
+        _attachMessage = null;
         _form.Title = item.Title;
         _form.Description = item.Description;
         _form.Recurrence = item.Recurrence;
         _form.Category = item.Category;
         _form.IsCompleted = item.IsCompleted;
+        _form.SubmitTo = item.SubmitTo;
+        _form.ContactName = item.ContactName;
+        _form.ContactEmail = item.ContactEmail;
+        _form.ContactPhone = item.ContactPhone;
         _formDueDate = item.DueDate.ToDateTime(TimeOnly.MinValue);
+        _linkedDocuments = item.LinkedDocuments.ToList();
+        _attachDocumentId = null;
         _showDialog = true;
+        try
+        {
+            _attachCandidates = await Api.GetDocumentsAsync();
+        }
+        catch
+        {
+            _attachCandidates = [];
+        }
+    }
+
+    private async Task AttachDocumentAsync()
+    {
+        if (_editingId is null || _attachDocumentId is null)
+            return;
+
+        _attachBusy = true;
+        _attachMessage = null;
+        try
+        {
+            var updated = await Api.LinkRequirementDocumentAsync(_editingId.Value, _attachDocumentId.Value);
+            if (updated is null)
+            {
+                _attachMessage = "Could not attach document.";
+                return;
+            }
+
+            _linkedDocuments = updated.LinkedDocuments.ToList();
+            _attachDocumentId = null;
+            _attachMessage = "Document linked.";
+            await LoadAsync();
+        }
+        finally
+        {
+            _attachBusy = false;
+        }
+    }
+
+    private async Task UnlinkDocumentAsync(Guid documentId)
+    {
+        if (_editingId is null)
+            return;
+
+        _attachBusy = true;
+        _attachMessage = null;
+        try
+        {
+            if (!await Api.UnlinkRequirementDocumentAsync(_editingId.Value, documentId))
+            {
+                _attachMessage = "Could not unlink document.";
+                return;
+            }
+
+            _linkedDocuments = _linkedDocuments.Where(d => d.DocumentId != documentId).ToList();
+            _attachMessage = "Document unlinked.";
+            await LoadAsync();
+        }
+        finally
+        {
+            _attachBusy = false;
+        }
     }
 
     private void CloseDialog() => _showDialog = false;
@@ -394,7 +536,11 @@ else
                     _form.Description,
                     dueDate,
                     _form.Recurrence,
-                    _form.Category));
+                    _form.Category,
+                    _form.SubmitTo,
+                    _form.ContactName,
+                    _form.ContactEmail,
+                    _form.ContactPhone));
             }
             else
             {
@@ -404,7 +550,11 @@ else
                     dueDate,
                     _form.Recurrence,
                     _form.Category,
-                    _form.IsCompleted));
+                    _form.IsCompleted,
+                    _form.SubmitTo,
+                    _form.ContactName,
+                    _form.ContactEmail,
+                    _form.ContactPhone));
             }
 
             _showDialog = false;
@@ -680,6 +830,10 @@ else
         _form.Recurrence = draft.Recurrence;
         _form.Category = draft.Category;
         _form.IsCompleted = false;
+        _form.SubmitTo = draft.SubmitTo;
+        _form.ContactName = draft.ContactName;
+        _form.ContactEmail = draft.ContactEmail;
+        _form.ContactPhone = draft.ContactPhone;
         _formDueDate = draft.DueDate.ToDateTime(TimeOnly.MinValue);
         _showDialog = true;
     }
@@ -704,5 +858,18 @@ else
         public RequirementCategory Category { get; set; } = RequirementCategory.Custom;
         public bool IsCompleted { get; set; }
         public DateOnly DueDate { get; set; }
+
+        [System.ComponentModel.DataAnnotations.MaxLength(300)]
+        public string? SubmitTo { get; set; }
+
+        [System.ComponentModel.DataAnnotations.MaxLength(200)]
+        public string? ContactName { get; set; }
+
+        [System.ComponentModel.DataAnnotations.MaxLength(200)]
+        [System.ComponentModel.DataAnnotations.EmailAddress]
+        public string? ContactEmail { get; set; }
+
+        [System.ComponentModel.DataAnnotations.MaxLength(50)]
+        public string? ContactPhone { get; set; }
     }
 }

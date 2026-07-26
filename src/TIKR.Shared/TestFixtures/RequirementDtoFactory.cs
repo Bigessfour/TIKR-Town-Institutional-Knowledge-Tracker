@@ -14,7 +14,11 @@ public static class RequirementDtoFactory
         RequirementCategory category = RequirementCategory.Custom,
         bool isSystemSeeded = false,
         bool isCompleted = false,
-        IReadOnlyList<RequirementLinkedDocumentDto>? linkedDocuments = null) =>
+        IReadOnlyList<RequirementLinkedDocumentDto>? linkedDocuments = null,
+        string? submitTo = null,
+        string? contactName = null,
+        string? contactEmail = null,
+        string? contactPhone = null) =>
         new(
             id ?? Guid.NewGuid(),
             title,
@@ -24,5 +28,9 @@ public static class RequirementDtoFactory
             category,
             isSystemSeeded,
             isCompleted,
-            linkedDocuments ?? []);
+            linkedDocuments ?? [],
+            submitTo,
+            contactName,
+            contactEmail,
+            contactPhone);
 }

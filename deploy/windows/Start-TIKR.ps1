@@ -8,15 +8,32 @@ $ErrorActionPreference = "Stop"
 $DeployRoot = $PSScriptRoot
 
 function Import-TikrSecrets {
+    # Prefer plain text (no PowerShell syntax — avoids "unexpected token" when clerks edit files)
+    $licenseTxt = Join-Path $DeployRoot "syncfusion-license.txt"
+    if (Test-Path $licenseTxt) {
+        $key = (Get-Content -Path $licenseTxt -TotalCount 1 -ErrorAction SilentlyContinue)
+        if ($key) { $key = $key.Trim() }
+        if ($key -and $key -notmatch "PASTE-YOUR-SYNCFUSION") {
+            $env:SYNCFUSION_LICENSE_KEY = $key
+            return
+        }
+    }
+
     $secrets = Join-Path $DeployRoot "tikr-secrets.ps1"
     if (Test-Path $secrets) {
-        . $secrets
-        return
+        try {
+            . $secrets
+            return
+        } catch {
+            Write-Warning "tikr-secrets.ps1 has a syntax error — use syncfusion-license.txt instead (one line = key only)."
+        }
     }
+
     if (-not $env:SYNCFUSION_LICENSE_KEY) {
         Write-Host ""
-        Write-Host "WARNING: tikr-secrets.ps1 missing and SYNCFUSION_LICENSE_KEY not set." -ForegroundColor Yellow
-        Write-Host "  Copy tikr-secrets.ps1.example to tikr-secrets.ps1 and add your Syncfusion key." -ForegroundColor Yellow
+        Write-Host "WARNING: No Syncfusion license found." -ForegroundColor Yellow
+        Write-Host "  Create syncfusion-license.txt in this folder with ONLY your license key on line 1." -ForegroundColor Yellow
+        Write-Host "  (Do not run .ps1 secrets files — just Start-TIKR.bat)" -ForegroundColor Yellow
         Write-Host ""
     }
 }
@@ -42,8 +59,17 @@ $webDir = Join-Path $DeployRoot "TIKR.Web"
 $apiExe = Join-Path $apiDir "TIKR.Api.exe"
 $webExe = Join-Path $webDir "TIKR.Web.exe"
 
-if (-not (Test-Path $apiExe)) { throw "Missing $apiExe — run package-thumb-drive on the build machine first." }
-if (-not (Test-Path $webExe)) { throw "Missing $webExe — run package-thumb-drive on the build machine first." }
+if (-not (Test-Path $apiExe)) { throw "Missing $apiExe — copy the whole TIKR-Deploy folder from IT (not just one subfolder)." }
+if (-not (Test-Path $webExe)) { throw "Missing $webExe — copy the whole TIKR-Deploy folder from IT (not just one subfolder)." }
+
+$ensureOllama = Join-Path $DeployRoot "Ensure-Ollama.ps1"
+if (Test-Path $ensureOllama) {
+    try {
+        & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $ensureOllama
+    } catch {
+        Write-Warning "Ensure-Ollama.ps1 failed: $($_.Exception.Message). Continuing without AI."
+    }
+}
 
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host " TIKR — Clerk's Vault (Windows)" -ForegroundColor Cyan

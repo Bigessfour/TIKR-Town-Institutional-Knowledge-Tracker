@@ -66,6 +66,40 @@ if (authEnabled)
 {
     app.UseAuthentication();
     app.UseAuthorization();
+    app.Use(async (ctx, next) =>
+    {
+        // Viewer is read-only on /api mutations (except auth self-service).
+        if (HttpMethods.IsGet(ctx.Request.Method)
+            || HttpMethods.IsHead(ctx.Request.Method)
+            || HttpMethods.IsOptions(ctx.Request.Method))
+        {
+            await next();
+            return;
+        }
+
+        var path = ctx.Request.Path.Value ?? string.Empty;
+        if (path.StartsWith("/api/auth/login", StringComparison.OrdinalIgnoreCase)
+            || path.StartsWith("/api/auth/refresh", StringComparison.OrdinalIgnoreCase)
+            || path.StartsWith("/api/auth/forgot-password", StringComparison.OrdinalIgnoreCase)
+            || path.StartsWith("/api/auth/reset-password", StringComparison.OrdinalIgnoreCase)
+            || path.Equals("/health", StringComparison.OrdinalIgnoreCase))
+        {
+            await next();
+            return;
+        }
+
+        if (ctx.User.Identity?.IsAuthenticated == true
+            && !ctx.User.IsInRole(TikrRoles.Admin)
+            && !ctx.User.IsInRole(TikrRoles.Clerk)
+            && path.StartsWith("/api/", StringComparison.OrdinalIgnoreCase))
+        {
+            ctx.Response.StatusCode = StatusCodes.Status403Forbidden;
+            await ctx.Response.WriteAsJsonAsync(new { error = "Viewer role is read-only." });
+            return;
+        }
+
+        await next();
+    });
 }
 
 app.UseCors();
@@ -97,6 +131,27 @@ api.MapGet("/system/local-status", async (IConfiguration config, IHybridAiServic
 
 api.MapGet("/system/document-sdk-status", (IConfiguration config) =>
     Results.Ok(SyncfusionDocumentLicense.GetStatus(config)));
+
+api.MapPost("/email/ingest", async (IEmailIngestionService ingestion) =>
+{
+    if (!ingestion.IsConfigured)
+        return Results.BadRequest(new { error = "Set TIKR_EMAIL_INBOX_PATH to enable forward-to-folder ingestion." });
+
+    var result = await ingestion.IngestPendingAsync();
+    return Results.Ok(result);
+});
+
+api.MapGet("/library/scan-status", (ILibraryScanService scanner) =>
+    Results.Ok(scanner.GetStatus()));
+
+api.MapPost("/library/scan", async (ILibraryScanService scanner) =>
+{
+    if (!scanner.IsConfigured)
+        return Results.BadRequest(new { error = "Set TIKR_LIBRARY_SCAN_PATH to enable NAS library scan." });
+
+    var result = await scanner.ScanAsync();
+    return Results.Ok(result);
+});
 
 // Requirements
 api.MapGet("/requirements", async (TikrDbContext db) =>
@@ -223,11 +278,15 @@ api.MapPost("/documents", async (HttpRequest request, IFileStorageService storag
     if (file.Length > 100 * 1024 * 1024) return Results.BadRequest("File too large (max 100MB).");
     if (string.IsNullOrWhiteSpace(file.FileName)) return Results.BadRequest("Invalid filename.");
 
+    var isTransient = bool.TryParse(form["isTransient"], out var transientFlag) && transientFlag;
+
     // Delegate to centralized DocumentService (thin endpoint)
     try
     {
         await using var fileStream = file.OpenReadStream();
-        var entity = await documentService.UploadAsync(fileStream, file.FileName, file.ContentType, file.Length, storage, audit, currentUser);
+        var entity = await documentService.UploadAsync(
+            fileStream, file.FileName, file.ContentType, file.Length, storage, audit, currentUser,
+            isTransient: isTransient);
         return Results.Created($"/api/documents/{entity.Id}", MapDocument(entity));
     }
     catch (ArgumentException ex)
@@ -243,6 +302,39 @@ api.MapGet("/documents/{id:guid}/content", async (Guid id, TikrDbContext db, IFi
 
     var stream = await storage.OpenReadAsync(entity.StoragePath);
     return Results.File(stream, entity.ContentType ?? "application/octet-stream", entity.FileName);
+});
+
+api.MapPut("/documents/{id:guid}/content", async (
+    Guid id,
+    HttpRequest request,
+    IFileStorageService storage,
+    IAuditService audit,
+    ICurrentUserService currentUser,
+    IDocumentService documentService) =>
+{
+    if (!request.HasFormContentType)
+        return Results.BadRequest("Expected multipart form data.");
+
+    var form = await request.ReadFormAsync();
+    var file = form.Files.FirstOrDefault();
+    if (file is null) return Results.BadRequest("No file uploaded.");
+    if (file.Length > 100 * 1024 * 1024) return Results.BadRequest("File too large (max 100MB).");
+
+    try
+    {
+        await using var fileStream = file.OpenReadStream();
+        var entity = await documentService.ReplaceContentAsync(
+            id, fileStream, file.ContentType, file.Length, storage, audit, currentUser);
+        return Results.Ok(MapDocument(entity));
+    }
+    catch (KeyNotFoundException)
+    {
+        return Results.NotFound();
+    }
+    catch (ArgumentException ex)
+    {
+        return Results.BadRequest(ex.Message);
+    }
 });
 
 api.MapDelete("/documents/{id:guid}", async (Guid id, IFileStorageService storage, IAuditService audit, ICurrentUserService currentUser, IDocumentService documentService) =>
@@ -267,6 +359,7 @@ api.MapGet("/vault/handover-package", async (IConfiguration config, TikrDbContex
         var knowledge = await db.KnowledgeEntries.OrderBy(k => k.SortOrder).ThenBy(k => k.Title).ToListAsync();
         var requirements = await db.Requirements.OrderBy(r => r.DueDate).ToListAsync();
         var documents = await db.Documents.OrderByDescending(d => d.UploadedAt).ToListAsync();
+        var links = await CouncilPacketEndpoints.LoadRequirementLinksAsync(db);
 
         // Calendar snapshot: upcoming active requirements
         var calendarSnapshot = requirements
@@ -280,7 +373,7 @@ api.MapGet("/vault/handover-package", async (IConfiguration config, TikrDbContex
             town,
             DateTime.UtcNow,
             knowledge.Select(MapKnowledge).ToList(),
-            requirements.Select(r => new RequirementDto(r.Id, r.Title, r.Description, r.DueDate, r.Recurrence, r.Category, r.IsSystemSeeded, r.IsCompleted, new List<RequirementLinkedDocumentDto>())).ToList(),
+            requirements.Select(r => CouncilPacketEndpoints.MapRequirement(r, links.GetValueOrDefault(r.Id, []))).ToList(),
             documents.Select(MapDocument).ToList(),
             calendarSnapshot);
 
@@ -570,6 +663,12 @@ api.MapPost("/ai/embed-knowledge/{id:guid}", async (Guid id, IHybridAiService ai
     }
 });
 
+api.MapPost("/ai/reindex-embeddings", async (IHybridAiService ai) =>
+    Results.Ok(await ai.ReindexAllEmbeddingsAsync()));
+
+api.MapGet("/ai/corpus-health", async (IHybridAiService ai) =>
+    Results.Ok(await ai.GetCorpusHealthAsync()));
+
 api.MapPost("/ai/agent-scan", async (HttpRequest request, IDocumentAgentService agent) =>
 {
     if (!request.HasFormContentType)
@@ -591,7 +690,7 @@ app.Lifetime.ApplicationStopped.Register(Log.CloseAndFlush);
 app.Run();
 
 static DocumentDto MapDocument(Document d) =>
-    new(d.Id, d.FileName, d.ContentType, d.FileSizeBytes, d.AiTags, d.SuggestedFolder, d.UploadedAt, d.FullTextContent);
+    new(d.Id, d.FileName, d.ContentType, d.FileSizeBytes, d.AiTags, d.SuggestedFolder, d.UploadedAt, d.FullTextContent, d.IsTransient);
 
 static KnowledgeEntryDto MapKnowledge(KnowledgeEntry k) =>
     new(k.Id, k.Title, k.Content, k.Category, k.SortOrder);

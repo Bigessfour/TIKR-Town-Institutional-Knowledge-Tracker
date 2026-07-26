@@ -1,5 +1,6 @@
 using FluentAssertions;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using TIKR.Infrastructure.Services;
@@ -91,9 +92,23 @@ public class SyncfusionDocumentAgentExtractorTests
         var config = new ConfigurationBuilder().Build();
         var ollama = Mock.Of<IOllamaChatClientFactory>();
         var registry = new SyncfusionDocumentAgentToolRegistry(storage);
+        var services = new ServiceCollection();
+        services.AddSingleton(Mock.Of<IHybridAiService>());
+        var provider = services.BuildServiceProvider();
+        var searchTools = new TownDocumentSearchToolRegistry(
+            provider.GetRequiredService<IServiceScopeFactory>());
         var orchestrator = new SyncfusionDocumentAgentOrchestrator(
-            ollama, registry, config, NullLogger<SyncfusionDocumentAgentOrchestrator>.Instance);
-        return new SyncfusionDocumentAgentExtractor(storage, orchestrator);
+            ollama, registry, searchTools, config, NullLogger<SyncfusionDocumentAgentOrchestrator>.Instance);
+        return new SyncfusionDocumentAgentExtractor(storage, orchestrator, new DisabledOcr());
+    }
+
+    private sealed class DisabledOcr : IDocumentOcrService
+    {
+        public bool IsEnabled => false;
+        public DocumentOcrResult EnrichPdf(Stream pdfContent, string? existingText, int pageCountHint = 1) =>
+            new(existingText ?? string.Empty, false);
+        public DocumentOcrResult EnrichWord(Stream wordContent, string fileName, string? existingText) =>
+            new(existingText ?? string.Empty, false);
     }
 
     private sealed class InMemoryFileStorage : IFileStorageService

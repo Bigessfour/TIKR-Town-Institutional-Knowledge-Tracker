@@ -67,6 +67,31 @@ public class AssistantPageTests : ClerkTestContext
     }
 
     [Fact]
+    public async Task Assistant_ClearConversation_ResetsModelHistoryAndShowsNote()
+    {
+        RegisterApi();
+        var cut = RenderComponent<Assistant>();
+
+        var historyField = cut.Instance.GetType().GetField(
+            "_modelHistory",
+            System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!;
+        var history = (List<ChatMessage>)historyField.GetValue(cut.Instance)!;
+        history.Add(new ChatMessage(ChatRole.User, "prior"));
+        history.Add(new ChatMessage(ChatRole.Assistant, "answer"));
+
+        cut.Instance.GetType().GetField("_lastPrompt", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!
+            .SetValue(cut.Instance, "prior");
+
+        var clearButton = cut.FindAll("button")
+            .Single(b => b.TextContent.Contains("Clear conversation", StringComparison.Ordinal));
+        await cut.InvokeAsync(() => clearButton.Click());
+
+        history.Should().BeEmpty();
+        cut.WaitForAssertion(() =>
+            cut.Markup.Should().Contain("Conversation cleared"));
+    }
+
+    [Fact]
     public void Assistant_ShowsContextUnavailableWhenPrioritiesFail()
     {
         var handler = new StubHandler((_, _) => new HttpResponseMessage(HttpStatusCode.InternalServerError));
@@ -144,9 +169,15 @@ public class AssistantPageTests : ClerkTestContext
         var handler = new StubHandler((req, _) =>
         {
             var path = req.RequestUri!.PathAndQuery;
-            var json = path.Contains("dashboard-priorities", StringComparison.Ordinal)
-                ? prioritiesJson
-                : """{"ollamaAvailable":true,"ollamaModel":"llama3.2:3b","grokEnabled":false}""";
+            var json = path switch
+            {
+                _ when path.Contains("dashboard-priorities", StringComparison.Ordinal) => prioritiesJson,
+                _ when path.Contains("semantic-search-knowledge", StringComparison.Ordinal) =>
+                    """{"query":"","considered":0,"hits":[],"embeddingAvailable":true}""",
+                _ when path.Contains("semantic-search", StringComparison.Ordinal) =>
+                    """{"query":"","considered":0,"hits":[],"embeddingAvailable":true}""",
+                _ => """{"ollamaAvailable":true,"ollamaModel":"llama3.2:3b","grokEnabled":false}"""
+            };
             return new HttpResponseMessage(HttpStatusCode.OK)
             {
                 Content = new StringContent(json, Encoding.UTF8, "application/json")

@@ -45,7 +45,11 @@ public static class RequirementWorkflowHelpers
             var term = searchText.Trim();
             query = query.Where(r =>
                 r.Title.Contains(term, StringComparison.OrdinalIgnoreCase) ||
-                (r.Description?.Contains(term, StringComparison.OrdinalIgnoreCase) ?? false));
+                (r.Description?.Contains(term, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                (r.SubmitTo?.Contains(term, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                (r.ContactName?.Contains(term, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                (r.ContactEmail?.Contains(term, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                (r.ContactPhone?.Contains(term, StringComparison.OrdinalIgnoreCase) ?? false));
         }
 
         if (urgencyFilter.HasValue)
@@ -58,7 +62,7 @@ public static class RequirementWorkflowHelpers
     {
         var today = referenceDate ?? DateOnly.FromDateTime(DateTime.UtcNow);
         var sb = new StringBuilder();
-        sb.AppendLine("Title,Description,Due Date,Recurrence,Category,Urgency,CO Default,Completed");
+        sb.AppendLine("Title,Description,Due Date,Recurrence,Category,Urgency,CO Default,Completed,Submit To,Contact Name,Contact Email,Contact Phone");
 
         foreach (var requirement in requirements.OrderBy(r => r.DueDate))
         {
@@ -77,7 +81,15 @@ public static class RequirementWorkflowHelpers
             sb.Append(',');
             sb.Append(requirement.IsSystemSeeded ? "Yes" : "No");
             sb.Append(',');
-            sb.AppendLine(requirement.IsCompleted ? "Yes" : "No");
+            sb.Append(requirement.IsCompleted ? "Yes" : "No");
+            sb.Append(',');
+            sb.Append(CsvEscape(requirement.SubmitTo ?? string.Empty));
+            sb.Append(',');
+            sb.Append(CsvEscape(requirement.ContactName ?? string.Empty));
+            sb.Append(',');
+            sb.Append(CsvEscape(requirement.ContactEmail ?? string.Empty));
+            sb.Append(',');
+            sb.AppendLine(CsvEscape(requirement.ContactPhone ?? string.Empty));
         }
 
         return sb.ToString();
@@ -108,7 +120,11 @@ public static class RequirementWorkflowHelpers
             description,
             dueDate,
             result.SuggestedRecurrence,
-            result.SuggestedCategory);
+            result.SuggestedCategory,
+            result.SuggestedSubmitTo,
+            result.SuggestedContactName,
+            result.SuggestedContactEmail,
+            result.SuggestedContactPhone);
     }
 
     public static string FormatAgentScanMessage(DocumentAgentResult result)
@@ -124,5 +140,14 @@ public static class RequirementWorkflowHelpers
         result.UsedSyncfusionTools ? "Syncfusion Document SDK" : "Plain-text extraction";
 
     public static CreateRequirementRequest ToCreateRequest(RequirementDto requirement) =>
-        new(requirement.Title, requirement.Description, requirement.DueDate, requirement.Recurrence, requirement.Category);
+        new(
+            requirement.Title,
+            requirement.Description,
+            requirement.DueDate,
+            requirement.Recurrence,
+            requirement.Category,
+            requirement.SubmitTo,
+            requirement.ContactName,
+            requirement.ContactEmail,
+            requirement.ContactPhone);
 }

@@ -14,6 +14,7 @@ namespace TIKR.Infrastructure.Services;
 public sealed class SyncfusionDocumentAgentOrchestrator(
     IOllamaChatClientFactory ollamaFactory,
     SyncfusionDocumentAgentToolRegistry toolRegistry,
+    TownDocumentSearchToolRegistry searchTools,
     IConfiguration configuration,
     ILogger<SyncfusionDocumentAgentOrchestrator> logger)
 {
@@ -36,7 +37,9 @@ public sealed class SyncfusionDocumentAgentOrchestrator(
 
         try
         {
-            var functions = toolRegistry.GetFunctions();
+            var functions = toolRegistry.GetFunctions()
+                .Concat(searchTools.GetFunctions())
+                .ToList();
             var client = new ChatClientBuilder(ollamaFactory.CreateChatClient())
                 .UseFunctionInvocation()
                 .Build();

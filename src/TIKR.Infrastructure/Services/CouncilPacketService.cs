@@ -161,7 +161,11 @@ public class CouncilPacketService(
             requirement.Category,
             requirement.IsSystemSeeded,
             requirement.IsCompleted,
-            linkedDocuments);
+            linkedDocuments,
+            requirement.SubmitTo,
+            requirement.ContactName,
+            requirement.ContactEmail,
+            requirement.ContactPhone);
 
     private async Task<Document> PersistGeneratedDocumentAsync(
         IFileStorageService storage,

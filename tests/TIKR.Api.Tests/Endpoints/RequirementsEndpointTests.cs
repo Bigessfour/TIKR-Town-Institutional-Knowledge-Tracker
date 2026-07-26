@@ -50,6 +50,34 @@ public class RequirementsEndpointTests : IClassFixture<TikrWebApplicationFactory
     }
 
     [Fact]
+    public async Task PostRequirement_PersistsDueOutContactFields()
+    {
+        var request = new CreateRequirementRequest(
+            "Liquor license renewal",
+            "Annual filing",
+            DateOnly.FromDateTime(DateTime.UtcNow.AddDays(30)),
+            RecurrenceType.Annual,
+            RequirementCategory.Custom,
+            SubmitTo: "Colorado Department of Revenue",
+            ContactName: "Jane Smith",
+            ContactEmail: "jane@example.com",
+            ContactPhone: "303-555-0100");
+
+        var response = await _client.PostAsJsonAsync("/api/requirements", request);
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+
+        var created = await response.Content.ReadFromJsonAsync<RequirementDto>();
+        created!.SubmitTo.Should().Be("Colorado Department of Revenue");
+        created.ContactName.Should().Be("Jane Smith");
+        created.ContactEmail.Should().Be("jane@example.com");
+        created.ContactPhone.Should().Be("303-555-0100");
+
+        var fetched = await _client.GetFromJsonAsync<RequirementDto>($"/api/requirements/{created.Id}");
+        fetched!.ContactName.Should().Be("Jane Smith");
+        fetched.SubmitTo.Should().Be("Colorado Department of Revenue");
+    }
+
+    [Fact]
     public async Task DeleteSystemSeededRequirement_ReturnsBadRequest()
     {
         var items = await _client.GetFromJsonAsync<List<RequirementDto>>("/api/requirements");

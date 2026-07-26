@@ -2,6 +2,16 @@
 
 **Status:** Superseded by iterative plan (see [syncfusion-e2e-audit-plan.md](../syncfusion-e2e-audit-plan.md)).
 
+**2026-07-25 refresh (code + tests, no NAS licensed smoke):** Package pin **34.1.32**. New/updated surfaces since 62-PASS baseline:
+
+| Area | Controls | Status | Evidence |
+|------|----------|--------|----------|
+| Documents preview + edit/save | `SfPdfViewer2`, `SfDocumentEditorContainer`, `SfSpreadsheet` | PASS (MVP) | `DocumentPreviewHelperTests`, Documents save → `PUT /api/documents/{id}/content`, ReplaceContent tests |
+| Phase 6 Smart Components | `SfSmartPasteButton`, `SfSmartTextArea` (+ Calendar NL via `IChatClient`) | PASS (MVP) | Requirements/Vault/Calendar wiring; `FakeChatClient` in bUnit |
+| Shared / Settings | prior Sf* baseline | PASS | unchanged; audit JSON formatting in Settings |
+
+**Still blocked for full licensed E2E:** Manual NAS Syncfusion agent-tools smoke (human + Deb NAS). Quarterly full page walk remains [syncfusion-e2e-audit-plan.md](syncfusion-e2e-audit-plan.md).
+
 **New:** Frontend Polish PR plan created at [docs/frontend-polish-phased-plan.md](../frontend-polish-phased-plan.md) (2026-07-08 UI audit). This document now drives the next phase of Syncfusion + UX improvements.
 
 **2026-07-09 End-of-dev gate:** Condensed sign-off pass on Home, Requirements, Documents, Vault, Assistant, Settings — theme switch, core Sf* controls, Playwright CI gate on `main` (PR #61 merged `242b754`). Full quarterly E2E iteration tracked in [ui-readiness-audit.md](ui-readiness-audit.md) + [syncfusion-e2e-audit-plan.md](syncfusion-e2e-audit-plan.md).
