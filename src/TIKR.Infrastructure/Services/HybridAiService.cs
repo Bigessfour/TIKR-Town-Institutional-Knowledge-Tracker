@@ -326,7 +326,11 @@ public class HybridAiService(
                 r.Title,
                 r.Description ?? $"Due in {daysUntil} days",
                 r.DueDate,
-                priority);
+                priority,
+                r.SubmitTo,
+                r.ContactName,
+                r.ContactEmail,
+                r.ContactPhone);
         }).ToList();
 
         if (priorities.Count == 0)

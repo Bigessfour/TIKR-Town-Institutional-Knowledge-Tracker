@@ -97,8 +97,31 @@ public static class AssistantPromptBuilder
 
     public static string FormatDeadlineContext(IReadOnlyList<DashboardPriority> priorities) =>
         string.Join("\n", priorities.Select(p =>
-            $"- {p.Title} ({p.Priority}): {p.Reason}" +
-            (p.DueDate.HasValue ? $" — due {p.DueDate.Value:MMM d}" : "")));
+        {
+            var line = $"- {p.Title} ({p.Priority}): {p.Reason}" +
+                       (p.DueDate.HasValue ? $" — due {p.DueDate.Value:MMM d}" : "");
+            var contact = FormatDueOutContactLine(p.SubmitTo, p.ContactName, p.ContactEmail, p.ContactPhone);
+            return string.IsNullOrEmpty(contact) ? line : $"{line}\n  {contact}";
+        }));
+
+    /// <summary>One-line submit/contact summary for Assistant clerk context and calendar grids.</summary>
+    public static string FormatDueOutContactLine(
+        string? submitTo,
+        string? contactName,
+        string? contactEmail,
+        string? contactPhone)
+    {
+        var parts = new List<string>();
+        if (!string.IsNullOrWhiteSpace(submitTo))
+            parts.Add($"Submit to: {submitTo.Trim()}");
+        if (!string.IsNullOrWhiteSpace(contactName))
+            parts.Add($"Contact: {contactName.Trim()}");
+        if (!string.IsNullOrWhiteSpace(contactEmail))
+            parts.Add(contactEmail.Trim());
+        if (!string.IsNullOrWhiteSpace(contactPhone))
+            parts.Add(contactPhone.Trim());
+        return parts.Count == 0 ? string.Empty : string.Join(" · ", parts);
+    }
 
     /// <summary>
     /// Plain-text streaming preview for SfAIAssistView. UpdateResponseAsync replaces the bubble;

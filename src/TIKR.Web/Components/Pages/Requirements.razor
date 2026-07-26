@@ -153,6 +153,8 @@ else
             </Template>
         </GridColumn>
         <GridColumn Field="@nameof(RequirementDto.DueDate)" HeaderText="Due Date" Format="d" Width="120" />
+        <GridColumn Field="@nameof(RequirementDto.SubmitTo)" HeaderText="Submit to" Width="140" />
+        <GridColumn Field="@nameof(RequirementDto.ContactName)" HeaderText="Contact" Width="140" />
         <GridColumn Field="@nameof(RequirementDto.Category)" HeaderText="Category" Width="120" />
         <GridColumn Field="@nameof(RequirementDto.Recurrence)" HeaderText="Recurrence" Width="110" />
         <GridColumn Field="@nameof(RequirementDto.IsSystemSeeded)" HeaderText="CO Default" DisplayAsCheckBox="true" Width="100" />
@@ -219,6 +221,10 @@ else
                                                 @bind-Value="_form.Category" />
                             </Template>
                         </FormItem>
+                        <FormItem Field="@nameof(RequirementFormModel.SubmitTo)" LabelText="Submit to" />
+                        <FormItem Field="@nameof(RequirementFormModel.ContactName)" LabelText="Contact name" />
+                        <FormItem Field="@nameof(RequirementFormModel.ContactEmail)" LabelText="Contact email" />
+                        <FormItem Field="@nameof(RequirementFormModel.ContactPhone)" LabelText="Contact phone" />
                         @if (_editingId is not null)
                         {
                             <FormItem Field="@nameof(RequirementFormModel.IsCompleted)" LabelText="Completed">
@@ -378,6 +384,10 @@ else
         _form.Recurrence = RecurrenceType.Annual;
         _form.Category = RequirementCategory.Custom;
         _form.IsCompleted = false;
+        _form.SubmitTo = null;
+        _form.ContactName = null;
+        _form.ContactEmail = null;
+        _form.ContactPhone = null;
         _formDueDate = DateTime.Today.AddMonths(1);
         _showDialog = true;
     }
@@ -391,6 +401,10 @@ else
         _form.Recurrence = item.Recurrence;
         _form.Category = item.Category;
         _form.IsCompleted = item.IsCompleted;
+        _form.SubmitTo = item.SubmitTo;
+        _form.ContactName = item.ContactName;
+        _form.ContactEmail = item.ContactEmail;
+        _form.ContactPhone = item.ContactPhone;
         _formDueDate = item.DueDate.ToDateTime(TimeOnly.MinValue);
         _showDialog = true;
     }
@@ -411,7 +425,11 @@ else
                     _form.Description,
                     dueDate,
                     _form.Recurrence,
-                    _form.Category));
+                    _form.Category,
+                    _form.SubmitTo,
+                    _form.ContactName,
+                    _form.ContactEmail,
+                    _form.ContactPhone));
             }
             else
             {
@@ -421,7 +439,11 @@ else
                     dueDate,
                     _form.Recurrence,
                     _form.Category,
-                    _form.IsCompleted));
+                    _form.IsCompleted,
+                    _form.SubmitTo,
+                    _form.ContactName,
+                    _form.ContactEmail,
+                    _form.ContactPhone));
             }
 
             _showDialog = false;
@@ -697,6 +719,10 @@ else
         _form.Recurrence = draft.Recurrence;
         _form.Category = draft.Category;
         _form.IsCompleted = false;
+        _form.SubmitTo = draft.SubmitTo;
+        _form.ContactName = draft.ContactName;
+        _form.ContactEmail = draft.ContactEmail;
+        _form.ContactPhone = draft.ContactPhone;
         _formDueDate = draft.DueDate.ToDateTime(TimeOnly.MinValue);
         _showDialog = true;
     }
@@ -721,5 +747,18 @@ else
         public RequirementCategory Category { get; set; } = RequirementCategory.Custom;
         public bool IsCompleted { get; set; }
         public DateOnly DueDate { get; set; }
+
+        [System.ComponentModel.DataAnnotations.MaxLength(300)]
+        public string? SubmitTo { get; set; }
+
+        [System.ComponentModel.DataAnnotations.MaxLength(200)]
+        public string? ContactName { get; set; }
+
+        [System.ComponentModel.DataAnnotations.MaxLength(200)]
+        [System.ComponentModel.DataAnnotations.EmailAddress]
+        public string? ContactEmail { get; set; }
+
+        [System.ComponentModel.DataAnnotations.MaxLength(50)]
+        public string? ContactPhone { get; set; }
     }
 }

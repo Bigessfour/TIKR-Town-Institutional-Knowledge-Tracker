@@ -25,6 +25,10 @@ public class RequirementService(TikrDbContext db) : IRequirementService
             DueDate = request.DueDate,
             Recurrence = request.Recurrence,
             Category = request.Category,
+            SubmitTo = NormalizeOptional(request.SubmitTo),
+            ContactName = NormalizeOptional(request.ContactName),
+            ContactEmail = NormalizeOptional(request.ContactEmail),
+            ContactPhone = NormalizeOptional(request.ContactPhone),
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };
@@ -50,7 +54,11 @@ public class RequirementService(TikrDbContext db) : IRequirementService
             ("DueDate", entity.DueDate, request.DueDate),
             ("Recurrence", entity.Recurrence, request.Recurrence),
             ("Category", entity.Category, request.Category),
-            ("IsCompleted", entity.IsCompleted, request.IsCompleted));
+            ("IsCompleted", entity.IsCompleted, request.IsCompleted),
+            ("SubmitTo", entity.SubmitTo, request.SubmitTo),
+            ("ContactName", entity.ContactName, request.ContactName),
+            ("ContactEmail", entity.ContactEmail, request.ContactEmail),
+            ("ContactPhone", entity.ContactPhone, request.ContactPhone));
 
         entity.Title = request.Title;
         entity.Description = request.Description;
@@ -58,6 +66,10 @@ public class RequirementService(TikrDbContext db) : IRequirementService
         entity.Recurrence = request.Recurrence;
         entity.Category = request.Category;
         entity.IsCompleted = request.IsCompleted;
+        entity.SubmitTo = NormalizeOptional(request.SubmitTo);
+        entity.ContactName = NormalizeOptional(request.ContactName);
+        entity.ContactEmail = NormalizeOptional(request.ContactEmail);
+        entity.ContactPhone = NormalizeOptional(request.ContactPhone);
         entity.UpdatedAt = DateTime.UtcNow;
 
         using var tx = await db.Database.BeginTransactionAsync(ct);
@@ -116,4 +128,7 @@ public class RequirementService(TikrDbContext db) : IRequirementService
         await db.SaveChangesAsync(ct);
         await tx.CommitAsync(ct);
     }
+
+    private static string? NormalizeOptional(string? value) =>
+        string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 }

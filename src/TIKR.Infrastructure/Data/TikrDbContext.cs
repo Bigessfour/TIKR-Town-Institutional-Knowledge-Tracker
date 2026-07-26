@@ -27,6 +27,10 @@ public class TikrDbContext : IdentityDbContext<ApplicationUser>
         {
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Title).HasMaxLength(500).IsRequired();
+            entity.Property(e => e.SubmitTo).HasMaxLength(300);
+            entity.Property(e => e.ContactName).HasMaxLength(200);
+            entity.Property(e => e.ContactEmail).HasMaxLength(200);
+            entity.Property(e => e.ContactPhone).HasMaxLength(50);
             entity.HasIndex(e => e.DueDate);
         });
 

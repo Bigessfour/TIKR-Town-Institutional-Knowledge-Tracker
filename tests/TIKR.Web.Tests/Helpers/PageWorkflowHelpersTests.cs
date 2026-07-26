@@ -39,6 +39,36 @@ public class PageWorkflowHelpersTests
     }
 
     [Fact]
+    public void FormatDeadlineContext_IncludesDueOutContacts()
+    {
+        var text = AssistantPromptBuilder.FormatDeadlineContext([
+            new DashboardPriority(
+                "Liquor license",
+                "Renew annually",
+                new DateOnly(2026, 3, 15),
+                "High",
+                SubmitTo: "DOR",
+                ContactName: "Jane",
+                ContactEmail: "jane@example.com",
+                ContactPhone: "303-555-0100")
+        ]);
+
+        text.Should().Contain("Submit to: DOR");
+        text.Should().Contain("Contact: Jane");
+        text.Should().Contain("jane@example.com");
+        text.Should().Contain("303-555-0100");
+    }
+
+    [Fact]
+    public void FormatDueOutContactLine_OmitsEmptyParts()
+    {
+        AssistantPromptBuilder.FormatDueOutContactLine(null, null, null, null)
+            .Should().BeEmpty();
+        AssistantPromptBuilder.FormatDueOutContactLine("SOS", null, null, null)
+            .Should().Be("Submit to: SOS");
+    }
+
+    [Fact]
     public void FormatStreamingHtml_EncodesMarkup()
     {
         var html = AssistantPromptBuilder.FormatStreamingHtml("Hello <world> & more");

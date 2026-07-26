@@ -14,7 +14,11 @@ public record RequirementDto(
     RequirementCategory Category,
     bool IsSystemSeeded,
     bool IsCompleted,
-    IReadOnlyList<RequirementLinkedDocumentDto> LinkedDocuments);
+    IReadOnlyList<RequirementLinkedDocumentDto> LinkedDocuments,
+    string? SubmitTo = null,
+    string? ContactName = null,
+    string? ContactEmail = null,
+    string? ContactPhone = null);
 
 public record LinkRequirementDocumentRequest(Guid DocumentId);
 
@@ -23,7 +27,11 @@ public record CreateRequirementRequest(
     string? Description,
     DateOnly DueDate,
     RecurrenceType Recurrence,
-    RequirementCategory Category);
+    RequirementCategory Category,
+    [MaxLength(300)] string? SubmitTo = null,
+    [MaxLength(200)] string? ContactName = null,
+    [MaxLength(200)] string? ContactEmail = null,
+    [MaxLength(50)] string? ContactPhone = null);
 
 public record UpdateRequirementRequest(
     [Required, MaxLength(500)] string Title,
@@ -31,4 +39,8 @@ public record UpdateRequirementRequest(
     DateOnly DueDate,
     RecurrenceType Recurrence,
     RequirementCategory Category,
-    bool IsCompleted);
+    bool IsCompleted,
+    [MaxLength(300)] string? SubmitTo = null,
+    [MaxLength(200)] string? ContactName = null,
+    [MaxLength(200)] string? ContactEmail = null,
+    [MaxLength(50)] string? ContactPhone = null);

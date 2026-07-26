@@ -32,7 +32,7 @@ This file owns **status, checkboxes, priorities, verification evidence**. The ge
 
 Shipped: circuit-scoped multi-turn memory + follow-up retrieval rewrite + Clear conversation on `/assistant` (`AssistantPromptBuilder`, `PageWorkflowHelpersTests`).
 
-- [ ] **Requirement SubmitTo/Contact fields** — Add SubmitTo / ContactName / Email / Phone on `Requirement`; expose in Calendar appointment editor + Requirements dialog; include in Assistant deadline context and handover PDF (SfSchedule is UI-only; Requirements DB is the store)
+- [x] **Requirement SubmitTo/Contact fields** — Add SubmitTo / ContactName / Email / Phone on `Requirement`; expose in Calendar appointment editor + Requirements dialog; include in Assistant deadline context and handover PDF (SfSchedule is UI-only; Requirements DB is the store)
 - [ ] **Confirm-first document classification** — On upload / library scan / AI Scan: ask recurring vs transitory; only embed/index recurring (or exclude transient from long-term RAG)
 - [ ] **Requirements document attach UI** — Wire existing `RequirementDocuments` API; show linked prior filings; pass links into handover package
 - [ ] **Ask Advanced + RAG** — Same doc/vault pack as local chat (stop deadline-only Grok path)

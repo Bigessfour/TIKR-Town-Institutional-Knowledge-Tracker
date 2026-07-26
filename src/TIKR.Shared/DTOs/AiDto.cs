@@ -8,7 +8,11 @@ public record DashboardPriority(
     string Title,
     string Reason,
     DateOnly? DueDate,
-    string Priority);
+    string Priority,
+    string? SubmitTo = null,
+    string? ContactName = null,
+    string? ContactEmail = null,
+    string? ContactPhone = null);
 
 public record AskAdvancedRequest(string Prompt, string? Context);
 

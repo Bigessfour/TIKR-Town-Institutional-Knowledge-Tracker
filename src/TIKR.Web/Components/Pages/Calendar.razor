@@ -20,7 +20,7 @@
     </div>
     <div class="page-header-actions">
         <PageTourButton Route="/calendar" />
-        <PageHelp DataTour="@ClerkTourIds.HelpCalendar" HelpText="Create, edit, move, or delete appointments here — changes save to Requirements on the NAS. Colorado default (seeded) deadlines can be moved or edited but not deleted." />
+        <PageHelp DataTour="@ClerkTourIds.HelpCalendar" HelpText="Create, edit, move, or delete appointments here — changes save to Requirements on the NAS. Edit Submit to / contact fields on Requirements for who to call. Colorado default (seeded) deadlines can be moved or edited but not deleted." />
     </div>
 </div>
 
@@ -98,6 +98,8 @@ else
         <GridColumns>
             <GridColumn Field="@nameof(RequirementDto.Title)" HeaderText="Requirement" Width="250"></GridColumn>
             <GridColumn Field="@nameof(RequirementDto.DueDate)" HeaderText="Due Date" Format="d" Width="120"></GridColumn>
+            <GridColumn Field="@nameof(RequirementDto.SubmitTo)" HeaderText="Submit to" Width="140"></GridColumn>
+            <GridColumn Field="@nameof(RequirementDto.ContactName)" HeaderText="Contact" Width="140"></GridColumn>
             <GridColumn Field="@nameof(RequirementDto.Category)" HeaderText="Category" Width="120"></GridColumn>
             <GridColumn Field="@nameof(RequirementDto.IsCompleted)" HeaderText="Done" DisplayAsCheckBox="true" Width="80"></GridColumn>
             <GridColumn Field="@nameof(RequirementDto.IsSystemSeeded)" HeaderText="CO Default" DisplayAsCheckBox="true" Width="100"></GridColumn>
@@ -164,7 +166,11 @@ else
             Description = r.Description,
             StartTime = start,
             EndTime = start.AddHours(1),
-            IsSystemSeeded = r.IsSystemSeeded
+            IsSystemSeeded = r.IsSystemSeeded,
+            SubmitTo = r.SubmitTo,
+            ContactName = r.ContactName,
+            ContactEmail = r.ContactEmail,
+            ContactPhone = r.ContactPhone
         };
     }
 
@@ -224,7 +230,11 @@ else
             evt.Description,
             DateOnly.FromDateTime(evt.StartTime),
             RecurrenceType.Annual,
-            RequirementCategory.Custom));
+            RequirementCategory.Custom,
+            evt.SubmitTo,
+            evt.ContactName,
+            evt.ContactEmail,
+            evt.ContactPhone));
     }
 
     private async Task UpdateFromEventAsync(CalendarEvent evt)
@@ -243,7 +253,11 @@ else
             DateOnly.FromDateTime(evt.StartTime),
             existing.Recurrence,
             existing.Category,
-            existing.IsCompleted));
+            existing.IsCompleted,
+            evt.SubmitTo ?? existing.SubmitTo,
+            evt.ContactName ?? existing.ContactName,
+            evt.ContactEmail ?? existing.ContactEmail,
+            evt.ContactPhone ?? existing.ContactPhone));
     }
 
     private async Task DeleteFromEventAsync(CalendarEvent evt)
@@ -341,5 +355,9 @@ else
         public DateTime StartTime { get; set; }
         public DateTime EndTime { get; set; }
         public bool IsSystemSeeded { get; set; }
+        public string? SubmitTo { get; set; }
+        public string? ContactName { get; set; }
+        public string? ContactEmail { get; set; }
+        public string? ContactPhone { get; set; }
     }
 }

@@ -368,7 +368,7 @@ api.MapGet("/vault/handover-package", async (IConfiguration config, TikrDbContex
             town,
             DateTime.UtcNow,
             knowledge.Select(MapKnowledge).ToList(),
-            requirements.Select(r => new RequirementDto(r.Id, r.Title, r.Description, r.DueDate, r.Recurrence, r.Category, r.IsSystemSeeded, r.IsCompleted, new List<RequirementLinkedDocumentDto>())).ToList(),
+            requirements.Select(r => CouncilPacketEndpoints.MapRequirement(r, [])).ToList(),
             documents.Select(MapDocument).ToList(),
             calendarSnapshot);
 
