@@ -3,6 +3,7 @@ using TIKR.Infrastructure.Data;
 using TIKR.Shared.DTOs;
 using TIKR.Shared.Entities;
 using TIKR.Shared.Enums;
+using TIKR.Shared.Helpers;
 using TIKR.Shared.Interfaces;
 
 namespace TIKR.Infrastructure.Services;
@@ -47,6 +48,13 @@ public class KnowledgeService(TikrDbContext db) : IKnowledgeService
         var entity = await db.KnowledgeEntries.FindAsync(id);
         if (entity is null) throw new KeyNotFoundException($"Knowledge entry {id} not found.");
 
+        var details = AuditChangeBuilder.Build(
+            entity.Title,
+            ("Title", entity.Title, request.Title),
+            ("Content", entity.Content, request.Content),
+            ("Category", entity.Category, request.Category),
+            ("SortOrder", entity.SortOrder, request.SortOrder));
+
         entity.Title = request.Title;
         entity.Content = request.Content;
         entity.Category = request.Category;
@@ -54,7 +62,7 @@ public class KnowledgeService(TikrDbContext db) : IKnowledgeService
         entity.UpdatedAt = DateTime.UtcNow;
 
         using var tx = await db.Database.BeginTransactionAsync(ct);
-        await audit.LogAsync("Update", nameof(KnowledgeEntry), entity.Id, entity.Title, currentUser.UserId, ct);
+        await audit.LogAsync("Update", nameof(KnowledgeEntry), entity.Id, details, currentUser.UserId, ct);
         _ = await ai.EmbedKnowledgeEntryAsync(entity.Id, ct);
         await db.SaveChangesAsync(ct);
         await tx.CommitAsync(ct);

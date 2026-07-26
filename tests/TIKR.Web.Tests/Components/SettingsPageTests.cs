@@ -33,6 +33,10 @@ public class SettingsPageTests : ClerkTestContext
                     """
                     {"licenseKeyConfigured":true,"licenseProbePassed":true,"licenseProbeDetail":null,"agentToolsEnabled":true,"orchestrationEnabled":false}
                     """,
+                "/api/library/scan-status" =>
+                    """
+                    {"configured":false,"libraryPath":null,"intervalSeconds":300,"pollerActive":false,"lastResult":null,"lastScanUtc":null}
+                    """,
                 "/api/audit" => "[]",
                 "/api/auth/me/tour" => """{"completedVersion":null,"autoTourDisabled":false}""",
                 _ => "[]"
@@ -54,6 +58,9 @@ public class SettingsPageTests : ClerkTestContext
         cut.Markup.Should().Contain("Clerk preferences");
         cut.Markup.Should().Contain("docker/.env");
         cut.Markup.Should().Contain("/assistant");
+        cut.Markup.Should().Contain("NAS document library");
+        cut.Markup.Should().Contain("Scan library now");
+        cut.Markup.Should().Contain("Reindex embeddings");
     }
 
     [Fact]

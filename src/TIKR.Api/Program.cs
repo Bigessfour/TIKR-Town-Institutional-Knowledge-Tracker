@@ -66,6 +66,40 @@ if (authEnabled)
 {
     app.UseAuthentication();
     app.UseAuthorization();
+    app.Use(async (ctx, next) =>
+    {
+        // Viewer is read-only on /api mutations (except auth self-service).
+        if (HttpMethods.IsGet(ctx.Request.Method)
+            || HttpMethods.IsHead(ctx.Request.Method)
+            || HttpMethods.IsOptions(ctx.Request.Method))
+        {
+            await next();
+            return;
+        }
+
+        var path = ctx.Request.Path.Value ?? string.Empty;
+        if (path.StartsWith("/api/auth/login", StringComparison.OrdinalIgnoreCase)
+            || path.StartsWith("/api/auth/refresh", StringComparison.OrdinalIgnoreCase)
+            || path.StartsWith("/api/auth/forgot-password", StringComparison.OrdinalIgnoreCase)
+            || path.StartsWith("/api/auth/reset-password", StringComparison.OrdinalIgnoreCase)
+            || path.Equals("/health", StringComparison.OrdinalIgnoreCase))
+        {
+            await next();
+            return;
+        }
+
+        if (ctx.User.Identity?.IsAuthenticated == true
+            && !ctx.User.IsInRole(TikrRoles.Admin)
+            && !ctx.User.IsInRole(TikrRoles.Clerk)
+            && path.StartsWith("/api/", StringComparison.OrdinalIgnoreCase))
+        {
+            ctx.Response.StatusCode = StatusCodes.Status403Forbidden;
+            await ctx.Response.WriteAsJsonAsync(new { error = "Viewer role is read-only." });
+            return;
+        }
+
+        await next();
+    });
 }
 
 app.UseCors();
@@ -97,6 +131,27 @@ api.MapGet("/system/local-status", async (IConfiguration config, IHybridAiServic
 
 api.MapGet("/system/document-sdk-status", (IConfiguration config) =>
     Results.Ok(SyncfusionDocumentLicense.GetStatus(config)));
+
+api.MapPost("/email/ingest", async (IEmailIngestionService ingestion) =>
+{
+    if (!ingestion.IsConfigured)
+        return Results.BadRequest(new { error = "Set TIKR_EMAIL_INBOX_PATH to enable forward-to-folder ingestion." });
+
+    var result = await ingestion.IngestPendingAsync();
+    return Results.Ok(result);
+});
+
+api.MapGet("/library/scan-status", (ILibraryScanService scanner) =>
+    Results.Ok(scanner.GetStatus()));
+
+api.MapPost("/library/scan", async (ILibraryScanService scanner) =>
+{
+    if (!scanner.IsConfigured)
+        return Results.BadRequest(new { error = "Set TIKR_LIBRARY_SCAN_PATH to enable NAS library scan." });
+
+    var result = await scanner.ScanAsync();
+    return Results.Ok(result);
+});
 
 // Requirements
 api.MapGet("/requirements", async (TikrDbContext db) =>
@@ -243,6 +298,39 @@ api.MapGet("/documents/{id:guid}/content", async (Guid id, TikrDbContext db, IFi
 
     var stream = await storage.OpenReadAsync(entity.StoragePath);
     return Results.File(stream, entity.ContentType ?? "application/octet-stream", entity.FileName);
+});
+
+api.MapPut("/documents/{id:guid}/content", async (
+    Guid id,
+    HttpRequest request,
+    IFileStorageService storage,
+    IAuditService audit,
+    ICurrentUserService currentUser,
+    IDocumentService documentService) =>
+{
+    if (!request.HasFormContentType)
+        return Results.BadRequest("Expected multipart form data.");
+
+    var form = await request.ReadFormAsync();
+    var file = form.Files.FirstOrDefault();
+    if (file is null) return Results.BadRequest("No file uploaded.");
+    if (file.Length > 100 * 1024 * 1024) return Results.BadRequest("File too large (max 100MB).");
+
+    try
+    {
+        await using var fileStream = file.OpenReadStream();
+        var entity = await documentService.ReplaceContentAsync(
+            id, fileStream, file.ContentType, file.Length, storage, audit, currentUser);
+        return Results.Ok(MapDocument(entity));
+    }
+    catch (KeyNotFoundException)
+    {
+        return Results.NotFound();
+    }
+    catch (ArgumentException ex)
+    {
+        return Results.BadRequest(ex.Message);
+    }
 });
 
 api.MapDelete("/documents/{id:guid}", async (Guid id, IFileStorageService storage, IAuditService audit, ICurrentUserService currentUser, IDocumentService documentService) =>

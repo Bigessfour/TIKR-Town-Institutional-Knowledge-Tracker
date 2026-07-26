@@ -154,6 +154,21 @@ public class HybridAiServiceVaultRagTests
         high.Hits.Should().HaveCountLessThanOrEqualTo(20);
     }
 
+    [Fact]
+    public async Task SemanticSearchKnowledgeAsync_CategoryFilterExcludesOthers()
+    {
+        await using var db = await TestDbContextFactory.CreateMigratedAsync();
+        var howTo = SeedEntryWithEmbedding(db, "Permit steps", "permit fee instructions", KnowledgeCategory.HowTo);
+        SeedEntryWithEmbedding(db, "Council contact", "mayor phone permit", KnowledgeCategory.Contact);
+        await db.SaveChangesAsync();
+
+        var ollama = CreateOllamaFactoryWithEmbedder(text => Vector(text));
+        var sut = new HybridAiService(db, ollama, DisabledGrok, Mock.Of<IFileStorageService>(), Mock.Of<IDocumentAgentExtractionBackend>(), NullLogger<HybridAiService>.Instance);
+
+        var response = await sut.SemanticSearchKnowledgeAsync(new SemanticSearchRequest("permit", 5, MinScore: 0, Category: "HowTo"));
+        response.Hits.Should().ContainSingle().Which.EntryId.Should().Be(howTo.Id);
+    }
+
     private const int VectorDimensions = 16;
 
     private static float[] Vector(string text)

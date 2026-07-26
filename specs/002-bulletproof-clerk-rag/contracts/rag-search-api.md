@@ -63,3 +63,10 @@ Same for vault entries.
 ```
 
 Best-effort: continues on per-item failures.
+
+## Client wiring (2026-07-25)
+
+- `TikrApiClient.SemanticSearchDocumentsAsync(query, topK, folder)` sends `folder` on document search.
+- `TikrApiClient.SemanticSearchKnowledgeAsync(query, topK, category)` sends `category` on vault search.
+- `Documents.razor` passes the selected tree folder (except Uncategorized) to the API during semantic mode.
+- `Assistant.razor` optional vault category dropdown scopes knowledge search.

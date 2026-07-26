@@ -70,7 +70,7 @@ OLLAMA_HOST=http://ollama:11434
 
 ## NuGet (Infrastructure)
 
-- `Syncfusion.DocumentSDK.AI.AgentTools` (33.2.15 — aligned with Blazor packages)
+- `Syncfusion.DocumentSDK.AI.AgentTools` (34.1.32 — aligned with Blazor / Document SDK 34.1.x)
 - Pulls DocIO, PDF, SmartDataExtractor, etc. automatically
 
 ## E2E proof tiers

@@ -48,6 +48,18 @@ public class AiSemanticEndpointTests : IClassFixture<AiStubWebApplicationFactory
     }
 
     [Fact]
+    public async Task SemanticSearch_AcceptsFolderAndCategoryFilters()
+    {
+        var docResponse = await _client.PostAsJsonAsync("/api/ai/semantic-search",
+            new SemanticSearchRequest("budget", 3, Folder: "Finance"));
+        docResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var vaultResponse = await _client.PostAsJsonAsync("/api/ai/semantic-search-knowledge",
+            new SemanticSearchRequest("permit", 2, Category: "HowTo"));
+        vaultResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+
+    [Fact]
     public async Task EmbedDocument_ReturnsEmbeddedTrue()
     {
         var docId = Guid.NewGuid();

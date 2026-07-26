@@ -1,4 +1,5 @@
 using FluentAssertions;
+using Microsoft.Extensions.AI;
 using TIKR.Shared.DTOs;
 using TIKR.Shared.Enums;
 using TIKR.Web.Helpers;
@@ -96,6 +97,22 @@ public class PageWorkflowHelpersTests
     }
 
     [Fact]
+    public void BuildUserMessageWithRag_WhenNoContextAndSearchAvailable_ReturnsNoHitGuidance()
+    {
+        var msg = AssistantPromptBuilder.BuildUserMessageWithRag(
+            "What is the permit fee?",
+            deadlineContext: null,
+            docContext: null,
+            vaultContext: null,
+            searchUnavailable: false,
+            citations: []);
+
+        msg.Should().StartWith("What is the permit fee?");
+        msg.Should().Contain("No matching documents or vault entries were retrieved");
+        msg.Should().Contain("say so");
+    }
+
+    [Fact]
     public void VaultCopyBuilder_IncludesAllSections()
     {
         var howTo = new[] { new KnowledgeEntryDto(Guid.NewGuid(), "Open safe", "Combo", KnowledgeCategory.HowTo, 0) };
@@ -140,5 +157,91 @@ public class PageWorkflowHelpersTests
         DocumentUiMessages.GenerationFailed(null).Should().Contain("Syncfusion");
         DocumentUiMessages.CanConvertToPdf("memo.docx").Should().BeTrue();
         DocumentUiMessages.CanConvertToPdf("budget.pdf").Should().BeFalse();
+    }
+
+    [Fact]
+    public void LooksLikeFollowUp_DetectsShortAndDeicticPrompts()
+    {
+        AssistantPromptBuilder.LooksLikeFollowUp("what about the fee?").Should().BeTrue();
+        AssistantPromptBuilder.LooksLikeFollowUp("that one").Should().BeTrue();
+        AssistantPromptBuilder.LooksLikeFollowUp(
+                "What is the mill levy submission process for the annual budget packet?")
+            .Should().BeFalse();
+    }
+
+    [Fact]
+    public void BuildRetrievalQuery_PrependsRecentTurnsForFollowUps()
+    {
+        var query = AssistantPromptBuilder.BuildRetrievalQuery(
+            "what about the fee?",
+            ["Where do I submit the liquor license renewal?"]);
+
+        query.Should().Contain("liquor license renewal");
+        query.Should().Contain("what about the fee?");
+    }
+
+    [Fact]
+    public void BuildRetrievalQuery_UsesCurrentAloneWhenNotFollowUp()
+    {
+        var question = "What is the mill levy submission process for the annual budget packet?";
+        AssistantPromptBuilder.BuildRetrievalQuery(question, ["prior unrelated"])
+            .Should().Be(question);
+    }
+
+    [Fact]
+    public void BuildChatMessages_IncludesPriorTurnsAndCurrentRagOnlyOnce()
+    {
+        var history = new List<ChatMessage>
+        {
+            new(ChatRole.User, "Where is the liquor license form?"),
+            new(ChatRole.Assistant, "See license.pdf in Sources.")
+        };
+        var ragUser = AssistantPromptBuilder.BuildUserMessageWithRag(
+            "what about the fee?",
+            deadlineContext: null,
+            docContext: "Relevant documents:\n- Source: fee.pdf\n  $125",
+            vaultContext: null,
+            searchUnavailable: false,
+            citations: ["fee.pdf"]);
+
+        var messages = AssistantPromptBuilder.BuildChatMessages("SYS", history, ragUser);
+
+        messages.Should().HaveCount(4);
+        messages[0].Role.Should().Be(ChatRole.System);
+        messages[1].Text.Should().Be("Where is the liquor license form?");
+        messages[1].Text.Should().NotContain("Relevant documents:");
+        messages[2].Role.Should().Be(ChatRole.Assistant);
+        messages[3].Role.Should().Be(ChatRole.User);
+        messages[3].Text.Should().Contain("Relevant documents:");
+        messages.Count(m => AssistantPromptBuilder.LooksLikeRagPackedUserMessage(m.Text)).Should().Be(1);
+    }
+
+    [Fact]
+    public void AppendTurn_CapsHistoryToMaxTurnsWithoutKeepingRagPacks()
+    {
+        var history = new List<ChatMessage>();
+        for (var i = 0; i < 10; i++)
+            AssistantPromptBuilder.AppendTurn(history, $"Q{i}", $"A{i}", maxTurns: 3);
+
+        history.Should().HaveCount(6);
+        history[0].Text.Should().Be("Q7");
+        history.Should().NotContain(m => AssistantPromptBuilder.LooksLikeRagPackedUserMessage(m.Text));
+    }
+
+    [Fact]
+    public void GetRecentUserTexts_ReturnsLastUserQuestions()
+    {
+        var history = new List<ChatMessage>
+        {
+            new(ChatRole.User, "first"),
+            new(ChatRole.Assistant, "a1"),
+            new(ChatRole.User, "second"),
+            new(ChatRole.Assistant, "a2"),
+            new(ChatRole.User, "third"),
+            new(ChatRole.Assistant, "a3")
+        };
+
+        AssistantPromptBuilder.GetRecentUserTexts(history, take: 2)
+            .Should().Equal("second", "third");
     }
 }

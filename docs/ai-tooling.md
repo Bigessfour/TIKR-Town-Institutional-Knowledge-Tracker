@@ -123,11 +123,37 @@ TIKR owns retrieval: chunk → embed → hybrid search → grounded prompt → c
 - `/assistant` packs passages into the prompt, requires Sources, and soft-fails when embedding is offline
 - After model/schema changes or bulk imports: `POST /api/ai/reindex-embeddings` (also `TikrApiClient.ReindexEmbeddingsAsync`)
 
+### NAS library scan (existing documents → Assistant RAG)
+
+For a shared folder of town documents already on the NAS (not uploaded through TIKR yet):
+
+**Policy (Deb/Paige bulk corpus):** Prefer **accuracy and completeness over speed**. A first-pass of 200+ filings may take days or weeks across poller runs; that is intentional. Resume via content fingerprints; fix OCR/embed failures before treating a file as done. See [action-items.md](./action-items.md) — *High-accuracy corpus compilation*.
+
+1. Bind-mount the share into the API container and set `TIKR_LIBRARY_SCAN_PATH` (optional `TIKR_LIBRARY_SCAN_INTERVAL_SECONDS`, default 300).
+2. Settings → **NAS document library** → **Scan library now** (or wait for the background poller).
+3. Files are **copied** into `FILE_STORAGE_PATH`, tagged, and written to `EmbeddingChunks`. Source files are never moved or deleted.
+4. Deb/Paige ask questions on `/assistant` — existing RAG (`semantic-search`) pulls those passages into the chat.
+5. Ollama agent tools also get `search_town_documents` (same vector store) when Syncfusion orchestration is enabled.
+6. After large imports, use **Reindex embeddings** if Ollama was offline during the scan.
+
+**Formats:** PDF, Word, Excel, and plain text/email (town office). Scanned **PDF/Word** get Syncfusion Tesseract OCR when native text is sparse (`TIKR_OCR_ENABLED`, default on). TIFF/image archives are out of scope for town ingest.
+
+API: `GET /api/library/scan-status`, `POST /api/library/scan`.
+
+### PDF / Word OCR
+
+- Package: `Syncfusion.PDF.OCR.Net.Core` (Tesseract 5) via `SyncfusionDocumentOcrService`
+- PDF: extract text → if sparse → `OCRProcessor.PerformOCR` → re-extract
+- Word: extract text → if sparse → DocIO → PDF → OCR → text
+- Wired into `SyncfusionDocumentAgentExtractor` (requires `USE_SYNCFUSION_AGENT_TOOLS=true` on the API)
+- Optional: `TIKR_TESSADATA_PATH` for custom language data; `TIKR_OCR_ENABLED=false` to disable
+
 ### AI Assistant page (`/assistant`)
 
 - **Local chat (default):** `SfAIAssistView` streams responses via `IChatClient` → Ollama on NAS
 - **Clerk context:** Upcoming deadlines from `/api/ai/dashboard-priorities` prepended to prompts
 - **RAG context:** Top passages from `/api/ai/semantic-search` + `/api/ai/semantic-search-knowledge` with citations
+- **Session multi-turn memory (MVP):** Prior user/assistant turns (capped, default 8) are sent with each Ollama request so Deb/Paige follow-ups work. History is **circuit-scoped** (lost on full page reload) — intentional for this MVP; Clear conversation resets it. Follow-up-looking prompts rewrite the *retrieval* query from recent user turns; old RAG packs are not re-injected into history.
 - **Ask Advanced AI:** POST to `/api/ai/ask-advanced` → Grok when `USE_GROK=true` on the API
 
 Business AI logic (tagging, audit, Grok gating, indexing) stays in `TIKR.Api` / `HybridAiService`. The Web chat is conversational UX only.
@@ -172,18 +198,15 @@ Then set `OLLAMA_CHAT_MODEL=tikr-clerk` in `docker/.env` (or host env) and resta
 
 ---
 
-## Part C — vNext roadmap (Smart Components)
+## Part C — Smart Components (shipped)
 
-After AssistView MVP, planned Syncfusion Smart AI features:
+| Component          | Target page                               | Value                                       |
+| ------------------ | ----------------------------------------- | ------------------------------------------- |
+| **Smart Paste**    | Requirements dialog                       | Clipboard → form fields via Ollama          |
+| **Smart TextArea** | Requirements description + Vault AI draft | Sentence completion for clerk notes         |
+| **Calendar NL**    | Calendar                                  | Plain English → create Requirement deadline |
 
-| Component                | Target page                               | Value                                       |
-| ------------------------ | ----------------------------------------- | ------------------------------------------- |
-| **Smart Paste**          | Knowledge vault, custom requirement forms | Paste clipboard → auto-fill multiple fields |
-| **Smart TextArea**       | Knowledge entry authoring                 | AI sentence completion for how-to guides    |
-| **Scheduler AI**         | Calendar                                  | Natural language recurring events           |
-| **Grid semantic search** | Documents                                 | When embeddings storage is added            |
-
-Requires `Syncfusion.Blazor.AI` and `AddSyncfusionSmartComponents()` with Ollama integration. See [Syncfusion Smart AI + Ollama](https://blazor.syncfusion.com/documentation/smart-ai-solutions/ai/ollama).
+Requires `Syncfusion.Blazor.SmartComponents` + `AddSyncfusionSmartComponents().InjectOpenAIInference()` with shared Ollama `IChatClient`. See [Syncfusion Smart AI + Ollama](https://blazor.syncfusion.com/documentation/smart-ai-solutions/ai/ollama).
 
 ---
 

@@ -7,6 +7,7 @@
 @using Markdig
 @using Microsoft.Extensions.AI
 @using TIKR.Shared.DTOs
+@using TIKR.Shared.Enums
 @using TIKR.Web.Components.Shared
 @using TIKR.Web.Helpers
 
@@ -17,7 +18,7 @@
     </div>
     <div class="page-header-actions">
         <PageTourButton Route="/assistant" />
-        <PageHelp DataTour="@ClerkTourIds.HelpAssistant" HelpText="Ask questions in plain English. Your data stays local unless you choose Ask Advanced AI." />
+        <PageHelp DataTour="@ClerkTourIds.HelpAssistant" HelpText="Ask questions in plain English. Follow-ups stay in this browser session. Your data stays local unless you choose Ask Advanced AI." />
     </div>
 </div>
 
@@ -32,7 +33,8 @@
 }
 
 <div class="assistant-container" data-tour="@ClerkTourIds.AsstChat">
-    <SfAIAssistView @ref="_assistView"
+    <SfAIAssistView @key="_assistViewKey"
+                    @ref="_assistView"
                     ID="tikrAssistant"
                     Prompt="What should I be working on this week?"
                     PromptPlaceholder="Ask about deadlines, documents, or municipal procedures..."
@@ -45,7 +47,10 @@
 </div>
 
 <div class="mt-3" data-tour="@ClerkTourIds.AsstAdvanced">
-    <SfButton CssClass="tikr-action-btn" IsPrimary="false" Content="Ask Advanced AI (Grok)" OnClick="AskAdvancedAsync"></SfButton>
+    <label class="me-2">Vault search scope:</label>
+    <SfDropDownList TValue="string" TItem="string" DataSource="@_vaultCategoryOptions" @bind-Value="_vaultCategoryFilter" Width="220px" />
+    <SfButton CssClass="tikr-action-btn ms-2" IsPrimary="false" Content="Clear conversation" OnClick="ClearConversation"></SfButton>
+    <SfButton CssClass="tikr-action-btn ms-2" IsPrimary="false" Content="Ask Advanced AI (Grok)" OnClick="AskAdvancedAsync"></SfButton>
     @if (!string.IsNullOrEmpty(_advancedNote))
     {
         <p class="mt-2 text-muted">@_advancedNote</p>
@@ -81,11 +86,18 @@
 
 @code {
     private SfAIAssistView? _assistView;
+    private int _assistViewKey;
+    private readonly List<Microsoft.Extensions.AI.ChatMessage> _modelHistory = [];
     private string _contextSummary = "";
     private string _advancedNote = "";
     private string _advancedAnswer = "";
     private string? _lastPrompt;
     private CancellationTokenSource? _streamingCts;
+    private string _vaultCategoryFilter = "All";
+    private readonly List<string> _vaultCategoryOptions = ["All", .. Enum.GetNames<KnowledgeCategory>()];
+
+    private string? ResolveVaultCategoryFilter() =>
+        _vaultCategoryFilter == "All" ? null : _vaultCategoryFilter;
 
     private string SystemPrompt => AssistantPromptBuilder.BuildSystemPrompt(ResourceCatalog);
 
@@ -153,15 +165,20 @@
                 var fallbackHtml = Markdown.ToHtml(fallbackText);
                 args.Response = fallbackHtml;
                 await SafeUpdateResponseAsync(fallbackHtml);
+                AssistantPromptBuilder.AppendTurn(_modelHistory, args.Prompt, fallbackText);
                 return;
             }
+
+            var retrievalQuery = AssistantPromptBuilder.BuildRetrievalQuery(
+                args.Prompt,
+                AssistantPromptBuilder.GetRecentUserTexts(_modelHistory, take: 2));
 
             SemanticSearchResponse? docSearch = null;
             SemanticSearchKnowledgeResponse? vaultSearch = null;
             var searchUnavailable = false;
             try
             {
-                docSearch = await Api.SemanticSearchDocumentsAsync(args.Prompt, topK: 5);
+                docSearch = await Api.SemanticSearchDocumentsAsync(retrievalQuery, topK: 5);
             }
             catch
             {
@@ -170,7 +187,7 @@
 
             try
             {
-                vaultSearch = await Api.SemanticSearchKnowledgeAsync(args.Prompt, topK: 5);
+                vaultSearch = await Api.SemanticSearchKnowledgeAsync(retrievalQuery, topK: 5, category: ResolveVaultCategoryFilter());
             }
             catch
             {
@@ -189,11 +206,10 @@
                 searchUnavailable,
                 citations);
 
-            var messages = new List<Microsoft.Extensions.AI.ChatMessage>
-            {
-                new(Microsoft.Extensions.AI.ChatRole.System, SystemPrompt),
-                new(Microsoft.Extensions.AI.ChatRole.User, userMessage)
-            };
+            var messages = AssistantPromptBuilder.BuildChatMessages(
+                SystemPrompt,
+                _modelHistory,
+                userMessage);
 
             var lastUiPush = DateTime.UtcNow;
             const int streamUiIntervalMs = 120;
@@ -224,9 +240,13 @@
                     markdownBuilder.AppendLine($"- {c}");
             }
 
-            var html = Markdown.ToHtml(markdownBuilder.ToString());
+            var replyMarkdown = markdownBuilder.ToString();
+            var html = Markdown.ToHtml(replyMarkdown);
             args.Response = html;
             await SafeUpdateResponseAsync(html);
+
+            // Store plain question + reply only — do not keep RAG packs in history.
+            AssistantPromptBuilder.AppendTurn(_modelHistory, args.Prompt, replyMarkdown);
         }
         catch (OperationCanceledException)
         {
@@ -239,9 +259,11 @@
             try
             {
                 var fb = await Api.AskAdvancedAsync(args.Prompt, _contextSummary);
-                var fbHtml = Markdown.ToHtml(fb?.Answer ?? $"Local AI unavailable: {ex.Message}. Is Ollama running?");
+                var fbText = fb?.Answer ?? $"Local AI unavailable: {ex.Message}. Is Ollama running?";
+                var fbHtml = Markdown.ToHtml(fbText);
                 args.Response = fbHtml;
                 await SafeUpdateResponseAsync(fbHtml);
+                AssistantPromptBuilder.AppendTurn(_modelHistory, args.Prompt, fbText);
             }
             catch
             {
@@ -286,6 +308,17 @@
 
     private void OnResponseStopped(ResponseStoppedEventArgs args) =>
         _streamingCts?.Cancel();
+
+    private void ClearConversation()
+    {
+        _streamingCts?.Cancel();
+        _modelHistory.Clear();
+        _lastPrompt = null;
+        _advancedNote = "Conversation cleared. Follow-ups start fresh.";
+        _advancedAnswer = "";
+        _assistViewKey++;
+        StateHasChanged();
+    }
 
     private async Task AskAdvancedAsync()
     {

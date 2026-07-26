@@ -2,10 +2,12 @@ using System.Collections.Generic;
 using System.Linq;
 using FluentAssertions;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using TIKR.Infrastructure.Services;
 using TIKR.Infrastructure.Tests.Helpers;
+using TIKR.Shared.Interfaces;
 
 namespace TIKR.Infrastructure.Tests.Services;
 
@@ -79,8 +81,9 @@ public class SyncfusionDocumentAgentOrchestratorTests
         var ollama = new Mock<IOllamaChatClientFactory>();
         var storage = new NasSyncfusionDocumentStorage(new InMemoryFileStorage());
         var registry = new SyncfusionDocumentAgentToolRegistry(storage);
+        var searchTools = CreateSearchTools();
         var sut = new SyncfusionDocumentAgentOrchestrator(
-            ollama.Object, registry, config, NullLogger<SyncfusionDocumentAgentOrchestrator>.Instance);
+            ollama.Object, registry, searchTools, config, NullLogger<SyncfusionDocumentAgentOrchestrator>.Instance);
 
         var result = await sut.TryExtractAsync("scan.pdf", "scan.pdf");
         result.Should().BeNull();
@@ -105,14 +108,23 @@ public class SyncfusionDocumentAgentOrchestratorTests
 
         var storage = new NasSyncfusionDocumentStorage(new InMemoryFileStorage());
         var registry = new SyncfusionDocumentAgentToolRegistry(storage);
+        var searchTools = CreateSearchTools();
         var sut = new SyncfusionDocumentAgentOrchestrator(
-            ollama.Object, registry, config, NullLogger<SyncfusionDocumentAgentOrchestrator>.Instance);
+            ollama.Object, registry, searchTools, config, NullLogger<SyncfusionDocumentAgentOrchestrator>.Instance);
 
         var result = await sut.TryExtractAsync("agent-scans/sf-work/scan.pdf", "scan.pdf");
 
         result.Should().NotBeNull();
         result!.ExtractedText.Should().Contain("Ollama extracted");
         ollama.Verify(f => f.CreateChatClient(), Times.Once);
+    }
+
+    private static TownDocumentSearchToolRegistry CreateSearchTools()
+    {
+        var services = new ServiceCollection();
+        services.AddSingleton(Mock.Of<IHybridAiService>());
+        var provider = services.BuildServiceProvider();
+        return new TownDocumentSearchToolRegistry(provider.GetRequiredService<IServiceScopeFactory>());
     }
 
     private sealed class InMemoryFileStorage : Shared.Interfaces.IFileStorageService

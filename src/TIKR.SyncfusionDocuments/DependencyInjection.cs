@@ -11,6 +11,7 @@ public static class DependencyInjection
         IConfiguration configuration)
     {
         SyncfusionDocumentLicense.RegisterFromConfiguration(configuration);
+        services.AddScoped<IDocumentOcrService, SyncfusionDocumentOcrService>();
         return services.AddScoped<IDocumentGenerationService, SyncfusionDocumentGenerationService>();
     }
 }

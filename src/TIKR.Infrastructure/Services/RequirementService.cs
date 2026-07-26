@@ -1,6 +1,7 @@
 using TIKR.Infrastructure.Data;
 using TIKR.Shared.DTOs;
 using TIKR.Shared.Entities;
+using TIKR.Shared.Helpers;
 using TIKR.Shared.Interfaces;
 
 namespace TIKR.Infrastructure.Services;
@@ -42,6 +43,15 @@ public class RequirementService(TikrDbContext db) : IRequirementService
         var entity = await db.Requirements.FindAsync(id);
         if (entity is null) throw new KeyNotFoundException($"Requirement {id} not found.");
 
+        var details = AuditChangeBuilder.Build(
+            entity.Title,
+            ("Title", entity.Title, request.Title),
+            ("Description", entity.Description, request.Description),
+            ("DueDate", entity.DueDate, request.DueDate),
+            ("Recurrence", entity.Recurrence, request.Recurrence),
+            ("Category", entity.Category, request.Category),
+            ("IsCompleted", entity.IsCompleted, request.IsCompleted));
+
         entity.Title = request.Title;
         entity.Description = request.Description;
         entity.DueDate = request.DueDate;
@@ -51,7 +61,7 @@ public class RequirementService(TikrDbContext db) : IRequirementService
         entity.UpdatedAt = DateTime.UtcNow;
 
         using var tx = await db.Database.BeginTransactionAsync(ct);
-        await audit.LogAsync("Update", nameof(Requirement), entity.Id, entity.Title, currentUser.UserId, ct);
+        await audit.LogAsync("Update", nameof(Requirement), entity.Id, details, currentUser.UserId, ct);
         await db.SaveChangesAsync(ct);
         await tx.CommitAsync(ct);
 

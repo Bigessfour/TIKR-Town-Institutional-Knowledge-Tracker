@@ -946,6 +946,20 @@ html[data-theme="high-contrast"] .tikr-skeleton-row {
     margin-top: 0.75rem;
 }
 
+.preview-sdk-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: var(--bs-secondary-color, #6c757d);
+    margin: 0.65rem 0 0.35rem;
+}
+
+.preview-word,
+.preview-sheet {
+    margin-top: 0.5rem;
+}
+
 .voice-help {
     margin-top: 0.5rem;
     font-size: 0.9rem;

@@ -179,6 +179,30 @@ public class DocumentsEndpointTests : IClassFixture<TikrWebApplicationFactory>
     }
 
     [Fact]
+    public async Task ReplaceDocumentContent_UpdatesStoredBytes()
+    {
+        using var upload = new MultipartFormDataContent();
+        var original = new ByteArrayContent("original body"u8.ToArray());
+        original.Headers.ContentType = new MediaTypeHeaderValue("text/plain");
+        upload.Add(original, "file", "replace-me.txt");
+
+        var create = await _client.PostAsync("/api/documents", upload);
+        var created = await create.Content.ReadFromJsonAsync<DocumentDto>();
+
+        using var replace = new MultipartFormDataContent();
+        var updatedBytes = new ByteArrayContent("updated body for clerk"u8.ToArray());
+        updatedBytes.Headers.ContentType = new MediaTypeHeaderValue("text/plain");
+        replace.Add(updatedBytes, "file", "replace-me.txt");
+
+        var put = await _client.PutAsync($"/api/documents/{created!.Id}/content", replace);
+        put.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var get = await _client.GetAsync($"/api/documents/{created.Id}/content");
+        var text = await get.Content.ReadAsStringAsync();
+        text.Should().Be("updated body for clerk");
+    }
+
+    [Fact]
     public async Task DeleteDocument_RemovesMetadata()
     {
         using var upload = new MultipartFormDataContent();

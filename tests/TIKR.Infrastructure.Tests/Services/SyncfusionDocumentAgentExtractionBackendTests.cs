@@ -1,5 +1,6 @@
 using FluentAssertions;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using TIKR.Infrastructure.Services;
@@ -16,15 +17,34 @@ public class SyncfusionDocumentAgentExtractionBackendTests
         var config = new ConfigurationBuilder().Build();
         var ollama = Mock.Of<IOllamaChatClientFactory>();
         var registry = new SyncfusionDocumentAgentToolRegistry(storage);
+        var searchTools = CreateSearchTools();
         var orchestrator = new SyncfusionDocumentAgentOrchestrator(
-            ollama, registry, config, NullLogger<SyncfusionDocumentAgentOrchestrator>.Instance);
-        var extractor = new SyncfusionDocumentAgentExtractor(storage, orchestrator);
+            ollama, registry, searchTools, config, NullLogger<SyncfusionDocumentAgentOrchestrator>.Instance);
+        var ocr = new DisabledOcr();
+        var extractor = new SyncfusionDocumentAgentExtractor(storage, orchestrator, ocr);
         var sut = new SyncfusionDocumentAgentExtractionBackend(extractor);
         await using var content = new MemoryStream("delegated text"u8.ToArray());
 
         var result = await sut.ExtractAsync(content, "note.txt");
 
         result.ExtractedText.Should().Contain("delegated text");
+    }
+
+    private static TownDocumentSearchToolRegistry CreateSearchTools()
+    {
+        var services = new ServiceCollection();
+        services.AddSingleton(Mock.Of<IHybridAiService>());
+        var provider = services.BuildServiceProvider();
+        return new TownDocumentSearchToolRegistry(provider.GetRequiredService<IServiceScopeFactory>());
+    }
+
+    private sealed class DisabledOcr : IDocumentOcrService
+    {
+        public bool IsEnabled => false;
+        public DocumentOcrResult EnrichPdf(Stream pdfContent, string? existingText, int pageCountHint = 1) =>
+            new(existingText ?? string.Empty, false);
+        public DocumentOcrResult EnrichWord(Stream wordContent, string fileName, string? existingText) =>
+            new(existingText ?? string.Empty, false);
     }
 
     private sealed class InMemoryFileStorage : Shared.Interfaces.IFileStorageService

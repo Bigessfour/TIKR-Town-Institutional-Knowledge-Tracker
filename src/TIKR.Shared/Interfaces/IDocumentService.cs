@@ -37,4 +37,18 @@ public interface IDocumentService
     /// Delete document + audit under transaction (storage cleanup best-effort after commit for integrity).
     /// </summary>
     Task DeleteAsync(Guid id, IFileStorageService storage, IAuditService audit, ICurrentUserService currentUser, CancellationToken ct = default);
+
+    /// <summary>
+    /// Replace stored file bytes for an existing document (Word/Spreadsheet editor save-back).
+    /// Updates size, optional plain-text extraction, clears document embedding chunks, audits Update.
+    /// </summary>
+    Task<Document> ReplaceContentAsync(
+        Guid id,
+        Stream content,
+        string? contentType,
+        long length,
+        IFileStorageService storage,
+        IAuditService audit,
+        ICurrentUserService currentUser,
+        CancellationToken ct = default);
 }

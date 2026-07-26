@@ -65,8 +65,8 @@ public static class ClerkTourCatalog
 
     private static IReadOnlyList<ClerkTourStep> GetCalendarPageSteps() =>
     [
-        new(Sel(ClerkTourIds.HelpCalendar), "Page help", "Calendar is read-only; edit due dates on Requirements.", "/calendar"),
-        new(Sel(ClerkTourIds.CalSchedule), "Deadline calendar", "Month and Agenda views show statutory and custom due dates from the NAS.", "/calendar"),
+        new(Sel(ClerkTourIds.HelpCalendar), "Page help", "Create, edit, move, or delete deadlines here; Colorado defaults cannot be deleted.", "/calendar"),
+        new(Sel(ClerkTourIds.CalSchedule), "Deadline calendar", "Month, Week, and Agenda views. Double-click to add, drag to move, or open an event to edit — changes save to Requirements.", "/calendar"),
     ];
 
     private static IReadOnlyList<ClerkTourStep> GetDocumentsPageSteps() =>
@@ -74,7 +74,7 @@ public static class ClerkTourCatalog
         new(Sel(ClerkTourIds.HelpDocuments), "Page help", "Upload, AI tagging, and NAS storage explained.", "/documents"),
         new(Sel(ClerkTourIds.DocUploader), "Upload documents", "Drag and drop or browse — files stay on your Synology.", "/documents"),
         new(Sel(ClerkTourIds.DocSearch), "Search mode", "Full-text keyword search or semantic (meaning-based) search.", "/documents"),
-        new(Sel(ClerkTourIds.DocLibrary), "Folders and grid", "Browse folders, select rows, and preview on the right.", "/documents"),
+        new(Sel(ClerkTourIds.DocLibrary), "Folders and grid", "Browse folders, select rows, and preview on the right — PDF Viewer, Word, or Spreadsheet by file type.", "/documents"),
     ];
 
     private static IReadOnlyList<ClerkTourStep> GetAssistantPageSteps() =>

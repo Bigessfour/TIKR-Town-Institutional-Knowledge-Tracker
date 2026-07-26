@@ -5,8 +5,11 @@
 @inject ClerkToastService Toast
 @inject IJSRuntime JS
 
+@using System.Text.Json
+@using Syncfusion.Blazor.DocumentEditor
 @using Syncfusion.Blazor.Layouts
 @using Syncfusion.Blazor.Navigations
+@using Syncfusion.Blazor.Spreadsheet
 @using TIKR.Shared.DTOs
 @using TIKR.Shared.Enums
 @using TIKR.Web.Components.Shared
@@ -111,7 +114,7 @@
             <div class="folder-tree-header">Folders</div>
             <SfTreeView TValue="DocumentLibraryLogic.FolderNode" CssClass="doc-tree" AllowMultiSelection="false">
                 <TreeViewFieldsSettings TValue="DocumentLibraryLogic.FolderNode" DataSource="@_folderNodes" Id="Id" Text="DisplayName" Child="Children" Expanded="IsExpanded" />
-                <TreeViewEvents TValue="DocumentLibraryLogic.FolderNode" NodeSelected="OnFolderSelected" />
+                <TreeViewEvents TValue="DocumentLibraryLogic.FolderNode" NodeSelected="OnFolderSelectedAsync" />
             </SfTreeView>
             <div class="tree-hint">Click a folder to filter the list</div>
         </SplitterPane>
@@ -215,25 +218,76 @@
                                   OnClick="@(async () => await ExtractToVaultAsync(d))" />
                     </div>
 
-                    @if (!string.IsNullOrEmpty(_pdfPreviewUrl) && _pdfPreviewDocId == d.Id)
-                    {
-                        <div class="preview-pdf">
-                            <SfPdfViewer2 DocumentPath="@_pdfPreviewUrl" Height="360px" Width="100%" EnableDownload="false" EnablePrint="false" />
-                        </div>
-                    }
-                    else if (HasTextPreview(d))
-                    {
-                        <div class="preview-text">
-                            <strong>Full text</strong>
-                            <pre class="preview-text-body">@d.FullTextContent</pre>
-                        </div>
-                    }
-                    else if (_previewLoading)
+                    @if (_previewLoading && _previewDocId == d.Id)
                     {
                         <div class="tikr-loading-state" style="margin:0.5rem 0;" role="status" aria-live="polite" aria-busy="true">
                             <div class="tikr-loading-spinner" aria-hidden="true"></div>
                             <span>Loading preview…</span>
                         </div>
+                    }
+                    else if (_previewKind == DocumentPreviewHelper.PreviewKind.Pdf
+                             && !string.IsNullOrEmpty(_pdfPreviewUrl)
+                             && _previewDocId == d.Id)
+                    {
+                        <div class="preview-pdf">
+                            <div class="preview-sdk-label">@DocumentPreviewHelper.PreviewLabel(_previewKind)</div>
+                            <SfPdfViewer2 DocumentPath="@_pdfPreviewUrl" Height="360px" Width="100%" EnableDownload="false" EnablePrint="false" />
+                        </div>
+                    }
+                    else if (_previewKind == DocumentPreviewHelper.PreviewKind.Word
+                             && !string.IsNullOrEmpty(_wordSfdt)
+                             && _previewDocId == d.Id)
+                    {
+                        <div class="preview-word">
+                            <div class="preview-sdk-label">@DocumentPreviewHelper.PreviewLabel(_previewKind) (editable)</div>
+                            <div class="preview-actions" style="margin-bottom:0.35rem;">
+                                <SfButton CssClass="tikr-action-btn primary"
+                                          Content="@(_savingPreview ? "Saving…" : "Save to NAS")"
+                                          Disabled="@_savingPreview"
+                                          OnClick="SaveWordPreviewAsync" />
+                            </div>
+                            <SfDocumentEditorContainer @ref="_wordContainer"
+                                                       EnableToolbar="true"
+                                                       RestrictEditing="false"
+                                                       Height="420px"
+                                                       Width="100%">
+                                <DocumentEditorContainerEvents Created="OnWordEditorCreated" />
+                            </SfDocumentEditorContainer>
+                        </div>
+                    }
+                    else if (_previewKind == DocumentPreviewHelper.PreviewKind.Spreadsheet
+                             && _spreadsheetBytes is { Length: > 0 }
+                             && _previewDocId == d.Id)
+                    {
+                        <div class="preview-sheet">
+                            <div class="preview-sdk-label">@DocumentPreviewHelper.PreviewLabel(_previewKind) (editable)</div>
+                            <div class="preview-actions" style="margin-bottom:0.35rem;">
+                                <SfButton CssClass="tikr-action-btn primary"
+                                          Content="@(_savingPreview ? "Saving…" : "Save to NAS")"
+                                          Disabled="@_savingPreview"
+                                          OnClick="SaveSpreadsheetPreviewAsync" />
+                            </div>
+                            <SfSpreadsheet @ref="_spreadsheetRef" DataSource="@_spreadsheetBytes" Height="420px" AllowEditing="true" AllowSave="true">
+                                <SpreadsheetRibbon />
+                            </SfSpreadsheet>
+                        </div>
+                    }
+                    else if (_previewKind == DocumentPreviewHelper.PreviewKind.Text && HasTextPreview(d))
+                    {
+                        <div class="preview-text">
+                            <div class="preview-sdk-label">@DocumentPreviewHelper.PreviewLabel(_previewKind)</div>
+                            <pre class="preview-text-body">@d.FullTextContent</pre>
+                        </div>
+                    }
+                    else if (_previewKind == DocumentPreviewHelper.PreviewKind.ConvertHint)
+                    {
+                        <div class="tikr-empty-state" style="margin:0.5rem 0;">
+                            Native preview is not available for this type. Use <strong>Convert to PDF</strong> above, then open the PDF for PDF Viewer.
+                        </div>
+                    }
+                    else if (!string.IsNullOrEmpty(_previewError))
+                    {
+                        <div class="tikr-empty-state" style="margin:0.5rem 0;">@_previewError</div>
                     }
                     else
                     {
@@ -294,8 +348,15 @@
     private bool _pendingBulkDelete;
 
     private string? _pdfPreviewUrl;
-    private Guid? _pdfPreviewDocId;
+    private Guid? _previewDocId;
     private bool _previewLoading;
+    private string? _previewError;
+    private DocumentPreviewHelper.PreviewKind _previewKind = DocumentPreviewHelper.PreviewKind.None;
+    private string? _wordSfdt;
+    private SfDocumentEditorContainer? _wordContainer;
+    private byte[]? _spreadsheetBytes;
+    private SfSpreadsheet? _spreadsheetRef;
+    private bool _savingPreview;
     private Guid? _downloadingDocId;
     private Guid? _convertingDocId;
 
@@ -394,7 +455,10 @@
 
         try
         {
-            var result = await Api.SemanticSearchDocumentsAsync(_searchQuery.Trim(), topK: 10);
+            var result = await Api.SemanticSearchDocumentsAsync(
+                _searchQuery.Trim(),
+                topK: 10,
+                folder: DocumentLibraryLogic.MapFolderFilterForApi(_currentFolderFilter));
             _semanticHitIds = result is null || result.Hits.Count == 0
                 ? new HashSet<Guid>()
                 : result.Hits.Select(h => h.DocumentId).ToHashSet();
@@ -453,7 +517,7 @@
         await LoadDocumentsAsync();
     }
 
-    private void OnFolderSelected(object args)
+    private async Task OnFolderSelectedAsync(object args)
     {
         // Use only dynamic access to avoid NodeSelectEventArgs<T> generic resolution issues in this Syncfusion version
         if (args is not null)
@@ -465,7 +529,10 @@
                 if (data is DocumentLibraryLogic.FolderNode f)
                 {
                     _currentFolderFilter = f.FolderKey;
-                    StateHasChanged();
+                    if (SearchMode == "semantic" && !string.IsNullOrWhiteSpace(_searchQuery))
+                        await RunSemanticSearchAsync();
+                    else
+                        StateHasChanged();
                 }
                 else if (data != null)
                 {
@@ -496,58 +563,48 @@
 
     private async Task UpdateSelectedPreviewAsync()
     {
-        await RevokePdfPreviewAsync();
+        await ClearPreviewStateAsync();
         _selectedPreview = _documents.FirstOrDefault(d => _selectedIds.Contains(d.Id));
 
         if (_selectedPreview is { } preview)
         {
-            await LoadPdfPreviewAsync(preview);
+            await LoadDocumentPreviewAsync(preview);
         }
 
         StateHasChanged();
     }
 
-    private async Task LoadPdfPreviewAsync(DocumentDto doc)
+    private async Task LoadDocumentPreviewAsync(DocumentDto doc)
     {
         _previewLoading = true;
+        _previewError = null;
+        _previewKind = DocumentPreviewHelper.ResolveKind(doc.FileName, doc.ContentType, HasTextPreview(doc));
+        _previewDocId = doc.Id;
         StateHasChanged();
 
         try
         {
-            byte[] bytes;
-            string contentTypeForBlob = "application/pdf";
-
-            if (IsPdf(doc))
+            switch (_previewKind)
             {
-                bytes = await Api.GetDocumentContentAsync(doc.Id) ?? [];
+                case DocumentPreviewHelper.PreviewKind.Pdf:
+                    await LoadPdfViewerAsync(doc);
+                    break;
+                case DocumentPreviewHelper.PreviewKind.Word:
+                    await LoadWordPreviewAsync(doc);
+                    break;
+                case DocumentPreviewHelper.PreviewKind.Spreadsheet:
+                    await LoadSpreadsheetPreviewAsync(doc);
+                    break;
+                case DocumentPreviewHelper.PreviewKind.Text:
+                case DocumentPreviewHelper.PreviewKind.ConvertHint:
+                case DocumentPreviewHelper.PreviewKind.None:
+                    break;
             }
-            else if (DocumentUiMessages.CanConvertToPdf(doc.FileName))
-            {
-                var conv = await Api.ConvertStoredDocumentToPdfAsync(doc.Id, doc.FileName);
-                if (conv?.Document?.Content != null && conv.Document.Content.Length > 0)
-                {
-                    bytes = conv.Document.Content;
-                }
-                else
-                {
-                    bytes = await Api.GetDocumentContentAsync(doc.Id) ?? [];
-                    contentTypeForBlob = doc.ContentType ?? "application/octet-stream";
-                }
-            }
-            else
-            {
-                bytes = await Api.GetDocumentContentAsync(doc.Id) ?? [];
-                contentTypeForBlob = doc.ContentType ?? "application/octet-stream";
-            }
-
-            if (bytes.Length > 0)
-            {
-                _pdfPreviewUrl = await JS.InvokeAsync<string>(
-                    "tikrDownload.createBlobUrl",
-                    bytes,
-                    contentTypeForBlob);
-                _pdfPreviewDocId = doc.Id;
-            }
+        }
+        catch (Exception ex)
+        {
+            _previewError = $"Could not open preview: {ex.Message}";
+            _previewKind = DocumentPreviewHelper.PreviewKind.None;
         }
         finally
         {
@@ -555,19 +612,171 @@
         }
     }
 
-    private async Task RevokePdfPreviewAsync()
+    private async Task LoadPdfViewerAsync(DocumentDto doc)
     {
-        if (string.IsNullOrEmpty(_pdfPreviewUrl))
+        var bytes = await Api.GetDocumentContentAsync(doc.Id) ?? [];
+        if (bytes.Length == 0)
+        {
+            _previewError = "PDF content is empty.";
+            _previewKind = DocumentPreviewHelper.PreviewKind.None;
             return;
+        }
 
-        await JS.InvokeVoidAsync("tikrDownload.revokeBlobUrl", _pdfPreviewUrl);
-        _pdfPreviewUrl = null;
-        _pdfPreviewDocId = null;
+        if (!DocumentPreviewHelper.LooksLikePdf(bytes))
+        {
+            _previewError = "File does not look like a PDF. Re-upload or use Convert to PDF.";
+            _previewKind = DocumentPreviewHelper.PreviewKind.None;
+            return;
+        }
+
+        _pdfPreviewUrl = await JS.InvokeAsync<string>(
+            "tikrDownload.createBlobUrl",
+            bytes,
+            "application/pdf");
     }
 
-    private static bool IsPdf(DocumentDto doc) =>
-        doc.ContentType?.Contains("pdf", StringComparison.OrdinalIgnoreCase) == true
-        || doc.FileName.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase);
+    private async Task LoadWordPreviewAsync(DocumentDto doc)
+    {
+        var bytes = await Api.GetDocumentContentAsync(doc.Id) ?? [];
+        if (bytes.Length == 0)
+        {
+            _previewError = "Word document content is empty.";
+            _previewKind = DocumentPreviewHelper.PreviewKind.None;
+            return;
+        }
+
+        await using var stream = new MemoryStream(bytes);
+        var format = DocumentPreviewHelper.IsLegacyDoc(doc.FileName)
+            ? ImportFormatType.Doc
+            : ImportFormatType.Docx;
+        var wordDocument = WordDocument.Load(stream, format);
+        try
+        {
+            _wordSfdt = JsonSerializer.Serialize(wordDocument);
+        }
+        finally
+        {
+            wordDocument.Dispose();
+        }
+    }
+
+    private async Task OnWordEditorCreated(object args)
+    {
+        if (_wordContainer?.DocumentEditor is null || string.IsNullOrEmpty(_wordSfdt))
+            return;
+
+        await _wordContainer.DocumentEditor.OpenAsync(_wordSfdt);
+    }
+
+    private async Task SaveWordPreviewAsync()
+    {
+        if (_selectedPreview is null || _wordContainer?.DocumentEditor is null)
+            return;
+
+        _savingPreview = true;
+        StateHasChanged();
+        try
+        {
+            await using var stream = new MemoryStream();
+            await _wordContainer.DocumentEditor.SaveAsync(stream);
+            stream.Position = 0;
+            var updated = await Api.ReplaceDocumentContentAsync(
+                _selectedPreview.Id,
+                stream,
+                _selectedPreview.FileName,
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
+            if (updated is null)
+            {
+                Toast.Show("Could not save Word document to NAS.");
+                return;
+            }
+
+            Toast.Show($"Saved \"{updated.FileName}\" to NAS");
+            await LoadDocumentsAsync();
+        }
+        catch (Exception ex)
+        {
+            Toast.Show($"Save failed: {ex.Message}");
+        }
+        finally
+        {
+            _savingPreview = false;
+        }
+    }
+
+    private async Task SaveSpreadsheetPreviewAsync()
+    {
+        if (_selectedPreview is null || _spreadsheetRef is null)
+            return;
+
+        _savingPreview = true;
+        StateHasChanged();
+        try
+        {
+            await using var stream = await _spreadsheetRef.SaveAsStreamAsync();
+            stream.Position = 0;
+            var updated = await Api.ReplaceDocumentContentAsync(
+                _selectedPreview.Id,
+                stream,
+                Path.ChangeExtension(_selectedPreview.FileName, ".xlsx") ?? _selectedPreview.FileName,
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+            if (updated is null)
+            {
+                Toast.Show("Could not save spreadsheet to NAS.");
+                return;
+            }
+
+            Toast.Show($"Saved \"{updated.FileName}\" to NAS");
+            await LoadDocumentsAsync();
+        }
+        catch (Exception ex)
+        {
+            Toast.Show($"Save failed: {ex.Message}");
+        }
+        finally
+        {
+            _savingPreview = false;
+        }
+    }
+
+    private async Task LoadSpreadsheetPreviewAsync(DocumentDto doc)
+    {
+        var bytes = await Api.GetDocumentContentAsync(doc.Id) ?? [];
+        if (bytes.Length == 0)
+        {
+            _previewError = "Spreadsheet content is empty.";
+            _previewKind = DocumentPreviewHelper.PreviewKind.None;
+            return;
+        }
+
+        _spreadsheetBytes = bytes;
+        await Task.CompletedTask;
+    }
+
+    private async Task ClearPreviewStateAsync()
+    {
+        if (!string.IsNullOrEmpty(_pdfPreviewUrl))
+        {
+            try
+            {
+                await JS.InvokeVoidAsync("tikrDownload.revokeBlobUrl", _pdfPreviewUrl);
+            }
+            catch
+            {
+                /* circuit may be disposing */
+            }
+        }
+
+        _pdfPreviewUrl = null;
+        _previewDocId = null;
+        _previewError = null;
+        _previewKind = DocumentPreviewHelper.PreviewKind.None;
+        _wordSfdt = null;
+        _wordContainer = null;
+        _spreadsheetBytes = null;
+        _spreadsheetRef = null;
+        _savingPreview = false;
+    }
 
     private static bool HasTextPreview(DocumentDto doc) =>
         !string.IsNullOrWhiteSpace(doc.FullTextContent);
@@ -689,7 +898,7 @@
             }
             catch { /* grid may not be ready */ }
         }
-        await RevokePdfPreviewAsync();
+        await ClearPreviewStateAsync();
         StateHasChanged();
     }
 
@@ -735,10 +944,22 @@
 
         var doc = _pendingDeleteDoc;
         _pendingDeleteDoc = null;
+
+        // Capture bytes before delete so Undo can re-upload (parity with Vault/Requirements).
+        var content = await Api.GetDocumentContentAsync(doc.Id) ?? [];
+        var fileName = doc.FileName;
+
         await Api.DeleteDocumentAsync(doc.Id);
-        Toast.Show($"Deleted \"{doc.FileName}\"");
+        Toast.Show($"Deleted \"{fileName}\"", async () =>
+        {
+            if (content.Length == 0)
+                return;
+
+            await using var stream = new MemoryStream(content);
+            await Api.UploadDocumentAsync(stream, fileName);
+            await LoadDocumentsAsync();
+        });
         await LoadDocumentsAsync();
-        // LoadDocumentsAsync already clears selection; safe remove anyway
         _selectedIds.Remove(doc.Id);
         if (_selectedPreview?.Id == doc.Id)
             _selectedPreview = null;
@@ -796,6 +1017,6 @@
         _semanticDebounceCts?.Cancel();
         _semanticDebounceCts?.Dispose();
         _semanticDebounceCts = null;
-        _ = RevokePdfPreviewAsync();
+        _ = ClearPreviewStateAsync();
     }
 }

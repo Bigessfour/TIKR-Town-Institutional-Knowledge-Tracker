@@ -1,39 +1,45 @@
-TIKR — Clerk's Vault (Windows thumb-drive / laptop test)
-========================================================
+TIKR on the Dell — EASY MODE (3 steps)
+======================================
 
-WHAT'S ON THIS USB
-  TIKR-Deploy\     Copy this entire folder to the PC (e.g. Desktop).
-  Two programs:    TIKR.Api (data + AI) and TIKR.Web (browser UI).
-  Your data lives in TIKR-Deploy\Data\ (database + documents).
+No WSL. No .sh scripts. Deb only uses Windows files:
+  Install-TIKR.cmd   Start-TIKR.bat   Stop-TIKR.ps1   syncfusion-license.txt
 
-BEFORE FIRST RUN (once)
-  1. Copy TIKR-Deploy to the Dell (Desktop is fine).
-  2. Right-click Install-TIKR.ps1 -> Run with PowerShell (Run as Administrator).
-     - Opens firewall for port 8080
-     - Creates tikr-secrets.ps1 from the example
-  3. Open tikr-secrets.ps1 in Notepad and paste your Syncfusion license key.
+Forget "client" and "server" folders. On this PC you install ONE package.
+Two programs start together; your browser is the only "client."
 
-OPTIONAL — LOCAL AI (recommended)
-  Install Ollama from https://ollama.com
-  In PowerShell:
-    ollama pull llama3.2:3b
-    ollama pull nomic-embed-text
-  Leave Ollama running while you use TIKR.
+  TIKR.Api  = brain (database, documents, AI)   → http://localhost:5000
+  TIKR.Web  = screens (what Deb uses)           → http://localhost:8080
+  Data\     = YOUR FILES (database + uploads)   → stays next to the apps
 
+------------------------------------------------
+FIRST TIME (once)
+------------------------------------------------
+1. Copy the whole TIKR-Deploy folder to the Desktop (or C:\TIKR).
+2. Right-click Install-TIKR.cmd → Run as administrator
+     (creates license file + firewall rule + tries to set up Ollama)
+3. Open syncfusion-license.txt in Notepad.
+     Replace the placeholder with your Syncfusion key (ONE LINE ONLY).
+     Save and close.
+
+------------------------------------------------
 EVERY DAY
-  1. Double-click Start-TIKR.bat
-  2. Browser opens http://localhost:8080
-  3. First time? Settings -> "Show me around TIKR" (guided tour v2)
-  4. To stop: close the two black console windows, or run Stop-TIKR.ps1
+------------------------------------------------
+1. Double-click Start-TIKR.bat
+2. Browser opens http://localhost:8080
+3. Keep the two black windows open while you work.
+4. To stop: double-click Stop-TIKR.ps1 (or close those windows)
 
-URLS
-  Web UI:  http://localhost:8080
-  API:     http://localhost:5000/health
+------------------------------------------------
+IF SOMETHING FAILS
+------------------------------------------------
+• "Missing TIKR.Api.exe" → you copied the wrong folder; need whole TIKR-Deploy.
+• Black window flashes and closes → run Start-TIKR.bat again; read the error.
+• Trial banners on grids → syncfusion-license.txt is empty or wrong.
+• AI / Assistant offline → install Ollama from https://ollama.com (or re-run Install-TIKR.cmd).
+• Prefer a normal Windows installer later → Setup-TIKR.exe (IT builds that; apps go to
+  Program Files, data goes to C:\ProgramData\TIKR). Same two programs, cleaner paths.
 
-NAS PRODUCTION (Synology)
-  Use Docker, not this folder. See docs\deb-nas-install.md in the full repo,
-  or copy the docker\ folder from the project and use Container Manager.
-
-BUILD THIS PACKAGE (on your Mac, before copying to USB)
-  ./scripts/package-thumb-drive.sh
-  Then copy publish/TIKR-Deploy to the thumb drive.
+------------------------------------------------
+NAS (Synology) IS DIFFERENT — Phase 2
+------------------------------------------------
+Do NOT use this USB folder on the NAS. NAS uses Docker (deb-nas-install.md).

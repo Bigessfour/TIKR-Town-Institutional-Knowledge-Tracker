@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Identity;
 using TIKR.Infrastructure.Identity;
+using TIKR.Shared.Configuration;
 using TIKR.Shared.Constants;
 using TIKR.Shared.DTOs;
 
@@ -29,8 +30,72 @@ public static class AuthEndpoints
 
             await userManager.ResetAccessFailedCountAsync(user);
             var roles = await userManager.GetRolesAsync(user);
-            var (token, expiresAt) = jwt.CreateToken(user, roles);
-            return Results.Ok(new LoginResponse(token, expiresAt, user.Email ?? request.Email, roles.ToList()));
+            var (access, expiresAt, refresh, refreshExpires) = jwt.CreateTokenPair(user, roles);
+            return Results.Ok(new LoginResponse(
+                access, expiresAt, user.Email ?? request.Email, roles.ToList(), refresh, refreshExpires));
+        });
+
+        auth.MapPost("/refresh", async (
+            RefreshTokenRequest request,
+            UserManager<ApplicationUser> userManager,
+            JwtTokenService jwt) =>
+        {
+            if (string.IsNullOrWhiteSpace(request.RefreshToken))
+                return Results.Unauthorized();
+
+            var principal = jwt.ValidateRefreshToken(request.RefreshToken);
+            if (principal is null)
+                return Results.Unauthorized();
+
+            var userId = principal.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrWhiteSpace(userId))
+                return Results.Unauthorized();
+
+            var user = await userManager.FindByIdAsync(userId);
+            if (user is null || !user.IsActive)
+                return Results.Unauthorized();
+
+            var roles = await userManager.GetRolesAsync(user);
+            var (access, expiresAt, refresh, refreshExpires) = jwt.CreateTokenPair(user, roles);
+            return Results.Ok(new LoginResponse(
+                access, expiresAt, user.Email ?? string.Empty, roles.ToList(), refresh, refreshExpires));
+        });
+
+        auth.MapPost("/forgot-password", async (
+            ForgotPasswordRequest request,
+            UserManager<ApplicationUser> userManager,
+            IConfiguration configuration,
+            IHostEnvironment env,
+            ILoggerFactory loggerFactory) =>
+        {
+            var logger = loggerFactory.CreateLogger("AuthEndpoints");
+            var user = await userManager.FindByEmailAsync(request.Email);
+            const string generic = "If an account exists for that email, a password reset token was issued.";
+
+            if (user is null || !user.IsActive)
+                return Results.Ok(new ForgotPasswordResponse(generic, null));
+
+            var token = await userManager.GeneratePasswordResetTokenAsync(user);
+            logger.LogWarning(
+                "Password reset token for {Email} (local/no-SMTP). Use POST /api/auth/reset-password with this token.",
+                user.Email);
+
+            var expose = TikrConfiguration.ExposePasswordResetToken(configuration, env.IsDevelopment());
+            return Results.Ok(new ForgotPasswordResponse(generic, expose ? token : null));
+        });
+
+        auth.MapPost("/reset-password", async (
+            ResetPasswordRequest request,
+            UserManager<ApplicationUser> userManager) =>
+        {
+            var user = await userManager.FindByEmailAsync(request.Email);
+            if (user is null || !user.IsActive)
+                return Results.BadRequest(new { error = "Invalid reset request." });
+
+            var result = await userManager.ResetPasswordAsync(user, request.ResetToken, request.NewPassword);
+            return result.Succeeded
+                ? Results.NoContent()
+                : Results.BadRequest(new { errors = result.Errors.Select(e => e.Description) });
         });
 
         auth.MapGet("/me", async (
@@ -110,8 +175,8 @@ public static class AuthEndpoints
             if (!await roleManager.RoleExistsAsync(request.Role))
                 return Results.BadRequest(new { error = $"Unknown role: {request.Role}" });
 
-            if (request.Role != TikrRoles.Admin && request.Role != TikrRoles.Clerk)
-                return Results.BadRequest(new { error = "Role must be Admin or Clerk." });
+            if (!TikrRoles.IsAssignableRole(request.Role))
+                return Results.BadRequest(new { error = "Role must be Admin, Clerk, or Viewer." });
 
             var user = new ApplicationUser
             {
@@ -160,6 +225,9 @@ public static class AuthEndpoints
             {
                 if (!await roleManager.RoleExistsAsync(request.Role))
                     return Results.BadRequest(new { error = $"Unknown role: {request.Role}" });
+
+                if (!TikrRoles.IsAssignableRole(request.Role))
+                    return Results.BadRequest(new { error = "Role must be Admin, Clerk, or Viewer." });
 
                 var currentRoles = await userManager.GetRolesAsync(user);
                 await userManager.RemoveFromRolesAsync(user, currentRoles);

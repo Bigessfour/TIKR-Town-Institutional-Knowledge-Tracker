@@ -29,7 +29,8 @@ public class AuthEnabledWebApplicationFactory : WebApplicationFactory<Program>
                 ["OLLAMA_HOST"] = "http://127.0.0.1:1",
                 ["TIKR_ADMIN_EMAIL"] = AdminEmail,
                 ["TIKR_ADMIN_PASSWORD"] = AdminPassword,
-                ["TIKR_JWT_SIGNING_KEY"] = TestAuthConstants.JwtSigningKey
+                ["TIKR_JWT_SIGNING_KEY"] = TestAuthConstants.JwtSigningKey,
+                ["TIKR_AUTH_EXPOSE_RESET_TOKEN"] = "true"
             });
         });
     }

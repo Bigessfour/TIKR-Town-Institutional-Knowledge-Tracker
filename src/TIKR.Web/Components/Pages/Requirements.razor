@@ -174,9 +174,13 @@ else
     </div>
 }
 
-<SfDialog @bind-Visible="_showDialog" Width="480px" IsModal="true" ShowCloseIcon="true" Header="@(_editingId is null ? "Add requirement" : "Edit requirement")">
+<SfDialog @bind-Visible="_showDialog" Width="520px" IsModal="true" ShowCloseIcon="true" Header="@(_editingId is null ? "Add requirement" : "Edit requirement")">
     <DialogTemplates>
         <Content>
+            <p class="text-muted" style="margin-top:0;">Copy notes from email or clipboard, then use <strong>Smart Paste</strong> to fill fields (needs Ollama).</p>
+            <div class="mb-2">
+                <SfSmartPasteButton Content="Smart Paste from clipboard" CssClass="tikr-action-btn" />
+            </div>
             <EditForm Model="_form" OnValidSubmit="SaveAsync">
                 <DataAnnotationsValidator />
                 <ValidationSummary />
@@ -185,7 +189,12 @@ else
                         <FormItem Field="@nameof(RequirementFormModel.Title)" LabelText="Title" />
                         <FormItem Field="@nameof(RequirementFormModel.Description)" LabelText="Description">
                             <Template>
-                                <SfTextBox Multiline="true" @bind-Value="_form.Description" Placeholder="Notes, statute cite, filing instructions..." />
+                                <SfSmartTextArea UserRole="@_smartReqRole"
+                                                 UserPhrases="@_smartReqPhrases"
+                                                 @bind-Value="_form.Description"
+                                                 Placeholder="Notes, statute cite, filing instructions..."
+                                                 RowCount="4"
+                                                 Width="100%" />
                             </Template>
                         </FormItem>
                         <FormItem Field="@nameof(RequirementFormModel.DueDate)" LabelText="Due date">
@@ -279,6 +288,14 @@ else
     private DocumentAgentResult? _lastAgentResult;
     private DateTime? _formDueDate = DateTime.Today.AddMonths(1);
     private readonly RequirementFormModel _form = new();
+    private const string _smartReqRole =
+        "Colorado municipal town clerk filling statutory deadline forms for a small town board";
+    private static readonly string[] _smartReqPhrases =
+    [
+        "File with the Colorado Secretary of State.",
+        "Due annually; include proof of publication.",
+        "Coordinate with the town attorney before filing.",
+    ];
     private bool _confirmDeleteVisible;
     private RequirementDto? _pendingDelete;
     private string _townName = "Wiley";

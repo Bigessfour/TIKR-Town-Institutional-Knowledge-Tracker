@@ -142,7 +142,9 @@ Cursor MCP: `tikr-rag-mcp`, `sf-blazor-mcp`, Microsoft Learn, Ollama. See [ai-to
 |---------|---------|-----|
 | `Microsoft.Extensions.AI` | 10.7.0 | Abstractions for chat client |
 | `OllamaSharp` | 5.4.25 | Ollama chat in Assistant |
-| `Syncfusion.Blazor.*` | 33.2.15 | Grid, Schedule, InteractiveChat, SfPdfViewer, Speech (Vault), etc. |
+| `Syncfusion.Blazor.*` | 34.1.32 | Grid, Schedule, InteractiveChat, SfPdfViewer, WordProcessor, Spreadsheet, Speech (Vault), etc. |
+| `Syncfusion.DocumentSDK.AI.AgentTools` | 34.1.32 | Agent scan extraction |
+| `Syncfusion.Licensing` | 34.1.32 | Runtime license registration |
 | `Markdig` | 1.3.2 | Markdown rendering in Assistant |
 | `System.IdentityModel.Tokens.Jwt` | 8.14.0 | Optional auth token handling |
 
@@ -156,8 +158,8 @@ Cursor MCP: `tikr-rag-mcp`, `sf-blazor-mcp`, Microsoft Learn, Ollama. See [ai-to
 | `Npgsql.EntityFrameworkCore.PostgreSQL` | 10.0.2 | Optional PostgreSQL |
 | `Microsoft.AspNetCore.Identity.EntityFrameworkCore` | 10.0.9 | Optional multi-user auth |
 | `Microsoft.Extensions.AI` + `OllamaSharp` | 10.7.0 / 5.4.25 | Hybrid AI + embeddings |
-| `Syncfusion.DocumentSDK.AI.AgentTools` | 33.2.15 | Agent scan extraction |
-| `Syncfusion.Licensing` | 33.2.15 | Runtime license registration |
+| `Syncfusion.DocumentSDK.AI.AgentTools` | 34.1.32 | Agent scan extraction |
+| `Syncfusion.Licensing` | 34.1.32 | Runtime license registration |
 
 ### TIKR.Api
 

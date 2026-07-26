@@ -385,6 +385,38 @@ namespace TIKR.Infrastructure.Data.Migrations
                     b.ToTable("KnowledgeEntries");
                 });
 
+            modelBuilder.Entity("TIKR.Shared.Entities.LibraryImportRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ContentFingerprint")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("DocumentId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("ImportedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("RelativePath")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DocumentId");
+
+                    b.HasIndex("RelativePath")
+                        .IsUnique();
+
+                    b.ToTable("LibraryImportRecords");
+                });
+
             modelBuilder.Entity("TIKR.Shared.Entities.Requirement", b =>
                 {
                     b.Property<Guid>("Id")

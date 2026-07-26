@@ -13,6 +13,11 @@ namespace TIKR.Web.Tests.Services;
 [Trait("Category", TestCategories.FullyTested)]
 public class TikrApiClientTests
 {
+    private static readonly JsonSerializerOptions JsonCaseInsensitive = new()
+    {
+        PropertyNameCaseInsensitive = true
+    };
+
     [Fact]
     public async Task GetDashboardPrioritiesAsync_DeserializesResponse()
     {
@@ -330,6 +335,42 @@ public class TikrApiClientTests
     }
 
     [Fact]
+    public async Task SemanticSearchDocumentsAsync_SendsFolderFilter()
+    {
+        SemanticSearchRequest? captured = null;
+        var handler = new RecordingHandler((req, _) =>
+        {
+            var body = req.Content!.ReadAsStringAsync().GetAwaiter().GetResult();
+            captured = JsonSerializer.Deserialize<SemanticSearchRequest>(body, JsonCaseInsensitive);
+            return JsonResponse("{}");
+        });
+        var sut = new TikrApiClient(new HttpClient(handler) { BaseAddress = new Uri("http://localhost/") });
+
+        await sut.SemanticSearchDocumentsAsync("budget", topK: 5, folder: "Permits");
+
+        captured!.Folder.Should().Be("Permits");
+        captured.TopK.Should().Be(5);
+    }
+
+    [Fact]
+    public async Task SemanticSearchKnowledgeAsync_SendsCategoryFilter()
+    {
+        SemanticSearchRequest? captured = null;
+        var handler = new RecordingHandler((req, _) =>
+        {
+            var body = req.Content!.ReadAsStringAsync().GetAwaiter().GetResult();
+            captured = JsonSerializer.Deserialize<SemanticSearchRequest>(body, JsonCaseInsensitive);
+            return JsonResponse("{}");
+        });
+        var sut = new TikrApiClient(new HttpClient(handler) { BaseAddress = new Uri("http://localhost/") });
+
+        await sut.SemanticSearchKnowledgeAsync("permit", topK: 4, category: "HowTo");
+
+        captured!.Category.Should().Be("HowTo");
+        captured.TopK.Should().Be(4);
+    }
+
+    [Fact]
     public async Task EmbedDocumentAsync_ReturnsNullOnFailure()
     {
         var handler = new RecordingHandler((_, _) => new HttpResponseMessage(HttpStatusCode.NotFound));
@@ -519,6 +560,44 @@ public class TikrApiClientTests
 
         method.Should().Be(HttpMethod.Post);
         result!.SuggestedCategory.Should().Be(RequirementCategory.Budget);
+    }
+
+    [Fact]
+    public async Task GetLibraryScanStatusAsync_DeserializesResponse()
+    {
+        var json = """
+            {"configured":true,"libraryPath":"/data/town-docs","intervalSeconds":300,"pollerActive":true,"lastResult":null,"lastScanUtc":null}
+            """;
+        var (client, _) = CreateClient(json, HttpMethod.Get, "/api/library/scan-status");
+        var sut = new TikrApiClient(client);
+
+        var status = await sut.GetLibraryScanStatusAsync();
+
+        status!.Configured.Should().BeTrue();
+        status.LibraryPath.Should().Be("/data/town-docs");
+        status.IntervalSeconds.Should().Be(300);
+    }
+
+    [Fact]
+    public async Task ScanLibraryAsync_PostsAndDeserializes()
+    {
+        var json = """{"scanned":3,"imported":1,"skipped":2,"failed":0,"errors":[]}""";
+        HttpMethod? method = null;
+        string? path = null;
+        var handler = new RecordingHandler((req, _) =>
+        {
+            method = req.Method;
+            path = req.RequestUri!.PathAndQuery;
+            return JsonResponse(json);
+        });
+        var sut = new TikrApiClient(new HttpClient(handler) { BaseAddress = new Uri("http://localhost/") });
+
+        var result = await sut.ScanLibraryAsync();
+
+        method.Should().Be(HttpMethod.Post);
+        path.Should().Be("/api/library/scan");
+        result!.Imported.Should().Be(1);
+        result.Skipped.Should().Be(2);
     }
 
     private static (HttpClient Client, RecordingHandler Handler) CreateClient(string json, HttpMethod expectedMethod, string expectedPath)

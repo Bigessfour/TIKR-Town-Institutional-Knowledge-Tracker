@@ -55,6 +55,7 @@
             <li><span><strong>USE_GROK</strong> + <strong>GROK_API_KEY</strong></span><span>@(_status?.GrokEnabled == true ? "Enabled" : "Disabled")</span></li>
             <li><span><strong>SYNCFUSION_LICENSE_KEY</strong></span><span>@(BlazorLicenseStatus.KeyConfigured ? "Configured" : "Not set")</span></li>
             <li><span><strong>USE_SYNCFUSION_AGENT_TOOLS</strong></span><span>@(_documentSdkStatus?.AgentToolsEnabled == true ? "Enabled" : "Disabled")</span></li>
+            <li><span><strong>TIKR_LIBRARY_SCAN_PATH</strong> — existing NAS docs → Assistant RAG</span><span>@(_libraryStatus?.Configured == true ? "Configured" : "Not set")</span></li>
         </ul>
         <p class="text-muted mb-0 mt-2">Template: <code>docker/.env.example</code>. On Mac dev: <code>./scripts/setup-local-secrets.sh</code>.</p>
     </CardContent>
@@ -87,6 +88,7 @@
         {
             <p class="text-muted">Generate a <strong>Blazor v34.1.x</strong> key at your Syncfusion account (Downloads). Document SDK keys alone do not clear the Blazor trial overlay.</p>
         }
+        <p class="text-muted">Same <code>SYNCFUSION_LICENSE_KEY</code> covers Blazor UI, PDF Viewer, Word Document Editor, Spreadsheet, and Document SDK generation/agent tools.</p>
     </CardContent>
 </SfCard>
 
@@ -123,6 +125,51 @@
 </SfCard>
 
 <SfCard CssClass="mb-3">
+    <CardHeader Title="NAS document library" />
+    <CardContent>
+        <p class="text-muted mb-2">
+            Scan an existing shared folder on the NAS: files are <strong>copied</strong> into TIKR, tagged, and embedded for
+            <a href="/assistant">AI Assistant</a> questions. Source files are never moved or deleted.
+            Set <code>TIKR_LIBRARY_SCAN_PATH</code> in <code>docker/.env</code> (bind-mount the share into the API container).
+        </p>
+        @if (_libraryStatus is null)
+        {
+            <p>Unable to reach API.</p>
+        }
+        else if (!_libraryStatus.Configured)
+        {
+            <p><strong>Status:</strong> Not configured — set <code>TIKR_LIBRARY_SCAN_PATH</code> then restart the API.</p>
+        }
+        else
+        {
+            <p><strong>Path:</strong> @_libraryStatus.LibraryPath</p>
+            <p><strong>Background poller:</strong> @(_libraryStatus.PollerActive ? $"Active (every {_libraryStatus.IntervalSeconds}s)" : "Inactive")</p>
+            @if (_libraryStatus.LastResult is { } last)
+            {
+                <p><strong>Last scan:</strong> @(_libraryStatus.LastScanUtc?.ToLocalTime().ToString("g") ?? "—")
+                    — scanned @last.Scanned, imported @last.Imported, skipped @last.Skipped, failed @last.Failed</p>
+            }
+            else
+            {
+                <p><strong>Last scan:</strong> None yet</p>
+            }
+        }
+        @if (!string.IsNullOrWhiteSpace(_libraryMessage))
+        {
+            <p class="mt-2">@_libraryMessage</p>
+        }
+        <div class="tikr-settings-help-actions mt-3">
+            <SfButton CssClass="tikr-action-btn" Disabled="@(_libraryBusy || _libraryStatus?.Configured != true)" OnClick="ScanLibraryAsync">
+                Scan library now
+            </SfButton>
+            <SfButton CssClass="tikr-action-btn e-outline" Disabled="@_libraryBusy" OnClick="ReindexEmbeddingsAsync">
+                Reindex embeddings
+            </SfButton>
+        </div>
+    </CardContent>
+</SfCard>
+
+<SfCard CssClass="mb-3">
     <CardHeader Title="Recent audit log" />
     <CardContent>
         @if (_audit.Count == 0)
@@ -135,7 +182,7 @@
                 @foreach (var entry in _audit)
                 {
                     <li>
-                        <span>@entry.Action @entry.EntityType @(entry.Details is not null ? $"— {entry.Details}" : "")</span>
+                        <span>@entry.Action @entry.EntityType @(entry.Details is not null ? $"— {AuditDetailsFormatter.Format(entry.Details)}" : "")</span>
                         <span>@entry.Timestamp.ToLocalTime().ToString("g")</span>
                     </li>
                 }
@@ -153,8 +200,11 @@
     private AiStatusResponse? _status;
     private LocalStorageStatusDto? _localStatus;
     private DocumentSdkStatusDto? _documentSdkStatus;
+    private LibraryScanStatusDto? _libraryStatus;
     private List<AuditLog> _audit = [];
     private bool _autoTourDisabled;
+    private bool _libraryBusy;
+    private string? _libraryMessage;
 
     protected override async Task OnInitializedAsync()
     {
@@ -163,6 +213,7 @@
             _status = await Api.GetAiStatusAsync();
             _localStatus = await Api.GetLocalStorageStatusAsync();
             _documentSdkStatus = await Api.GetDocumentSdkStatusAsync();
+            _libraryStatus = await Api.GetLibraryScanStatusAsync();
             _audit = await Api.GetRecentAuditAsync(8);
         }
         catch
@@ -170,6 +221,7 @@
             _status = null;
             _localStatus = null;
             _documentSdkStatus = null;
+            _libraryStatus = null;
             _audit = [];
         }
 
@@ -182,6 +234,52 @@
 
     private async Task PersistAutoTourDisabledAsync() =>
         await Tour.SetAutoTourDisabledAsync(_autoTourDisabled);
+
+    private async Task ScanLibraryAsync()
+    {
+        _libraryBusy = true;
+        _libraryMessage = "Scanning library…";
+        try
+        {
+            var result = await Api.ScanLibraryAsync();
+            _libraryStatus = await Api.GetLibraryScanStatusAsync();
+            _libraryMessage = result is null
+                ? "Scan failed — check API and TIKR_LIBRARY_SCAN_PATH."
+                : $"Scan complete: imported {result.Imported}, skipped {result.Skipped}, failed {result.Failed} (scanned {result.Scanned}). Ask about them on AI Assistant.";
+            _audit = await Api.GetRecentAuditAsync(8);
+        }
+        catch (Exception ex)
+        {
+            _libraryMessage = $"Scan error: {ex.Message}";
+        }
+        finally
+        {
+            _libraryBusy = false;
+        }
+    }
+
+    private async Task ReindexEmbeddingsAsync()
+    {
+        _libraryBusy = true;
+        _libraryMessage = "Reindexing embeddings…";
+        try
+        {
+            var result = await Api.ReindexEmbeddingsAsync();
+            _libraryMessage = result is null
+                ? "Reindex failed — is the API online?"
+                : $"Reindex done: docs {result.DocumentsEmbedded}/{result.DocumentsAttempted}, vault {result.KnowledgeEmbedded}/{result.KnowledgeAttempted}" +
+                  (result.Errors.Count > 0 ? $" ({result.Errors.Count} error(s))" : "") +
+                  ". Ready for AI Assistant questions.";
+        }
+        catch (Exception ex)
+        {
+            _libraryMessage = $"Reindex error: {ex.Message}";
+        }
+        finally
+        {
+            _libraryBusy = false;
+        }
+    }
 
     private static string DocumentSdkStatusLabel(DocumentSdkStatusDto status)
     {

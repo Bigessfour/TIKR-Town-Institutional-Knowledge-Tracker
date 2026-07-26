@@ -42,6 +42,11 @@ public class CalendarPageTests : ClerkTestContext
         var cut = RenderComponent<Calendar>();
         cut.WaitForAssertion(() => cut.Markup.Should().Contain("Mill Levy Certification"));
         cut.Markup.Should().Contain("Deadline Calendar");
+        cut.Markup.Should().Contain("e-schedule");
+        cut.FindComponent<Syncfusion.Blazor.Schedule.SfSchedule<Calendar.CalendarEvent>>()
+            .Instance.AllowDragAndDrop.Should().BeTrue();
+        cut.FindComponent<Syncfusion.Blazor.Schedule.SfSchedule<Calendar.CalendarEvent>>()
+            .Instance.Readonly.Should().BeFalse();
     }
 
     [Fact]

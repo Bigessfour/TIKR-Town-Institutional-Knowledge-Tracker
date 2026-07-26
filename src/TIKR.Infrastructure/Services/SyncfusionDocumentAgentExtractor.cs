@@ -6,12 +6,14 @@ using Syncfusion.AI.AgentTools.PDF;
 using Syncfusion.AI.AgentTools.PowerPoint;
 using Syncfusion.AI.AgentTools.Word;
 using TIKR.Shared.Interfaces;
+using TIKR.SyncfusionDocuments;
 
 namespace TIKR.Infrastructure.Services;
 
 /// <summary>
 /// Deterministic Syncfusion Storage Mode extraction for Requirements AI Scan (Phase 10C-A2).
 /// Orchestrated tool selection via <see cref="SyncfusionDocumentAgentOrchestrator"/> when enabled (A3).
+/// Sparse PDF/Word text is enriched with <see cref="IDocumentOcrService"/> (Tesseract OCR).
 /// </summary>
 public sealed class SyncfusionDocumentAgentExtractor
 {
@@ -23,13 +25,16 @@ public sealed class SyncfusionDocumentAgentExtractor
     private readonly PresentationContentAgentTools _pptTools;
     private readonly OfficeToPdfAgentTools _officeToPdf;
     private readonly SyncfusionDocumentAgentOrchestrator _orchestrator;
+    private readonly IDocumentOcrService _ocr;
 
     public SyncfusionDocumentAgentExtractor(
         NasSyncfusionDocumentStorage storage,
-        SyncfusionDocumentAgentOrchestrator orchestrator)
+        SyncfusionDocumentAgentOrchestrator orchestrator,
+        IDocumentOcrService ocr)
     {
         _storage = storage;
         _orchestrator = orchestrator;
+        _ocr = ocr;
         _manager = new DocumentStorageManager(storage);
         _pdfTools = new PdfContentExtractionAgentTools(_manager);
         _wordTools = new WordImportExportAgentTools(_manager);
@@ -101,14 +106,40 @@ public sealed class SyncfusionDocumentAgentExtractor
     private AgentExtractionResult ExtractPdf(string workName, string originalFileName)
     {
         var text = UnwrapPayload(_pdfTools.ExtractText(workName, startPageIndex: 0, endPageIndex: -1));
+        var usedOcr = false;
+        if (_ocr.IsEnabled && SyncfusionDocumentOcrService.NeedsOcr(text))
+        {
+            using var pdfStream = _storage.Read(workName);
+            var ocr = _ocr.EnrichPdf(pdfStream, text);
+            if (!string.IsNullOrWhiteSpace(ocr.Text) &&
+                (ocr.UsedOcr || SyncfusionDocumentOcrService.CountLetters(ocr.Text) > SyncfusionDocumentOcrService.CountLetters(text)))
+            {
+                text = ocr.Text;
+                usedOcr = ocr.UsedOcr;
+            }
+        }
+
         var (tables, tableJson) = TryExtractTables(workName, originalFileName);
-        return new AgentExtractionResult(text, tables, UsedSyncfusionTools: true, tableJson);
+        return new AgentExtractionResult(text, tables, UsedSyncfusionTools: true, tableJson, usedOcr);
     }
 
     private AgentExtractionResult ExtractWord(string workName)
     {
         var text = UnwrapPayload(_wordTools.GetText(workName));
-        return new AgentExtractionResult(text, 1, UsedSyncfusionTools: true);
+        var usedOcr = false;
+        if (_ocr.IsEnabled && SyncfusionDocumentOcrService.NeedsOcr(text))
+        {
+            using var wordStream = _storage.Read(workName);
+            var ocr = _ocr.EnrichWord(wordStream, workName, text);
+            if (!string.IsNullOrWhiteSpace(ocr.Text) &&
+                (ocr.UsedOcr || SyncfusionDocumentOcrService.CountLetters(ocr.Text) > SyncfusionDocumentOcrService.CountLetters(text)))
+            {
+                text = ocr.Text;
+                usedOcr = ocr.UsedOcr;
+            }
+        }
+
+        return new AgentExtractionResult(text, 1, UsedSyncfusionTools: true, UsedOcr: usedOcr);
     }
 
     private AgentExtractionResult ExtractExcel(string workName, string originalFileName)
@@ -188,16 +219,86 @@ public sealed class SyncfusionDocumentAgentExtractor
     private int TryCountTables(string workName, string originalFileName) =>
         TryExtractTables(workName, originalFileName).Count;
 
-    private static string UnwrapPayload(AgentToolResult result)
+    /// <summary>
+    /// Pulls clerk-usable text from Syncfusion <see cref="AgentToolResult"/> payloads.
+    /// Prefer property reflection over <c>Data.ToString()</c>, which often dumps
+    /// <c>{ DocumentId = …, Text = …, PageCount = N }</c> instead of plain page text.
+    /// </summary>
+    internal static string UnwrapPayload(AgentToolResult result)
     {
         if (!result.Success)
             return result.Error ?? string.Empty;
 
-        var dataText = result.Data?.ToString();
-        if (!string.IsNullOrWhiteSpace(dataText) &&
-            !dataText.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase))
-            return dataText;
+        var fromData = ExtractTextFromData(result.Data);
+        if (!string.IsNullOrWhiteSpace(fromData) &&
+            !fromData.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase))
+            return fromData;
 
-        return result.Message ?? dataText ?? string.Empty;
+        return NormalizeExtractedText(result.Message) ?? fromData ?? string.Empty;
+    }
+
+    internal static string? ExtractTextFromData(object? data)
+    {
+        if (data is null)
+            return null;
+
+        if (data is string s)
+            return NormalizeExtractedText(s);
+
+        // Known Syncfusion payload shapes expose Text / Content / ExtractedText.
+        foreach (var name in new[] { "Text", "Content", "ExtractedText", "Value" })
+        {
+            var prop = data.GetType().GetProperty(name);
+            if (prop is null || prop.PropertyType != typeof(string))
+                continue;
+            if (prop.GetValue(data) is string value && !string.IsNullOrWhiteSpace(value))
+                return NormalizeExtractedText(value);
+        }
+
+        return NormalizeExtractedText(data.ToString());
+    }
+
+    /// <summary>
+    /// Strips Syncfusion agent-tool object dumps so RAG stores plain passage text.
+    /// Example dump: <c>{ DocumentId = x.pdf, Text = --- Page 1 --- Form W-9 …, PageCount = 1 }</c>
+    /// </summary>
+    internal static string? NormalizeExtractedText(string? raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw))
+            return raw;
+
+        var trimmed = raw.Trim();
+
+        // Full object dump with PageCount terminator (multiline Text allowed).
+        var withPageCount = System.Text.RegularExpressions.Regex.Match(
+            trimmed,
+            @"^\{\s*DocumentId\s*=\s*.*?,\s*Text\s*=\s*(.*)\s*,\s*PageCount\s*=\s*\d+\s*\}\s*$",
+            System.Text.RegularExpressions.RegexOptions.Singleline | System.Text.RegularExpressions.RegexOptions.CultureInvariant);
+        if (withPageCount.Success)
+            return withPageCount.Groups[1].Value.Trim();
+
+        // Simpler { Text = ... } dump (Word tools).
+        var textOnly = System.Text.RegularExpressions.Regex.Match(
+            trimmed,
+            @"^\{\s*Text\s*=\s*(.*?)\s*\}\s*$",
+            System.Text.RegularExpressions.RegexOptions.Singleline | System.Text.RegularExpressions.RegexOptions.CultureInvariant);
+        if (textOnly.Success)
+            return textOnly.Groups[1].Value.Trim();
+
+        // Loose: leading "{ DocumentId = …, Text = " without requiring trailing structure.
+        const string marker = "Text = ";
+        var idx = trimmed.IndexOf(marker, StringComparison.Ordinal);
+        if (trimmed.StartsWith('{') && idx > 0)
+        {
+            var start = idx + marker.Length;
+            var end = trimmed.LastIndexOf(", PageCount", StringComparison.Ordinal);
+            if (end > start)
+                return trimmed[start..end].Trim();
+            if (trimmed.EndsWith('}'))
+                return trimmed[start..^1].Trim();
+        }
+
+        return trimmed;
     }
 }
+

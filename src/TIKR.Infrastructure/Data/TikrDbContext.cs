@@ -17,6 +17,7 @@ public class TikrDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
     public DbSet<RequirementDocument> RequirementDocuments => Set<RequirementDocument>();
     public DbSet<EmbeddingChunk> EmbeddingChunks => Set<EmbeddingChunk>();
+    public DbSet<LibraryImportRecord> LibraryImportRecords => Set<LibraryImportRecord>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -70,6 +71,15 @@ public class TikrDbContext : IdentityDbContext<ApplicationUser>
             entity.Property(e => e.Facet).HasMaxLength(200);
             entity.HasIndex(e => new { e.SourceType, e.SourceId });
             entity.HasIndex(e => new { e.SourceType, e.Facet });
+        });
+
+        modelBuilder.Entity<LibraryImportRecord>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.RelativePath).HasMaxLength(1000).IsRequired();
+            entity.Property(e => e.ContentFingerprint).HasMaxLength(128).IsRequired();
+            entity.HasIndex(e => e.RelativePath).IsUnique();
+            entity.HasIndex(e => e.DocumentId);
         });
     }
 }

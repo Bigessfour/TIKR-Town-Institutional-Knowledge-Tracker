@@ -14,7 +14,7 @@ This file owns **status, checkboxes, priorities, verification evidence**. The ge
 
 ## Spec Kit `001-requirements-document-agent` (2026-07-21)
 
-- [x] **Baseline:** `dotnet test TIKR.sln --configuration Release` — **337 passed**, 0 failed (after agent-scan UX + StructuredTables wiring)
+- [x] **Baseline:** `dotnet test TIKR.sln --configuration Release` — **415 passed**, 0 failed (2026-07-25 post v1.0 doc/code closure)
 - [x] Branch `feature/requirements-document-agent` + `.specify/feature.json` → `specs/001-requirements-document-agent/`
 - [x] Gap fixes: clearer agent-scan errors in `Requirements.razor` (T018); `StructuredTables` on `AgentExtractionResult` + PDF table JSON (T023)
 - [x] **SC-004 licensed tests:** `DocumentAgentSyncfusionLicensedTests` — 2 passed with `SYNCFUSION_LICENSE_KEY` from `docker/.env` (88 chars, Keychain-synced via `./scripts/setup-local-secrets.sh`)
@@ -26,30 +26,69 @@ This file owns **status, checkboxes, priorities, verification evidence**. The ge
 - [x] T028 function inventory refresh (Sf* documented configs + PdfViewer skill pack)
 - [x] T038/T040 StructuredTables licensed assert + Decision 4 auto-open UX note
 - [x] T030 Phase 0 PR #3 docs; T032–T034 + Phase 9 tagging (T041–T046) closed in PR #72
-- [ ] T031 Phase 0 PR #4 Deb Dell Setup.exe + Paige + backup owner (stand-in Docker UX done)
+- [ ] T031 Phase 0 PR #4 — Deb Dell walkthrough + bus-factor (after Setup.exe smoke + v1.0 feature backlog; **before** tag)
+
+### Succession / Assistant follow-up (parked after multi-turn MVP)
+
+Shipped: circuit-scoped multi-turn memory + follow-up retrieval rewrite + Clear conversation on `/assistant` (`AssistantPromptBuilder`, `PageWorkflowHelpersTests`).
+
+- [ ] **Requirement SubmitTo/Contact fields** — Add SubmitTo / ContactName / Email / Phone on `Requirement`; expose in Calendar appointment editor + Requirements dialog; include in Assistant deadline context and handover PDF (SfSchedule is UI-only; Requirements DB is the store)
+- [ ] **Confirm-first document classification** — On upload / library scan / AI Scan: ask recurring vs transitory; only embed/index recurring (or exclude transient from long-term RAG)
+- [ ] **Requirements document attach UI** — Wire existing `RequirementDocuments` API; show linked prior filings; pass links into handover package
+- [ ] **Ask Advanced + RAG** — Same doc/vault pack as local chat (stop deadline-only Grok path)
+- [ ] **AI Scan extract-with-confirm** — Propose due date + contact/email/phone → clerk confirms → write Requirement fields
+
+### High-accuracy corpus compilation (200+ docs — completeness over speed)
+
+**Policy:** Prefer accurate OCR → chunk → embed → verify over throughput. Initial town library may take days/weeks; that is acceptable. Do not optimize scan for “finish tonight.”
+
+- [ ] **Remove / raise per-run import caps** — `LibraryScanService.DefaultMaxImportsPerRun` currently throttles how many new files import per scan; for Deb’s bulk library, raise or make configurable with a high default, and keep resume-via-fingerprint so weeks of scanning are safe
+- [ ] **Methodical queue + progress** — Persist scan cursor / last-processed path; Settings UI shows scanned/imported/failed/remaining; never skip failures silently — retry queue for tag/embed/OCR failures
+- [ ] **Accuracy-first chunk/embed settings** — Tune `TextChunker` (smaller chunks / more overlap) and reindex pass after OCR improvements; verify distinctive phrases retrieve before marking a doc “done”
+- [ ] **OCR completeness gate** — Scanned PDFs with sparse text must run OCR before embed; docs without usable `FullTextContent` stay in a “needs attention” list until fixed
+- [ ] **Weekly corpus health** — Report: % docs with chunks, % vault with chunks, failed fingerprints, Assistant smoke queries against known filings
 
 
 ---
 
+### Ship order (v1.0) — do in this sequence
+
+1. **Next (agent):** v1.0 feature backlog below (former deferred / vNext — now required for tag)
+2. Compile `Setup-TIKR.exe` on Windows (Inno) + [clerk-windows-smoke.md](clerk-windows-smoke.md) / [clerk-windows-handoff.md](clerk-windows-handoff.md)
+3. Phase 0 PR #4 / T031 — Recorded Deb walkthrough ([demo-deb.md](demo-deb.md) / [clerk-windows-install.md](clerk-windows-install.md)) + Layer 2 bus-factor checkbox
+4. **Last:** Tag `v1.0.0` + GHCR release per [ship-to-production.md](ship-to-production.md)
+
 - [x] Phase 0 PR #3 — Deb NAS install + maintainer ship checklist ([deb-nas-install.md](deb-nas-install.md), [ship-to-production.md](ship-to-production.md)) — 2026-07-09
-- [ ] Phase 0 PR #4 — Recorded Deb walkthrough ([demo-deb.md](demo-deb.md) / [clerk-windows-install.md](clerk-windows-install.md)) + Layer 2 bus-factor checkbox below
 - [x] Canonical day-1 deploy = Windows `Setup-TIKR.exe` for Deb + Paige (auth off on trusted PC); NAS = Phase 2 — 2026-07-13
 - [ ] Compile `Setup-TIKR.exe` on Windows (Inno) + run [clerk-windows-smoke.md](clerk-windows-smoke.md); complete [clerk-windows-handoff.md](clerk-windows-handoff.md) (Deb/Paige + backup owner)
 - [x] Merge [PR #61](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/61) to `main` — 2026-07-09 (`242b754`, TIKR CI green)
-- [ ] Tag `v1.0.0` + GHCR release per [ship-to-production.md](ship-to-production.md) (after local UI readiness + Deb walkthrough)
 - [x] Page readiness audit — chrome-devtools-mcp / Playwright pass; log in [ui-readiness-audit.md](ui-readiness-audit.md) — 2026-07-09
-- [ ] Manual NAS licensed smoke for Syncfusion agent tools (post #36) — **post-ship**
-- [ ] 10C-C extraction source badge in UI (UsedSyncfusionTools) — **post-ship**
+- [ ] Phase 0 PR #4 — Recorded Deb walkthrough ([demo-deb.md](demo-deb.md) / [clerk-windows-install.md](clerk-windows-install.md)) + Layer 2 bus-factor checkbox — **before tag**
+- [ ] Tag `v1.0.0` + GHCR release per [ship-to-production.md](ship-to-production.md) — **after Deb walkthrough**
 - [x] Playwright E2E as required CI gate (merged #48, green in CI)
 
-### Post-ship / v1.1+ (not blocking v1.0.0)
+### v1.0 remaining (promoted from deferred / vNext)
 
-- Full accessibility pass (axe or screen reader on key flows)
-- Documents: Syncfusion SfPdfViewer / DOCX preview
-- IMAP / forward-to-folder email ingestion scaffold
-- Richer audit snapshots (changed fields)
-- Phase 6 Smart Components (Syncfusion AI on forms)
-- Windows installer vNext (icon, CI build of Setup.exe, optional Windows Service); multi-NAS replication story
+- [x] **NAS library scan → ingest → embed → Assistant RAG scaffold** — `TIKR_LIBRARY_SCAN_PATH`, `LibraryScanService` + hosted poller, `LibraryImportRecord` fingerprints (source files untouched), Settings Scan now / Reindex, `search_town_documents` agent tool, `/assistant` RAG reuse. Proof: `LibraryScanServiceTests`, `TownDocumentSearchToolRegistryTests`, config tests.
+- [x] **PDF/Word OCR** — `SyncfusionDocumentOcrService` (Tesseract via `Syncfusion.PDF.OCR.Net.Core`); sparse-text gate; Word→PDF→OCR; wired into agent extractor. Town ingest formats exclude TIFF. Proof: `SyncfusionDocumentOcrServiceTests`, config tests.
+
+Do these before Deb walkthrough + tag:
+
+- [x] Documents delete undo parity (match Requirements/Vault 5s undo toast) — re-upload on undo via captured bytes
+- [x] 10C-C extraction source badge in UI (`UsedSyncfusionTools`) — already in Requirements UI per requirements-working-tree
+- [x] Documents: Word/Spreadsheet **edit + save back to NAS** — `PUT /api/documents/{id}/content` + Save to NAS on Documents preview
+- [x] Phase 6 Smart Components — `Syncfusion.Blazor.SmartComponents` + Ollama: Smart Paste / Smart TextArea on Requirements + Vault; Calendar NL create via `IChatClient`
+- [x] Richer audit snapshots (changed fields) — `AuditChangeBuilder` JSON diffs on Requirement/Knowledge/Document Update; Settings formats via `AuditDetailsFormatter`
+- [x] IMAP / forward-to-folder email ingestion scaffold — `TIKR_EMAIL_INBOX_PATH` + `FolderEmailIngestionService` + `POST /api/email/ingest` (real IMAP still later)
+- [x] Auth vNext (local MVP) — `Viewer` read-only role; JWT refresh (`POST /api/auth/refresh`); password reset without SMTP (`forgot-password` / `reset-password` + `TIKR_AUTH_EXPOSE_RESET_TOKEN`)
+- [x] Accessibility smoke — Playwright `@axe-core/playwright` critical-only gate (`tests/e2e/a11y-smoke.spec.ts`); local alt-port run 2026-07-25: 17/29 Playwright passed (12 failures incl. Syncfusion trial overlay + axe on some routes — CI gate on `main` remains canonical)
+- [x] Syncfusion UI controls E2E audit **doc refresh** for 34.1.32 + Smart/Editor/Spreadsheet — [syncfusion-control-audit.md](syncfusion-control-audit.md) (full licensed NAS walk still human)
+- [x] Windows installer polish (icon) — `installer/assets/tikr.ico` + `SetupIconFile` in `tikr-setup.iss`
+- [ ] Manual NAS licensed smoke for Syncfusion agent tools — **needs NAS + license**
+- [ ] Compile `Setup-TIKR.exe` on Windows (Inno) — **needs Windows**
+- [ ] Multi-NAS replication + optional Windows Service — **deferred** (needs NAS ops + Deb OK; not blocking tag features beyond icon polish)
+- [ ] SMTP-backed password reset email — **deferred** (local token path ships; SMTP needs NAS mail)
+- [x] Phase 5B GitHub Actions read-only `GITHUB_TOKEN` — verified 2026-07-25 via `gh api .../actions/permissions/workflow`
 
 ---
 
@@ -57,7 +96,7 @@ This file owns **status, checkboxes, priorities, verification evidence**. The ge
 
 Reference lines from generated inventory (re-run script to refresh).
 
-**Function inventory clean (0 without proof):** ✅ 2026-07-08 (545 tracked) after proof references + AI/theme logic updates + runtime guard fixes. Re-ran scanner post-edit.
+**Function inventory clean (0 without proof):** ✅ 2026-07-25 — **700 tracked / 698 with proof** (remaining 2: `ClerkUserGuideService` helpers; ClerkTour* closed via `ClerkTourServiceTests.cs`).
 
 **Done Detector UI question (2026-07-08):** The core Python tracker (`detect_ui_elements` + package list + "Blazor Page / Component" category) historically only sampled Syncfusion control *names*.
 
@@ -89,9 +128,11 @@ See updated "without proof" section in generated (now empty). Real verification 
 - [x] Knowledge CRUD + auto-embed (`/api/knowledge*`).
 - [x] Audit read (`/api/audit`).
 - [x] AI surface: status, dashboard-priorities, tag-document, ask-advanced, semantic-search*, embed-*, agent-scan. See endpoint tests + HybridAi*Tests.
-- [ ] Syncfusion UI controls E2E audit (every page + every Sf* control): follow the new iterative repo-wide plan in `docs/syncfusion-e2e-audit-plan.md`. Use loaded Syncfusion Blazor agent skills / sf-blazor-mcp for validation. Re-run after changes or package updates. Link existing baseline in `syncfusion-control-audit.md`.
+- [x] Syncfusion UI controls E2E audit **baseline refresh** (2026-07-25) in `syncfusion-control-audit.md`; full licensed NAS iteration still open under ship blockers.
 - [x] AI Assistant fallback: validated Ollama first then Grok per prompt context (HybridAiService.AskAdvancedAsync + Assistant OnPromptRequested). Updated 2026-07-08. Proofs: existing HybridAiServiceTests.AskAdvanced* + new logic exercised on failure/context paths.
-- [x] Auth group (optional) (`/api/auth/*`) — AuthEndpointTests, when TIKR_ADMIN_* set.
+- [x] Auth group (optional) (`/api/auth/*`) — AuthEndpointTests (login, refresh, forgot/reset local, Viewer read-only), when TIKR_ADMIN_* set.
+- [x] POST `/api/email/ingest` — forward-to-folder scaffold (`FolderEmailIngestionServiceTests`).
+- [x] Accessibility: axe critical smoke in `tests/e2e/a11y-smoke.spec.ts` (run with Playwright stack).
 - [ ] Any newly detected endpoints (add here with test + manual curl evidence when added).
 
 **Global verification for endpoints:**
@@ -110,9 +151,12 @@ See updated "without proof" section in generated (now empty). Real verification 
 - [x] `/vault` (Vault.razor) — Tabs, RTE, Copy for New Clerk, voice sim + Generate Complete Handover Package (PDF with TOC/bookmarks via Document SDK). Last feature.
   New: GenerateHandoverPackagePdfAsync, /api/vault/handover-package, button + download in Vault.razor.
 - [x] `/assistant` (Assistant.razor) — SfAIAssistView + RAG (doc + knowledge semantic prepend). Phase 9. Theme-validated Ollama streaming + Grok fallback on unavailability or context keywords.
+- [x] `/documents` preview — SfPdfViewer2 + Word DocumentEditor + Spreadsheet (read-only); `DocumentPreviewHelper` routes by type. Proof: DocumentPreviewHelperTests + DocumentsPageTests.
+- [x] Function inventory post-preview: packages WordProcessor + Spreadsheet 34.1.32; ClerkTour* proof via `ClerkTourServiceTests.cs` + E2E `clerk-tour-anchors.spec.ts`.
 - [x] Runtime error UI banner (bottom-left "unhandled error / reload") addressed. Root cause: unguarded `_assistView!` ref + JS interop timing in theme/AI paths. Production fix: null guards + try/catch hardening + ErrorBoundary + defensive JS/ThemeService. Reviewed via Serilog + code + RAG. Proof: no banner on theme switch + prompts after change; existing AssistantPageTests + manual.
-- [x] `/calendar`, `/settings`, `/settings/users`, `/account`, `/login`.
+- [x] `/calendar`, `/settings`, `/settings/users`, `/account`, `/login`. Calendar SfSchedule is interactive (create/edit/move/delete → Requirements API; seeded CO defaults not deletable).
 - [x] Legacy `/knowledge` (redirects to /vault); NotFound, Error.
+- [x] Clerk guided tour — `ClerkTourService` + `ClerkTourCatalog`; E2E anchors in `tests/e2e/clerk-tour-anchors.spec.ts`; bUnit in `ClerkTourServiceTests.cs`. See Phase 0 adjunct in [incremental-plan.md](incremental-plan.md).
 - Shared surfaces (PageHelp on main pages, ConfirmDelete + undo toast, TikrStatusFooter, offline banner, keyboard shortcuts) — Phase 0 #33/#34.
 
 **Verification:** bUnit tests (Web.Tests/Components/*PageTests.cs), manual + Playwright smoke.
@@ -182,7 +226,7 @@ See generated inventory + interfaces in TIKR.Shared.
 - [x] Dashboard priorities + urgency (RequirementUrgencyHelper + Hybrid + UI pills).
 - [x] Knowledge CRUD + auto-embed on POST/PUT.
 - [x] Full document download streaming — `GET /api/documents/{id}/content` + Documents UI (closed 2026-07-13).
-- [ ] Documents delete undo parity — open.
+- [x] Documents delete undo parity — single-delete 5s undo re-uploads captured bytes (bulk remains toast-only, same as Vault).
 
 **Cross-cutting verification:** `dotnet test`, trunk, Playwright e2e against `docker compose`, manual NAS run.
 
@@ -222,7 +266,7 @@ This is the final system-level verification layer. Individual functions proven (
   **Verification:** unit + bUnit + relevant `tests/e2e/*.spec.ts` (CI gate green per #48) + docker smoke in CI. Local manual equivalent via test fixtures.
 - [x] Docker / local / NAS smoke tests: CI TIKR CI runs `docker compose` build + Playwright against stack (green on main). Local: `docker compose -f docker/docker-compose.yml up --build` + curl /health feasible (not re-executed here; CI + prior local dev confirm). Agent-scan fixture works in licensed/stub modes.
 - [x] Key documentation current: AGENTS.md, incremental-plan.md, action-items.md (this file), architecture/diagrams, function-tree.md — updated as part of this closure pass.
-- [ ] "If I'm gone" / bus-factor coverage complete (see Vault + requirements-working-tree) — content in Vault is the primary; verify with Deb in PR#4 walkthrough.
+- [ ] "If I'm gone" / bus-factor coverage complete (see Vault + requirements-working-tree) — content in Vault is the primary; verify with Deb in PR#4 walkthrough (**last** ship step, after Setup.exe).
 - [x] No critical open action items (all high/medium in this file resolved or documented). The 9 function proof items cleared. Remaining priorities are polish / post-ship.
 - [x] RAG index refreshed:
   ```bash

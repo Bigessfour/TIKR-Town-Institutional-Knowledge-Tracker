@@ -20,6 +20,15 @@ public static class DocumentLibraryLogic
         string searchQuery,
         HashSet<Guid>? semanticHitIds)
     {
+        if (searchMode == "semantic" && semanticHitIds is { Count: > 0 })
+        {
+            var hitOrder = semanticHitIds.ToList();
+            var hits = documents.Where(d => semanticHitIds.Contains(d.Id));
+            if (folderFilter == "__UNCAT__")
+                hits = hits.Where(d => string.IsNullOrWhiteSpace(d.SuggestedFolder));
+            return hits.OrderBy(d => hitOrder.IndexOf(d.Id));
+        }
+
         var folderFiltered = documents.Where(d =>
         {
             if (string.IsNullOrEmpty(folderFilter))
@@ -28,14 +37,6 @@ public static class DocumentLibraryLogic
                 return string.IsNullOrWhiteSpace(d.SuggestedFolder);
             return string.Equals(d.SuggestedFolder, folderFilter, StringComparison.OrdinalIgnoreCase);
         });
-
-        if (searchMode == "semantic" && semanticHitIds is { Count: > 0 })
-        {
-            var hitOrder = semanticHitIds.ToList();
-            return folderFiltered
-                .Where(d => semanticHitIds.Contains(d.Id))
-                .OrderBy(d => hitOrder.IndexOf(d.Id));
-        }
 
         return folderFiltered
             .Where(d =>
@@ -50,6 +51,10 @@ public static class DocumentLibraryLogic
             })
             .OrderByDescending(d => d.UploadedAt);
     }
+
+    /// <summary>Maps UI folder filter to API folder (All and Uncategorized pass null).</summary>
+    public static string? MapFolderFilterForApi(string? folderFilter) =>
+        string.IsNullOrEmpty(folderFilter) || folderFilter == "__UNCAT__" ? null : folderFilter;
 
     public static List<FolderNode> BuildFolderTree(IReadOnlyList<DocumentDto> documents)
     {

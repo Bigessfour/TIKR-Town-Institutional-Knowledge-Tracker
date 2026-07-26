@@ -4,7 +4,8 @@ public record AgentExtractionResult(
     string ExtractedText,
     int TablesExtractedCount,
     bool UsedSyncfusionTools,
-    string? StructuredTables = null);
+    string? StructuredTables = null,
+    bool UsedOcr = false);
 
 /// <summary>
 /// Pluggable extraction for agent-scan. Stub heuristics today; Syncfusion AgentTools in 10C-A2+.
