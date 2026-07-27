@@ -6,6 +6,6 @@
     "repomix": "repomix --config repomix.config.json"
   },
   "devDependencies": {
-    "repomix": "^1.16.0"
+    "repomix": "^1.17.0"
   }
 }
