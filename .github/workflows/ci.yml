@@ -92,10 +92,12 @@ jobs:
       - name: Test with coverage
         if: (steps.changes.outputs.code_changed == 'true' || steps.changes.outputs.code_changed == '') && steps.changes.outputs.recent_green != 'true'
         run: |
+          # GrokLicensed is opt-in live xAI (TIKR_RUN_GROK_LIVE=true); never block default CI.
           dotnet test TIKR.sln \
             --no-build \
             --configuration Release \
             --verbosity normal \
+            --filter "Category!=GrokLicensed" \
             --settings coverlet.runsettings \
             --collect:"XPlat Code Coverage" \
             --results-directory coverage
