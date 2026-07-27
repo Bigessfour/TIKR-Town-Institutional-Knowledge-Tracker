@@ -4,8 +4,10 @@
 @inject IChatClient ChatClient
 @inject TikrApiClient Api
 @inject ColoradoResourceCatalog ResourceCatalog
+@inject ILogger<Assistant> Logger
 @using Markdig
 @using Microsoft.Extensions.AI
+@using TIKR.Shared.Diagnostics
 @using TIKR.Shared.DTOs
 @using TIKR.Shared.Enums
 @using TIKR.Web.Components.Shared
@@ -32,13 +34,15 @@
     </SfCard>
 }
 
+@* AssistView streaming UI is off: we fully buffer Ollama, sanitize, then set one clean answer.
+   Progressive UpdateResponseAsync was flashing partial/tool tokens (Syncfusion appends stream chunks). *@
 <div class="assistant-container" data-tour="@ClerkTourIds.AsstChat">
     <SfAIAssistView @key="_assistViewKey"
                     @ref="_assistView"
                     ID="tikrAssistant"
                     Prompt="What should I be working on this week?"
                     PromptPlaceholder="Ask about deadlines, documents, or municipal procedures..."
-                    EnableStreaming="true"
+                    EnableStreaming="false"
                     Width="100%"
                     Height="100%"
                     PromptRequested="OnPromptRequested"
@@ -82,6 +86,29 @@
         white-space: pre-wrap;
         word-break: break-word;
     }
+
+    .tikr-assist-preparing {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: var(--tikr-muted, #6c757d);
+        font-style: italic;
+        padding: 0.25rem 0;
+    }
+
+    .tikr-assist-preparing-dot {
+        width: 0.55rem;
+        height: 0.55rem;
+        border-radius: 50%;
+        background: currentColor;
+        opacity: 0.55;
+        animation: tikr-assist-pulse 1s ease-in-out infinite;
+    }
+
+    @@keyframes tikr-assist-pulse {
+        0%, 100% { opacity: 0.35; transform: scale(0.9); }
+        50% { opacity: 1; transform: scale(1.05); }
+    }
 </style>
 
 @code {
@@ -118,6 +145,10 @@
     private async Task OnPromptRequested(AssistViewPromptRequestedEventArgs args)
     {
         _lastPrompt = args.Prompt;
+        var turnSw = System.Diagnostics.Stopwatch.StartNew();
+        TikrActionLog.Started(Logger, "UI.Assistant.Prompt",
+            $"PromptLen={args.Prompt?.Length ?? 0} HistoryTurns={_modelHistory.Count / 2}");
+
         // Dispose the previous streaming CTS before allocating a new one so we
         // don't leak CancellationTokenSource instances across chat turns in a
         // long-running Blazor Server circuit.
@@ -136,6 +167,7 @@
             // or the view may be disposed (e.g. during reconnect after browser reload).
             if (_assistView is null)
             {
+                TikrActionLog.Failed(Logger, "UI.Assistant.Prompt", "AssistView ref not ready");
                 args.Response = "<p class='text-warning'>Assistant view not ready. Please try again or reload.</p>";
                 return;
             }
@@ -151,10 +183,13 @@
                 bool ollamaOk = status?.OllamaAvailable ?? false;
                 bool preferGrok = ShouldPreferGrokForPrompt(args.Prompt);
                 useLocal = ollamaOk && !preferGrok;
+                TikrActionLog.Info(Logger, "UI.Assistant.Prompt",
+                    $"Route={(useLocal ? "local-stream" : "advanced")} Ollama={ollamaOk} PreferGrok={preferGrok}");
             }
-            catch
+            catch (Exception ex)
             {
                 useLocal = true; // best effort, try local streaming
+                TikrActionLog.Info(Logger, "UI.Assistant.Prompt", $"AI status check failed; trying local: {ex.Message}");
             }
 
             if (!useLocal)
@@ -167,12 +202,17 @@
                 args.Response = fallbackHtml;
                 await SafeUpdateResponseAsync(fallbackHtml);
                 AssistantPromptBuilder.AppendTurn(_modelHistory, args.Prompt, fallbackText);
+                TikrActionLog.Completed(Logger, "UI.Assistant.Prompt",
+                    $"Path=advanced UsedGrok={fallbackResult?.UsedGrok} AnswerLen={fallbackText.Length}",
+                    turnSw.ElapsedMilliseconds);
                 return;
             }
 
             var retrievalQuery = AssistantPromptBuilder.BuildRetrievalQuery(
                 args.Prompt,
                 AssistantPromptBuilder.GetRecentUserTexts(_modelHistory, take: 2));
+            TikrActionLog.Info(Logger, "UI.Assistant.Prompt",
+                $"RetrievalQueryLen={retrievalQuery.Length}");
 
             SemanticSearchResponse? docSearch = null;
             SemanticSearchKnowledgeResponse? vaultSearch = null;
@@ -180,19 +220,25 @@
             try
             {
                 docSearch = await Api.SemanticSearchDocumentsAsync(retrievalQuery, topK: 5);
+                TikrActionLog.Info(Logger, "UI.Assistant.Rag",
+                    $"Docs hits={docSearch?.Hits.Count ?? 0} embedding={docSearch?.EmbeddingAvailable}");
             }
-            catch
+            catch (Exception ex)
             {
                 searchUnavailable = true;
+                TikrActionLog.Failed(Logger, "UI.Assistant.Rag.Documents", ex);
             }
 
             try
             {
                 vaultSearch = await Api.SemanticSearchKnowledgeAsync(retrievalQuery, topK: 5, category: ResolveVaultCategoryFilter());
+                TikrActionLog.Info(Logger, "UI.Assistant.Rag",
+                    $"Vault hits={vaultSearch?.Hits.Count ?? 0} embedding={vaultSearch?.EmbeddingAvailable}");
             }
-            catch
+            catch (Exception ex)
             {
                 searchUnavailable = true;
+                TikrActionLog.Failed(Logger, "UI.Assistant.Rag.Vault", ex);
             }
 
             var docContext = AssistantPromptBuilder.FormatDocumentRagBlock(docSearch, out var docsDown);
@@ -212,51 +258,86 @@
                 _modelHistory,
                 userMessage);
 
-            var lastUiPush = DateTime.UtcNow;
-            const int streamUiIntervalMs = 120;
+            // Syncfusion docs: UpdateResponseAsync APPENDS streaming chunks. Pushing full
+            // accumulated text on every tick double-renders and flashes broken markdown/think
+            // tokens. Buffer the entire Ollama stream, sanitize once, then publish once.
+            var preparing = AssistantPromptBuilder.FormatPreparingHtml(
+                searchUnavailable
+                    ? "Preparing your answer…"
+                    : "Looking through your library…");
+            args.Response = preparing;
+            await SafeUpdateResponseAsync(preparing);
 
-            // UpdateResponseAsync *replaces* the bubble contents — always push the
-            // full accumulated text (not a delta), or the UI only shows the latest chunk.
+            var streamChunks = 0;
             await foreach (var update in ChatClient.GetStreamingResponseAsync(messages, cancellationToken: token))
             {
-                if (string.IsNullOrEmpty(update.Text))
+                // Collect text + any non-text content parts (some models leak tool JSON via ToString).
+                if (!string.IsNullOrEmpty(update.Text))
+                {
+                    streamChunks++;
+                    markdownBuilder.Append(update.Text);
                     continue;
+                }
 
-                markdownBuilder.Append(update.Text);
-
-                var elapsed = (DateTime.UtcNow - lastUiPush).TotalMilliseconds;
-                if (elapsed < streamUiIntervalMs)
-                    continue;
-
-                await SafeUpdateResponseAsync(AssistantPromptBuilder.FormatStreamingHtml(markdownBuilder.ToString()));
-                lastUiPush = DateTime.UtcNow;
+                if (update.Contents is { Count: > 0 })
+                {
+                    foreach (var part in update.Contents)
+                    {
+                        // Fully-qualify: Syncfusion PDF viewer also defines TextContent.
+                        if (part is Microsoft.Extensions.AI.TextContent tc && !string.IsNullOrEmpty(tc.Text))
+                        {
+                            streamChunks++;
+                            markdownBuilder.Append(tc.Text);
+                        }
+                        // Intentionally ignore FunctionCallContent / usage / other non-user parts.
+                    }
+                }
             }
 
-            if (citations.Count > 0 && !markdownBuilder.ToString().Contains("Sources", StringComparison.OrdinalIgnoreCase))
+            var raw = markdownBuilder.ToString();
+            if (raw.Length > 0)
             {
-                markdownBuilder.AppendLine();
-                markdownBuilder.AppendLine();
-                markdownBuilder.AppendLine("**Sources**");
-                foreach (var c in citations)
-                    markdownBuilder.AppendLine($"- {c}");
+                var preview = raw.Length <= 240 ? raw : raw[..240] + "…";
+                TikrActionLog.Info(Logger, "UI.Assistant.Prompt",
+                    $"RawPreview={preview.Replace('\n', ' ')}");
             }
 
-            var replyMarkdown = markdownBuilder.ToString();
+            var replyMarkdown = AssistantPromptBuilder.SanitizeModelOutput(raw);
+            if (string.IsNullOrWhiteSpace(replyMarkdown))
+            {
+                // Model only emitted scratchpad/thinking — never leave the clerk with empty UI.
+                replyMarkdown = "I could not produce a clear answer from the local helper. " +
+                                "Try rephrasing, or use Ask Advanced AI.";
+            }
+
+            if (citations.Count > 0 && !replyMarkdown.Contains("Sources", StringComparison.OrdinalIgnoreCase))
+            {
+                replyMarkdown = replyMarkdown.TrimEnd() +
+                                "\n\n**Sources**\n" +
+                                string.Join("\n", citations.Select(c => $"- {c}"));
+            }
+
+            // Single final publish: clean HTML only (no intermediate partials).
             var html = Markdown.ToHtml(replyMarkdown);
             args.Response = html;
             await SafeUpdateResponseAsync(html);
 
-            // Store plain question + reply only — do not keep RAG packs in history.
+            // Store plain question + cleaned reply only — not RAG packs or think tokens.
             AssistantPromptBuilder.AppendTurn(_modelHistory, args.Prompt, replyMarkdown);
+            TikrActionLog.Completed(Logger, "UI.Assistant.Prompt",
+                $"Path=local-buffered Chunks={streamChunks} RawLen={raw.Length} CleanLen={replyMarkdown.Length} Citations={citations.Count}",
+                turnSw.ElapsedMilliseconds);
         }
         catch (OperationCanceledException)
         {
+            TikrActionLog.Info(Logger, "UI.Assistant.Prompt", "Cancelled by user or navigation");
             var stopped = "<p><em>Response stopped.</em></p>";
             args.Response = stopped;
             await SafeUpdateResponseAsync(stopped);
         }
         catch (Exception ex)
         {
+            TikrActionLog.Failed(Logger, "UI.Assistant.Prompt", ex, "Local stream failed; trying advanced fallback");
             try
             {
                 var fbContext = await BuildRagContextAsync(args.Prompt);
@@ -266,9 +347,12 @@
                 args.Response = fbHtml;
                 await SafeUpdateResponseAsync(fbHtml);
                 AssistantPromptBuilder.AppendTurn(_modelHistory, args.Prompt, fbText);
+                TikrActionLog.Completed(Logger, "UI.Assistant.Prompt",
+                    $"Path=fallback-after-error AnswerLen={fbText.Length}", turnSw.ElapsedMilliseconds);
             }
-            catch
+            catch (Exception fbEx)
             {
+                TikrActionLog.Failed(Logger, "UI.Assistant.Prompt", fbEx, "Advanced fallback also failed");
                 var err = $"<p class='text-danger'>Local AI unavailable: {ex.Message}. Is Ollama running? Grok fallback also failed.</p>";
                 args.Response = err;
                 await SafeUpdateResponseAsync(err);
@@ -313,6 +397,8 @@
 
     private void ClearConversation()
     {
+        TikrActionLog.Info(Logger, "UI.Assistant.ClearConversation",
+            $"Cleared {_modelHistory.Count / 2} turn(s)");
         _streamingCts?.Cancel();
         _modelHistory.Clear();
         _lastPrompt = null;

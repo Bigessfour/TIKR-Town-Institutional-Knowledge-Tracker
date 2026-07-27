@@ -11,6 +11,17 @@ public static class EnvLoader
         var repoRoot = Path.GetFullPath(Path.Combine(contentRootPath, "..", ".."));
         LoadIfExists(Path.Combine(repoRoot, ".env"));
         LoadIfExists(Path.Combine(repoRoot, "docker", ".env"));
+        // Clerk-rotated secrets written by Settings (shared NAS volume).
+        LoadIfExists(Path.Combine(repoRoot, ".local-data", "runtime-secrets.env"));
+        LoadIfExists("/data/runtime-secrets.env");
+    }
+
+    /// <summary>Load runtime secrets in any environment (NAS volume).</summary>
+    public static void LoadRuntimeSecrets(string? dataPath = null)
+    {
+        if (!string.IsNullOrWhiteSpace(dataPath))
+            LoadIfExists(Path.Combine(dataPath.Trim(), "runtime-secrets.env"));
+        LoadIfExists("/data/runtime-secrets.env");
     }
 
     private static void LoadIfExists(string path)
@@ -18,6 +29,7 @@ public static class EnvLoader
         if (!File.Exists(path))
             return;
 
-        DotNetEnv.Env.Load(path);
+        // Preserve process env (e.g. local ConnectionStrings__Default) over docker/.env paths.
+        DotNetEnv.Env.Load(path, DotNetEnv.LoadOptions.NoClobber());
     }
 }

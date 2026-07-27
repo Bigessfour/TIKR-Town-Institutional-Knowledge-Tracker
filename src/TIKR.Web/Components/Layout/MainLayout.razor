@@ -1,20 +1,36 @@
 ﻿@inherits LayoutComponentBase
 @using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.JSInterop
 @using TIKR.Web.ClerkTour
+@using TIKR.Web.Components.Shared
 @inject AuthSettings Auth
 @inject IAuthSessionService AuthSession
 @inject NavigationManager Navigation
 @inject AuthenticationStateProvider AuthStateProvider
+@inject IJSRuntime JS
 
 <a class="tikr-skip-link" href="#main-content">Skip to main content</a>
 
-<div class="tikr-layout">
-    <nav class="tikr-sidebar" aria-label="Main navigation">
-        <div class="tikr-brand">
-            <h1>TIKR</h1>
-            <p>The Town Clerk's Second Brain</p>
+<div class="tikr-layout @(_sidebarCollapsed ? "tikr-layout-nav-collapsed" : null)">
+    <nav class="tikr-sidebar @(_sidebarCollapsed ? "is-collapsed" : null)"
+         aria-label="Main navigation"
+         aria-hidden="@(_sidebarCollapsed ? "true" : "false")">
+        <div class="tikr-sidebar-top">
+            <div class="tikr-brand">
+                <h1>TIKR</h1>
+                <p class="tikr-brand-tagline">The Town Clerk's Second Brain</p>
+            </div>
+            <button type="button"
+                    class="tikr-nav-toggle"
+                    title="Hide menu"
+                    aria-label="Hide navigation menu"
+                    aria-expanded="true"
+                    aria-controls="tikr-main-nav"
+                    @onclick="ToggleSidebarAsync">
+                « Hide menu
+            </button>
         </div>
-        <ul class="tikr-nav">
+        <ul class="tikr-nav" id="tikr-main-nav">
             <li><NavLink href="/" Match="NavLinkMatch.All" data-tour="@ClerkTourIds.NavDashboard">Dashboard</NavLink></li>
             <li><NavLink href="/calendar" data-tour="@ClerkTourIds.NavCalendar">Calendar</NavLink></li>
             <li><NavLink href="/requirements" data-tour="@ClerkTourIds.NavRequirements">Requirements</NavLink></li>
@@ -43,23 +59,39 @@
             </div>
         }
     </nav>
+
+    @if (_sidebarCollapsed)
+    {
+        <button type="button"
+                class="tikr-nav-reopen"
+                title="Show menu"
+                aria-label="Show navigation menu"
+                aria-expanded="false"
+                aria-controls="tikr-main-nav"
+                @onclick="ToggleSidebarAsync">
+            ☰ Menu
+        </button>
+    }
+
     <main class="tikr-main" id="main-content">
         <TikrOfflineBanner />
         <div class="tikr-main-content">
             @* Production safety: wrap the primary content area (heavy Syncfusion usage + AI assistant)
                in an ErrorBoundary so individual component crashes (theme, streaming ref timing, etc.)
                do not always collapse the whole circuit and show the scary reload banner. *@
-            <ErrorBoundary>
+            <TikrLoggingErrorBoundary>
                 <ChildContent>
                     @Body
                 </ChildContent>
                 <ErrorContent Context="ex">
-                    <div class="tikr-error-boundary">
-                        <p>Something went wrong in this section.</p>
-                        <button @onclick="() => { /* simple recover by re-render */ StateHasChanged(); }">Try again</button>
+                    <div class="tikr-error-boundary" role="alert">
+                        <p><strong>Something went wrong in this section.</strong></p>
+                        <p class="text-muted" style="font-size:0.9rem;">@ex.GetType().Name: @ex.Message</p>
+                        <p class="text-muted" style="font-size:0.85rem;">Details were written to the TIKR web log (grep ErrorBoundary).</p>
+                        <button type="button" class="tikr-action-btn" @onclick="() => StateHasChanged()">Try again</button>
                     </div>
                 </ErrorContent>
-            </ErrorBoundary>
+            </TikrLoggingErrorBoundary>
         </div>
         <TikrStatusFooter />
     </main>
@@ -79,6 +111,40 @@
 </div>
 
 @code {
+    private bool _sidebarCollapsed;
+    private bool _navPreferenceLoaded;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender || _navPreferenceLoaded)
+            return;
+
+        _navPreferenceLoaded = true;
+        try
+        {
+            _sidebarCollapsed = await JS.InvokeAsync<bool>("tikrNav.getCollapsed");
+            if (_sidebarCollapsed)
+                StateHasChanged();
+        }
+        catch
+        {
+            /* localStorage unavailable — keep expanded */
+        }
+    }
+
+    private async Task ToggleSidebarAsync()
+    {
+        _sidebarCollapsed = !_sidebarCollapsed;
+        try
+        {
+            await JS.InvokeVoidAsync("tikrNav.setCollapsed", _sidebarCollapsed);
+        }
+        catch
+        {
+            /* non-fatal */
+        }
+    }
+
     private async Task LogoutAsync()
     {
         await AuthSession.LogoutAsync();

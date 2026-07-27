@@ -22,7 +22,7 @@ public class GrokAgentWebApplicationFactory : WebApplicationFactory<Program>
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         var grokKey = ResolveGrokApiKey();
-        var grokModel = Environment.GetEnvironmentVariable("GROK_MODEL") ?? "grok-4.3";
+        var grokModel = Environment.GetEnvironmentVariable("GROK_MODEL") ?? "grok-4.5";
 
         builder.UseEnvironment("Testing");
         builder.UseSetting("TIKR_AUTH_ENABLED", "false");

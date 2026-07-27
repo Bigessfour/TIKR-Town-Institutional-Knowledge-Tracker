@@ -13,11 +13,13 @@ public class TikrDbContext : IdentityDbContext<ApplicationUser>
 
     public DbSet<Requirement> Requirements => Set<Requirement>();
     public DbSet<Document> Documents => Set<Document>();
+    public DbSet<DocumentVersion> DocumentVersions => Set<DocumentVersion>();
     public DbSet<KnowledgeEntry> KnowledgeEntries => Set<KnowledgeEntry>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
     public DbSet<RequirementDocument> RequirementDocuments => Set<RequirementDocument>();
     public DbSet<EmbeddingChunk> EmbeddingChunks => Set<EmbeddingChunk>();
     public DbSet<LibraryImportRecord> LibraryImportRecords => Set<LibraryImportRecord>();
+    public DbSet<AppSetting> AppSettings => Set<AppSetting>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -39,6 +41,17 @@ public class TikrDbContext : IdentityDbContext<ApplicationUser>
             entity.HasKey(e => e.Id);
             entity.Property(e => e.FileName).HasMaxLength(500).IsRequired();
             entity.Property(e => e.StoragePath).HasMaxLength(1000).IsRequired();
+            entity.HasIndex(e => e.DeletedAt);
+        });
+
+        modelBuilder.Entity<DocumentVersion>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.FileName).HasMaxLength(500).IsRequired();
+            entity.Property(e => e.StoragePath).HasMaxLength(1000).IsRequired();
+            entity.Property(e => e.Note).HasMaxLength(500);
+            entity.HasIndex(e => new { e.DocumentId, e.VersionNumber }).IsUnique();
+            entity.HasIndex(e => e.DocumentId);
         });
 
         modelBuilder.Entity<KnowledgeEntry>(entity =>
@@ -84,6 +97,13 @@ public class TikrDbContext : IdentityDbContext<ApplicationUser>
             entity.Property(e => e.ContentFingerprint).HasMaxLength(128).IsRequired();
             entity.HasIndex(e => e.RelativePath).IsUnique();
             entity.HasIndex(e => e.DocumentId);
+        });
+
+        modelBuilder.Entity<AppSetting>(entity =>
+        {
+            entity.HasKey(e => e.Key);
+            entity.Property(e => e.Key).HasMaxLength(100);
+            entity.Property(e => e.Value).HasMaxLength(4000).IsRequired();
         });
     }
 }

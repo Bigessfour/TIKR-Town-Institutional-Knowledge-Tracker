@@ -15,7 +15,15 @@ public class LocalFileStorageServiceTests : IDisposable
         var config = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?> { ["FILE_STORAGE_PATH"] = _basePath })
             .Build();
-        _sut = new LocalFileStorageService(config);
+        var state = new FeatureSettingsState();
+        state.Replace(new FeatureSettingsSnapshot
+        {
+            OllamaHost = "http://localhost:11434",
+            OllamaChatModel = "llama3.2:3b",
+            UseGrok = false,
+            FileStoragePath = _basePath
+        });
+        _sut = new LocalFileStorageService(state, config);
     }
 
     [Fact]

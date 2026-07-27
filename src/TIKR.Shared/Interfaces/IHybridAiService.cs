@@ -12,6 +12,10 @@ public interface IHybridAiService
     Task<EmbedDocumentResponse> EmbedDocumentAsync(Guid documentId, CancellationToken cancellationToken = default);
     Task<SemanticSearchKnowledgeResponse> SemanticSearchKnowledgeAsync(SemanticSearchRequest request, CancellationToken cancellationToken = default);
     Task<EmbedKnowledgeEntryResponse> EmbedKnowledgeEntryAsync(Guid entryId, CancellationToken cancellationToken = default);
-    Task<ReindexEmbeddingsResponse> ReindexAllEmbeddingsAsync(CancellationToken cancellationToken = default);
+    /// <param name="trigger">Label for logs/Settings (manual, auto-recovery, etc.).</param>
+    Task<ReindexEmbeddingsResponse> ReindexAllEmbeddingsAsync(
+        string? trigger = null,
+        CancellationToken cancellationToken = default);
+
     Task<CorpusHealthResponse> GetCorpusHealthAsync(CancellationToken cancellationToken = default);
 }

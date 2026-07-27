@@ -276,7 +276,7 @@ In Development, the app also loads `.env` and `docker/.env` from the repo root i
 | `OLLAMA_CHAT_MODEL`                  | API             | `llama3.2:3b`            | Chat model name (optional: `tikr-clerk` — see [docs/ai-tooling.md](docs/ai-tooling.md))  |
 | `USE_GROK`                           | API             | `false`                  | Enable xAI Grok for advanced AI                                                          |
 | `GROK_API_KEY`                       | API             | —                        | xAI API key (required if USE_GROK=true)                                                  |
-| `GROK_MODEL`                         | API             | `grok-4.3`               | xAI chat model ([docs](https://docs.x.ai/docs/models); aliases: `grok-latest`)           |
+| `GROK_MODEL`                         | API             | `grok-4.5`               | xAI chat model ([docs](https://docs.x.ai/docs/models); recommended `grok-4.5`, alias `grok-4.5-latest`) |
 | `USE_SYNCFUSION_AGENT_TOOLS`         | API             | `false`                  | Enable Syncfusion Document SDK agent-scan (PDF/Word/Excel/PPT)                           |
 | `USE_SYNCFUSION_AGENT_ORCHESTRATION` | API             | `false`                  | Ollama tool loop over Syncfusion tools (requires agent tools + Ollama)                   |
 | `TIKR_AGENT_STORAGE_KEY`             | API             | —                        | Optional AES-256-GCM for agent-scan blobs on NAS                                         |

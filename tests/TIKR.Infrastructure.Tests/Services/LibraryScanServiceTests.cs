@@ -51,6 +51,15 @@ public class LibraryScanServiceTests
             services.AddSingleton<IConfiguration>(config);
             services.AddSingleton(db);
             services.AddScoped<IDocumentService, DocumentService>();
+            var featureState = new FeatureSettingsState();
+            featureState.Replace(new FeatureSettingsSnapshot
+            {
+                OllamaHost = "http://localhost:11434",
+                OllamaChatModel = "llama3.2:3b",
+                UseGrok = false,
+                FileStoragePath = storage
+            });
+            services.AddSingleton(featureState);
             services.AddSingleton<IFileStorageService, LocalFileStorageService>();
             services.AddScoped<IAuditService, AuditService>();
             services.AddSingleton<ICurrentUserService>(new StubCurrentUser("library-scan@town.gov"));
@@ -140,6 +149,15 @@ public class LibraryScanServiceTests
             services.AddSingleton<IConfiguration>(config);
             services.AddSingleton(db);
             services.AddScoped<IDocumentService, DocumentService>();
+            var featureState = new FeatureSettingsState();
+            featureState.Replace(new FeatureSettingsSnapshot
+            {
+                OllamaHost = "http://localhost:11434",
+                OllamaChatModel = "llama3.2:3b",
+                UseGrok = false,
+                FileStoragePath = storage
+            });
+            services.AddSingleton(featureState);
             services.AddSingleton<IFileStorageService, LocalFileStorageService>();
             services.AddScoped<IAuditService, AuditService>();
             services.AddSingleton<ICurrentUserService>(new StubCurrentUser("library-scan@town.gov"));
@@ -211,8 +229,10 @@ public class LibraryScanServiceTests
         public Task<EmbedKnowledgeEntryResponse> EmbedKnowledgeEntryAsync(Guid entryId, CancellationToken cancellationToken = default) =>
             Task.FromResult(new EmbedKnowledgeEntryResponse(entryId, true, null));
 
-        public Task<ReindexEmbeddingsResponse> ReindexAllEmbeddingsAsync(CancellationToken cancellationToken = default) =>
-            Task.FromResult(new ReindexEmbeddingsResponse(0, 0, 0, 0, []));
+        public Task<ReindexEmbeddingsResponse> ReindexAllEmbeddingsAsync(
+            string? trigger = null,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(new ReindexEmbeddingsResponse(0, 0, 0, 0, [], Trigger: trigger ?? "manual"));
 
         public Task<CorpusHealthResponse> GetCorpusHealthAsync(CancellationToken cancellationToken = default) =>
             Task.FromResult(new CorpusHealthResponse(0, 0, 0, 0, 0, 0, 100, 100, []));

@@ -37,9 +37,9 @@ public class DocumentPreviewHelperTests
     [Fact]
     public void PreviewLabel_NamesSdkSurfaces()
     {
-        DocumentPreviewHelper.PreviewLabel(DocumentPreviewHelper.PreviewKind.Pdf).Should().Be("PDF Viewer");
-        DocumentPreviewHelper.PreviewLabel(DocumentPreviewHelper.PreviewKind.Word).Should().Be("Word preview");
-        DocumentPreviewHelper.PreviewLabel(DocumentPreviewHelper.PreviewKind.Spreadsheet).Should().Be("Spreadsheet preview");
+        DocumentPreviewHelper.PreviewLabel(DocumentPreviewHelper.PreviewKind.Pdf).Should().Be("Smart PDF Viewer");
+        DocumentPreviewHelper.PreviewLabel(DocumentPreviewHelper.PreviewKind.Word).Should().Be("Word editor");
+        DocumentPreviewHelper.PreviewLabel(DocumentPreviewHelper.PreviewKind.Spreadsheet).Should().Be("Spreadsheet editor");
     }
 
     [Fact]

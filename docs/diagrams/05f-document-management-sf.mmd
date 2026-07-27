@@ -1,0 +1,75 @@
+%% Syncfusion-aligned document management E2E (target + TIKR hybrid)
+%% Spec: specs/003-syncfusion-document-management/
+flowchart TB
+    subgraph clerk["Clerk on /documents"]
+        modeL["Mode: Library<br/>Tree + Grid + AI search"]
+        modeB["Mode: Browse<br/>SfFileManager"]
+        open["Open workspace<br/>dblclick / OnFileOpen"]
+        work["Fullscreen workspace"]
+    end
+
+    subgraph ui["Syncfusion Blazor UI"]
+        up["SfUploader / FileManager Upload"]
+        fm["SfFileManager<br/>Read Rename Move Delete"]
+        pdf["SfPdfViewer2<br/>annotate form search"]
+        word["SfDocumentEditorContainer"]
+        xls["SfSpreadsheet"]
+        savePdf["GetDocumentAsync → Save"]
+        saveWord["SaveAsBlobAsync Docx"]
+        saveXls["SaveAsStreamAsync"]
+    end
+
+    subgraph api["TIKR.Api"]
+        docsApi["POST/GET/PUT/DELETE<br/>/api/documents*"]
+        fmApi["FileManager Ajax<br/>FileOperations Upload Download"]
+        convert["/documents/convert/*"]
+        agent["Agent extract / OCR"]
+        ai["Tag + Embed + Semantic search"]
+    end
+
+    subgraph store["NAS local-first"]
+        fs["IFileStorageService<br/>/data/documents"]
+        db["Documents + EmbeddingChunks"]
+        scan["LibraryScan drop folder"]
+    end
+
+    subgraph assist["Downstream"]
+        rag["Assistant RAG<br/>topic labels + excerpts"]
+        vault["Extract to Vault"]
+        req["Requirements AI Scan"]
+    end
+
+    up --> docsApi
+    modeL --> open
+    modeB --> fm
+    fm --> fmApi
+    fmApi --> fs
+    fm -->|OnFileOpen| open
+    open --> work
+    work --> pdf
+    work --> word
+    work --> xls
+    pdf --> savePdf
+    word --> saveWord
+    xls --> saveXls
+    savePdf --> docsApi
+    saveWord --> docsApi
+    saveXls --> docsApi
+    docsApi --> fs
+    docsApi --> db
+    docsApi --> ai
+    convert --> fs
+    agent --> fs
+    scan --> fs
+    scan --> db
+    ai --> rag
+    agent --> vault
+    agent --> req
+
+    classDef have fill:#d4edda,stroke:#28a745,color:#155724
+    classDef gap fill:#fff3cd,stroke:#856404,color:#856404
+    classDef target fill:#cce5ff,stroke:#004085,color:#004085
+
+    class up,pdf,word,xls,docsApi,agent,ai,fs,db,scan,rag,vault,req,modeL,convert have
+    class savePdf,open gap
+    class fm,fmApi,modeB,saveWord,saveXls target

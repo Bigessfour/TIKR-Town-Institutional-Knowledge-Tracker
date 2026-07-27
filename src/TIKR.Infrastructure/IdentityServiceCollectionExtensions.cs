@@ -18,7 +18,7 @@ public static class IdentityServiceCollectionExtensions
 {
     public static IServiceCollection AddTikrIdentity(this IServiceCollection services, IConfiguration configuration)
     {
-        services.AddDataProtection();
+        // DataProtection is registered once in AddTikrInfrastructure (shared key ring for secrets).
 
         services.AddIdentityCore<ApplicationUser>(options =>
             {

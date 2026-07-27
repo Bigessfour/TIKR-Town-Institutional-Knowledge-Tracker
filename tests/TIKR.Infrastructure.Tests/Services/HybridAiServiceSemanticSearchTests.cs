@@ -55,7 +55,7 @@ public class HybridAiServiceSemanticSearchTests
             Id = Guid.NewGuid(),
             FileName = "budget.pdf",
             StoragePath = "p/budget.pdf",
-            FullTextContent = "annual operating budget for fiscal year",
+            FullTextContent = "annual operating budget for fiscal year with sufficient letter density for embedding",
             UploadedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };
@@ -202,7 +202,51 @@ public class HybridAiServiceSemanticSearchTests
         chunkCount.Should().BeGreaterThan(1);
 
         var response = await sut.SemanticSearchDocumentsAsync(new SemanticSearchRequest(marker, 3, MinScore: 0));
-        response.Hits.Should().Contain(h => h.DocumentId == doc.Id && h.Snippet != null && h.Snippet.Contains(marker));
+        response.Hits.Should().Contain(h => h.DocumentId == doc.Id);
+        db.EmbeddingChunks.Where(c => c.SourceId == doc.Id).Should()
+            .Contain(c => c.Content.Contains(marker));
+    }
+
+    [Fact]
+    public async Task EmbedAndSearch_AttachesTopicSummaryAndRichChunkDisplayName()
+    {
+        await using var db = await TestDbContextFactory.CreateMigratedAsync();
+        var body = """
+            DATA FOR PAYMENT OF RETIRED PERSONNEL
+            Form DD-2656
+            This form is used to elect survivor benefits under CSRS and FERS retirement systems.
+            """;
+        var doc = new Document
+        {
+            Id = Guid.NewGuid(),
+            FileName = "Scanned Document.pdf",
+            StoragePath = "p/scan.pdf",
+            SuggestedFolder = "Correspondence",
+            FullTextContent = body,
+            UploadedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
+        db.Documents.Add(doc);
+        await db.SaveChangesAsync();
+
+        var ollama = CreateOllamaFactoryWithEmbedder(text => Vector(text));
+        var sut = new HybridAiService(db, ollama, DisabledGrok, Mock.Of<IFileStorageService>(), Mock.Of<IDocumentAgentExtractionBackend>(), NullLogger<HybridAiService>.Instance);
+
+        (await sut.EmbedDocumentAsync(doc.Id)).Embedded.Should().BeTrue();
+
+        var chunk = db.EmbeddingChunks.First(c => c.SourceId == doc.Id);
+        chunk.DisplayName.Should().StartWith("[");
+        chunk.DisplayName.Should().Contain("DD-2656");
+        chunk.DisplayName.Should().EndWith("Scanned Document.pdf");
+
+        var response = await sut.SemanticSearchDocumentsAsync(
+            new SemanticSearchRequest("retirement survivor benefits", 3, MinScore: 0));
+        var hit = response.Hits.Should().ContainSingle(h => h.DocumentId == doc.Id).Subject;
+        hit.FileName.Should().Be("Scanned Document.pdf");
+        hit.Topic.Should().NotBeNullOrWhiteSpace();
+        hit.Topic.Should().ContainEquivalentOf("DD-2656");
+        hit.Summary.Should().NotBeNullOrWhiteSpace();
+        hit.SuggestedFolder.Should().Be("Correspondence");
     }
 
     [Fact]
@@ -247,7 +291,7 @@ public class HybridAiServiceSemanticSearchTests
             Id = Guid.NewGuid(),
             FileName = "chunked-budget.pdf",
             StoragePath = "p/chunked.pdf",
-            FullTextContent = "annual operating budget chunked",
+            FullTextContent = "annual operating budget chunked with sufficient letter density for embedding gate",
             UploadedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };
@@ -272,7 +316,7 @@ public class HybridAiServiceSemanticSearchTests
             Id = Guid.NewGuid(),
             FileName = "gone.pdf",
             StoragePath = "p/gone.pdf",
-            FullTextContent = "delete me content",
+            FullTextContent = "delete me content with enough letter characters for embedding gate threshold",
             UploadedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };
@@ -291,8 +335,10 @@ public class HybridAiServiceSemanticSearchTests
         var user = new Mock<ICurrentUserService>();
         user.SetupGet(u => u.UserId).Returns("tester");
 
+        // Soft-delete still strips embedding chunks so Assistant cannot cite recycle-bin docs.
         await docs.DeleteAsync(doc.Id, Mock.Of<IFileStorageService>(), audit.Object, user.Object);
         db.EmbeddingChunks.Count(c => c.SourceId == doc.Id).Should().Be(0);
+        (await db.Documents.FindAsync(doc.Id))!.DeletedAt.Should().NotBeNull();
     }
 
     [Fact]
@@ -304,7 +350,7 @@ public class HybridAiServiceSemanticSearchTests
             Id = Guid.NewGuid(),
             FileName = "stable.pdf",
             StoragePath = "p/stable.pdf",
-            FullTextContent = "unchanged content for hash skip",
+            FullTextContent = "unchanged content for hash skip with sufficient letter density for embedding",
             UploadedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };
@@ -336,7 +382,7 @@ public class HybridAiServiceSemanticSearchTests
             Id = Guid.NewGuid(),
             FileName = "a.pdf",
             StoragePath = "p/a.pdf",
-            FullTextContent = "reindex me document",
+            FullTextContent = "reindex me document with sufficient letter density for embedding gate",
             UploadedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         });

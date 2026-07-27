@@ -443,6 +443,9 @@ public class HybridAiServiceTests
             FileName = "embed-me.pdf",
             StoragePath = "2026/01/embed-me.pdf",
             ContentType = "application/pdf",
+            // Sparse-text gate requires enough letter characters before embedding.
+            FullTextContent =
+                "Town of Wiley periodic report for municipal clerk records and compliance filing package.",
             UploadedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };
@@ -479,6 +482,14 @@ public class HybridAiServiceTests
         text.Should().Contain("resume.pdf");
         text.Should().Contain(DocumentTagHeuristics.PersonnelHr);
         text.Should().Contain("Software engineer with municipal experience.");
+    }
+
+    [Fact]
+    public void StripTopicPrefix_RecoversBareFileName()
+    {
+        HybridAiService.StripTopicPrefix("[Retirement Package Form DD-2656] Scanned Document.pdf")
+            .Should().Be("Scanned Document.pdf");
+        HybridAiService.StripTopicPrefix("budget.pdf").Should().Be("budget.pdf");
     }
 
     private static HybridAiService CreateService(

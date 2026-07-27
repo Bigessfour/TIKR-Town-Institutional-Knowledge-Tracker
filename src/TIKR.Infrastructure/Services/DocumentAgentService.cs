@@ -1,4 +1,7 @@
+using System.Diagnostics;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
+using TIKR.Shared.Diagnostics;
 using TIKR.Shared.DTOs;
 using TIKR.Shared.Enums;
 using TIKR.Shared.Helpers;
@@ -16,21 +19,30 @@ public class DocumentAgentService(
     IDocumentGenerationService? documentGenerationService = null,
     ILogger<DocumentAgentService>? logger = null) : IDocumentAgentService
 {
+    private readonly ILogger _log = logger ?? NullLogger<DocumentAgentService>.Instance;
+
     public async Task<DocumentAgentResult> ProcessUploadAsync(
         Stream content,
         string fileName,
         CancellationToken cancellationToken = default)
     {
+        var sw = Stopwatch.StartNew();
+        TikrActionLog.Started(_log, "Agent.Scan", $"FileName={fileName}");
+
         await using var buffer = new MemoryStream();
         await content.CopyToAsync(buffer, cancellationToken);
         var bytes = buffer.ToArray();
+        TikrActionLog.Info(_log, "Agent.Scan", $"Buffered {bytes.Length} bytes for {fileName}");
 
         // 1. Always save the original (existing behavior)
         var originalPath = await agentStorage.SaveAgentScanAsync(new MemoryStream(bytes), fileName, cancellationToken);
+        TikrActionLog.Info(_log, "Agent.Scan", $"Saved original StoragePath={originalPath}");
 
         // 2. Extract text/tables (existing)
         await using var extractStream = new MemoryStream(bytes);
         var extraction = await extractionBackend.ExtractAsync(extractStream, fileName, cancellationToken);
+        TikrActionLog.Info(_log, "Agent.Scan",
+            $"Extracted TextChars={extraction.ExtractedText?.Length ?? 0} Tables={extraction.TablesExtractedCount} UsedSyncfusion={extraction.UsedSyncfusionTools}");
 
         var title = DeriveTitle(fileName);
         var category = InferCategory(title);
@@ -60,11 +72,15 @@ public class DocumentAgentService(
             catch (Exception ex)
             {
                 // Best effort: continue with original only on generation/storage edge cases
-                logger?.LogWarning(ex, "Agent archive PDF creation failed for {File}", fileName);
+                TikrActionLog.Failed(_log, "Agent.Scan.Archive", ex, $"FileName={fileName}");
             }
         }
 
         // 4. Return enhanced result with dual paths (original kept for fidelity; processed preferred for display/use)
+        TikrActionLog.Completed(_log, "Agent.Scan",
+            $"Title={title} Category={category} Due={parsed.DueDate} SubmitTo={parsed.SubmitTo ?? "(none)"} ProcessedPath={processedPath ?? "(none)"}",
+            sw.ElapsedMilliseconds);
+
         return new DocumentAgentResult(
             SuggestedTitle: title,
             ExtractedText: extraction.ExtractedText,

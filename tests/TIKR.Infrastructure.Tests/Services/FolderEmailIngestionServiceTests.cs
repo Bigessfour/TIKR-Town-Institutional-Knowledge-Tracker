@@ -38,6 +38,15 @@ public class FolderEmailIngestionServiceTests
             services.AddSingleton<IConfiguration>(config);
             services.AddSingleton(db);
             services.AddScoped<IDocumentService, DocumentService>();
+            var featureState = new FeatureSettingsState();
+            featureState.Replace(new FeatureSettingsSnapshot
+            {
+                OllamaHost = "http://localhost:11434",
+                OllamaChatModel = "llama3.2:3b",
+                UseGrok = false,
+                FileStoragePath = storage
+            });
+            services.AddSingleton(featureState);
             services.AddSingleton<IFileStorageService, LocalFileStorageService>();
             services.AddScoped<IAuditService, AuditService>();
             services.AddSingleton<ICurrentUserService>(new StubCurrentUser("email-ingest@town.gov"));

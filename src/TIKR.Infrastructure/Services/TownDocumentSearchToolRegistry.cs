@@ -3,6 +3,7 @@ using System.Text;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.DependencyInjection;
 using TIKR.Shared.DTOs;
+using TIKR.Shared.Helpers;
 using TIKR.Shared.Interfaces;
 
 namespace TIKR.Infrastructure.Services;
@@ -53,15 +54,19 @@ public sealed class TownDocumentSearchTools(IServiceScopeFactory scopeFactory)
             return "No matching documents found above the relevance threshold.";
 
         var sb = new StringBuilder();
-        sb.AppendLine($"Found {response.Hits.Count} document hit(s):");
+        sb.AppendLine($"Found {response.Hits.Count} document hit(s). Each hit has a topic label, optional About summary, and Excerpt:");
         foreach (var hit in response.Hits)
         {
-            sb.AppendLine(
-                $"- [{hit.FileName}] (score {hit.Score:F2})" +
-                (string.IsNullOrWhiteSpace(hit.SuggestedFolder) ? "" : $" folder={hit.SuggestedFolder}") +
-                $": {hit.Snippet}");
+            sb.AppendLine(DocumentContextLabel.FormatRagHit(
+                hit.FileName,
+                hit.Topic,
+                hit.SuggestedFolder,
+                hit.ChunkIndex,
+                hit.Summary,
+                hit.Snippet));
+            sb.AppendLine($"  Score: {hit.Score:F2}");
         }
 
-        return sb.ToString();
+        return sb.ToString().TrimEnd();
     }
 }

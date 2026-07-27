@@ -4,7 +4,9 @@
 @inject SyncfusionBlazorLicenseStatus BlazorLicenseStatus
 @inject ClerkTourService Tour
 @inject ClerkUserGuideService Guide
+@inject ClerkToastService Toast
 
+@using Syncfusion.Licensing
 @using TIKR.Shared.DTOs
 @using TIKR.Shared.Entities
 @using TIKR.Web.Components.Shared
@@ -14,18 +16,18 @@
 <div class="page-header">
     <div class="page-header-main">
         <h2>Settings</h2>
-        <p>Clerk preferences on this device, plus read-only health for your NAS deployment</p>
+        <p>Your everyday options for TIKR — theme, town name, helper AI, and where files are kept</p>
     </div>
     <div class="page-header-actions">
         <PageTourButton Route="/settings" />
-        <PageHelp DataTour="@ClerkTourIds.HelpSettings" HelpText="Change display theme here or in the sidebar. Town name, Ollama host, and Grok are set in docker/.env on the Synology (see Deployment below)." />
+        <PageHelp DataTour="@ClerkTourIds.HelpSettings" HelpText="Change how TIKR looks, turn the helper AI on or off, and update town details. If something looks confusing, tap Call Steve for help." />
     </div>
 </div>
 
 <SfCard CssClass="mb-3">
-    <CardHeader Title="Clerk preferences" />
+    <CardHeader Title="This computer" />
     <CardContent>
-        <p class="text-muted mb-2">Saved in this browser only — does not change other clerks or devices.</p>
+        <p class="text-muted mb-2">These choices stay on this computer only — they do not change Paige’s or Deb’s other machines.</p>
         <div class="tikr-settings-theme">
             <TikrThemeSelector SelectId="tikr-theme-settings" />
         </div>
@@ -38,116 +40,307 @@
             </TourAnchor>
         </div>
         <div class="mt-2">
-            <SfCheckBox @bind-Checked="_autoTourDisabled" Label="Don't show walkthrough automatically" @bind-Checked:after="PersistAutoTourDisabledAsync" />
+            <SfCheckBox @bind-Checked="_autoTourDisabled" Label="Don't show the walkthrough automatically" @bind-Checked:after="PersistAutoTourDisabledAsync" />
         </div>
     </CardContent>
 </SfCard>
 
+@if (_features is null)
+{
+    <SfCard CssClass="mb-3">
+        <CardHeader Title="Town settings" />
+        <CardContent>
+            <p>TIKR can’t reach the town server right now. Try again in a moment, or call Steve for help.</p>
+            <SfButton CssClass="tikr-action-btn e-outline mt-2" OnClick="CallSteve">Call Steve for help</SfButton>
+        </CardContent>
+    </SfCard>
+}
+else
+{
+    <SfCard CssClass="mb-3">
+        <CardHeader Title="Keys &amp; passwords" />
+        <CardContent>
+            <p class="text-muted mb-3">
+                Paste a new key when Steve or the vendor gives you one. Leave the box blank to keep what’s already saved.
+            </p>
+
+            <div class="mb-4">
+                <label for="tikr-grok-key"><strong>Advanced helper key (Grok)</strong></label>
+                <p class="text-muted mb-1">
+                    Turns on the “Ask Advanced” button on AI Assistant for harder questions.
+                    Status: @(_features.GrokApiKeyConfigured ? "saved" : "not saved yet")
+                </p>
+                <SfTextBox ID="tikr-grok-key" @bind-Value="_editGrokApiKey"
+                           Placeholder="@(_features.GrokApiKeyConfigured ? "(leave blank to keep current)" : "paste key from Steve")"
+                           Type="Syncfusion.Blazor.Inputs.InputType.Password" CssClass="e-outline" />
+                <div class="mt-2">
+                    <SfCheckBox @bind-Checked="_editUseGrok" Label="Turn on Advanced helper (Grok)" />
+                </div>
+                <div class="tikr-settings-help-actions mt-2">
+                    <SfButton CssClass="tikr-action-btn e-outline e-small" OnClick="CallSteve">Need a new Grok key? Call Steve for help</SfButton>
+                </div>
+            </div>
+
+            <div class="mb-2">
+                <label for="tikr-sf-key"><strong>Forms &amp; documents license</strong></label>
+                <p class="text-muted mb-1">
+                    Keeps calendars, grids, PDF preview, and council packets working without a trial banner.
+                    Status: @(_features.SyncfusionLicenseKeyConfigured ? "saved" : "not saved yet")
+                    · Screens: @(BlazorLicenseStatus.BlazorLicenseValid ? "looking good" : "needs attention")
+                </p>
+                <SfTextBox ID="tikr-sf-key" @bind-Value="_editSyncfusionKey"
+                           Placeholder="@(_features.SyncfusionLicenseKeyConfigured ? "(leave blank to keep current)" : "paste license from Steve")"
+                           Type="Syncfusion.Blazor.Inputs.InputType.Password" CssClass="e-outline" />
+                <div class="tikr-settings-help-actions mt-2">
+                    <SfButton CssClass="tikr-action-btn e-outline e-small" OnClick="CallSteve">Need a new license? Call Steve for help</SfButton>
+                </div>
+            </div>
+        </CardContent>
+    </SfCard>
+
+    <SfCard CssClass="mb-3">
+        <CardHeader Title="Town helper (local AI)" />
+        <CardContent>
+            <p class="text-muted mb-2">
+                Everyday chat, tagging, and search stay on your town equipment.
+                Status: @(_features.OllamaAvailable ? "Ready" : "Not available right now")
+            </p>
+            <p class="text-muted mb-2">Most days you only need the Ready light above. Changing connection details is rare.</p>
+            <div class="tikr-settings-help-actions">
+                <SfButton CssClass="tikr-action-btn e-outline" OnClick="CallSteve">Helper not ready? Call Steve for help</SfButton>
+                <SfButton CssClass="tikr-action-btn e-outline" OnClick="ToggleHelperDetails">
+                    @(_showHelperDetails ? "Hide connection details" : "Show connection details")
+                </SfButton>
+            </div>
+            @if (_showHelperDetails)
+            {
+                <div class="mt-3">
+                    <p class="text-muted mb-2">Only change these if Steve asks you to.</p>
+                    <div class="tikr-form-row mb-2">
+                        <label for="tikr-ollama-host">Helper address</label>
+                        <SfTextBox ID="tikr-ollama-host" @bind-Value="_editOllamaHost" CssClass="e-outline" />
+                    </div>
+                    <div class="tikr-form-row mb-2">
+                        <label for="tikr-ollama-model">Helper name</label>
+                        <SfTextBox ID="tikr-ollama-model" @bind-Value="_editOllamaModel" CssClass="e-outline" />
+                    </div>
+                    <div class="tikr-form-row mb-2">
+                        <label for="tikr-grok-model">Advanced helper name</label>
+                        <SfTextBox ID="tikr-grok-model" @bind-Value="_editGrokModel" CssClass="e-outline" />
+                    </div>
+                    <SfButton CssClass="tikr-action-btn e-outline e-small" OnClick="CallSteve">Call Steve for help</SfButton>
+                </div>
+            }
+        </CardContent>
+    </SfCard>
+
+    <SfCard CssClass="mb-3">
+        <CardHeader Title="Where uploaded files live" />
+        <CardContent>
+            <p class="text-muted mb-2">
+                TIKR saves documents you upload into a folder on the town NAS. Changing this is uncommon — ask Steve before moving things.
+            </p>
+            <div class="tikr-settings-help-actions mb-2">
+                <SfButton CssClass="tikr-action-btn e-outline" OnClick="CallSteve">Need to move files? Call Steve for help</SfButton>
+                <SfButton CssClass="tikr-action-btn e-outline" OnClick="ToggleStorageDetails">
+                    @(_showStorageDetails ? "Hide folder details" : "Show folder details")
+                </SfButton>
+            </div>
+            @if (_showStorageDetails)
+            {
+                <div class="tikr-form-row mb-2">
+                    <label for="tikr-storage-path">Folder location</label>
+                    <SfTextBox ID="tikr-storage-path" @bind-Value="_editStoragePath" CssClass="e-outline" />
+                </div>
+                <SfCheckBox @bind-Checked="_editMoveDocs" Label="Also move existing uploads into the new folder" />
+                <div class="mt-2">
+                    <SfButton CssClass="tikr-action-btn e-outline e-small" OnClick="CallSteve">Call Steve for help</SfButton>
+                </div>
+            }
+        </CardContent>
+    </SfCard>
+
+    <SfCard CssClass="mb-3">
+        <CardHeader Title="Town &amp; reports" />
+        <CardContent>
+            <div class="tikr-form-row mb-2">
+                <label for="tikr-town-name">Town name (on packets and the footer)</label>
+                <SfTextBox ID="tikr-town-name" @bind-Value="_editTownName" Placeholder="Wiley" CssClass="e-outline" />
+            </div>
+            <div class="tikr-form-row mb-2">
+                <label for="tikr-storage-label">Where we say files are stored (for example “Town NAS”)</label>
+                <SfTextBox ID="tikr-storage-label" @bind-Value="_editStorageLabel" Placeholder="Town NAS" CssClass="e-outline" />
+            </div>
+            <div class="tikr-form-row mb-2">
+                <label for="tikr-logo-path">Town seal / logo file (optional)</label>
+                <p class="text-muted mb-1">Usually set up once by Steve for council packet covers.</p>
+                <SfTextBox ID="tikr-logo-path" @bind-Value="_editTownLogo" CssClass="e-outline" />
+                <SfButton CssClass="tikr-action-btn e-outline e-small mt-2" OnClick="CallSteve">Call Steve for help</SfButton>
+            </div>
+        </CardContent>
+    </SfCard>
+
+    <SfCard CssClass="mb-3">
+        <CardHeader Title="Existing town documents &amp; email drop" />
+        <CardContent>
+            <p class="text-muted mb-2">
+                Point TIKR at a shared folder of town documents so the Assistant can answer questions about them.
+                Your original files are never deleted.
+            </p>
+            <div class="tikr-form-row mb-2">
+                <label for="tikr-library-path">Shared documents folder</label>
+                <SfTextBox ID="tikr-library-path" @bind-Value="_editLibraryPath" Placeholder="Ask Steve for the folder name" CssClass="e-outline" />
+            </div>
+            <div class="tikr-form-row mb-2">
+                <label for="tikr-email-path">Email drop folder (optional)</label>
+                <p class="text-muted mb-1">If you forward mail into a folder on the NAS, put that folder here.</p>
+                <SfTextBox ID="tikr-email-path" @bind-Value="_editEmailPath" CssClass="e-outline" />
+            </div>
+            <div class="tikr-settings-help-actions mb-2">
+                <SfButton CssClass="tikr-action-btn e-outline" OnClick="CallSteve">Not sure which folder? Call Steve for help</SfButton>
+                <SfButton CssClass="tikr-action-btn e-outline" OnClick="ToggleIngestDetails">
+                    @(_showIngestDetails ? "Hide timing options" : "Show timing options")
+                </SfButton>
+            </div>
+            @if (_showIngestDetails)
+            {
+                <div class="tikr-form-row mb-2">
+                    <label for="tikr-library-interval">How often to look for new files (seconds)</label>
+                    <SfNumericTextBox TValue="int" ID="tikr-library-interval" @bind-Value="_editLibraryInterval" Min="30" CssClass="e-outline" />
+                </div>
+                <div class="tikr-form-row mb-2">
+                    <label for="tikr-library-max">How many new files to bring in at a time (0 = no limit)</label>
+                    <SfNumericTextBox TValue="int" ID="tikr-library-max" @bind-Value="_editLibraryMax" Min="0" CssClass="e-outline" />
+                </div>
+                <SfButton CssClass="tikr-action-btn e-outline e-small" OnClick="CallSteve">Call Steve for help</SfButton>
+            }
+        </CardContent>
+    </SfCard>
+
+    <SfCard CssClass="mb-3">
+        <CardHeader Title="Reading scanned papers" />
+        <CardContent>
+            <div class="mb-2">
+                <SfCheckBox @bind-Checked="_editOcr" Label="Read text from scanned PDFs and Word files (recommended)" />
+                <p class="text-muted mb-0">Helps the Assistant understand paper scans that are really pictures.</p>
+            </div>
+            <div class="mb-2">
+                <SfCheckBox @bind-Checked="_editAgentTools" Label="Smart fill from a document (AI Scan on Requirements)" />
+                <p class="text-muted mb-0">Suggests due dates and contacts when you scan a form — you still confirm before saving.</p>
+            </div>
+            <div class="mb-2">
+                <SfCheckBox @bind-Checked="_editAgentOrch" Label="Let the town helper guide AI Scan" />
+                <p class="text-muted mb-0">Usually leave this on if Smart fill is on.</p>
+            </div>
+        </CardContent>
+    </SfCard>
+
+    @if (!string.IsNullOrWhiteSpace(_featuresMessage))
+    {
+        <p class="mb-2">@_featuresMessage</p>
+    }
+
+    <div class="tikr-settings-help-actions mb-3">
+        <SfButton CssClass="tikr-action-btn" Disabled="@_featuresBusy" OnClick="SaveFeaturesAsync">Save settings</SfButton>
+        <SfButton CssClass="tikr-action-btn e-outline" Disabled="@_featuresBusy" OnClick="RefreshFeaturesAsync">Check status</SfButton>
+    </div>
+}
+
 <div data-tour="@ClerkTourIds.SettingsDeployment">
 <SfCard CssClass="mb-3">
-    <CardHeader Title="Deployment options (Synology / docker/.env)" />
+    <CardHeader Title="Something else?" />
     <CardContent>
-        <p class="mb-2">These are not edited inside TIKR. Update <code>docker/.env</code> on the NAS, then restart the API and Web containers.</p>
-        <ul class="shortcuts-list">
-            <li><span><strong>TIKR_TOWN_NAME</strong> — town label on reports and footer</span><span>@(_localStatus?.TownName ?? "—")</span></li>
-            <li><span><strong>OLLAMA_HOST</strong> — local AI endpoint</span><span>@(_status?.OllamaAvailable == true ? "Reachable" : "Unreachable")</span></li>
-            <li><span><strong>OLLAMA_CHAT_MODEL</strong> / <strong>AI:DefaultModel</strong></span><span>@(_status?.OllamaModel ?? "—")</span></li>
-            <li><span><strong>USE_GROK</strong> + <strong>GROK_API_KEY</strong></span><span>@(_status?.GrokEnabled == true ? "Enabled" : "Disabled")</span></li>
-            <li><span><strong>SYNCFUSION_LICENSE_KEY</strong></span><span>@(BlazorLicenseStatus.KeyConfigured ? "Configured" : "Not set")</span></li>
-            <li><span><strong>USE_SYNCFUSION_AGENT_TOOLS</strong></span><span>@(_documentSdkStatus?.AgentToolsEnabled == true ? "Enabled" : "Disabled")</span></li>
-            <li><span><strong>TIKR_LIBRARY_SCAN_PATH</strong> — existing NAS docs → Assistant RAG</span><span>@(_libraryStatus?.Configured == true ? "Configured" : "Not set")</span></li>
-        </ul>
-        <p class="text-muted mb-0 mt-2">Template: <code>docker/.env.example</code>. On Mac dev: <code>./scripts/setup-local-secrets.sh</code>.</p>
+        <p class="mb-2">Networking, passwords for multi-user login, and first-time install are handled by Steve — not from this screen.</p>
+        <SfButton CssClass="tikr-action-btn e-outline" OnClick="CallSteve">Call Steve for help</SfButton>
     </CardContent>
 </SfCard>
 </div>
 
 <SfCard CssClass="mb-3">
-    <CardHeader Title="Local storage (Synology NAS)" />
+    <CardHeader Title="At a glance" />
     <CardContent>
         @if (_localStatus is null)
         {
-            <p>Unable to reach API — data remains on the NAS; try again when the API is online.</p>
+            <p>Can’t reach the town server right now.</p>
+            <SfButton CssClass="tikr-action-btn e-outline mt-2" OnClick="CallSteve">Call Steve for help</SfButton>
         }
         else
         {
             <p><strong>Town:</strong> @_localStatus.TownName</p>
-            <p><strong>Storage:</strong> @_localStatus.StorageLabel</p>
-            <p><strong>Database:</strong> @LocalStatusFooterHelper.FormatLastSaved(_localStatus.DataLastModifiedUtc, DateTime.UtcNow)</p>
-            <p><strong>Ollama:</strong> @(_localStatus.OllamaAvailable ? "Ready on NAS" : "Offline — local AI features pause until Ollama returns")</p>
+            <p><strong>Files kept on:</strong> @_localStatus.StorageLabel</p>
+            <p><strong>Last saved:</strong> @LocalStatusFooterHelper.FormatLastSaved(_localStatus.DataLastModifiedUtc, DateTime.UtcNow)</p>
+            <p><strong>Town helper:</strong> @(_localStatus.OllamaAvailable ? "Ready" : "Offline — chat pauses until it returns")</p>
         }
     </CardContent>
 </SfCard>
 
 <SfCard CssClass="mb-3">
-    <CardHeader Title="Syncfusion Blazor UI" />
+    <CardHeader Title="Forms &amp; documents license check" />
     <CardContent>
-        <p><strong>License key:</strong> @(BlazorLicenseStatus.KeyConfigured ? "Configured" : "Not set — add SYNCFUSION_LICENSE_KEY to docker/.env or user-secrets")</p>
-        <p><strong>Blazor UI probe:</strong> @(BlazorLicenseStatus.BlazorLicenseValid ? "Valid — trial banner should not block clicks" : $"Invalid — {BlazorLicenseStatus.Detail}")</p>
-        @if (!BlazorLicenseStatus.BlazorLicenseValid && BlazorLicenseStatus.KeyConfigured)
+        <p><strong>License:</strong> @(BlazorLicenseStatus.KeyConfigured || (_features?.SyncfusionLicenseKeyConfigured == true) ? "Saved" : "Not saved — paste under Keys & passwords")</p>
+        <p><strong>Screens:</strong> @(BlazorLicenseStatus.BlazorLicenseValid ? "Looking good" : "Needs attention — call Steve")</p>
+        @if (!BlazorLicenseStatus.BlazorLicenseValid)
         {
-            <p class="text-muted">Generate a <strong>Blazor v34.1.x</strong> key at your Syncfusion account (Downloads). Document SDK keys alone do not clear the Blazor trial overlay.</p>
+            <SfButton CssClass="tikr-action-btn e-outline mt-2" OnClick="CallSteve">Call Steve for help</SfButton>
         }
-        <p class="text-muted">Same <code>SYNCFUSION_LICENSE_KEY</code> covers Blazor UI, PDF Viewer, Word Document Editor, Spreadsheet, and Document SDK generation/agent tools.</p>
     </CardContent>
 </SfCard>
 
 <SfCard CssClass="mb-3">
-    <CardHeader Title="Syncfusion Document SDK" />
+    <CardHeader Title="Council packets &amp; PDF tools" />
     <CardContent>
         @if (_documentSdkStatus is null)
         {
-            <p>Unable to reach API.</p>
+            <p>Can’t reach the town server right now.</p>
         }
         else
         {
-            <p><strong>License key:</strong> @(_documentSdkStatus.LicenseKeyConfigured ? "Configured" : "Not set — add SYNCFUSION_LICENSE_KEY to docker/.env or user-secrets")</p>
-            <p><strong>License probe:</strong> @DocumentSdkStatusLabel(_documentSdkStatus)</p>
-            <p><strong>Agent tools (PDF/Word/Excel/PPT scan):</strong> @(_documentSdkStatus.AgentToolsEnabled ? "Enabled" : "Disabled — set USE_SYNCFUSION_AGENT_TOOLS=true on API")</p>
-            <p><strong>Ollama orchestration:</strong> @(_documentSdkStatus.OrchestrationEnabled ? "Enabled" : "Disabled")</p>
+            <p><strong>License:</strong> @(_documentSdkStatus.LicenseKeyConfigured ? "Saved" : "Not saved")</p>
+            <p><strong>Check:</strong> @DocumentSdkStatusLabel(_documentSdkStatus)</p>
+            <p><strong>Smart fill:</strong> @(_documentSdkStatus.AgentToolsEnabled ? "On" : "Off")</p>
+            <p><strong>Helper-guided scan:</strong> @(_documentSdkStatus.OrchestrationEnabled ? "On" : "Off")</p>
         }
     </CardContent>
 </SfCard>
 
 <SfCard CssClass="mb-3">
-    <CardHeader Title="AI Status" />
+    <CardHeader Title="Helper status" />
     <CardContent>
         @if (_status is null)
         {
-            <p>Unable to reach API.</p>
+            <p>Can’t reach the town server right now.</p>
         }
         else
         {
-            <p><strong>Ollama:</strong> @(_status.OllamaAvailable ? "Connected" : "Unavailable") (@_status.OllamaModel)</p>
-            <p><strong>Grok (Advanced AI):</strong> @(_status.GrokEnabled ? "Enabled" : "Disabled — set USE_GROK=true on API")</p>
+            <p><strong>Town helper:</strong> @(_status.OllamaAvailable ? "Ready" : "Not available")</p>
+            <p><strong>Advanced helper (Grok):</strong> @(_status.GrokEnabled ? "On" : "Off")</p>
         }
     </CardContent>
 </SfCard>
 
 <SfCard CssClass="mb-3">
-    <CardHeader Title="NAS document library" />
+    <CardHeader Title="Bring in shared town documents" />
     <CardContent>
         <p class="text-muted mb-2">
-            Scan an existing shared folder on the NAS: files are <strong>copied</strong> into TIKR, tagged, and embedded for
-            <a href="/assistant">AI Assistant</a> questions. Source files are never moved or deleted.
-            Set <code>TIKR_LIBRARY_SCAN_PATH</code> in <code>docker/.env</code> (bind-mount the share into the API container).
+            After you save a shared documents folder above, use these buttons to bring files into TIKR for the Assistant.
+            Originals on the share are never removed.
         </p>
         @if (_libraryStatus is null)
         {
-            <p>Unable to reach API.</p>
+            <p>Can’t reach the town server right now.</p>
         }
         else if (!_libraryStatus.Configured)
         {
-            <p><strong>Status:</strong> Not configured — set <code>TIKR_LIBRARY_SCAN_PATH</code> then restart the API.</p>
+            <p><strong>Status:</strong> No shared folder saved yet — add one under “Existing town documents” and Save.</p>
         }
         else
         {
-            <p><strong>Path:</strong> @_libraryStatus.LibraryPath</p>
-            <p><strong>Background poller:</strong> @(_libraryStatus.PollerActive ? $"Active (every {_libraryStatus.IntervalSeconds}s)" : "Inactive")</p>
+            <p><strong>Folder:</strong> @_libraryStatus.LibraryPath</p>
+            <p><strong>Automatic check:</strong> @(_libraryStatus.PollerActive ? $"On (about every {_libraryStatus.IntervalSeconds} seconds)" : "Off")</p>
             @if (_libraryStatus.LastResult is { } last)
             {
                 <p><strong>Last scan:</strong> @(_libraryStatus.LastScanUtc?.ToLocalTime().ToString("g") ?? "—")
-                    — scanned @last.Scanned, imported @last.Imported, skipped @last.Skipped, failed @last.Failed</p>
+                    — looked at @last.Scanned, brought in @last.Imported, skipped @last.Skipped, failed @last.Failed</p>
             }
             else
             {
@@ -160,58 +353,75 @@
         }
         <div class="tikr-settings-help-actions mt-3">
             <SfButton CssClass="tikr-action-btn" Disabled="@(_libraryBusy || _libraryStatus?.Configured != true)" OnClick="ScanLibraryAsync">
-                Scan library now
+                Scan shared folder now
             </SfButton>
             <SfButton CssClass="tikr-action-btn e-outline" Disabled="@_libraryBusy" OnClick="ReindexEmbeddingsAsync">
-                Reindex embeddings
+                Refresh Assistant memory
             </SfButton>
             <SfButton CssClass="tikr-action-btn e-outline" Disabled="@_libraryBusy" OnClick="RefreshCorpusHealthAsync">
-                Corpus health
+                Check document coverage
             </SfButton>
         </div>
         @if (_corpusHealth is not null)
         {
             <div class="mt-3">
-                <p><strong>Corpus health:</strong>
-                    docs @_corpusHealth.DocumentsWithChunks / @_corpusHealth.DocumentsTotal chunked
-                    (@_corpusHealth.DocumentsChunkCoveragePercent%),
-                    transient @_corpusHealth.DocumentsTransient,
-                    sparse @_corpusHealth.DocumentsSparseText;
-                    vault @_corpusHealth.KnowledgeWithChunks / @_corpusHealth.KnowledgeTotal
+                <p><strong>Coverage:</strong>
+                    @_corpusHealth.DocumentsWithChunks of @_corpusHealth.DocumentsTotal documents ready for questions
+                    (@_corpusHealth.DocumentsChunkCoveragePercent%);
+                    vault @_corpusHealth.KnowledgeWithChunks of @_corpusHealth.KnowledgeTotal
                     (@_corpusHealth.KnowledgeChunkCoveragePercent%)</p>
-                @if (_corpusHealth.NeedsAttention.Count > 0)
+                @if (_corpusHealth.NeedsAttention is { Count: > 0 })
                 {
-                    <p class="text-muted mb-1">Needs attention (sparse text / OCR):</p>
-                    <ul>
-                        @foreach (var name in _corpusHealth.NeedsAttention.Take(10))
-                        {
-                            <li>@name</li>
-                        }
-                    </ul>
+                    <p class="text-muted" style="font-size:0.9rem;">
+                        Needs attention: @string.Join("; ", _corpusHealth.NeedsAttention.Take(5))
+                    </p>
                 }
             </div>
         }
-        @if (_libraryStatus?.LastResult?.Errors is { Count: > 0 } scanErrors)
+        @if (_embeddingRecovery is not null)
         {
-            <div class="mt-2">
-                <p class="text-muted mb-1">Last scan errors:</p>
-                <ul>
-                    @foreach (var err in scanErrors.Take(8))
+            <div class="mt-3">
+                <p><strong>Automatic recovery:</strong>
+                    @( _embeddingRecovery.OllamaAvailable ? "Ollama is up" : "Ollama offline" )
+                    @if (_embeddingRecovery.RecoveryNeeded)
                     {
-                        <li>@err</li>
+                        <span> — memory needs a refresh</span>
                     }
-                </ul>
+                    else
+                    {
+                        <span> — coverage OK</span>
+                    }
+                </p>
+                @if (!string.IsNullOrWhiteSpace(_embeddingRecovery.LastResultSummary))
+                {
+                    <p class="text-muted" style="font-size:0.9rem;">
+                        Last reindex (@(_embeddingRecovery.LastTrigger ?? "—")):
+                        @_embeddingRecovery.LastResultSummary
+                        @if (_embeddingRecovery.LastAutoReindexUtc is { } t)
+                        {
+                            <span> at @t.ToLocalTime().ToString("g")</span>
+                        }
+                    </p>
+                }
+                @if (!string.IsNullOrWhiteSpace(_embeddingRecovery.LastError))
+                {
+                    <p class="text-muted" style="font-size:0.9rem;">Last note: @_embeddingRecovery.LastError</p>
+                }
             </div>
         }
+        <p class="text-muted mt-2" style="font-size:0.85rem;">
+            When Ollama comes back online, TIKR automatically refreshes Assistant memory if coverage is incomplete
+            (cooldown 15 minutes). You can always press <strong>Refresh Assistant memory</strong> yourself.
+        </p>
     </CardContent>
 </SfCard>
 
 <SfCard CssClass="mb-3">
-    <CardHeader Title="Recent audit log" />
+    <CardHeader Title="Recent activity" />
     <CardContent>
         @if (_audit.Count == 0)
         {
-            <p>No recent actions or API unavailable.</p>
+            <p>No recent activity, or the town server is offline.</p>
         }
         else
         {
@@ -229,41 +439,122 @@
 </SfCard>
 
 <div class="mt-4">
-    <h4>Advanced AI</h4>
-    <p class="text-muted">Use the <a href="/assistant">AI Assistant</a> page for everyday Ollama chat. Enable Grok on the API when you need deeper reasoning.</p>
+    <h4>Advanced helper</h4>
+    <p class="text-muted">Everyday questions use <a href="/assistant">AI Assistant</a>. Turn on Advanced helper under Keys &amp; passwords when you need deeper reasoning.</p>
 </div>
 
 @code {
+    private const string SteveHelpMessage = "Call Steve for help";
+
     private AiStatusResponse? _status;
+    private FeatureSettingsDto? _features;
     private LocalStorageStatusDto? _localStatus;
     private DocumentSdkStatusDto? _documentSdkStatus;
     private LibraryScanStatusDto? _libraryStatus;
     private CorpusHealthResponse? _corpusHealth;
+    private EmbeddingRecoveryStatusDto? _embeddingRecovery;
     private List<AuditLog> _audit = [];
     private bool _autoTourDisabled;
     private bool _libraryBusy;
     private string? _libraryMessage;
+    private bool _featuresBusy;
+    private string? _featuresMessage;
+    private bool _showHelperDetails;
+    private bool _showStorageDetails;
+    private bool _showIngestDetails;
+
+    private string _editOllamaHost = "http://127.0.0.1:11434";
+    private string _editOllamaModel = "llama3.2:3b";
+    private bool _editUseGrok;
+    private string _editGrokApiKey = "";
+    private string _editGrokModel = "grok-4.5";
+    private string _editSyncfusionKey = "";
+    private string _editStoragePath = "";
+    private bool _editMoveDocs;
+    private string _editTownName = "Wiley";
+    private string _editStorageLabel = "Synology NAS";
+    private string _editTownLogo = "";
+    private bool _editOcr = true;
+    private bool _editAgentTools;
+    private bool _editAgentOrch;
+    private string _editLibraryPath = "";
+    private int _editLibraryInterval = 300;
+    private int _editLibraryMax = 500;
+    private string _editEmailPath = "";
 
     protected override async Task OnInitializedAsync()
     {
         try
         {
             _status = await Api.GetAiStatusAsync();
+            _features = await Api.GetFeatureSettingsAsync();
+            ApplyFeatureEdits(_features);
             _localStatus = await Api.GetLocalStorageStatusAsync();
             _documentSdkStatus = await Api.GetDocumentSdkStatusAsync();
             _libraryStatus = await Api.GetLibraryScanStatusAsync();
+            _corpusHealth = await Api.GetCorpusHealthAsync();
+            _embeddingRecovery = await Api.GetEmbeddingRecoveryStatusAsync();
             _audit = await Api.GetRecentAuditAsync(8);
         }
         catch
         {
             _status = null;
+            _features = null;
             _localStatus = null;
             _documentSdkStatus = null;
             _libraryStatus = null;
+            _corpusHealth = null;
+            _embeddingRecovery = null;
             _audit = [];
         }
 
         _autoTourDisabled = await Tour.IsAutoTourDisabledForUiAsync();
+    }
+
+    private void CallSteve() => Toast.Show(SteveHelpMessage);
+
+    private void ToggleHelperDetails()
+    {
+        _showHelperDetails = !_showHelperDetails;
+        if (_showHelperDetails)
+            Toast.Show(SteveHelpMessage);
+    }
+
+    private void ToggleStorageDetails()
+    {
+        _showStorageDetails = !_showStorageDetails;
+        if (_showStorageDetails)
+            Toast.Show(SteveHelpMessage);
+    }
+
+    private void ToggleIngestDetails()
+    {
+        _showIngestDetails = !_showIngestDetails;
+        if (_showIngestDetails)
+            Toast.Show(SteveHelpMessage);
+    }
+
+    private void ApplyFeatureEdits(FeatureSettingsDto? features)
+    {
+        if (features is null) return;
+        _editOllamaHost = features.OllamaHost;
+        _editOllamaModel = features.OllamaChatModel;
+        _editUseGrok = features.UseGrok;
+        _editGrokApiKey = "";
+        _editGrokModel = features.GrokModel ?? "grok-4.5";
+        _editSyncfusionKey = "";
+        _editStoragePath = features.FileStoragePath;
+        _editMoveDocs = false;
+        _editTownName = features.TownName;
+        _editStorageLabel = features.StorageLabel;
+        _editTownLogo = features.TownLogoPath ?? "";
+        _editOcr = features.OcrEnabled;
+        _editAgentTools = features.UseSyncfusionAgentTools;
+        _editAgentOrch = features.UseSyncfusionAgentOrchestration;
+        _editLibraryPath = features.LibraryScanPath ?? "";
+        _editLibraryInterval = features.LibraryScanIntervalSeconds;
+        _editLibraryMax = features.LibraryScanMaxImports;
+        _editEmailPath = features.EmailInboxPath ?? "";
     }
 
     private async Task ReplayTourAsync() => await Tour.StartFullTourAsync();
@@ -273,22 +564,126 @@
     private async Task PersistAutoTourDisabledAsync() =>
         await Tour.SetAutoTourDisabledAsync(_autoTourDisabled);
 
+    private async Task RefreshFeaturesAsync()
+    {
+        _featuresBusy = true;
+        _featuresMessage = null;
+        try
+        {
+            _features = await Api.GetFeatureSettingsAsync();
+            _status = await Api.GetAiStatusAsync();
+            _documentSdkStatus = await Api.GetDocumentSdkStatusAsync();
+            _localStatus = await Api.GetLocalStorageStatusAsync();
+            _libraryStatus = await Api.GetLibraryScanStatusAsync();
+            ApplyFeatureEdits(_features);
+            _featuresMessage = _features is null
+                ? "Could not refresh settings."
+                : (_features.OllamaAvailable ? "Town helper is ready." : "Town helper is not available right now.");
+        }
+        catch (Exception)
+        {
+            _featuresMessage = "Something went wrong checking status.";
+            Toast.Show(SteveHelpMessage);
+        }
+        finally
+        {
+            _featuresBusy = false;
+        }
+    }
+
+    private async Task SaveFeaturesAsync()
+    {
+        _featuresBusy = true;
+        _featuresMessage = "Saving…";
+        try
+        {
+            var request = new UpdateFeatureSettingsRequest(
+                OllamaHost: _editOllamaHost,
+                OllamaChatModel: _editOllamaModel,
+                UseGrok: _editUseGrok,
+                GrokApiKey: string.IsNullOrWhiteSpace(_editGrokApiKey) ? null : _editGrokApiKey,
+                GrokModel: _editGrokModel,
+                SyncfusionLicenseKey: string.IsNullOrWhiteSpace(_editSyncfusionKey) ? null : _editSyncfusionKey,
+                FileStoragePath: _editStoragePath,
+                MoveExistingDocuments: _editMoveDocs,
+                TownName: _editTownName,
+                StorageLabel: _editStorageLabel,
+                TownLogoPath: _editTownLogo,
+                OcrEnabled: _editOcr,
+                UseSyncfusionAgentTools: _editAgentTools,
+                UseSyncfusionAgentOrchestration: _editAgentOrch,
+                LibraryScanPath: _editLibraryPath,
+                LibraryScanIntervalSeconds: _editLibraryInterval,
+                LibraryScanMaxImports: _editLibraryMax,
+                EmailInboxPath: _editEmailPath);
+
+            var updated = await Api.UpdateFeatureSettingsAsync(request);
+            if (updated is null)
+            {
+                _featuresMessage = "Could not save. Double-check the fields, or call Steve for help.";
+                Toast.Show(SteveHelpMessage);
+                return;
+            }
+
+            if (!string.IsNullOrWhiteSpace(_editSyncfusionKey))
+            {
+                try
+                {
+                    SyncfusionLicenseProvider.RegisterLicense(_editSyncfusionKey.Trim());
+                    BlazorLicenseStatus.KeyConfigured = true;
+                    BlazorLicenseStatus.BlazorLicenseValid = SyncfusionLicenseProvider.ValidateLicense(
+                        [Platform.Blazor], out var detail);
+                    BlazorLicenseStatus.Detail = detail;
+                }
+                catch
+                {
+                    BlazorLicenseStatus.Detail = "License could not be applied";
+                    Toast.Show(SteveHelpMessage);
+                }
+            }
+
+            _features = updated;
+            ApplyFeatureEdits(updated);
+            _status = await Api.GetAiStatusAsync();
+            _documentSdkStatus = await Api.GetDocumentSdkStatusAsync();
+            _localStatus = await Api.GetLocalStorageStatusAsync();
+            _libraryStatus = await Api.GetLibraryScanStatusAsync();
+            _featuresMessage = updated.OllamaAvailable
+                ? "Saved. Town helper is ready."
+                : (updated.StatusMessage ?? "Saved.");
+            _audit = await Api.GetRecentAuditAsync(8);
+            Toast.Show("Settings saved");
+        }
+        catch (Exception)
+        {
+            _featuresMessage = "Could not save settings.";
+            Toast.Show(SteveHelpMessage);
+        }
+        finally
+        {
+            _featuresBusy = false;
+        }
+    }
+
     private async Task ScanLibraryAsync()
     {
         _libraryBusy = true;
-        _libraryMessage = "Scanning library…";
+        _libraryMessage = "Scanning shared folder…";
         try
         {
             var result = await Api.ScanLibraryAsync();
             _libraryStatus = await Api.GetLibraryScanStatusAsync();
             _libraryMessage = result is null
-                ? "Scan failed — check API and TIKR_LIBRARY_SCAN_PATH."
-                : $"Scan complete: imported {result.Imported}, skipped {result.Skipped}, failed {result.Failed} (scanned {result.Scanned}). Ask about them on AI Assistant.";
+                ? "Scan didn’t run — save a shared folder first, or call Steve for help."
+                : $"Scan finished: brought in {result.Imported}, skipped {result.Skipped}, failed {result.Failed} (looked at {result.Scanned}).";
             _audit = await Api.GetRecentAuditAsync(8);
+            if (result is null)
+                Toast.Show(SteveHelpMessage);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _libraryMessage = $"Scan error: {ex.Message}";
+            _libraryMessage = "Scan ran into a problem.";
+            Toast.Show(SteveHelpMessage);
         }
         finally
         {
@@ -299,19 +694,30 @@
     private async Task ReindexEmbeddingsAsync()
     {
         _libraryBusy = true;
-        _libraryMessage = "Reindexing embeddings…";
+        _libraryMessage = "Refreshing Assistant memory…";
         try
         {
             var result = await Api.ReindexEmbeddingsAsync();
-            _libraryMessage = result is null
-                ? "Reindex failed — is the API online?"
-                : $"Reindex done: docs {result.DocumentsEmbedded}/{result.DocumentsAttempted}, vault {result.KnowledgeEmbedded}/{result.KnowledgeAttempted}" +
-                  (result.Errors.Count > 0 ? $" ({result.Errors.Count} error(s))" : "") +
-                  ". Ready for AI Assistant questions.";
+            if (result is null)
+            {
+                _libraryMessage = "Refresh didn’t finish — call Steve for help.";
+                Toast.Show(SteveHelpMessage);
+            }
+            else
+            {
+                _libraryMessage =
+                    $"Memory refresh done: documents {result.DocumentsEmbedded}/{result.DocumentsAttempted}, " +
+                    $"vault {result.KnowledgeEmbedded}/{result.KnowledgeAttempted}" +
+                    (result.DocumentsSkipped > 0 ? $", skipped {result.DocumentsSkipped} (bin/one-time)" : "") +
+                    (result.Errors.Count > 0 ? $". Notes: {string.Join("; ", result.Errors.Take(3))}" : ".");
+                _corpusHealth = await Api.GetCorpusHealthAsync();
+                _embeddingRecovery = await Api.GetEmbeddingRecoveryStatusAsync();
+            }
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _libraryMessage = $"Reindex error: {ex.Message}";
+            _libraryMessage = "Refresh ran into a problem.";
+            Toast.Show(SteveHelpMessage);
         }
         finally
         {
@@ -322,18 +728,20 @@
     private async Task RefreshCorpusHealthAsync()
     {
         _libraryBusy = true;
-        _libraryMessage = "Loading corpus health…";
+        _libraryMessage = "Checking document coverage…";
         try
         {
             _corpusHealth = await Api.GetCorpusHealthAsync();
+            _embeddingRecovery = await Api.GetEmbeddingRecoveryStatusAsync();
             _libraryMessage = _corpusHealth is null
-                ? "Corpus health unavailable."
-                : $"Corpus health refreshed — {_corpusHealth.DocumentsChunkCoveragePercent}% of recurring docs chunked.";
+                ? "Coverage check unavailable."
+                : $"Coverage check done — {_corpusHealth.DocumentsChunkCoveragePercent}% of recurring documents are ready for questions.";
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _libraryMessage = $"Corpus health error: {ex.Message}";
+            _libraryMessage = "Coverage check ran into a problem.";
             _corpusHealth = null;
+            Toast.Show(SteveHelpMessage);
         }
         finally
         {
@@ -344,13 +752,11 @@
     private static string DocumentSdkStatusLabel(DocumentSdkStatusDto status)
     {
         if (!status.LicenseKeyConfigured)
-            return "Skipped — no license key";
+            return "No license saved yet";
 
         if (status.LicenseProbePassed)
-            return "Valid — Document SDK PDF probe succeeded";
+            return "Looking good";
 
-        return string.IsNullOrWhiteSpace(status.LicenseProbeDetail)
-            ? "Failed — check SYNCFUSION_LICENSE_KEY"
-            : $"Failed — {status.LicenseProbeDetail}";
+        return "Needs attention — call Steve";
     }
 }

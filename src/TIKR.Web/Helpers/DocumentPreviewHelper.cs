@@ -57,11 +57,11 @@ public static class DocumentPreviewHelper
 
     public static string PreviewLabel(PreviewKind kind) => kind switch
     {
-        PreviewKind.Pdf => "PDF Viewer",
-        PreviewKind.Word => "Word preview",
-        PreviewKind.Spreadsheet => "Spreadsheet preview",
+        PreviewKind.Pdf => "Smart PDF Viewer",
+        PreviewKind.Word => "Word editor",
+        PreviewKind.Spreadsheet => "Spreadsheet editor",
         PreviewKind.Text => "Full text",
-        PreviewKind.ConvertHint => "Preview via Convert to PDF",
+        PreviewKind.ConvertHint => "Convert to PDF to open",
         _ => "Preview"
     };
 }

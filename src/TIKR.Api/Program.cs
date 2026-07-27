@@ -12,30 +12,48 @@ using TIKR.Shared.Interfaces;
 using Serilog;
 using Serilog.Events;
 
-// Operational structured logging via Serilog (console + rolling file to /data/logs/tikr-*.log).
-// Captures detailed runtime info for observability, debugging, and proof of operation.
-// Verbosity: Debug (Microsoft overrides to reduce noise).
-try { Directory.CreateDirectory("/data/logs"); } catch { }
+// Operational structured logging: console + rolling file.
+// Docker/NAS uses /data/logs; Mac dev falls back to .local-data/logs (or TIKR_LOG_PATH).
+var logDir = ResolveLogDirectory();
+var logFile = Path.Combine(logDir, "tikr-.log");
+const string consoleTemplate =
+    "[{Timestamp:HH:mm:ss} {Level:u3}] {SourceContext}: {Message:lj}{NewLine}{Exception}";
+const string fileTemplate =
+    "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {SourceContext}: {Message:lj}{NewLine}{Exception}";
+
 Log.Logger = new LoggerConfiguration()
     .MinimumLevel.Debug()
     .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
     .MinimumLevel.Override("Microsoft.AspNetCore", LogEventLevel.Warning)
+    .MinimumLevel.Override("Microsoft.AspNetCore.Hosting.Diagnostics", LogEventLevel.Information)
+    .MinimumLevel.Override("Microsoft.AspNetCore.Server.Kestrel", LogEventLevel.Information)
     .MinimumLevel.Override("Microsoft.EntityFrameworkCore", LogEventLevel.Warning)
     .Enrich.FromLogContext()
     .Enrich.WithProperty("Application", "TIKR")
-    .WriteTo.Console()
-    .WriteTo.File("/data/logs/tikr-.log",
+    .WriteTo.Console(outputTemplate: consoleTemplate)
+    .WriteTo.File(logFile,
         rollingInterval: RollingInterval.Day,
         retainedFileCountLimit: 14,
-        outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception}")
+        shared: true,
+        outputTemplate: fileTemplate)
     .CreateBootstrapLogger();
+
+Log.Information("TIKR.Api bootstrap — log directory: {LogDir}", logDir);
 
 var builder = WebApplication.CreateBuilder(args);
 
 if (builder.Environment.IsDevelopment())
     EnvLoader.LoadDevelopmentEnv(builder.Environment.ContentRootPath);
+else
+    EnvLoader.LoadRuntimeSecrets(builder.Configuration["TIKR_DATA_PATH"]);
 
 builder.Configuration.AddEnvironmentVariables();
+
+// Cancellation of background pollers during failed bind must not drown out the root cause.
+builder.Services.Configure<HostOptions>(options =>
+{
+    options.BackgroundServiceExceptionBehavior = BackgroundServiceExceptionBehavior.Ignore;
+});
 
 builder.Services.AddTikrInfrastructure(builder.Configuration);
 builder.Services.AddProblemDetails();
@@ -46,18 +64,58 @@ builder.Services.AddCors(options =>
         policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod());
 });
 
-// Serilog host integration for structured logging
-builder.Host.UseSerilog();
+// preserveStaticLogger: WebApplicationFactory hosts re-enter Program; freezing the
+// bootstrap logger a second time throws "The logger is already frozen."
+builder.Host.UseSerilog((ctx, _, configuration) =>
+{
+    configuration
+        .MinimumLevel.Debug()
+        .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
+        .MinimumLevel.Override("Microsoft.AspNetCore", LogEventLevel.Warning)
+        .MinimumLevel.Override("Microsoft.AspNetCore.Hosting.Diagnostics", LogEventLevel.Information)
+        .MinimumLevel.Override("Microsoft.AspNetCore.Server.Kestrel", LogEventLevel.Information)
+        .MinimumLevel.Override("Microsoft.EntityFrameworkCore", LogEventLevel.Warning)
+        .Enrich.FromLogContext()
+        .Enrich.WithProperty("Application", "TIKR")
+        .WriteTo.Console(outputTemplate: consoleTemplate)
+        .WriteTo.File(logFile,
+            rollingInterval: RollingInterval.Day,
+            retainedFileCountLimit: 14,
+            shared: true,
+            outputTemplate: fileTemplate);
+}, preserveStaticLogger: true);
 
-var app = builder.Build();
+WebApplication app;
+try
+{
+    app = builder.Build();
+}
+catch (Exception ex)
+{
+    Log.Fatal(ex, "TIKR.Api failed during service build (DI / configuration). Root: {Root}", RootCause(ex));
+    throw;
+}
 
 var logger = app.Services.GetRequiredService<ILogger<Program>>();
+LogStartupDiagnostics(app, logger, logDir);
+
 SyncfusionLicenseBootstrap.RegisterIfConfigured(app.Configuration, logger, "Document SDK");
 SyncfusionDocumentLicense.RegisterFromConfiguration(app.Configuration);
 
 var authEnabled = TikrConfiguration.IsAuthEnabled(app.Configuration);
 
-await app.Services.InitializeDatabaseAsync();
+try
+{
+    await app.Services.InitializeDatabaseAsync();
+    logger.LogInformation("Database initialized successfully");
+}
+catch (Exception ex)
+{
+    logger.LogCritical(ex,
+        "Database initialization failed. Root: {Root}. Check ConnectionStrings__Default and that the SQLite directory is writable.",
+        RootCause(ex));
+    throw;
+}
 
 if (app.Environment.IsDevelopment())
     app.MapOpenApi();
@@ -104,8 +162,32 @@ if (authEnabled)
 
 app.UseCors();
 
-// Request logging via Serilog for observability (HTTP, headers, timing)
-app.UseSerilogRequestLogging();
+// Request logging — every button-driven HTTP call is visible here (method, path, status, elapsed).
+// Domain services add "Action {name} started/completed" for behind-the-scenes work.
+app.UseSerilogRequestLogging(options =>
+{
+    options.MessageTemplate =
+        "HTTP {RequestMethod} {RequestPath}{QueryString} → {StatusCode} in {Elapsed:0.0} ms";
+    options.GetLevel = (httpContext, elapsed, ex) =>
+        ex is not null || httpContext.Response.StatusCode >= 500
+            ? LogEventLevel.Error
+            : httpContext.Response.StatusCode >= 400
+                ? LogEventLevel.Warning
+                : httpContext.Request.Method is "GET" or "HEAD"
+                    ? LogEventLevel.Debug
+                    : LogEventLevel.Information;
+    options.EnrichDiagnosticContext = (diagnosticContext, httpContext) =>
+    {
+        diagnosticContext.Set("RequestHost", httpContext.Request.Host.Value);
+        diagnosticContext.Set("RequestScheme", httpContext.Request.Scheme);
+        diagnosticContext.Set("QueryString", httpContext.Request.QueryString.HasValue
+            ? httpContext.Request.QueryString.Value
+            : string.Empty);
+        diagnosticContext.Set("UserAgent", httpContext.Request.Headers.UserAgent.ToString());
+        diagnosticContext.Set("StatusCode", httpContext.Response.StatusCode);
+        diagnosticContext.Set("ContentType", httpContext.Request.ContentType ?? string.Empty);
+    };
+});
 
 if (authEnabled)
     app.MapAuthEndpoints();
@@ -116,10 +198,11 @@ var api = app.MapGroup("/api");
 if (authEnabled)
     api.RequireAuthorization(TikrAuthPolicies.Authenticated);
 
-api.MapGet("/system/local-status", async (IConfiguration config, IHybridAiService ai) =>
+api.MapGet("/system/local-status", async (IConfiguration config, IHybridAiService ai, FeatureSettingsState settings) =>
 {
-    var town = config["TIKR_TOWN_NAME"] ?? "Wiley";
-    var storageLabel = config["TIKR_STORAGE_LABEL"] ?? "Synology NAS";
+    var snap = settings.Current;
+    var town = snap.TownName;
+    var storageLabel = snap.StorageLabel;
     DateTime? dataModified = null;
 
     if (TryGetSqlitePath(config.GetConnectionString("Default"), out var dbPath) && File.Exists(dbPath))
@@ -129,8 +212,17 @@ api.MapGet("/system/local-status", async (IConfiguration config, IHybridAiServic
     return Results.Ok(new LocalStorageStatusDto(town, storageLabel, dataModified, aiStatus.OllamaAvailable));
 });
 
-api.MapGet("/system/document-sdk-status", (IConfiguration config) =>
-    Results.Ok(SyncfusionDocumentLicense.GetStatus(config)));
+api.MapGet("/system/document-sdk-status", (IConfiguration config, FeatureSettingsState settings) =>
+{
+    // Prefer clerk Settings toggles for agent flags; license still from env/runtime secrets.
+    var status = SyncfusionDocumentLicense.GetStatus(config);
+    return Results.Ok(status with
+    {
+        AgentToolsEnabled = settings.Current.UseSyncfusionAgentTools,
+        OrchestrationEnabled = settings.Current.UseSyncfusionAgentOrchestration
+            && settings.Current.UseSyncfusionAgentTools
+    });
+});
 
 api.MapPost("/email/ingest", async (IEmailIngestionService ingestion) =>
 {
@@ -252,9 +344,12 @@ api.MapDelete("/requirements/{id:guid}", async (Guid id, TikrDbContext db, IAudi
 });
 
 // Documents
-api.MapGet("/documents", async (TikrDbContext db, string? q) =>
+api.MapGet("/documents", async (TikrDbContext db, string? q, bool deleted = false) =>
 {
-    var query = db.Documents.AsQueryable();
+    // deleted=false → active library; deleted=true → recycle bin.
+    var query = deleted
+        ? db.Documents.Where(d => d.DeletedAt != null)
+        : db.Documents.Where(d => d.DeletedAt == null);
     if (!string.IsNullOrWhiteSpace(q))
     {
         query = query.Where(d =>
@@ -264,7 +359,22 @@ api.MapGet("/documents", async (TikrDbContext db, string? q) =>
     }
 
     var items = await query.OrderByDescending(d => d.UploadedAt).ToListAsync();
-    return items.Select(MapDocument).ToList();
+    var ids = items.Select(d => d.Id).ToList();
+    var reqCounts = await db.RequirementDocuments
+        .Where(rd => ids.Contains(rd.DocumentId))
+        .GroupBy(rd => rd.DocumentId)
+        .Select(g => new { g.Key, Count = g.Count() })
+        .ToDictionaryAsync(x => x.Key, x => x.Count);
+    var verCounts = await db.DocumentVersions
+        .Where(v => ids.Contains(v.DocumentId))
+        .GroupBy(v => v.DocumentId)
+        .Select(g => new { g.Key, Count = g.Count() })
+        .ToDictionaryAsync(x => x.Key, x => x.Count);
+
+    return items.Select(d => MapDocument(
+        d,
+        reqCounts.GetValueOrDefault(d.Id),
+        verCounts.GetValueOrDefault(d.Id))).ToList();
 });
 
 api.MapPost("/documents", async (HttpRequest request, IFileStorageService storage, IAuditService audit, ICurrentUserService currentUser, IDocumentService documentService) =>
@@ -295,10 +405,18 @@ api.MapPost("/documents", async (HttpRequest request, IFileStorageService storag
     }
 });
 
-api.MapGet("/documents/{id:guid}/content", async (Guid id, TikrDbContext db, IFileStorageService storage) =>
+api.MapGet("/documents/{id:guid}/content", async (Guid id, TikrDbContext db, IFileStorageService storage, ILogger<Program> endpointLog) =>
 {
     var entity = await db.Documents.FindAsync(id);
-    if (entity is null) return Results.NotFound();
+    if (entity is null)
+    {
+        endpointLog.LogWarning("Action {Action} {Phase} DocumentId={DocumentId}", "Document.Content", "not_found", id);
+        return Results.NotFound();
+    }
+
+    endpointLog.LogInformation(
+        "Action {Action} {Phase} DocumentId={DocumentId} FileName={FileName} Bytes={Bytes}",
+        "Document.Content", "started", id, entity.FileName, entity.FileSizeBytes);
 
     var stream = await storage.OpenReadAsync(entity.StoragePath);
     return Results.File(stream, entity.ContentType ?? "application/octet-stream", entity.FileName);
@@ -310,7 +428,9 @@ api.MapPut("/documents/{id:guid}/content", async (
     IFileStorageService storage,
     IAuditService audit,
     ICurrentUserService currentUser,
-    IDocumentService documentService) =>
+    IDocumentService documentService,
+    IHybridAiService hybridAi,
+    ILogger<Program> endpointLog) =>
 {
     if (!request.HasFormContentType)
         return Results.BadRequest("Expected multipart form data.");
@@ -325,6 +445,48 @@ api.MapPut("/documents/{id:guid}/content", async (
         await using var fileStream = file.OpenReadStream();
         var entity = await documentService.ReplaceContentAsync(
             id, fileStream, file.ContentType, file.Length, storage, audit, currentUser);
+
+        // Best-effort re-index so Assistant RAG reflects saved edits (Syncfusion save-back).
+        try
+        {
+            await hybridAi.EmbedDocumentAsync(id);
+        }
+        catch (Exception ex)
+        {
+            endpointLog.LogWarning(ex, "Post-save embed failed for document {DocumentId}", id);
+        }
+
+        return Results.Ok(MapDocument(entity));
+    }
+    catch (KeyNotFoundException)
+    {
+        return Results.NotFound();
+    }
+    catch (ArgumentException ex)
+    {
+        return Results.BadRequest(ex.Message);
+    }
+});
+
+api.MapPatch("/documents/{id:guid}", async (
+    Guid id,
+    UpdateDocumentMetadataRequest request,
+    IDocumentService documentService,
+    IAuditService audit,
+    ICurrentUserService currentUser) =>
+{
+    try
+    {
+        // ClearSuggestedFolder wins; otherwise update folder when SuggestedFolder was sent.
+        var shouldUpdateFolder = request.ClearSuggestedFolder || request.SuggestedFolder is not null;
+        var folderValue = request.ClearSuggestedFolder ? null : request.SuggestedFolder;
+        var entity = await documentService.UpdateMetadataAsync(
+            id,
+            request.FileName,
+            folderValue,
+            shouldUpdateFolder,
+            audit,
+            currentUser);
         return Results.Ok(MapDocument(entity));
     }
     catch (KeyNotFoundException)
@@ -341,6 +503,7 @@ api.MapDelete("/documents/{id:guid}", async (Guid id, IFileStorageService storag
 {
     try
     {
+        // Soft-delete → recycle bin (recoverable). Use /purge for permanent remove.
         await documentService.DeleteAsync(id, storage, audit, currentUser);
         return Results.NoContent();
     }
@@ -348,6 +511,84 @@ api.MapDelete("/documents/{id:guid}", async (Guid id, IFileStorageService storag
     {
         return Results.NotFound();
     }
+});
+
+api.MapPost("/documents/{id:guid}/restore", async (
+    Guid id, IDocumentService documentService, IAuditService audit, ICurrentUserService currentUser) =>
+{
+    try
+    {
+        await documentService.RestoreAsync(id, audit, currentUser);
+        return Results.NoContent();
+    }
+    catch (KeyNotFoundException)
+    {
+        return Results.NotFound();
+    }
+});
+
+api.MapDelete("/documents/{id:guid}/purge", async (
+    Guid id, IFileStorageService storage, IAuditService audit, ICurrentUserService currentUser, IDocumentService documentService) =>
+{
+    try
+    {
+        await documentService.PurgeAsync(id, storage, audit, currentUser);
+        return Results.NoContent();
+    }
+    catch (KeyNotFoundException)
+    {
+        return Results.NotFound();
+    }
+});
+
+api.MapGet("/documents/{id:guid}/versions", async (Guid id, IDocumentService documentService, TikrDbContext db) =>
+{
+    var exists = await db.Documents.AnyAsync(d => d.Id == id);
+    if (!exists) return Results.NotFound();
+    var versions = await documentService.ListVersionsAsync(id);
+    return Results.Ok(versions.Select(v => new DocumentVersionDto(
+        v.Id, v.DocumentId, v.VersionNumber, v.FileName, v.FileSizeBytes, v.Note, v.CreatedAt)).ToList());
+});
+
+api.MapPost("/documents/{id:guid}/versions/{versionId:guid}/restore", async (
+    Guid id,
+    Guid versionId,
+    IDocumentService documentService,
+    IFileStorageService storage,
+    IAuditService audit,
+    ICurrentUserService currentUser,
+    IHybridAiService hybridAi,
+    ILogger<Program> endpointLog) =>
+{
+    try
+    {
+        var entity = await documentService.RestoreVersionAsync(id, versionId, storage, audit, currentUser);
+        try { await hybridAi.EmbedDocumentAsync(id); }
+        catch (Exception ex) { endpointLog.LogWarning(ex, "Post-version-restore embed failed for {DocumentId}", id); }
+        return Results.Ok(MapDocument(entity));
+    }
+    catch (KeyNotFoundException)
+    {
+        return Results.NotFound();
+    }
+    catch (InvalidOperationException ex)
+    {
+        return Results.BadRequest(ex.Message);
+    }
+});
+
+api.MapGet("/documents/{id:guid}/requirements", async (Guid id, TikrDbContext db) =>
+{
+    var exists = await db.Documents.AnyAsync(d => d.Id == id);
+    if (!exists) return Results.NotFound();
+
+    var links = await db.RequirementDocuments
+        .Where(rd => rd.DocumentId == id)
+        .Join(db.Requirements, rd => rd.RequirementId, r => r.Id, (rd, r) => new DocumentRequirementLinkDto(
+            r.Id, r.Title, r.DueDate))
+        .OrderBy(x => x.DueDate)
+        .ToListAsync();
+    return Results.Ok(links);
 });
 
 // Vault Complete Handover Package (last feature - searchable PDF with TOC/bookmarks using Document SDK)
@@ -374,7 +615,7 @@ api.MapGet("/vault/handover-package", async (IConfiguration config, TikrDbContex
             DateTime.UtcNow,
             knowledge.Select(MapKnowledge).ToList(),
             requirements.Select(r => CouncilPacketEndpoints.MapRequirement(r, links.GetValueOrDefault(r.Id, []))).ToList(),
-            documents.Select(MapDocument).ToList(),
+            documents.Select(d => MapDocument(d)).ToList(),
             calendarSnapshot);
 
         var result = await generator.GenerateHandoverPackagePdfAsync(req);
@@ -618,6 +859,19 @@ api.MapGet("/audit", async (TikrDbContext db, int limit = 100) =>
 
 // AI endpoints
 api.MapGet("/ai/status", async (IHybridAiService ai) => await ai.GetStatusAsync());
+api.MapGet("/ai/feature-settings", async (IFeatureSettingsService settings) =>
+    Results.Ok(await settings.GetAsync()));
+api.MapPut("/ai/feature-settings", async (UpdateFeatureSettingsRequest request, IFeatureSettingsService settings) =>
+{
+    try
+    {
+        return Results.Ok(await settings.UpdateAsync(request));
+    }
+    catch (ArgumentException ex)
+    {
+        return Results.BadRequest(new { error = ex.Message });
+    }
+});
 api.MapGet("/ai/dashboard-priorities", async (IHybridAiService ai) => await ai.GetDashboardPrioritiesAsync());
 api.MapPost("/ai/tag-document", async (TagDocumentRequest request, IHybridAiService ai) =>
 {
@@ -663,13 +917,30 @@ api.MapPost("/ai/embed-knowledge/{id:guid}", async (Guid id, IHybridAiService ai
     }
 });
 
-api.MapPost("/ai/reindex-embeddings", async (IHybridAiService ai) =>
-    Results.Ok(await ai.ReindexAllEmbeddingsAsync()));
+api.MapPost("/ai/reindex-embeddings", async (IHybridAiService ai, EmbeddingRecoveryState recovery) =>
+{
+    var result = await ai.ReindexAllEmbeddingsAsync(trigger: "manual");
+    recovery.NoteReindexResult("manual", result, DateTime.UtcNow);
+    try
+    {
+        var health = await ai.GetCorpusHealthAsync();
+        recovery.NoteCorpus(health);
+    }
+    catch { /* best-effort status refresh */ }
+    return Results.Ok(result);
+});
 
-api.MapGet("/ai/corpus-health", async (IHybridAiService ai) =>
-    Results.Ok(await ai.GetCorpusHealthAsync()));
+api.MapGet("/ai/corpus-health", async (IHybridAiService ai, EmbeddingRecoveryState recovery) =>
+{
+    var health = await ai.GetCorpusHealthAsync();
+    recovery.NoteCorpus(health);
+    return Results.Ok(health);
+});
 
-api.MapPost("/ai/agent-scan", async (HttpRequest request, IDocumentAgentService agent) =>
+api.MapGet("/ai/embedding-recovery-status", (EmbeddingRecoveryState recovery) =>
+    Results.Ok(recovery.Snapshot()));
+
+api.MapPost("/ai/agent-scan", async (HttpRequest request, IDocumentAgentService agent, ILogger<Program> endpointLog) =>
 {
     if (!request.HasFormContentType)
         return Results.BadRequest("Expected multipart form data.");
@@ -680,17 +951,158 @@ api.MapPost("/ai/agent-scan", async (HttpRequest request, IDocumentAgentService 
     if (file.Length > 100 * 1024 * 1024) return Results.BadRequest("File too large (max 100MB).");
     if (string.IsNullOrWhiteSpace(file.FileName)) return Results.BadRequest("Invalid filename.");
 
-    await using var stream = file.OpenReadStream();
-    var result = await agent.ProcessUploadAsync(stream, file.FileName);
-    return Results.Ok(result);
+    endpointLog.LogInformation(
+        "Action {Action} {Phase} FileName={FileName} Bytes={Bytes}",
+        "API.AgentScan", "started", file.FileName, file.Length);
+
+    try
+    {
+        await using var stream = file.OpenReadStream();
+        var result = await agent.ProcessUploadAsync(stream, file.FileName);
+        endpointLog.LogInformation(
+            "Action {Action} {Phase} FileName={FileName} UsedSyncfusion={UsedSyncfusion} TextChars={TextChars}",
+            "API.AgentScan", "completed", file.FileName, result.UsedSyncfusionTools,
+            result.ExtractedText?.Length ?? 0);
+        return Results.Ok(result);
+    }
+    catch (Exception ex)
+    {
+        endpointLog.LogError(ex, "Action {Action} {Phase} FileName={FileName}", "API.AgentScan", "failed", file.FileName);
+        throw;
+    }
 });
 
 app.Lifetime.ApplicationStopped.Register(Log.CloseAndFlush);
 
-app.Run();
+try
+{
+    logger.LogInformation("Starting Kestrel. URLs from ASPNETCORE_URLS / launch settings will bind now…");
+    app.Run();
+}
+catch (IOException ex) when (IsAddressInUse(ex))
+{
+    var urls = Environment.GetEnvironmentVariable("ASPNETCORE_URLS") ?? "(default / launchSettings)";
+    logger.LogCritical(ex,
+        "PORT BIND FAILED — address already in use. ASPNETCORE_URLS={Urls}. " +
+        "Root cause: another TIKR.Api (or other process) is listening. " +
+        "On Mac: lsof -nP -iTCP:5001 -sTCP:LISTEN  then kill <pid>, or reuse the existing healthy process (curl http://localhost:5001/health).",
+        urls);
+    throw;
+}
+catch (Exception ex)
+{
+    logger.LogCritical(ex, "TIKR.Api host terminated unexpectedly. Root: {Root}", RootCause(ex));
+    throw;
+}
 
-static DocumentDto MapDocument(Document d) =>
-    new(d.Id, d.FileName, d.ContentType, d.FileSizeBytes, d.AiTags, d.SuggestedFolder, d.UploadedAt, d.FullTextContent, d.IsTransient);
+static DocumentDto MapDocument(Document d, int linkedRequirementCount = 0, int versionCount = 0) =>
+    new(d.Id, d.FileName, d.ContentType, d.FileSizeBytes, d.AiTags, d.SuggestedFolder, d.UploadedAt,
+        d.FullTextContent, d.IsTransient, d.DeletedAt, linkedRequirementCount, versionCount);
+
+static string ResolveLogDirectory()
+{
+    var candidates = new List<string?>();
+    if (Directory.Exists("/data"))
+        candidates.Add("/data/logs");
+    candidates.Add(Environment.GetEnvironmentVariable("TIKR_LOG_PATH"));
+    // From bin/Debug/netX.0 → repo .local-data/logs
+    candidates.Add(Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..", ".local-data", "logs")));
+    // From src/TIKR.Api working directory
+    candidates.Add(Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), "..", "..", ".local-data", "logs")));
+    candidates.Add(Path.Combine(Directory.GetCurrentDirectory(), "logs"));
+
+    foreach (var candidate in candidates)
+    {
+        if (string.IsNullOrWhiteSpace(candidate))
+            continue;
+        try
+        {
+            var full = Path.GetFullPath(candidate);
+            Directory.CreateDirectory(full);
+            return full;
+        }
+        catch
+        {
+            /* try next */
+        }
+    }
+
+    var fallback = Path.Combine(Path.GetTempPath(), "tikr-logs");
+    Directory.CreateDirectory(fallback);
+    return fallback;
+}
+
+static void LogStartupDiagnostics(WebApplication app, Microsoft.Extensions.Logging.ILogger logger, string logDir)
+{
+    var config = app.Configuration;
+    var cs = config.GetConnectionString("Default") ?? "(null)";
+    TryGetSqlitePath(cs, out var dbPath);
+    var storage = config["FileStorage:BasePath"]
+                  ?? config["FileStorage__BasePath"]
+                  ?? "(null)";
+    var ollama = TikrConfiguration.GetOllamaHost(config);
+    var urls = Environment.GetEnvironmentVariable("ASPNETCORE_URLS") ?? "(launchSettings / defaults)";
+    var dataPath = config["TIKR_DATA_PATH"] ?? Environment.GetEnvironmentVariable("TIKR_DATA_PATH") ?? "(unset)";
+    var contentRoot = app.Environment.ContentRootPath;
+    var env = app.Environment.EnvironmentName;
+
+    logger.LogInformation(
+        "Startup diagnostics — Env={Env}, ContentRoot={ContentRoot}, ASPNETCORE_URLS={Urls}, LogDir={LogDir}",
+        env, contentRoot, urls, logDir);
+    logger.LogInformation(
+        "Data paths — ConnectionString={ConnectionString}, SqlitePath={SqlitePath}, Exists={DbExists}, FileStorage={Storage}, TIKR_DATA_PATH={DataPath}",
+        cs,
+        dbPath ?? "(not sqlite file path)",
+        dbPath is not null && File.Exists(dbPath),
+        storage,
+        dataPath);
+    logger.LogInformation(
+        "AI — OllamaHost={OllamaHost}, AuthEnabled={AuthEnabled}, Grok={UseGrok}",
+        ollama,
+        TikrConfiguration.IsAuthEnabled(config),
+        TikrConfiguration.GetUseGrok(config));
+
+    if (dbPath is not null)
+    {
+        var parent = Path.GetDirectoryName(dbPath);
+        if (!string.IsNullOrEmpty(parent) && !Directory.Exists(parent))
+            logger.LogWarning("SQLite parent directory does not exist yet: {Parent}", parent);
+    }
+
+    if (!string.IsNullOrWhiteSpace(storage) && storage is not "(null)" && !Directory.Exists(storage))
+    {
+        try
+        {
+            Directory.CreateDirectory(storage);
+            logger.LogInformation("Created missing FileStorage directory: {Storage}", storage);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Cannot create FileStorage directory {Storage}. Root: {Root}", storage, RootCause(ex));
+        }
+    }
+}
+
+static bool IsAddressInUse(Exception ex)
+{
+    for (var e = ex; e is not null; e = e.InnerException!)
+    {
+        if (e is System.Net.Sockets.SocketException { SocketErrorCode: System.Net.Sockets.SocketError.AddressAlreadyInUse })
+            return true;
+        if (e.Message.Contains("address already in use", StringComparison.OrdinalIgnoreCase))
+            return true;
+    }
+
+    return false;
+}
+
+static string RootCause(Exception ex)
+{
+    var cur = ex;
+    while (cur.InnerException is not null)
+        cur = cur.InnerException;
+    return $"{cur.GetType().Name}: {cur.Message}";
+}
 
 static KnowledgeEntryDto MapKnowledge(KnowledgeEntry k) =>
     new(k.Id, k.Title, k.Content, k.Category, k.SortOrder);

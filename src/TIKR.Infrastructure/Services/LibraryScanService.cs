@@ -1,9 +1,11 @@
+using System.Diagnostics;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using TIKR.Infrastructure.Data;
 using TIKR.Shared.Configuration;
+using TIKR.Shared.Diagnostics;
 using TIKR.Shared.DTOs;
 using TIKR.Shared.Entities;
 using TIKR.Shared.Interfaces;
@@ -66,18 +68,30 @@ public sealed class LibraryScanService(
 
     public async Task<LibraryScanResult> ScanAsync(CancellationToken ct = default)
     {
+        var sw = Stopwatch.StartNew();
+        TikrActionLog.Started(logger, "Library.Scan", $"Path={LibraryPath ?? "(unset)"}");
+
         // Single-flight: hosted poller + manual POST must not import the same path twice.
         // The waiter re-runs after the active scan finishes; fingerprint skips make that cheap.
         if (!await _scanGate.WaitAsync(TimeSpan.Zero, ct))
         {
-            logger.LogInformation("Library scan already in progress; serializing behind the active scan");
+            TikrActionLog.Info(logger, "Library.Scan", "Already in progress; waiting for active scan");
             await _scanGate.WaitAsync(ct);
         }
 
         Interlocked.Exchange(ref _scanInProgress, 1);
         try
         {
-            return await ScanCoreAsync(ct);
+            var result = await ScanCoreAsync(ct);
+            TikrActionLog.Completed(logger, "Library.Scan",
+                $"Scanned={result.Scanned} Imported={result.Imported} Skipped={result.Skipped} Failed={result.Failed} Errors={result.Errors.Count}",
+                sw.ElapsedMilliseconds);
+            return result;
+        }
+        catch (Exception ex)
+        {
+            TikrActionLog.Failed(logger, "Library.Scan", ex);
+            throw;
         }
         finally
         {
@@ -91,6 +105,7 @@ public sealed class LibraryScanService(
         var root = LibraryPath;
         if (string.IsNullOrWhiteSpace(root))
         {
+            TikrActionLog.Failed(logger, "Library.Scan", "Library scan path is not configured");
             var missing = new LibraryScanResult(0, 0, 0, 0,
                 ["Library scan path is not configured (TIKR_LIBRARY_SCAN_PATH)."]);
             Remember(missing);
@@ -99,6 +114,7 @@ public sealed class LibraryScanService(
 
         if (!Directory.Exists(root))
         {
+            TikrActionLog.Failed(logger, "Library.Scan", $"Path does not exist: {root}");
             var missingDir = new LibraryScanResult(0, 0, 0, 0,
                 [$"Library scan path does not exist: {root}"]);
             Remember(missingDir);

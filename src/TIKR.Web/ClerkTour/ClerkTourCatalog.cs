@@ -93,9 +93,9 @@ public static class ClerkTourCatalog
 
     private static IReadOnlyList<ClerkTourStep> GetSettingsPageSteps() =>
     [
-        new(Sel(ClerkTourIds.HelpSettings), "Page help", "Theme, deployment env vars, and health cards.", "/settings"),
+        new(Sel(ClerkTourIds.HelpSettings), "Page help", "Theme, helper options, and town details — tap Call Steve for help if unsure.", "/settings"),
         new(Sel(ClerkTourIds.TourReplay), "Replay walkthrough", "Run the full product tour again.", "/settings"),
         new(Sel(ClerkTourIds.UserGuideOpen), "User guide", "Searchable task reference for clerks.", "/settings"),
-        new(Sel(ClerkTourIds.SettingsDeployment), "Deployment options", "Town name, Ollama, Grok, and licenses live in docker/.env on the NAS.", "/settings"),
+        new(Sel(ClerkTourIds.SettingsDeployment), "Something else?", "Networking and install setup are handled by Steve.", "/settings"),
     ];
 }

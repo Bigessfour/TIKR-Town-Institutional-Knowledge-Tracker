@@ -28,7 +28,17 @@ public class TownDocumentSearchToolRegistryTests
             .ReturnsAsync(new SemanticSearchResponse(
                 "aqueduct",
                 1,
-                [new SemanticSearchHit(Guid.NewGuid(), "water-rate.txt", "Finance", "aqueduct levy", 0.91)],
+                [
+                    new SemanticSearchHit(
+                        Guid.NewGuid(),
+                        "water-rate.txt",
+                        "Finance",
+                        "aqueduct levy",
+                        0.91,
+                        ChunkIndex: 0,
+                        Topic: "Aqueduct levy schedule",
+                        Summary: "Town water rates for the aqueduct service area.")
+                ],
                 EmbeddingAvailable: true));
 
         var services = new ServiceCollection();
@@ -38,7 +48,9 @@ public class TownDocumentSearchToolRegistryTests
 
         var text = await tools.SearchTownDocumentsAsync("aqueduct");
 
-        text.Should().Contain("water-rate.txt");
-        text.Should().Contain("aqueduct levy");
+        text.Should().Contain("[Aqueduct levy schedule] water-rate.txt");
+        text.Should().Contain("About: Town water rates");
+        text.Should().Contain("Excerpt: aqueduct levy");
+        text.Should().Contain("Score: 0.91");
     }
 }

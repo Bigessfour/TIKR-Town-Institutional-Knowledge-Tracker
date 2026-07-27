@@ -1,11 +1,13 @@
+using System.Text.RegularExpressions;
 using Microsoft.Extensions.AI;
 using TIKR.Shared.DTOs;
 using TIKR.Shared.Enums;
+using TIKR.Shared.Helpers;
 using TIKR.Web.Services;
 
 namespace TIKR.Web.Helpers;
 
-public static class AssistantPromptBuilder
+public static partial class AssistantPromptBuilder
 {
     /// <summary>Max prior user+assistant pairs kept in the Ollama request (circuit-scoped).</summary>
     public const int DefaultMaxHistoryTurns = 8;
@@ -16,11 +18,17 @@ public static class AssistantPromptBuilder
             "You are TIKR, a helpful AI assistant for a one-person Colorado municipal town clerk. " +
             "Answer concisely about deadlines, documents, procedures, and institutional knowledge. " +
             "When document or vault context is provided, answer ONLY from that context. " +
+            "Document hits are labeled with a content topic when known " +
+            "(e.g. [Retirement Package Form DD-2656] Scanned Document.pdf), an About summary, and an Excerpt. " +
+            "Use the topic and About line to identify which file is relevant before relying on the Excerpt. " +
             "If the context is missing, empty, or does not contain the answer, say you do not have matching " +
             "documents or institutional knowledge in TIKR — do not invent procedures or fees. " +
-            "When you use context, end with a Sources section listing the document filenames and vault titles used. " +
+            "When you use context, end with a Sources section listing the topic-labeled document names and vault titles used. " +
             "If unsure, say so and recommend the most relevant external source below by name and URL; " +
-            "for binding legal questions, always advise consulting the town attorney.";
+            "for binding legal questions, always advise consulting the town attorney. " +
+            "Output ONLY the final clerk-facing answer. Do not write chain-of-thought, analysis steps, " +
+            "planning, tool calls, function calls, XML/HTML control tags, or scratchpad lines " +
+            "(no <think>, Thought:, Action:, FunctionCall, or JSON tool payloads).";
 
         var catalogBlock = catalog.ToSystemPromptBlock();
         if (string.IsNullOrWhiteSpace(catalogBlock))
@@ -32,7 +40,8 @@ public static class AssistantPromptBuilder
     }
 
     /// <summary>
-    /// Packs retrieved passages for the chat model. Returns null when search is unavailable.
+    /// Packs retrieved passages for the chat model with topic labels + About + Excerpt.
+    /// Returns null when search is unavailable or empty.
     /// </summary>
     public static string? FormatDocumentRagBlock(SemanticSearchResponse? search, out bool searchUnavailable)
     {
@@ -40,11 +49,15 @@ public static class AssistantPromptBuilder
         if (search is null || searchUnavailable || search.Hits is not { Count: > 0 })
             return null;
 
-        return "Relevant documents:\n" + string.Join("\n\n", search.Hits.Select(h =>
-            $"- Source: {h.FileName}" +
-            (string.IsNullOrWhiteSpace(h.SuggestedFolder) ? "" : $" [{h.SuggestedFolder}]") +
-            (h.ChunkIndex is int idx ? $" (passage {idx + 1})" : "") +
-            (string.IsNullOrWhiteSpace(h.Snippet) ? "" : $"\n  {h.Snippet}")));
+        return "Relevant documents (topic label · folder · passage; About = document orientation; Excerpt = matched text):\n" +
+               string.Join("\n\n", search.Hits.Select(h =>
+                   DocumentContextLabel.FormatRagHit(
+                       h.FileName,
+                       h.Topic,
+                       h.SuggestedFolder,
+                       h.ChunkIndex,
+                       h.Summary,
+                       h.Snippet)));
     }
 
     public static string? FormatVaultRagBlock(SemanticSearchKnowledgeResponse? search, out bool searchUnavailable)
@@ -54,9 +67,9 @@ public static class AssistantPromptBuilder
             return null;
 
         return "Relevant institutional knowledge:\n" + string.Join("\n\n", search.Hits.Select(h =>
-            $"- Source: {h.Title} [{h.Category}]" +
-            (h.ChunkIndex is int idx ? $" (passage {idx + 1})" : "") +
-            (string.IsNullOrWhiteSpace(h.Snippet) ? "" : $"\n  {h.Snippet}")));
+            $"- Source: {h.Title} — {h.Category}" +
+            (h.ChunkIndex is int idx ? $" · passage {idx + 1}" : "") +
+            (string.IsNullOrWhiteSpace(h.Snippet) ? "" : $"\n  Excerpt: {h.Snippet}")));
     }
 
     public static IReadOnlyList<string> CollectCitationLabels(
@@ -65,7 +78,11 @@ public static class AssistantPromptBuilder
     {
         var labels = new List<string>();
         if (docs?.Hits is { Count: > 0 })
-            labels.AddRange(docs.Hits.Select(h => h.FileName).Where(n => !string.IsNullOrWhiteSpace(n)));
+        {
+            labels.AddRange(docs.Hits
+                .Select(h => DocumentContextLabel.FormatCitationLabel(h.FileName, h.Topic))
+                .Where(n => !string.IsNullOrWhiteSpace(n)));
+        }
         if (vault?.Hits is { Count: > 0 })
             labels.AddRange(vault.Hits.Select(h => h.Title).Where(n => !string.IsNullOrWhiteSpace(n)));
         return labels.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
@@ -124,12 +141,184 @@ public static class AssistantPromptBuilder
     }
 
     /// <summary>
-    /// Plain-text streaming preview for SfAIAssistView. UpdateResponseAsync replaces the bubble;
-    /// callers must pass the full accumulated markdown each time. Partial Markdig HTML mid-stream
-    /// breaks incomplete fences/lists, so we HTML-encode until the final render.
+    /// HTML-encode plain text for rare progressive previews. Prefer full-buffer + final markdown
+    /// HTML: Syncfusion UpdateResponseAsync is streaming-oriented and mid-stream partials flash junk.
     /// </summary>
     public static string FormatStreamingHtml(string markdown) =>
         $"<div class=\"tikr-assist-stream\">{System.Net.WebUtility.HtmlEncode(markdown)}</div>";
+
+    /// <summary>
+    /// Stable clerk-facing placeholder while Ollama is generating (hides think/tool tokens).
+    /// Matches Syncfusion AssistView guidance: show a loading state, not raw model scratchpad.
+    /// </summary>
+    public static string FormatPreparingHtml(string? message = null)
+    {
+        var text = string.IsNullOrWhiteSpace(message)
+            ? "Preparing your answer…"
+            : message.Trim();
+        return $"<div class=\"tikr-assist-preparing\" role=\"status\" aria-live=\"polite\">" +
+               $"<span class=\"tikr-assist-preparing-dot\" aria-hidden=\"true\"></span>" +
+               $"{System.Net.WebUtility.HtmlEncode(text)}</div>";
+    }
+
+    /// <summary>
+    /// Progressive UI text: strips thinking/tool scratchpads. While an open think/tool block is
+    /// still incomplete, returns empty so the bubble can keep showing "Preparing…".
+    /// </summary>
+    public static string ExtractVisibleStreamingText(string rawAccumulated) =>
+        SanitizeModelOutput(rawAccumulated, streamingIncomplete: true);
+
+    /// <summary>
+    /// Final clerk-facing markdown: remove chain-of-thought, tool/function call blocks, and agent lines.
+    /// </summary>
+    public static string SanitizeModelOutput(string? raw, bool streamingIncomplete = false)
+    {
+        if (string.IsNullOrWhiteSpace(raw))
+            return string.Empty;
+
+        var text = raw;
+
+        // Normalize exotic think delimiters used by some Ollama models
+        text = text.Replace("◁think▷", "<think>", StringComparison.Ordinal);
+        text = text.Replace("◁/think▷", "</think>", StringComparison.Ordinal);
+        text = text.Replace("<|begin_of_thought|>", "<think>", StringComparison.OrdinalIgnoreCase);
+        text = text.Replace("<|end_of_thought|>", "</think>", StringComparison.OrdinalIgnoreCase);
+        text = text.Replace("<|begin_of_solution|>", string.Empty, StringComparison.OrdinalIgnoreCase);
+        text = text.Replace("<|end_of_solution|>", string.Empty, StringComparison.OrdinalIgnoreCase);
+
+        // Complete thinking / reflection blocks (DeepSeek-R1, Qwen, etc.)
+        text = ThinkBlockRegex().Replace(text, string.Empty);
+        text = ThinkingBlockRegex().Replace(text, string.Empty);
+        text = ReflectionBlockRegex().Replace(text, string.Empty);
+        text = RedactedReasoningBlockRegex().Replace(text, string.Empty);
+        text = RedactedThinkingBlockRegex().Replace(text, string.Empty);
+
+        // Tool / function call payloads models sometimes stream as text
+        text = ToolCallBlockRegex().Replace(text, string.Empty);
+        text = FunctionCallBlockRegex().Replace(text, string.Empty);
+        text = ToolCodeFenceRegex().Replace(text, string.Empty);
+        text = InlineJsonToolRegex().Replace(text, string.Empty);
+
+        if (streamingIncomplete)
+        {
+            // Incomplete open tags — hide remainder until the model closes the block
+            text = IncompleteThinkOpenRegex().Replace(text, string.Empty);
+            text = IncompleteToolOpenRegex().Replace(text, string.Empty);
+            text = IncompleteFenceOpenRegex().Replace(text, string.Empty);
+        }
+
+        // ReAct-style scratchpad lines until a Final Answer / plain answer
+        text = StripAgentScratchpadLines(text);
+
+        // Orphan special tokens some Ollama models leak
+        text = SpecialTokenRegex().Replace(text, string.Empty);
+
+        // Collapse leftover blank runs after stripping
+        text = CollapseBlankLinesRegex().Replace(text, "\n\n");
+
+        return text.Trim();
+    }
+
+    private static string StripAgentScratchpadLines(string text)
+    {
+        if (string.IsNullOrEmpty(text))
+            return text;
+
+        // Prefer content after "Final Answer:" when present
+        var finalIdx = text.LastIndexOf("Final Answer:", StringComparison.OrdinalIgnoreCase);
+        if (finalIdx >= 0)
+        {
+            var after = text[(finalIdx + "Final Answer:".Length)..].TrimStart();
+            if (!string.IsNullOrWhiteSpace(after))
+                return after;
+        }
+
+        var lines = text.Replace("\r\n", "\n", StringComparison.Ordinal).Split('\n');
+        var kept = new List<string>(lines.Length);
+        var inScratch = false;
+        foreach (var line in lines)
+        {
+            var trimmed = line.TrimStart();
+            if (AgentScratchpadLineRegex().IsMatch(trimmed))
+            {
+                inScratch = true;
+                continue;
+            }
+
+            // End scratchpad when we hit a normal sentence after agent lines
+            if (inScratch)
+            {
+                if (string.IsNullOrWhiteSpace(trimmed))
+                    continue;
+                if (trimmed.StartsWith("Final Answer", StringComparison.OrdinalIgnoreCase))
+                {
+                    inScratch = false;
+                    var colon = trimmed.IndexOf(':');
+                    kept.Add(colon >= 0 ? trimmed[(colon + 1)..].TrimStart() : trimmed);
+                    continue;
+                }
+
+                // Still looks like agent meta → skip
+                if (trimmed.StartsWith('{') || trimmed.StartsWith('[') ||
+                    trimmed.Contains("\"name\"", StringComparison.Ordinal) ||
+                    trimmed.Contains("\"arguments\"", StringComparison.Ordinal))
+                    continue;
+
+                inScratch = false;
+            }
+
+            kept.Add(line);
+        }
+
+        return string.Join('\n', kept);
+    }
+
+    [GeneratedRegex(@"<think\b[^>]*>[\s\S]*?</think\s*>", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    private static partial Regex ThinkBlockRegex();
+
+    [GeneratedRegex(@"<thinking\b[^>]*>[\s\S]*?</thinking\s*>", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    private static partial Regex ThinkingBlockRegex();
+
+    [GeneratedRegex(@"<reflection\b[^>]*>[\s\S]*?</reflection\s*>", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    private static partial Regex ReflectionBlockRegex();
+
+    [GeneratedRegex(@"<\|?redacted_reasoning\|?>[\s\S]*?<\|?/redacted_reasoning\|?>", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    private static partial Regex RedactedReasoningBlockRegex();
+
+    [GeneratedRegex(@"<\|?redacted_thinking\|?>[\s\S]*?<\|?/redacted_thinking\|?>", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    private static partial Regex RedactedThinkingBlockRegex();
+
+    [GeneratedRegex(@"<tool_call\b[^>]*>[\s\S]*?</tool_call\s*>", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    private static partial Regex ToolCallBlockRegex();
+
+    [GeneratedRegex(@"<function(?:_call)?\b[^>]*>[\s\S]*?</function(?:_call)?\s*>", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    private static partial Regex FunctionCallBlockRegex();
+
+    [GeneratedRegex(@"```(?:json|tool|function|xml)?\s*[\r\n]+[\s\S]*?(?:""name""\s*:|""tool""\s*:|""function""\s*:)[\s\S]*?```", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    private static partial Regex ToolCodeFenceRegex();
+
+    // Bare tool-call JSON objects leaked as plain text (not fenced)
+    [GeneratedRegex(@"\{\s*""(?:name|tool|function)""\s*:\s*""[^""]+""\s*,\s*""(?:arguments|parameters|input)""\s*:[\s\S]*?\}", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    private static partial Regex InlineJsonToolRegex();
+
+    [GeneratedRegex(@"<(?:think|thinking|reflection|tool_call|function(?:_call)?)\b[^>]*>[\s\S]*\z", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    private static partial Regex IncompleteThinkOpenRegex();
+
+    [GeneratedRegex(@"<(?:tool_call|function(?:_call)?)\b[^>]*>[\s\S]*\z", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    private static partial Regex IncompleteToolOpenRegex();
+
+    // Only hide incomplete tool-ish fences — never generic markdown ``` used in real answers.
+    [GeneratedRegex(@"```(?:json|tool|function|xml)\b[\s\S]*\z", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    private static partial Regex IncompleteFenceOpenRegex();
+
+    [GeneratedRegex(@"^(?:Thought|Reasoning|Analysis|Plan|Action(?:\s*Input)?|Observation|Function(?:\s*Call)?|Tool(?:\s*Call)?|Inner monologue|Thinking|Scratchpad)\s*:", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    private static partial Regex AgentScratchpadLineRegex();
+
+    [GeneratedRegex(@"<\|[^|>]+?\|>", RegexOptions.CultureInvariant)]
+    private static partial Regex SpecialTokenRegex();
+
+    [GeneratedRegex(@"\n{3,}", RegexOptions.CultureInvariant)]
+    private static partial Regex CollapseBlankLinesRegex();
 
     /// <summary>
     /// True when the clerk message likely depends on prior turns (short / deixis / "that fee").
@@ -342,7 +531,11 @@ public static class DocumentUiMessages
 
     public static string ConvertToPdfInProgress(string fileName) => $"Converting {fileName} to PDF…";
 
-    public static string ConvertToPdfSuccess(string fileName) => $"Downloaded PDF converted from {fileName}.";
+    public static string ConvertToPdfSuccess(string fileName) =>
+        $"Converted {fileName} to PDF — downloaded and saved to the library.";
+
+    public static string ConvertToPdfLibraryOnly(string pdfFileName) =>
+        $"Saved \"{pdfFileName}\" to the library. Opening Smart PDF workspace…";
 
     public static string CouncilPacketBuilding() =>
         "Building council packet (cover page, deadlines table, linked documents)…";
@@ -362,4 +555,32 @@ public static class DocumentUiMessages
 
     public static string ExtractToVaultInProgress(string fileName) => $"Extracting text/tables from {fileName}…";
     public static string ExtractToVaultSuccess(string fileName) => $"Extracted text/tables from {fileName} into Knowledge Vault.";
+
+    public static string WorkspaceSaveSuccess(string fileName) => $"Saved \"{fileName}\" to NAS.";
+    public static string WorkspaceSaveFailed(string? detail = null) =>
+        string.IsNullOrWhiteSpace(detail) ? "Could not save document to NAS." : $"Could not save to NAS: {detail}";
+    public static string WorkspaceDirtyDiscardPrompt() =>
+        "You have unsaved changes. Discard them and close?";
+    public static string PdfSaveInProgress() => "Saving PDF annotations to NAS…";
+    public static string SoftDeleted(string fileName) => $"Moved \"{fileName}\" to Recycle bin.";
+    public static string Restored(string fileName) => $"Restored \"{fileName}\" to the library.";
+    public static string Purged(string fileName) => $"Permanently deleted \"{fileName}\".";
+    public static string VersionRestored(int versionNumber) => $"Restored version {versionNumber} as current content.";
+    public static string AnnotationExportSuccess() => "Downloaded annotation export.";
+    public static string AnnotationImportSuccess() => "Imported annotations into the viewer.";
+
+    /// <summary>Simple type glyph for library grid (thumbnail substitute until image thumbs ship).</summary>
+    public static string FileTypeIconCss(string? fileName)
+    {
+        var ext = Path.GetExtension(fileName ?? "").ToLowerInvariant();
+        return ext switch
+        {
+            ".pdf" => "e-icons e-export-pdf",
+            ".doc" or ".docx" => "e-icons e-file-document",
+            ".xls" or ".xlsx" or ".csv" => "e-icons e-table",
+            ".png" or ".jpg" or ".jpeg" or ".gif" or ".bmp" or ".tif" or ".tiff" => "e-icons e-image",
+            ".txt" or ".md" => "e-icons e-description",
+            _ => "e-icons e-file"
+        };
+    }
 }

@@ -56,7 +56,38 @@ public class DocumentsPageTests : ClerkTestContext
 
         var cut = RenderComponent<Documents>();
         cut.Markup.Should().Contain("preview-pane");
-        cut.Markup.Should().Contain("Select a document in the list to see details and actions.");
+        cut.Markup.Should().Contain("Select a document in the list");
+    }
+
+    [Fact]
+    public void Documents_ShowsLibraryAndBrowseModeToggle()
+    {
+        RegisterApi("[]");
+        SetRendererInfo(new RendererInfo("Server", true));
+
+        var cut = RenderComponent<Documents>();
+        cut.Markup.Should().Contain("Library");
+        cut.Markup.Should().Contain("Browse (File Manager)");
+        cut.Markup.Should().Contain("Recycle bin");
+    }
+
+    [Fact]
+    public void Documents_BrowseMode_ShowsFileManager()
+    {
+        RegisterApi("[]");
+        SetRendererInfo(new RendererInfo("Server", true));
+
+        var cut = RenderComponent<Documents>();
+        // Click the Browse mode toggle (Syncfusion SfButton Content)
+        var browseBtn = cut.FindAll("button").FirstOrDefault(b => b.TextContent.Contains("Browse", StringComparison.OrdinalIgnoreCase));
+        browseBtn.Should().NotBeNull("Browse mode toggle should render");
+        browseBtn!.Click();
+
+        cut.WaitForAssertion(() =>
+        {
+            cut.Markup.Should().Contain("doc-filemanager");
+            cut.Markup.Should().Contain("Syncfusion File Manager");
+        });
     }
 
     private void RegisterApi(string docsJson, string? searchJson = null)
