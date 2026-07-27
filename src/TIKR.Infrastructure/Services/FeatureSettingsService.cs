@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using TIKR.Infrastructure.Data;
 using TIKR.Shared.Configuration;
@@ -26,6 +27,7 @@ public sealed class FeatureSettingsService(
     IRuntimeSecretsStore runtimeSecrets,
     IAuditService audit,
     ICurrentUserService currentUser,
+    IHostEnvironment hostEnvironment,
     ILogger<FeatureSettingsService> logger) : IFeatureSettingsService
 {
     public async Task LoadIntoStateAsync(CancellationToken cancellationToken = default)
@@ -327,6 +329,10 @@ public sealed class FeatureSettingsService(
 
     private void ApplySecrets(FeatureSettingsSnapshot snapshot, bool clearMissingSecrets)
     {
+        // WebApplicationFactory hosts share one process — mutating env bleeds into sibling test fixtures.
+        if (hostEnvironment.IsEnvironment("Testing"))
+            return;
+
         runtimeSecrets.ApplyToProcessEnvironment(
             snapshot.GrokApiKey,
             snapshot.SyncfusionLicenseKey,
