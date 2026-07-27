@@ -5,6 +5,8 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UserSecretsId>16e451d8-ec68-44df-aaf6-4780398b3b83</UserSecretsId>
+    <!-- OCR.Net.Core + AgentTools both copy the same Tesseract native assets. -->
+    <ErrorOnDuplicatePublishOutputFiles>false</ErrorOnDuplicatePublishOutputFiles>
   </PropertyGroup>
 
   <ItemGroup>
