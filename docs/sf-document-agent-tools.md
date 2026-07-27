@@ -1,5 +1,7 @@
 # Syncfusion Document SDK AI Agent Tools — TIKR configuration
 
+> **Broader DM review:** For Syncfusion **UI** document management (FileManager, PDF/Word/Excel workspaces, save-back, gaps vs greenfield), see [specs/003-syncfusion-document-management/](../specs/003-syncfusion-document-management/README.md). This file covers **server-side Agent Tools only**.
+
 Captured from [Syncfusion Getting Started](https://help.syncfusion.com/document-processing/ai-agent-tools/getting-started), [Tools reference](https://help.syncfusion.com/document-processing/ai-agent-tools/tools), and the [product overview](https://www.syncfusion.com/explore/ai-agent-tools-for-document-sdk/).
 
 **sf-blazor-mcp:** Use `sf_blazor_assistant` for Blazor UI questions. Document Agent Tools run in **TIKR.Api / Infrastructure** (not Blazor). MCP requires `SYNCFUSION_API_KEY` (developer key) — separate from runtime `SYNCFUSION_LICENSE_KEY`. If MCP returns invalid API key, use the help links above.

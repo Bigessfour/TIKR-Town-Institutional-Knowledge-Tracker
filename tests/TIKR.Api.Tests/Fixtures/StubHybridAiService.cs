@@ -44,8 +44,10 @@ public sealed class StubHybridAiService : IHybridAiService
     public Task<EmbedKnowledgeEntryResponse> EmbedKnowledgeEntryAsync(Guid entryId, CancellationToken cancellationToken = default) =>
         Task.FromResult(new EmbedKnowledgeEntryResponse(entryId, Embedded: true, Reason: null));
 
-    public Task<ReindexEmbeddingsResponse> ReindexAllEmbeddingsAsync(CancellationToken cancellationToken = default) =>
-        Task.FromResult(new ReindexEmbeddingsResponse(0, 0, 0, 0, []));
+    public Task<ReindexEmbeddingsResponse> ReindexAllEmbeddingsAsync(
+        string? trigger = null,
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult(new ReindexEmbeddingsResponse(0, 0, 0, 0, [], Trigger: trigger ?? "manual"));
 
     public Task<CorpusHealthResponse> GetCorpusHealthAsync(CancellationToken cancellationToken = default) =>
         Task.FromResult(new CorpusHealthResponse(0, 0, 0, 0, 0, 0, 100, 100, []));

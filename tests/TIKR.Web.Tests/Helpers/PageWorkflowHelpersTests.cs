@@ -78,6 +78,76 @@ public class PageWorkflowHelpersTests
     }
 
     [Fact]
+    public void FormatPreparingHtml_IsClerkFriendlyStatus()
+    {
+        var html = AssistantPromptBuilder.FormatPreparingHtml("Looking through your library…");
+        html.Should().Contain("tikr-assist-preparing");
+        html.Should().Contain("Looking through your library");
+        html.Should().Contain("role=\"status\"");
+    }
+
+    [Fact]
+    public void SanitizeModelOutput_StripsThinkAndToolBlocks()
+    {
+        var raw =
+            "<think>I will call a tool and plan the answer</think>\n" +
+            "<tool_call>{\"name\":\"search\"}</tool_call>\n" +
+            "The late fee is $25.\n\n**Sources**\n- fee.pdf";
+
+        var clean = AssistantPromptBuilder.SanitizeModelOutput(raw);
+        clean.Should().Contain("The late fee is $25.");
+        clean.Should().Contain("fee.pdf");
+        clean.Should().NotContain("think");
+        clean.Should().NotContain("tool_call");
+        clean.Should().NotContain("I will call a tool");
+    }
+
+    [Fact]
+    public void ExtractVisibleStreamingText_HidesIncompleteThinkBlock()
+    {
+        var partial = "<think>still planning the answer and listing tools";
+        AssistantPromptBuilder.ExtractVisibleStreamingText(partial)
+            .Should().BeEmpty();
+
+        var closed = partial + "</think>\nPay the form by Friday.";
+        AssistantPromptBuilder.ExtractVisibleStreamingText(closed)
+            .Should().Be("Pay the form by Friday.");
+    }
+
+    [Fact]
+    public void SanitizeModelOutput_StripsReActScratchpad_KeepsFinalAnswer()
+    {
+        var raw =
+            "Thought: I need the fee schedule\n" +
+            "Action: search_town_documents\n" +
+            "Action Input: fee\n" +
+            "Observation: found fee.pdf\n" +
+            "Final Answer: The filing fee is $40.";
+
+        AssistantPromptBuilder.SanitizeModelOutput(raw)
+            .Should().Be("The filing fee is $40.");
+    }
+
+    [Fact]
+    public void SanitizeModelOutput_KeepsNormalMarkdownCodeFence()
+    {
+        var raw = "Use this checklist:\n```\n1. Print form\n2. Sign\n```\nThen file.";
+        AssistantPromptBuilder.SanitizeModelOutput(raw)
+            .Should().Contain("```")
+            .And.Contain("Print form")
+            .And.Contain("Then file.");
+    }
+
+    [Fact]
+    public void BuildSystemPrompt_ForbidsScratchpadOutput()
+    {
+        var catalog = new ColoradoResourceCatalog([], null);
+        AssistantPromptBuilder.BuildSystemPrompt(catalog)
+            .Should().Contain("Output ONLY the final clerk-facing answer")
+            .And.Contain("<think>");
+    }
+
+    [Fact]
     public void BuildSystemPrompt_RequiresGroundedAnswers()
     {
         var catalog = new ColoradoResourceCatalog([], null);
@@ -94,6 +164,56 @@ public class PageWorkflowHelpersTests
             out var unavailable);
         unavailable.Should().BeTrue();
         block.Should().BeNull();
+    }
+
+    [Fact]
+    public void FormatDocumentRagBlock_UsesTopicLabelAboutAndExcerpt()
+    {
+        var block = AssistantPromptBuilder.FormatDocumentRagBlock(
+            new SemanticSearchResponse(
+                "retirement",
+                1,
+                [
+                    new SemanticSearchHit(
+                        Guid.NewGuid(),
+                        "Scanned Document.pdf",
+                        "Correspondence",
+                        "survivor benefit election section…",
+                        0.82,
+                        ChunkIndex: 0,
+                        Topic: "Retirement Package Form DD-2656",
+                        Summary: "Form used to elect survivor benefits under federal retirement systems.")
+                ]),
+            out var unavailable);
+
+        unavailable.Should().BeFalse();
+        block.Should().NotBeNull();
+        block.Should().Contain("[Retirement Package Form DD-2656] Scanned Document.pdf");
+        block.Should().Contain("About: Form used to elect survivor benefits");
+        block.Should().Contain("Excerpt: survivor benefit election section");
+        block.Should().NotContain("Scanned Document.pdf [Correspondence]");
+    }
+
+    [Fact]
+    public void CollectCitationLabels_PrefersTopicPrefixedDocumentNames()
+    {
+        var labels = AssistantPromptBuilder.CollectCitationLabels(
+            new SemanticSearchResponse(
+                "q",
+                1,
+                [
+                    new SemanticSearchHit(
+                        Guid.NewGuid(),
+                        "Scanned Document.pdf",
+                        "Correspondence",
+                        "snippet",
+                        0.9,
+                        Topic: "Retirement Package Form DD-2656")
+                ]),
+            vault: null);
+
+        labels.Should().ContainSingle()
+            .Which.Should().Be("[Retirement Package Form DD-2656] Scanned Document.pdf");
     }
 
     [Fact]

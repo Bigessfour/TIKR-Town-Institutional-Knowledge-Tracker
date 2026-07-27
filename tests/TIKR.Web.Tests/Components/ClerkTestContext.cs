@@ -26,6 +26,7 @@ public abstract class ClerkTestContext : TestContext
 {
     protected ClerkTestContext()
     {
+        Services.AddLogging();
         Services.AddSyncfusionBlazor();
         Services.AddSyncfusionSmartComponents().InjectOpenAIInference();
         Services.AddChatClient(_ => new FakeChatClient());

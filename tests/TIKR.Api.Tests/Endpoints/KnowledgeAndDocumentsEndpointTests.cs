@@ -203,6 +203,61 @@ public class DocumentsEndpointTests : IClassFixture<TikrWebApplicationFactory>
     }
 
     [Fact]
+    public async Task PatchDocumentMetadata_RenamesAndMovesFolder()
+    {
+        using var upload = new MultipartFormDataContent();
+        var original = new ByteArrayContent("meta body"u8.ToArray());
+        original.Headers.ContentType = new MediaTypeHeaderValue("text/plain");
+        upload.Add(original, "file", "rename-me.txt");
+
+        var create = await _client.PostAsync("/api/documents", upload);
+        var created = await create.Content.ReadFromJsonAsync<DocumentDto>();
+
+        var patch = await _client.PatchAsJsonAsync(
+            $"/api/documents/{created!.Id}",
+            new UpdateDocumentMetadataRequest(FileName: "renamed.txt", SuggestedFolder: "Finance"));
+        patch.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var updated = await patch.Content.ReadFromJsonAsync<DocumentDto>();
+        updated!.FileName.Should().Be("renamed.txt");
+        updated.SuggestedFolder.Should().Be("Finance");
+    }
+
+    [Fact]
+    public async Task SoftDelete_ThenRestore_AndVersionHistoryOnReplace()
+    {
+        using var upload = new MultipartFormDataContent();
+        var original = new ByteArrayContent("soft-delete body v1 enough"u8.ToArray());
+        original.Headers.ContentType = new MediaTypeHeaderValue("text/plain");
+        upload.Add(original, "file", "soft.txt");
+
+        var create = await _client.PostAsync("/api/documents", upload);
+        var created = await create.Content.ReadFromJsonAsync<DocumentDto>();
+
+        // Replace content → creates version snapshot
+        using var replace = new MultipartFormDataContent();
+        var v2 = new ByteArrayContent("soft-delete body v2 enough"u8.ToArray());
+        v2.Headers.ContentType = new MediaTypeHeaderValue("text/plain");
+        replace.Add(v2, "file", "soft.txt");
+        (await _client.PutAsync($"/api/documents/{created!.Id}/content", replace)).EnsureSuccessStatusCode();
+
+        var versions = await _client.GetFromJsonAsync<List<DocumentVersionDto>>($"/api/documents/{created.Id}/versions");
+        versions.Should().ContainSingle(v => v.VersionNumber == 1);
+
+        (await _client.DeleteAsync($"/api/documents/{created.Id}")).StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        var active = await _client.GetFromJsonAsync<List<DocumentDto>>("/api/documents");
+        active.Should().NotContain(d => d.Id == created.Id);
+
+        var recycled = await _client.GetFromJsonAsync<List<DocumentDto>>("/api/documents?deleted=true");
+        recycled.Should().Contain(d => d.Id == created.Id);
+
+        (await _client.PostAsync($"/api/documents/{created.Id}/restore", null)).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        var restored = await _client.GetFromJsonAsync<List<DocumentDto>>("/api/documents");
+        restored.Should().Contain(d => d.Id == created.Id);
+    }
+
+    [Fact]
     public async Task DeleteDocument_RemovesMetadata()
     {
         using var upload = new MultipartFormDataContent();

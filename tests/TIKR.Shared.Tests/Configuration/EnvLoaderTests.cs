@@ -21,9 +21,9 @@ public class EnvLoaderTests
         try
         {
             EnvLoader.LoadDevelopmentEnv(contentRoot);
-            // docker/.env loads after root .env and wins on duplicate keys
+            // NoClobber: first file wins so process / root overrides are not stomped by docker/.env
             Environment.GetEnvironmentVariable("TIKR_ENV_LOADER_TEST")
-                .Should().Be("from_docker");
+                .Should().Be("from_root");
         }
         finally
         {

@@ -21,7 +21,9 @@ public record AskAdvancedResponse(string Answer, bool UsedGrok);
 public record AiStatusResponse(
     bool OllamaAvailable,
     string OllamaModel,
-    bool GrokEnabled);
+    bool GrokEnabled,
+    string? OllamaHost = null,
+    bool GrokApiKeyConfigured = false);
 
 public record SemanticSearchRequest(
     string Query,
@@ -30,13 +32,17 @@ public record SemanticSearchRequest(
     string? Folder = null,
     string? Category = null);
 
+/// <param name="Topic">Content-derived topic (e.g. Retirement Package Form DD-2656) for agent labels.</param>
+/// <param name="Summary">Short document orientation blurb shown before the matched excerpt.</param>
 public record SemanticSearchHit(
     Guid DocumentId,
     string FileName,
     string? SuggestedFolder,
     string? Snippet,
     double Score,
-    int? ChunkIndex = null);
+    int? ChunkIndex = null,
+    string? Topic = null,
+    string? Summary = null);
 
 public record SemanticSearchResponse(
     string Query,
@@ -67,4 +73,18 @@ public record ReindexEmbeddingsResponse(
     int DocumentsEmbedded,
     int KnowledgeAttempted,
     int KnowledgeEmbedded,
-    IReadOnlyList<string> Errors);
+    IReadOnlyList<string> Errors,
+    int DocumentsSkipped = 0,
+    string? Trigger = null);
+
+/// <summary>Operator snapshot for automatic embedding recovery (Settings + diagnostics).</summary>
+public record EmbeddingRecoveryStatusDto(
+    bool OllamaAvailable,
+    bool RecoveryNeeded,
+    DateTime? LastOllamaHealthyUtc,
+    DateTime? LastAutoReindexUtc,
+    string? LastTrigger,
+    string? LastResultSummary,
+    string? LastError,
+    double DocumentsChunkCoveragePercent,
+    double KnowledgeChunkCoveragePercent);

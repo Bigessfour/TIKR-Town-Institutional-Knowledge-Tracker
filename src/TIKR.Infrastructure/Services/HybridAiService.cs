@@ -1,11 +1,14 @@
+using System.Diagnostics;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging;
 using TIKR.Infrastructure.Data;
+using TIKR.Shared.Diagnostics;
 using TIKR.Shared.DTOs;
 using TIKR.Shared.Entities;
 using TIKR.Shared.Enums;
+using TIKR.Shared.Helpers;
 using TIKR.Shared.Interfaces;
 
 namespace TIKR.Infrastructure.Services;
@@ -16,7 +19,8 @@ public class HybridAiService(
     GrokService grokService,
     IFileStorageService storage,
     IDocumentAgentExtractionBackend extractionBackend,
-    ILogger<HybridAiService> logger) : IHybridAiService
+    ILogger<HybridAiService> logger,
+    FeatureSettingsState? featureSettings = null) : IHybridAiService
 {
     private const int TagPreviewChars = 4000;
     private const int MaxPersistedExtractChars = 100_000;
@@ -27,6 +31,9 @@ public class HybridAiService(
 
     public async Task<TagDocumentResponse> TagDocumentAsync(Guid documentId, CancellationToken cancellationToken = default)
     {
+        var sw = Stopwatch.StartNew();
+        TikrActionLog.Started(logger, "AI.TagDocument", $"DocumentId={documentId}");
+
         var document = await db.Documents.FindAsync([documentId], cancellationToken)
             ?? throw new KeyNotFoundException($"Document {documentId} not found.");
 
@@ -75,6 +82,9 @@ public class HybridAiService(
 
         await db.SaveChangesAsync(cancellationToken);
 
+        TikrActionLog.Completed(logger, "AI.TagDocument",
+            $"DocumentId={documentId} FileName={document.FileName} Tags={tags.Length} Folder={folder ?? "(none)"}",
+            sw.ElapsedMilliseconds);
         return new TagDocumentResponse(documentId, tags, folder);
     }
 
@@ -120,20 +130,31 @@ public class HybridAiService(
 
     public async Task<EmbedDocumentResponse> EmbedDocumentAsync(Guid documentId, CancellationToken cancellationToken = default)
     {
+        var sw = Stopwatch.StartNew();
+        TikrActionLog.Started(logger, "AI.EmbedDocument", $"DocumentId={documentId}");
+
         var document = await db.Documents.FindAsync([documentId], cancellationToken)
             ?? throw new KeyNotFoundException($"Document {documentId} not found.");
 
         var ok = await TryIndexDocumentChunksAsync(document, cancellationToken);
         if (!ok)
+        {
+            TikrActionLog.Failed(logger, "AI.EmbedDocument", "Embedding generator unavailable", $"DocumentId={documentId}");
             return new EmbedDocumentResponse(documentId, false, "Embedding generator unavailable (is Ollama running with nomic-embed-text?)");
+        }
 
         document.UpdatedAt = DateTime.UtcNow;
         await db.SaveChangesAsync(cancellationToken);
+        TikrActionLog.Completed(logger, "AI.EmbedDocument", $"DocumentId={documentId} FileName={document.FileName}", sw.ElapsedMilliseconds);
         return new EmbedDocumentResponse(documentId, true, null);
     }
 
     public async Task<SemanticSearchResponse> SemanticSearchDocumentsAsync(SemanticSearchRequest request, CancellationToken cancellationToken = default)
     {
+        var sw = Stopwatch.StartNew();
+        TikrActionLog.Started(logger, "AI.SemanticSearchDocuments",
+            $"QueryLen={request.Query?.Length ?? 0} TopK={request.TopK} Folder={request.Folder ?? "(any)"}");
+
         if (string.IsNullOrWhiteSpace(request.Query))
             return new SemanticSearchResponse(request.Query, 0, [], EmbeddingAvailable: true);
 
@@ -142,36 +163,64 @@ public class HybridAiService(
 
         var queryVector = await TryGenerateEmbeddingAsync(request.Query, cancellationToken);
         if (queryVector is null)
+        {
+            TikrActionLog.Failed(logger, "AI.SemanticSearchDocuments", "Embeddings unavailable (Ollama/nomic-embed-text)");
             return new SemanticSearchResponse(request.Query, 0, [], EmbeddingAvailable: false);
+        }
 
         var chunkQuery = db.EmbeddingChunks.Where(c => c.SourceType == EmbeddingSourceType.Document);
         if (!string.IsNullOrWhiteSpace(request.Folder))
             chunkQuery = chunkQuery.Where(c => c.Facet == request.Folder);
 
         var chunks = await chunkQuery.ToListAsync(cancellationToken);
-        var transientIds = await db.Documents
-            .Where(d => d.IsTransient)
+        // Exclude transitory filings and soft-deleted (recycle bin) documents from Assistant RAG.
+        var excludedIds = await db.Documents
+            .Where(d => d.IsTransient || d.DeletedAt != null)
             .Select(d => d.Id)
             .ToListAsync(cancellationToken);
-        var transientSet = transientIds.ToHashSet();
-        chunks = chunks.Where(c => !transientSet.Contains(c.SourceId)).ToList();
+        var excludedSet = excludedIds.ToHashSet();
+        chunks = chunks.Where(c => !excludedSet.Contains(c.SourceId)).ToList();
         var chunkSourceIds = chunks.Select(c => c.SourceId).Distinct().ToHashSet();
 
-        var chunkHits = RankChunks(chunks, request.Query, queryVector, minScore)
+        var rankedChunks = RankChunks(chunks, request.Query, queryVector, minScore)
             .GroupBy(x => x.SourceId)
             .Select(g => g.OrderByDescending(x => x.Score).First())
-            .Select(x => new SemanticSearchHit(
+            .ToList();
+
+        // Load source metadata so agent labels use content topics even when DisplayName is a bare file name.
+        var rankedSourceIds = rankedChunks.Select(x => x.SourceId).Distinct().ToList();
+        var docMetaById = await db.Documents
+            .Where(d => rankedSourceIds.Contains(d.Id) && d.DeletedAt == null)
+            .Select(d => new { d.Id, d.FileName, d.SuggestedFolder, d.FullTextContent, d.AiTags })
+            .ToDictionaryAsync(d => d.Id, cancellationToken);
+
+        var chunkHits = rankedChunks
+            .Where(x => docMetaById.ContainsKey(x.SourceId))
+            .Select(x =>
+        {
+            docMetaById.TryGetValue(x.SourceId, out var meta);
+            var fileName = meta?.FileName
+                ?? StripTopicPrefix(x.DisplayName)
+                ?? x.DisplayName
+                ?? "document";
+            var folder = meta?.SuggestedFolder ?? x.Facet;
+            var topic = DocumentContextLabel.InferTopic(fileName, meta?.FullTextContent, meta?.AiTags, folder);
+            var summary = DocumentContextLabel.BuildSummary(meta?.FullTextContent);
+            return new SemanticSearchHit(
                 x.SourceId,
-                x.DisplayName ?? "document",
-                x.Facet,
+                fileName,
+                folder,
                 BuildSnippet(x.Content, request.Query, PassageSnippetChars),
                 x.Score,
-                x.ChunkIndex));
+                x.ChunkIndex,
+                topic,
+                summary);
+        });
 
         // Legacy whole-document vectors for sources not yet chunk-indexed.
         var docs = await db.Documents
-            .Where(d => d.Embedding != null && !d.IsTransient)
-            .Select(d => new { d.Id, d.FileName, d.SuggestedFolder, d.FullTextContent, d.Embedding })
+            .Where(d => d.Embedding != null && !d.IsTransient && d.DeletedAt == null)
+            .Select(d => new { d.Id, d.FileName, d.SuggestedFolder, d.FullTextContent, d.AiTags, d.Embedding })
             .ToListAsync(cancellationToken);
 
         if (!string.IsNullOrWhiteSpace(request.Folder))
@@ -186,7 +235,9 @@ public class HybridAiService(
                 var keyword = KeywordOverlap(request.Query, $"{d.FileName} {d.FullTextContent}");
                 var score = BlendScore(cosine, keyword);
                 var snippet = BuildSnippet(d.FullTextContent ?? d.FileName, request.Query, PassageSnippetChars);
-                return new SemanticSearchHit(d.Id, d.FileName, d.SuggestedFolder, snippet, score);
+                var topic = DocumentContextLabel.InferTopic(d.FileName, d.FullTextContent, d.AiTags, d.SuggestedFolder);
+                var summary = DocumentContextLabel.BuildSummary(d.FullTextContent);
+                return new SemanticSearchHit(d.Id, d.FileName, d.SuggestedFolder, snippet, score, null, topic, summary);
             })
             .Where(h => h.Score >= minScore);
 
@@ -196,25 +247,39 @@ public class HybridAiService(
             .ToList();
 
         var considered = chunkSourceIds.Count + legacyDocs.Count;
+        TikrActionLog.Completed(logger, "AI.SemanticSearchDocuments",
+            $"Hits={hits.Count} Considered={considered} TopScore={(hits.Count > 0 ? hits[0].Score.ToString("F3") : "n/a")}",
+            sw.ElapsedMilliseconds);
         return new SemanticSearchResponse(request.Query, considered, hits, EmbeddingAvailable: true);
     }
 
     public async Task<EmbedKnowledgeEntryResponse> EmbedKnowledgeEntryAsync(Guid entryId, CancellationToken cancellationToken = default)
     {
+        var sw = Stopwatch.StartNew();
+        TikrActionLog.Started(logger, "AI.EmbedKnowledge", $"EntryId={entryId}");
+
         var entry = await db.KnowledgeEntries.FindAsync([entryId], cancellationToken)
             ?? throw new KeyNotFoundException($"Knowledge entry {entryId} not found.");
 
         var ok = await TryIndexKnowledgeChunksAsync(entry, cancellationToken);
         if (!ok)
+        {
+            TikrActionLog.Failed(logger, "AI.EmbedKnowledge", "Embedding generator unavailable", $"EntryId={entryId}");
             return new EmbedKnowledgeEntryResponse(entryId, false, "Embedding generator unavailable (is Ollama running with nomic-embed-text?)");
+        }
 
         entry.UpdatedAt = DateTime.UtcNow;
         await db.SaveChangesAsync(cancellationToken);
+        TikrActionLog.Completed(logger, "AI.EmbedKnowledge", $"EntryId={entryId} Title={entry.Title}", sw.ElapsedMilliseconds);
         return new EmbedKnowledgeEntryResponse(entryId, true, null);
     }
 
     public async Task<SemanticSearchKnowledgeResponse> SemanticSearchKnowledgeAsync(SemanticSearchRequest request, CancellationToken cancellationToken = default)
     {
+        var sw = Stopwatch.StartNew();
+        TikrActionLog.Started(logger, "AI.SemanticSearchKnowledge",
+            $"QueryLen={request.Query?.Length ?? 0} TopK={request.TopK}");
+
         if (string.IsNullOrWhiteSpace(request.Query))
             return new SemanticSearchKnowledgeResponse(request.Query, 0, [], EmbeddingAvailable: true);
 
@@ -223,7 +288,10 @@ public class HybridAiService(
 
         var queryVector = await TryGenerateEmbeddingAsync(request.Query, cancellationToken);
         if (queryVector is null)
+        {
+            TikrActionLog.Failed(logger, "AI.SemanticSearchKnowledge", "Embeddings unavailable (Ollama/nomic-embed-text)");
             return new SemanticSearchKnowledgeResponse(request.Query, 0, [], EmbeddingAvailable: false);
+        }
 
         var chunkQuery = db.EmbeddingChunks.Where(c => c.SourceType == EmbeddingSourceType.Knowledge);
         if (!string.IsNullOrWhiteSpace(request.Category))
@@ -270,13 +338,28 @@ public class HybridAiService(
             .ToList();
 
         var considered = chunkSourceIds.Count + legacyEntries.Count;
+        TikrActionLog.Completed(logger, "AI.SemanticSearchKnowledge",
+            $"Hits={hits.Count} Considered={considered}",
+            sw.ElapsedMilliseconds);
         return new SemanticSearchKnowledgeResponse(request.Query, considered, hits, EmbeddingAvailable: true);
     }
 
-    public async Task<ReindexEmbeddingsResponse> ReindexAllEmbeddingsAsync(CancellationToken cancellationToken = default)
+    public async Task<ReindexEmbeddingsResponse> ReindexAllEmbeddingsAsync(
+        string? trigger = null,
+        CancellationToken cancellationToken = default)
     {
+        var sw = Stopwatch.StartNew();
+        var triggerLabel = string.IsNullOrWhiteSpace(trigger) ? "manual" : trigger.Trim();
+        TikrActionLog.Started(logger, "AI.ReindexEmbeddings", $"Trigger={triggerLabel}");
+
         var errors = new List<string>();
-        var docs = await db.Documents.ToListAsync(cancellationToken);
+        // Active library only: skip recycle-bin and one-time filings (not in Assistant RAG).
+        var docs = await db.Documents
+            .Where(d => d.DeletedAt == null && !d.IsTransient)
+            .ToListAsync(cancellationToken);
+        var skipped = await db.Documents.CountAsync(
+            d => d.DeletedAt != null || d.IsTransient,
+            cancellationToken);
         var entries = await db.KnowledgeEntries.ToListAsync(cancellationToken);
         var docsOk = 0;
         var knowledgeOk = 0;
@@ -285,14 +368,21 @@ public class HybridAiService(
         {
             try
             {
+                var sourceText = BuildEmbeddingText(doc);
+                if (IsSparseForEmbedding(sourceText))
+                {
+                    errors.Add($"Document {doc.FileName}: sparse/missing text (OCR or re-tag may help)");
+                    continue;
+                }
+
                 if (await TryIndexDocumentChunksAsync(doc, cancellationToken))
                     docsOk++;
                 else
-                    errors.Add($"Document {doc.Id}: Embedding generator unavailable");
+                    errors.Add($"Document {doc.FileName}: embedding generator unavailable (is Ollama + nomic-embed-text up?)");
             }
             catch (Exception ex)
             {
-                errors.Add($"Document {doc.Id}: {ex.Message}");
+                errors.Add($"Document {doc.FileName}: {ex.Message}");
             }
         }
 
@@ -303,21 +393,33 @@ public class HybridAiService(
                 if (await TryIndexKnowledgeChunksAsync(entry, cancellationToken))
                     knowledgeOk++;
                 else
-                    errors.Add($"Knowledge {entry.Id}: Embedding generator unavailable");
+                    errors.Add($"Knowledge {entry.Title}: embedding generator unavailable");
             }
             catch (Exception ex)
             {
-                errors.Add($"Knowledge {entry.Id}: {ex.Message}");
+                errors.Add($"Knowledge {entry.Title}: {ex.Message}");
             }
         }
 
         await db.SaveChangesAsync(cancellationToken);
-        return new ReindexEmbeddingsResponse(docs.Count, docsOk, entries.Count, knowledgeOk, errors);
+        TikrActionLog.Completed(logger, "AI.ReindexEmbeddings",
+            $"Trigger={triggerLabel} Docs={docsOk}/{docs.Count} Knowledge={knowledgeOk}/{entries.Count} Skipped={skipped} Errors={errors.Count}",
+            sw.ElapsedMilliseconds);
+        return new ReindexEmbeddingsResponse(
+            docs.Count,
+            docsOk,
+            entries.Count,
+            knowledgeOk,
+            errors,
+            DocumentsSkipped: skipped,
+            Trigger: triggerLabel);
     }
 
     public async Task<CorpusHealthResponse> GetCorpusHealthAsync(CancellationToken cancellationToken = default)
     {
+        // Coverage is for active, recurring (non-transient) documents only.
         var documents = await db.Documents
+            .Where(d => d.DeletedAt == null)
             .Select(d => new { d.Id, d.FileName, d.IsTransient, d.FullTextContent })
             .ToListAsync(cancellationToken);
         var knowledge = await db.KnowledgeEntries.Select(k => k.Id).ToListAsync(cancellationToken);
@@ -345,12 +447,20 @@ public class HybridAiService(
             .Take(25)
             .ToList();
 
+        // Recovery needs: embeddable recurring docs missing chunks (exclude sparse — reindex cannot fix those).
+        var embeddableMissing = recurring.Count(d =>
+            !IsSparseForEmbedding(d.FullTextContent) && !docChunkSet.Contains(d.Id));
+
         var knowledgeWithChunks = knowledge.Count(id => knowledgeChunkSet.Contains(id));
         var docPct = recurring.Count == 0 ? 100.0 : Math.Round(100.0 * withChunks / recurring.Count, 1);
         var knowledgePct = knowledge.Count == 0 ? 100.0 : Math.Round(100.0 * knowledgeWithChunks / knowledge.Count, 1);
 
+        var needsAttention = sparse.ToList();
+        if (embeddableMissing > 0)
+            needsAttention.Insert(0, $"{embeddableMissing} document(s) ready for reindex (Ollama offline earlier?)");
+
         return new CorpusHealthResponse(
-            DocumentsTotal: documents.Count,
+            DocumentsTotal: recurring.Count,
             DocumentsWithChunks: withChunks,
             DocumentsTransient: documents.Count(d => d.IsTransient),
             DocumentsSparseText: sparse.Count,
@@ -358,7 +468,7 @@ public class HybridAiService(
             KnowledgeWithChunks: knowledgeWithChunks,
             DocumentsChunkCoveragePercent: docPct,
             KnowledgeChunkCoveragePercent: knowledgePct,
-            NeedsAttention: sparse);
+            NeedsAttention: needsAttention);
     }
 
     public async Task<IReadOnlyList<DashboardPriority>> GetDashboardPrioritiesAsync(CancellationToken cancellationToken = default)
@@ -399,6 +509,10 @@ public class HybridAiService(
 
     public async Task<AskAdvancedResponse> AskAdvancedAsync(AskAdvancedRequest request, CancellationToken cancellationToken = default)
     {
+        var sw = Stopwatch.StartNew();
+        TikrActionLog.Started(logger, "AI.AskAdvanced",
+            $"PromptLen={request.Prompt?.Length ?? 0} ContextLen={request.Context?.Length ?? 0}");
+
         var prompt = string.IsNullOrWhiteSpace(request.Context)
             ? request.Prompt
             : $"Context:\n{request.Context}\n\nQuestion:\n{request.Prompt}";
@@ -419,23 +533,39 @@ public class HybridAiService(
             {
                 var grokAnswer = await grokService.CompleteAsync(prompt, cancellationToken: cancellationToken);
                 if (!string.IsNullOrWhiteSpace(grokAnswer))
+                {
+                    TikrActionLog.Completed(logger, "AI.AskAdvanced",
+                        $"UsedGrok=true AnswerLen={grokAnswer.Length} OllamaAvailable={ollamaAvailable}",
+                        sw.ElapsedMilliseconds);
                     return new AskAdvancedResponse(grokAnswer, UsedGrok: true);
+                }
             }
         }
 
         // Prefer local (validated) first
         var localAnswer = await GetLocalCompletionAsync(prompt, cancellationToken);
         if (!string.IsNullOrWhiteSpace(localAnswer))
+        {
+            TikrActionLog.Completed(logger, "AI.AskAdvanced",
+                $"UsedGrok=false AnswerLen={localAnswer.Length} OllamaAvailable={ollamaAvailable}",
+                sw.ElapsedMilliseconds);
             return new AskAdvancedResponse(localAnswer, UsedGrok: false);
+        }
 
         // Fallback to Grok if local failed and Grok enabled (even if not preferred by context)
         if (grokService.IsEnabled)
         {
             var grokAnswer = await grokService.CompleteAsync(prompt, cancellationToken: cancellationToken);
             if (!string.IsNullOrWhiteSpace(grokAnswer))
+            {
+                TikrActionLog.Completed(logger, "AI.AskAdvanced",
+                    $"UsedGrok=true (fallback) AnswerLen={grokAnswer.Length}",
+                    sw.ElapsedMilliseconds);
                 return new AskAdvancedResponse(grokAnswer, UsedGrok: true);
+            }
         }
 
+        TikrActionLog.Failed(logger, "AI.AskAdvanced", "No answer from Ollama or Grok");
         return new AskAdvancedResponse("Unable to get a response. Check Ollama connectivity (or enable USE_GROK with a valid GROK_API_KEY).", UsedGrok: false);
     }
 
@@ -456,7 +586,13 @@ public class HybridAiService(
     public async Task<AiStatusResponse> GetStatusAsync(CancellationToken cancellationToken = default)
     {
         var ollamaAvailable = await ollamaFactory.IsAvailableAsync(cancellationToken);
-        return new AiStatusResponse(ollamaAvailable, ollamaFactory.ChatModel, grokService.IsEnabled);
+        var keyConfigured = featureSettings?.Current.GrokApiKeyConfigured ?? grokService.IsEnabled;
+        return new AiStatusResponse(
+            ollamaAvailable,
+            ollamaFactory.ChatModel,
+            grokService.IsEnabled,
+            ollamaFactory.OllamaHost,
+            keyConfigured);
     }
 
     private async Task<string?> GetLocalCompletionAsync(
@@ -604,8 +740,29 @@ public class HybridAiService(
             .Where(c => c.SourceType == EmbeddingSourceType.Document && c.SourceId == document.Id)
             .ToListAsync(cancellationToken);
 
+        // Topic-prefixed DisplayName improves keyword ranking and agent labels for generic scan names.
+        var topic = DocumentContextLabel.InferTopic(
+            document.FileName, document.FullTextContent, document.AiTags, document.SuggestedFolder);
+        var displayName = DocumentContextLabel.BuildSourceLabel(document.FileName, topic);
+
         if (existing.Count > 0 && existing.All(c => c.ContentHash == sourceHash))
+        {
+            // Same body: keep vectors, but refresh labels/facets when tagging improves.
+            var facet = document.SuggestedFolder;
+            var labelsStale = existing.Any(c =>
+                !string.Equals(c.DisplayName, displayName, StringComparison.Ordinal) ||
+                !string.Equals(c.Facet, facet, StringComparison.Ordinal));
+            if (labelsStale)
+            {
+                foreach (var chunk in existing)
+                {
+                    chunk.DisplayName = displayName;
+                    chunk.Facet = facet;
+                    chunk.UpdatedAt = DateTime.UtcNow;
+                }
+            }
             return true;
+        }
 
         var passages = TextChunker.Chunk(sourceText);
         if (passages.Count == 0)
@@ -634,7 +791,7 @@ public class HybridAiService(
                 Content = passages[i],
                 Embedding = PackFloats(vectors[i]),
                 ContentHash = sourceHash,
-                DisplayName = document.FileName,
+                DisplayName = displayName,
                 Facet = document.SuggestedFolder,
                 UpdatedAt = DateTime.UtcNow
             });
@@ -725,5 +882,22 @@ public class HybridAiService(
         var len = Math.Min(maxLen, text.Length - start);
         var snippet = text.Substring(start, len).Trim();
         return start > 0 ? "…" + snippet : snippet;
+    }
+
+    /// <summary>
+    /// When chunk DisplayName was stored as "[Topic] file.pdf", recover the bare file name.
+    /// </summary>
+    internal static string? StripTopicPrefix(string? displayName)
+    {
+        if (string.IsNullOrWhiteSpace(displayName))
+            return null;
+        var s = displayName.Trim();
+        if (s.Length < 4 || s[0] != '[')
+            return s;
+        var close = s.IndexOf(']');
+        if (close <= 0 || close >= s.Length - 1)
+            return s;
+        var remainder = s[(close + 1)..].Trim();
+        return string.IsNullOrWhiteSpace(remainder) ? s : remainder;
     }
 }

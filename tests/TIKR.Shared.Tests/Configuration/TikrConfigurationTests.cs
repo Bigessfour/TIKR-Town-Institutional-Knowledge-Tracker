@@ -54,16 +54,33 @@ public class TikrConfigurationTests
         TikrConfiguration.GetOllamaHost(BuildConfig([]))
             .Should().Be("http://localhost:11434");
 
+        // Docker Compose hostname is rewritten to loopback when not inside a container.
         TikrConfiguration.GetOllamaHost(BuildConfig(new Dictionary<string, string?>
         {
             ["AI:OllamaHost"] = "http://ollama:11434"
-        })).Should().Be("http://ollama:11434");
+        })).Should().Be("http://127.0.0.1:11434");
 
         TikrConfiguration.GetOllamaHost(BuildConfig(new Dictionary<string, string?>
         {
             ["AI:OllamaHost"] = "http://ollama:11434",
             ["OLLAMA_HOST"] = "http://host.docker.internal:11434"
         })).Should().Be("http://host.docker.internal:11434");
+    }
+
+    [Fact]
+    public void RewriteDockerOnlyOllamaHost_KeepsDockerHostnameInsideContainer()
+    {
+        var previous = Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER");
+        try
+        {
+            Environment.SetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER", "true");
+            TikrConfiguration.RewriteDockerOnlyOllamaHost("http://ollama:11434")
+                .Should().Be("http://ollama:11434");
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER", previous);
+        }
     }
 
     [Fact]
@@ -145,12 +162,18 @@ public class TikrConfigurationTests
     public void GetGrokModel_UsesDefaultsAndOverrides()
     {
         TikrConfiguration.GetGrokModel(BuildConfig([]))
-            .Should().Be("grok-4.3");
+            .Should().Be("grok-4.5");
 
         TikrConfiguration.GetGrokModel(BuildConfig(new Dictionary<string, string?>
         {
+            ["GROK_MODEL"] = "grok-4.5"
+        })).Should().Be("grok-4.5");
+
+        // Pre-4.5 defaults auto-upgrade to the current xAI chat recommendation.
+        TikrConfiguration.GetGrokModel(BuildConfig(new Dictionary<string, string?>
+        {
             ["GROK_MODEL"] = "grok-4.3"
-        })).Should().Be("grok-4.3");
+        })).Should().Be("grok-4.5");
     }
 
     [Fact]

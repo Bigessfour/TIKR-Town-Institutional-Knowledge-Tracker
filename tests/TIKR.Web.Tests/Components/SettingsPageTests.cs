@@ -23,7 +23,11 @@ public class SettingsPageTests : ClerkTestContext
             {
                 "/api/ai/status" =>
                     """
-                    {"ollamaAvailable":true,"ollamaModel":"llama3.2:3b","grokEnabled":false}
+                    {"ollamaAvailable":true,"ollamaModel":"llama3.2:3b","grokEnabled":false,"ollamaHost":"http://127.0.0.1:11434","grokApiKeyConfigured":false}
+                    """,
+                "/api/ai/feature-settings" =>
+                    """
+                    {"ollamaHost":"http://127.0.0.1:11434","ollamaChatModel":"llama3.2:3b","useGrok":false,"grokApiKeyConfigured":false,"ollamaAvailable":true,"statusMessage":null,"grokModel":"grok-4.5","syncfusionLicenseKeyConfigured":true,"syncfusionLicenseHint":"…abcd","grokApiKeyHint":null,"fileStoragePath":"/data/documents","townName":"Wiley","storageLabel":"Synology NAS","townLogoPath":null,"ocrEnabled":true,"useSyncfusionAgentTools":true,"useSyncfusionAgentOrchestration":false,"libraryScanPath":null,"libraryScanIntervalSeconds":300,"libraryScanMaxImports":500,"emailInboxPath":null}
                     """,
                 "/api/system/local-status" =>
                     """
@@ -35,7 +39,15 @@ public class SettingsPageTests : ClerkTestContext
                     """,
                 "/api/library/scan-status" =>
                     """
-                    {"configured":false,"libraryPath":null,"intervalSeconds":300,"pollerActive":false,"lastResult":null,"lastScanUtc":null}
+                    {"configured":false,"libraryPath":null,"intervalSeconds":300,"pollerActive":false,"lastResult":null,"lastScanUtc":null,"scanInProgress":false}
+                    """,
+                "/api/ai/corpus-health" =>
+                    """
+                    {"documentsTotal":0,"documentsWithChunks":0,"documentsTransient":0,"documentsSparseText":0,"knowledgeTotal":0,"knowledgeWithChunks":0,"documentsChunkCoveragePercent":100,"knowledgeChunkCoveragePercent":100,"needsAttention":[]}
+                    """,
+                "/api/ai/embedding-recovery-status" =>
+                    """
+                    {"ollamaAvailable":true,"recoveryNeeded":false,"lastOllamaHealthyUtc":null,"lastAutoReindexUtc":null,"lastTrigger":null,"lastResultSummary":null,"lastError":null,"documentsChunkCoveragePercent":100,"knowledgeChunkCoveragePercent":100}
                     """,
                 "/api/audit" => "[]",
                 "/api/auth/me/tour" => """{"completedVersion":null,"autoTourDisabled":false}""",
@@ -51,16 +63,17 @@ public class SettingsPageTests : ClerkTestContext
         Services.AddSingleton(new TikrApiClient(http));
 
         var cut = RenderComponent<Settings>();
-        cut.WaitForAssertion(() => cut.Markup.Should().Contain("Connected"));
-        cut.Markup.Should().Contain("llama3.2:3b");
+        cut.WaitForAssertion(() => cut.Markup.Should().Contain("Ready"));
         cut.Markup.Should().Contain("Wiley");
-        cut.Markup.Should().Contain("Syncfusion Document SDK");
-        cut.Markup.Should().Contain("Clerk preferences");
-        cut.Markup.Should().Contain("docker/.env");
+        cut.Markup.Should().Contain("This computer");
+        cut.Markup.Should().Contain("Keys");
+        cut.Markup.Should().Contain("Save settings");
+        cut.Markup.Should().Contain("Where uploaded files live");
+        cut.Markup.Should().Contain("Call Steve for help");
         cut.Markup.Should().Contain("/assistant");
-        cut.Markup.Should().Contain("NAS document library");
-        cut.Markup.Should().Contain("Scan library now");
-        cut.Markup.Should().Contain("Reindex embeddings");
+        cut.Markup.Should().Contain("Bring in shared town documents");
+        cut.Markup.Should().Contain("Scan shared folder now");
+        cut.Markup.Should().Contain("Refresh Assistant memory");
     }
 
     [Fact]
@@ -71,7 +84,7 @@ public class SettingsPageTests : ClerkTestContext
         Services.AddSingleton(new TikrApiClient(http));
 
         var cut = RenderComponent<Settings>();
-        cut.WaitForAssertion(() => cut.Markup.Should().Contain("Unable to reach API"));
+        cut.WaitForAssertion(() => cut.Markup.Should().Contain("town server"));
     }
 
     private sealed class StubHandler(Func<HttpRequestMessage, CancellationToken, HttpResponseMessage> handler)

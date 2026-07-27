@@ -1,0 +1,14 @@
+---
+description: TIKR — IDE canonical settings; no repo-local editor/MCP config
+alwaysApply: true
+---
+
+# TIKR — use IDE settings, not this repo
+
+Follow the global rule in `~/.cursor/rules/ide-canonical-settings.mdc`.
+
+- **Do not** add or grow `.vscode/settings.json` here except workspace-only keys (`dotnet.defaultSolution`, `containers.environment` for `docker/docker-compose.yml`).
+- **Do not** add `.cursor/mcp.json`. MCP is `~/.cursor/mcp.json` via `./scripts/setup-cursor-mcp.sh`.
+- Project agent rules (`tikr.mdc`, `AGENTS.md`) are for **TIKR workflow**, not editor preferences.
+
+Canonical paths: `~/.cursor/ide-tooling/canonical-settings.json`, `~/.cursor/ide-tooling/README.md`.

@@ -4,13 +4,23 @@ using TIKR.Shared.Interfaces;
 
 namespace TIKR.Infrastructure.Services;
 
-public class LocalFileStorageService(IConfiguration configuration) : IFileStorageService
+public class LocalFileStorageService(FeatureSettingsState settings, IConfiguration configuration) : IFileStorageService
 {
-    private readonly string _basePath = TikrConfiguration.GetFileStoragePath(configuration);
+    private string BasePath
+    {
+        get
+        {
+            var fromSettings = settings.Current.FileStoragePath;
+            if (!string.IsNullOrWhiteSpace(fromSettings))
+                return fromSettings;
+            return TikrConfiguration.GetFileStoragePath(configuration);
+        }
+    }
 
     public async Task<string> SaveAsync(Stream content, string fileName, CancellationToken cancellationToken = default)
     {
-        Directory.CreateDirectory(_basePath);
+        var basePath = BasePath;
+        Directory.CreateDirectory(basePath);
 
         var normalized = fileName.Replace('\\', '/').TrimStart('/');
         string relativePath;
@@ -51,5 +61,5 @@ public class LocalFileStorageService(IConfiguration configuration) : IFileStorag
     }
 
     public string GetFullPath(string storagePath) =>
-        Path.Combine(_basePath, storagePath.Replace('/', Path.DirectorySeparatorChar));
+        Path.Combine(BasePath, storagePath.Replace('/', Path.DirectorySeparatorChar));
 }

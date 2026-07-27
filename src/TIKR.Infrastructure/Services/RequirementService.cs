@@ -1,4 +1,7 @@
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using TIKR.Infrastructure.Data;
+using TIKR.Shared.Diagnostics;
 using TIKR.Shared.DTOs;
 using TIKR.Shared.Entities;
 using TIKR.Shared.Helpers;
@@ -9,14 +12,18 @@ namespace TIKR.Infrastructure.Services;
 /// <summary>
 /// Requirement business logic (CRUD centralization). Minimal initial impl for cleanup; expand as needed.
 /// </summary>
-public class RequirementService(TikrDbContext db) : IRequirementService
+public class RequirementService(TikrDbContext db, ILogger<RequirementService>? logger = null) : IRequirementService
 {
+    private readonly ILogger _log = logger ?? NullLogger<RequirementService>.Instance;
+
     public async Task<Requirement> CreateAsync(
         CreateRequirementRequest request,
         IAuditService audit,
         ICurrentUserService currentUser,
         CancellationToken ct = default)
     {
+        TikrActionLog.Started(_log, "Requirement.Create", $"Title={request.Title} Due={request.DueDate}");
+
         var entity = new Requirement
         {
             Id = Guid.NewGuid(),
@@ -39,11 +46,14 @@ public class RequirementService(TikrDbContext db) : IRequirementService
         await db.SaveChangesAsync(ct);
         await tx.CommitAsync(ct);
 
+        TikrActionLog.Completed(_log, "Requirement.Create", $"RequirementId={entity.Id} Title={entity.Title}");
         return entity;
     }
 
     public async Task<Requirement> UpdateAsync(Guid id, UpdateRequirementRequest request, IAuditService audit, ICurrentUserService currentUser, CancellationToken ct = default)
     {
+        TikrActionLog.Started(_log, "Requirement.Update", $"RequirementId={id} Title={request.Title} Completed={request.IsCompleted}");
+
         var entity = await db.Requirements.FindAsync(id);
         if (entity is null) throw new KeyNotFoundException($"Requirement {id} not found.");
 
@@ -77,11 +87,14 @@ public class RequirementService(TikrDbContext db) : IRequirementService
         await db.SaveChangesAsync(ct);
         await tx.CommitAsync(ct);
 
+        TikrActionLog.Completed(_log, "Requirement.Update", $"RequirementId={entity.Id} Title={entity.Title}");
         return entity;
     }
 
     public async Task DeleteAsync(Guid id, IAuditService audit, ICurrentUserService currentUser, CancellationToken ct = default)
     {
+        TikrActionLog.Started(_log, "Requirement.Delete", $"RequirementId={id}");
+
         var entity = await db.Requirements.FindAsync(id);
         if (entity is null) throw new KeyNotFoundException($"Requirement {id} not found.");
         if (entity.IsSystemSeeded) throw new InvalidOperationException("System-seeded requirements cannot be deleted.");
@@ -91,10 +104,15 @@ public class RequirementService(TikrDbContext db) : IRequirementService
         await audit.LogAsync("Delete", nameof(Requirement), id, entity.Title, currentUser.UserId, ct);
         await db.SaveChangesAsync(ct);
         await tx.CommitAsync(ct);
+
+        TikrActionLog.Completed(_log, "Requirement.Delete", $"RequirementId={id} Title={entity.Title}");
     }
 
     public async Task LinkDocumentAsync(Guid requirementId, Guid documentId, IAuditService audit, ICurrentUserService currentUser, CancellationToken ct = default)
     {
+        TikrActionLog.Started(_log, "Requirement.LinkDocument",
+            $"RequirementId={requirementId} DocumentId={documentId}");
+
         var requirement = await db.Requirements.FindAsync(requirementId, ct);
         if (requirement is null) throw new KeyNotFoundException($"Requirement {requirementId} not found.");
 
@@ -114,11 +132,20 @@ public class RequirementService(TikrDbContext db) : IRequirementService
             await audit.LogAsync("Link", nameof(Requirement), requirementId, document.FileName, currentUser.UserId, ct);
             await db.SaveChangesAsync(ct);
             await tx.CommitAsync(ct);
+            TikrActionLog.Completed(_log, "Requirement.LinkDocument",
+                $"RequirementId={requirementId} FileName={document.FileName}");
+        }
+        else
+        {
+            TikrActionLog.Info(_log, "Requirement.LinkDocument", "Link already existed (no-op)");
         }
     }
 
     public async Task UnlinkDocumentAsync(Guid requirementId, Guid documentId, IAuditService audit, ICurrentUserService currentUser, CancellationToken ct = default)
     {
+        TikrActionLog.Started(_log, "Requirement.UnlinkDocument",
+            $"RequirementId={requirementId} DocumentId={documentId}");
+
         var link = await db.RequirementDocuments.FindAsync(new object[] { requirementId, documentId }, ct);
         if (link is null) throw new KeyNotFoundException($"Link not found for requirement {requirementId} and document {documentId}.");
 
@@ -127,6 +154,9 @@ public class RequirementService(TikrDbContext db) : IRequirementService
         await audit.LogAsync("Unlink", nameof(Requirement), requirementId, documentId.ToString(), currentUser.UserId, ct);
         await db.SaveChangesAsync(ct);
         await tx.CommitAsync(ct);
+
+        TikrActionLog.Completed(_log, "Requirement.UnlinkDocument",
+            $"RequirementId={requirementId} DocumentId={documentId}");
     }
 
     private static string? NormalizeOptional(string? value) =>

@@ -32,28 +32,54 @@ OLLAMA_HOST = os.environ.get("OLLAMA_HOST", "http://localhost:11434").rstrip("/"
 EMBED_MODEL = os.environ.get("TIKR_RAG_EMBED_MODEL", "nomic-embed-text")
 CHUNK_SIZE = 800
 CHUNK_OVERLAP = 100
+# Per-request embed timeout (seconds). Keep short so one stuck Ollama call cannot hang 10+ minutes.
+EMBED_TIMEOUT = float(os.environ.get("TIKR_RAG_EMBED_TIMEOUT", "30"))
+# Max source file size (bytes) to index — skips giant dumps like repomix-output.md.
+MAX_FILE_BYTES = int(os.environ.get("TIKR_RAG_MAX_FILE_BYTES", str(400_000)))
+# Parallel Ollama embed workers (1 = serial). 4 is a good default for local Ollama.
+EMBED_WORKERS = max(1, int(os.environ.get("TIKR_RAG_EMBED_WORKERS", "4")))
 
-EXCLUDE_DIRS = {
-    ".agents/skills",
+# Directory *names* pruned during walk (basename match only).
+EXCLUDE_DIR_NAMES = {
     ".git",
     ".rag_index",
     ".venv",
+    ".agents",  # Syncfusion skill dumps — huge, low value for app RAG
+    ".local-data",
+    "local-data",
     "__pycache__",
     "bin",
-    "coverage",
-    "local-data",
-    "node_modules",
     "obj",
+    "coverage",
+    "node_modules",
+    "TestResults",
+    "installer",
+    "deploy",
+    "apm_modules",  # vendored skill mirrors; not app source
+    ".grok",
 }
+
+# Path globs (relative to ROOT, forward slashes) that are never indexed.
+EXCLUDE_FILE_GLOBS = [
+    "repomix-output.md",
+    "**/repomix-output.md",
+    "**/*.Designer.cs",
+    "**/Migrations/*Designer.cs",
+    "**/package-lock.json",
+    "**/*.min.js",
+    "**/*.map",
+]
 
 INCLUDE_GLOBS = [
     "docs/**/*.md",
+    "specs/**/*.md",
     "README.md",
     "AGENTS.md",
     "src/**/*.cs",
     "src/**/*.razor",
     "src/**/*.py",
-    "scripts/**/*",
+    "scripts/**/*.py",
+    "scripts/**/*.sh",
     "tests/**/*.cs",
     "*.md",
 ]
@@ -70,10 +96,23 @@ def read_text_safe(path: Path) -> str:
         return ""
 
 
-def should_include(path: Path) -> bool:
+def rel_path_str(path: Path) -> str | None:
     try:
-        rel = str(path.relative_to(ROOT)).replace("\\", "/")
+        return str(path.relative_to(ROOT)).replace("\\", "/")
     except ValueError:
+        return None
+
+
+def should_include(path: Path) -> bool:
+    rel = rel_path_str(path)
+    if not rel:
+        return False
+    if any(fnmatch.fnmatch(rel, g) for g in EXCLUDE_FILE_GLOBS):
+        return False
+    try:
+        if path.stat().st_size > MAX_FILE_BYTES:
+            return False
+    except OSError:
         return False
     return any(fnmatch.fnmatch(rel, g) for g in INCLUDE_GLOBS)
 
@@ -94,13 +133,13 @@ def chunk_text(text: str) -> list[str]:
 
 
 def get_embedding(text: str) -> list[float]:
-    """Call Ollama embeddings API."""
+    """Call Ollama embeddings API (bounded timeout so reindex cannot hang forever)."""
     url = f"{OLLAMA_HOST}/api/embeddings"
     try:
         resp = requests.post(
             url,
-            json={"model": EMBED_MODEL, "prompt": text},
-            timeout=120,
+            json={"model": EMBED_MODEL, "prompt": text[:8000]},
+            timeout=EMBED_TIMEOUT,
         )
         resp.raise_for_status()
         data = resp.json()
@@ -108,6 +147,28 @@ def get_embedding(text: str) -> list[float]:
     except Exception as exc:
         log(f"Embedding error: {exc}")
         return []
+
+
+def file_fingerprint(path: Path) -> str:
+    """Cheap change detector (mtime + size) — enough to skip re-embed of unchanged files."""
+    try:
+        st = path.stat()
+        return f"{int(st.st_mtime_ns)}:{st.st_size}"
+    except OSError:
+        return "0:0"
+
+
+def iter_source_files() -> list[Path]:
+    files: list[Path] = []
+    for root, dirs, names in os.walk(ROOT):
+        # Prune excluded directory basenames in-place (os.walk convention).
+        dirs[:] = [d for d in dirs if d not in EXCLUDE_DIR_NAMES]
+        for fname in names:
+            fpath = Path(root) / fname
+            if should_include(fpath):
+                files.append(fpath)
+    files.sort(key=lambda p: str(p))
+    return files
 
 
 def cosine_similarity(a: list[float], b: list[float]) -> float:
@@ -135,46 +196,119 @@ def save_index(index: dict[str, Any]) -> None:
     INDEX_FILE.write_text(json.dumps(index), encoding="utf-8")
 
 
-def build_index(force: bool = False) -> dict[str, Any]:
-    """Walk the repo and (re)build the vector index."""
+def build_index(force: bool = False, full: bool = False) -> dict[str, Any]:
+    """Walk the repo and (re)build the vector index.
+
+    * force=False and index exists → return existing (no work).
+    * force=True, full=False → **incremental**: re-embed only new/changed files (default for MCP).
+    * force=True, full=True → wipe and re-embed everything (slow; use CLI --full only).
+    """
     existing = load_index()
     if not force and existing.get("chunks"):
+        log(
+            f"Index already present ({len(existing.get('chunks') or [])} chunks, "
+            f"last={existing.get('last_indexed')}); use force=True to refresh."
+        )
         return existing
 
-    chunks: list[dict[str, Any]] = []
-    files_processed = 0
+    t0 = time.time()
+    source_files = iter_source_files()
+    log(f"Scanning {len(source_files)} source files (full={full})...")
 
-    for root, dirs, files in os.walk(ROOT):
-        dirs[:] = [d for d in dirs if d not in EXCLUDE_DIRS]
-        for fname in files:
-            fpath = Path(root) / fname
-            if not should_include(fpath):
+    # Previous chunks keyed by path for incremental reuse.
+    prev_by_path: dict[str, list[dict[str, Any]]] = {}
+    prev_fp: dict[str, str] = dict(existing.get("file_fingerprints") or {})
+    # Old indexes had no fingerprints — one-time migrate: reuse existing vectors, only embed new paths.
+    legacy_index = not full and bool(existing.get("chunks")) and not prev_fp
+    if legacy_index:
+        log("Legacy index detected (no fingerprints). Migrating: reuse existing embeddings, embed new files only.")
+    if not full:
+        for item in existing.get("chunks") or []:
+            p = item.get("path") or ""
+            if not p:
                 continue
-            text = read_text_safe(fpath)
-            if not text.strip():
-                continue
-            rel_path = str(fpath.relative_to(ROOT)).replace("\\", "/")
-            for i, chunk in enumerate(chunk_text(text)):
-                emb = get_embedding(chunk)
-                chunks.append(
-                    {
-                        "path": rel_path,
-                        "chunk_id": i,
-                        "text": chunk[:2000],
-                        "embedding": emb,
-                    }
-                )
+            prev_by_path.setdefault(p, []).append(item)
+
+    new_chunks: list[dict[str, Any]] = []
+    new_fp: dict[str, str] = {}
+    files_processed = 0
+    files_reused = 0
+    files_embedded = 0
+    embed_calls = 0
+
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+
+    for fpath in source_files:
+        rel = rel_path_str(fpath) or ""
+        fp = file_fingerprint(fpath)
+        new_fp[rel] = fp
+
+        has_prev = rel in prev_by_path and any((c.get("embedding") or []) for c in prev_by_path[rel])
+        unchanged = prev_fp.get(rel) == fp
+        # Reuse prior embeddings when file unchanged, or when migrating a legacy index entry.
+        if not full and has_prev and (unchanged or legacy_index):
+            new_chunks.extend(prev_by_path[rel])
+            files_reused += 1
             files_processed += 1
-            if files_processed % 20 == 0:
-                log(f"Processed {files_processed} files...")
+            continue
+
+        text = read_text_safe(fpath)
+        if not text.strip():
+            files_processed += 1
+            continue
+
+        parts = chunk_text(text)
+        # Embed chunks in parallel (bounded workers).
+        embeddings: list[list[float]] = [[] for _ in parts]
+        if parts:
+            with ThreadPoolExecutor(max_workers=EMBED_WORKERS) as pool:
+                futures = {pool.submit(get_embedding, part): i for i, part in enumerate(parts)}
+                for fut in as_completed(futures):
+                    i = futures[fut]
+                    try:
+                        embeddings[i] = fut.result() or []
+                    except Exception as exc:  # pragma: no cover
+                        log(f"Embed worker error {rel}#{i}: {exc}")
+                        embeddings[i] = []
+                    embed_calls += 1
+
+        for i, part in enumerate(parts):
+            new_chunks.append(
+                {
+                    "path": rel,
+                    "chunk_id": i,
+                    "text": part[:2000],
+                    "embedding": embeddings[i],
+                }
+            )
+        files_embedded += 1
+        files_processed += 1
+        if files_embedded % 10 == 0 or files_processed == len(source_files):
+            elapsed = time.time() - t0
+            log(
+                f"Progress files={files_processed}/{len(source_files)} "
+                f"embedded={files_embedded} reused={files_reused} "
+                f"chunks={len(new_chunks)} embed_calls={embed_calls} "
+                f"elapsed={elapsed:.1f}s"
+            )
 
     index = {
-        "chunks": chunks,
+        "chunks": new_chunks,
         "last_indexed": time.strftime("%Y-%m-%d %H:%M:%S"),
         "model": EMBED_MODEL,
         "total_files": files_processed,
+        "files_embedded": files_embedded,
+        "files_reused": files_reused,
+        "file_fingerprints": new_fp,
+        "build_seconds": round(time.time() - t0, 1),
+        "mode": "full" if full else "incremental",
     }
     save_index(index)
+    log(
+        f"Done mode={index['mode']} files={files_processed} "
+        f"chunks={len(new_chunks)} embedded={files_embedded} reused={files_reused} "
+        f"in {index['build_seconds']}s"
+    )
     return index
 
 
@@ -261,8 +395,21 @@ def handle_list_tools() -> dict[str, Any]:
         },
         {
             "name": "refresh_index",
-            "description": "Rebuild the RAG index (call after code changes).",
-            "inputSchema": {"type": "object", "properties": {}},
+            "description": (
+                "Refresh the code/docs RAG index after code changes. "
+                "Default is *incremental* (only re-embeds changed files). "
+                "Set full=true only for a complete rebuild (slow)."
+            ),
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "full": {
+                        "type": "boolean",
+                        "description": "If true, re-embed every file. Default false (incremental).",
+                        "default": False,
+                    }
+                },
+            },
         },
     ]
     return {"tools": tools}
@@ -313,8 +460,15 @@ def handle_call_tool(name: str, arguments: dict[str, Any]) -> dict[str, Any]:
         return _text_content(summary)
 
     if name == "refresh_index":
-        idx = build_index(force=True)
-        return _text_content(f"Index refreshed. Chunks: {len(idx['chunks'])}")
+        full = bool(arguments.get("full", False))
+        idx = build_index(force=True, full=full)
+        return _text_content(
+            f"Index refreshed ({idx.get('mode', '?')}). "
+            f"Files: {idx.get('total_files', 0)} "
+            f"(embedded={idx.get('files_embedded', 0)}, reused={idx.get('files_reused', 0)}), "
+            f"chunks: {len(idx.get('chunks') or [])}, "
+            f"build_seconds: {idx.get('build_seconds', '?')}"
+        )
 
     return _text_content(f"Unknown tool: {name}")
 

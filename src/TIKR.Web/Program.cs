@@ -13,27 +13,54 @@ using Syncfusion.Blazor.SmartComponents;
 using Serilog;
 using Serilog.Events;
 
-// Operational structured logging via Serilog (console + rolling file to /data/logs/tikr-*.log).
-// Useful for runtime visibility, debugging production issues, and proof of operation.
-// Verbosity: Debug (with Microsoft overrides to Warning).
-try { Directory.CreateDirectory("/data/logs"); } catch { }
+// Operational structured logging via Serilog (console + rolling file).
+// Prefer NAS /data/logs; fall back to repo .local-data/logs on Mac/dev so click-through errors are greppable.
+static string ResolveWebLogDirectory()
+{
+    foreach (var candidate in new[]
+             {
+                 "/data/logs",
+                 Environment.GetEnvironmentVariable("TIKR_LOG_PATH"),
+                 Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), "..", "..", ".local-data", "logs")),
+                 Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..", ".local-data", "logs")),
+                 Path.Combine(Path.GetTempPath(), "tikr-logs")
+             })
+    {
+        if (string.IsNullOrWhiteSpace(candidate)) continue;
+        try
+        {
+            Directory.CreateDirectory(candidate);
+            return candidate;
+        }
+        catch { /* try next */ }
+    }
+    return Path.GetTempPath();
+}
+
+var webLogDir = ResolveWebLogDirectory();
 Log.Logger = new LoggerConfiguration()
     .MinimumLevel.Debug()
     .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
-    .MinimumLevel.Override("Microsoft.AspNetCore", LogEventLevel.Warning)
+    // Surface Blazor circuit / render exceptions at Error for Documents click-through debugging.
+    .MinimumLevel.Override("Microsoft.AspNetCore.Components", LogEventLevel.Information)
+    .MinimumLevel.Override("Microsoft.AspNetCore.Components.Server", LogEventLevel.Information)
+    .MinimumLevel.Override("Microsoft.AspNetCore.SignalR", LogEventLevel.Warning)
     .Enrich.FromLogContext()
     .Enrich.WithProperty("Application", "TIKR-Web")
     .WriteTo.Console()
-    .WriteTo.File("/data/logs/tikr-.log",
+    .WriteTo.File(Path.Combine(webLogDir, "tikr-web-.log"),
         rollingInterval: RollingInterval.Day,
         retainedFileCountLimit: 14,
-        outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception}")
+        outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {SourceContext}: {Message:lj}{NewLine}{Exception}")
     .CreateBootstrapLogger();
+Log.Information("TIKR.Web Serilog writing to {LogDirectory}", webLogDir);
 
 var builder = WebApplication.CreateBuilder(args);
 
 if (builder.Environment.IsDevelopment())
     EnvLoader.LoadDevelopmentEnv(builder.Environment.ContentRootPath);
+else
+    EnvLoader.LoadRuntimeSecrets(builder.Configuration["TIKR_DATA_PATH"]);
 
 builder.Configuration.AddEnvironmentVariables();
 
@@ -91,6 +118,15 @@ builder.Services.AddSyncfusionSmartComponents().InjectOpenAIInference();
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
+// Large document preview / editor payloads (PDF bytes, SFDT) need a bigger SignalR frame.
+builder.Services.AddSignalR(options =>
+{
+    options.MaximumReceiveMessageSize = 100 * 1024 * 1024;
+});
+
+// Circuit lifecycle + connection-down warnings → Serilog (grep CircuitId=).
+builder.Services.AddScoped<Microsoft.AspNetCore.Components.Server.Circuits.CircuitHandler, TikrCircuitHandler>();
+
 builder.Services.AddSyncfusionBlazor();
 builder.Services.AddMemoryCache();
 
@@ -141,7 +177,20 @@ app.UseHttpsRedirection();
 app.UseAntiforgery();
 
 // Request logging via Serilog (captures HTTP interactions for observability)
-app.UseSerilogRequestLogging();
+// Log outbound API proxy traffic from the Web host (clerk button → Web → API).
+app.UseSerilogRequestLogging(options =>
+{
+    options.MessageTemplate =
+        "HTTP {RequestMethod} {RequestPath} → {StatusCode} in {Elapsed:0.0} ms";
+    options.GetLevel = (httpContext, elapsed, ex) =>
+        ex is not null || httpContext.Response.StatusCode >= 500
+            ? Serilog.Events.LogEventLevel.Error
+            : httpContext.Response.StatusCode >= 400
+                ? Serilog.Events.LogEventLevel.Warning
+                : httpContext.Request.Method is "GET" or "HEAD"
+                    ? Serilog.Events.LogEventLevel.Debug
+                    : Serilog.Events.LogEventLevel.Information;
+});
 
 app.MapStaticAssets();
 app.MapRazorComponents<App>()

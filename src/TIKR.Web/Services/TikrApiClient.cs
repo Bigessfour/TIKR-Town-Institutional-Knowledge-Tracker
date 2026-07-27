@@ -22,9 +22,14 @@ public class TikrApiClient(HttpClient http)
         response.EnsureSuccessStatusCode();
     }
 
-    public async Task<List<DocumentDto>> GetDocumentsAsync(string? query = null)
+    public async Task<List<DocumentDto>> GetDocumentsAsync(string? query = null, bool deleted = false)
     {
-        var url = string.IsNullOrWhiteSpace(query) ? "/api/documents" : $"/api/documents?q={Uri.EscapeDataString(query)}";
+        var qs = new List<string>();
+        if (!string.IsNullOrWhiteSpace(query))
+            qs.Add($"q={Uri.EscapeDataString(query)}");
+        if (deleted)
+            qs.Add("deleted=true");
+        var url = qs.Count == 0 ? "/api/documents" : "/api/documents?" + string.Join("&", qs);
         return await http.GetFromJsonAsync<List<DocumentDto>>(url) ?? [];
     }
 
@@ -33,6 +38,17 @@ public class TikrApiClient(HttpClient http)
 
     public async Task<AiStatusResponse?> GetAiStatusAsync() =>
         await http.GetFromJsonAsync<AiStatusResponse>("/api/ai/status");
+
+    public async Task<FeatureSettingsDto?> GetFeatureSettingsAsync() =>
+        await http.GetFromJsonAsync<FeatureSettingsDto>("/api/ai/feature-settings");
+
+    public async Task<FeatureSettingsDto?> UpdateFeatureSettingsAsync(UpdateFeatureSettingsRequest request)
+    {
+        var response = await http.PutAsJsonAsync("/api/ai/feature-settings", request);
+        if (!response.IsSuccessStatusCode)
+            return null;
+        return await response.Content.ReadFromJsonAsync<FeatureSettingsDto>();
+    }
 
     public async Task<LocalStorageStatusDto?> GetLocalStorageStatusAsync() =>
         await http.GetFromJsonAsync<LocalStorageStatusDto>("/api/system/local-status");
@@ -104,6 +120,57 @@ public class TikrApiClient(HttpClient http)
         response.EnsureSuccessStatusCode();
     }
 
+    public async Task RestoreDocumentAsync(Guid id)
+    {
+        var response = await http.PostAsync($"/api/documents/{id}/restore", content: null);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task PurgeDocumentAsync(Guid id)
+    {
+        var response = await http.DeleteAsync($"/api/documents/{id}/purge");
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task<List<DocumentVersionDto>> GetDocumentVersionsAsync(Guid id)
+    {
+        // Optional side-panel metadata — tolerate older APIs / missing migration (404).
+        try
+        {
+            var response = await http.GetAsync($"/api/documents/{id}/versions");
+            if (!response.IsSuccessStatusCode)
+                return [];
+            return await response.Content.ReadFromJsonAsync<List<DocumentVersionDto>>() ?? [];
+        }
+        catch
+        {
+            return [];
+        }
+    }
+
+    public async Task<DocumentDto?> RestoreDocumentVersionAsync(Guid documentId, Guid versionId)
+    {
+        var response = await http.PostAsync($"/api/documents/{documentId}/versions/{versionId}/restore", content: null);
+        return response.IsSuccessStatusCode
+            ? await response.Content.ReadFromJsonAsync<DocumentDto>()
+            : null;
+    }
+
+    public async Task<List<DocumentRequirementLinkDto>> GetDocumentRequirementLinksAsync(Guid id)
+    {
+        try
+        {
+            var response = await http.GetAsync($"/api/documents/{id}/requirements");
+            if (!response.IsSuccessStatusCode)
+                return [];
+            return await response.Content.ReadFromJsonAsync<List<DocumentRequirementLinkDto>>() ?? [];
+        }
+        catch
+        {
+            return [];
+        }
+    }
+
     public async Task<DocumentDto?> ReplaceDocumentContentAsync(Guid id, Stream content, string fileName, string? contentType = null)
     {
         using var multipart = new MultipartFormDataContent();
@@ -113,6 +180,14 @@ public class TikrApiClient(HttpClient http)
         multipart.Add(streamContent, "file", fileName);
 
         var response = await http.PutAsync($"/api/documents/{id}/content", multipart);
+        return response.IsSuccessStatusCode
+            ? await response.Content.ReadFromJsonAsync<DocumentDto>()
+            : null;
+    }
+
+    public async Task<DocumentDto?> UpdateDocumentMetadataAsync(Guid id, UpdateDocumentMetadataRequest request)
+    {
+        var response = await http.PatchAsJsonAsync($"/api/documents/{id}", request);
         return response.IsSuccessStatusCode
             ? await response.Content.ReadFromJsonAsync<DocumentDto>()
             : null;
@@ -172,6 +247,18 @@ public class TikrApiClient(HttpClient http)
         return response.IsSuccessStatusCode
             ? await response.Content.ReadFromJsonAsync<ReindexEmbeddingsResponse>()
             : null;
+    }
+
+    public async Task<EmbeddingRecoveryStatusDto?> GetEmbeddingRecoveryStatusAsync()
+    {
+        try
+        {
+            return await http.GetFromJsonAsync<EmbeddingRecoveryStatusDto>("/api/ai/embedding-recovery-status");
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     public async Task<LibraryScanStatusDto?> GetLibraryScanStatusAsync() =>

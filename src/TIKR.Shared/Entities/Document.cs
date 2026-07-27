@@ -20,6 +20,11 @@ public class Document
     /// </summary>
     public bool IsTransient { get; set; }
 
+    /// <summary>
+    /// Soft-delete timestamp. Null = active in library; set when clerk deletes (recoverable from Recycle bin).
+    /// </summary>
+    public DateTime? DeletedAt { get; set; }
+
     public DateTime UploadedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 }

@@ -17,6 +17,7 @@ Living diagram set for TIKR end-to-end features. Sources are plain Mermaid (`.mm
 | [05c-assistant-rag.mmd](05c-assistant-rag.mmd) | Sequence | Assistant chat with doc + vault RAG context |
 | [05d-document-lifecycle.mmd](05d-document-lifecycle.mmd) | Sequence | Upload → tag → embed → semantic search |
 | [05e-auth-flow.mmd](05e-auth-flow.mmd) | Sequence | Optional multi-user login + protected API |
+| [05f-document-management-sf.mmd](05f-document-management-sf.mmd) | Flowchart | Syncfusion-aligned DM: Library/Browse modes, editors, save-back, Agent Tools (see specs/003) |
 | [06-deployment.mmd](06-deployment.mmd) | C4Deployment | Synology NAS topology and data volumes |
 
 ## Status legend (diagram 03)

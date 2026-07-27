@@ -33,6 +33,23 @@ window.tikrTheme = {
     }
 };
 
+// Collapsible left navigation — preference survives refresh for Deb/Paige shared PC.
+window.tikrNav = {
+    getCollapsed: () => {
+        try { return localStorage.getItem('tikr-nav-collapsed') === '1'; } catch { return false; }
+    },
+    setCollapsed: (collapsed) => {
+        try {
+            localStorage.setItem('tikr-nav-collapsed', collapsed ? '1' : '0');
+            if (document && document.body) {
+                document.body.classList.toggle('tikr-nav-is-collapsed', !!collapsed);
+            }
+        } catch (e) {
+            console.warn('tikrNav.setCollapsed failed (non-fatal)', e);
+        }
+    }
+};
+
 function switchSyncfusionTheme(theme) {
     try {
         const link = document.getElementById('syncfusion-theme');

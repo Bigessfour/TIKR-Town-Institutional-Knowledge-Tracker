@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -32,7 +33,30 @@ public static class DependencyInjection
             }
         });
 
+        // Shared Data Protection keys so clerk secrets encrypt/decrypt across restarts (NAS volume).
+        var dp = services.AddDataProtection().SetApplicationName("TIKR");
+        var dpPath = configuration["TIKR_DATA_PROTECTION_PATH"];
+        if (string.IsNullOrWhiteSpace(dpPath) && Directory.Exists("/data"))
+            dpPath = "/data/.dpkeys";
+        if (!string.IsNullOrWhiteSpace(dpPath))
+        {
+            try
+            {
+                Directory.CreateDirectory(dpPath);
+                dp.PersistKeysToFileSystem(new DirectoryInfo(dpPath));
+            }
+            catch
+            {
+                // Fall back to ephemeral keys (dev only).
+            }
+        }
+
         services.AddTikrIdentity(configuration);
+
+        services.AddSingleton<ISecretProtector, SecretProtector>();
+        services.AddSingleton<IRuntimeSecretsStore, RuntimeSecretsStore>();
+        services.AddSingleton<FeatureSettingsState>();
+        services.AddScoped<IFeatureSettingsService, FeatureSettingsService>();
 
         services.AddScoped<IAuditService, AuditService>();
         services.AddSingleton<IFileStorageService, LocalFileStorageService>();
@@ -45,9 +69,12 @@ public static class DependencyInjection
         services.AddScoped<StubDocumentAgentExtractionBackend>();
         services.AddScoped<SyncfusionDocumentAgentExtractionBackend>();
         services.AddScoped<IDocumentAgentExtractionBackend>(sp =>
-            TikrConfiguration.GetUseSyncfusionAgentTools(sp.GetRequiredService<IConfiguration>())
+        {
+            var state = sp.GetRequiredService<FeatureSettingsState>();
+            return state.Current.UseSyncfusionAgentTools
                 ? sp.GetRequiredService<SyncfusionDocumentAgentExtractionBackend>()
-                : sp.GetRequiredService<StubDocumentAgentExtractionBackend>());
+                : sp.GetRequiredService<StubDocumentAgentExtractionBackend>();
+        });
         services.AddScoped<IDocumentAgentService, DocumentAgentService>();
         services.AddScoped<IDocumentService, DocumentService>();
         services.AddScoped<IRequirementService, RequirementService>();
@@ -59,12 +86,12 @@ public static class DependencyInjection
         services.AddHostedService<FolderEmailIngestionHostedService>();
         services.AddSingleton<ILibraryScanService, LibraryScanService>();
         services.AddHostedService<LibraryScanHostedService>();
+        services.AddSingleton<EmbeddingRecoveryState>();
+        services.AddHostedService<EmbeddingRecoveryHostedService>();
         services.AddSingleton<TownDocumentSearchToolRegistry>();
 
-        services.AddSingleton<IOllamaChatClientFactory>(_ =>
-            new OllamaChatClientFactory(
-                TikrConfiguration.GetOllamaHost(configuration),
-                TikrConfiguration.GetChatModel(configuration)));
+        services.AddSingleton<IOllamaChatClientFactory>(sp =>
+            new OllamaChatClientFactory(sp.GetRequiredService<FeatureSettingsState>()));
 
         return services;
     }
@@ -75,6 +102,9 @@ public static class DependencyInjection
         var db = scope.ServiceProvider.GetRequiredService<TikrDbContext>();
         await db.Database.MigrateAsync();
         await DbSeeder.SeedAsync(db);
+
+        var featureSettings = scope.ServiceProvider.GetRequiredService<IFeatureSettingsService>();
+        await featureSettings.LoadIntoStateAsync();
 
         var configuration = scope.ServiceProvider.GetRequiredService<IConfiguration>();
         if (TikrConfiguration.IsAuthEnabled(configuration))

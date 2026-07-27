@@ -1,5 +1,8 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using TIKR.Infrastructure.Data;
+using TIKR.Shared.Diagnostics;
 using TIKR.Shared.DTOs;
 using TIKR.Shared.Entities;
 using TIKR.Shared.Enums;
@@ -11,8 +14,10 @@ namespace TIKR.Infrastructure.Services;
 /// <summary>
 /// KnowledgeEntry logic centralization (CRUD + embeds). Minimal for cleanup.
 /// </summary>
-public class KnowledgeService(TikrDbContext db) : IKnowledgeService
+public class KnowledgeService(TikrDbContext db, ILogger<KnowledgeService>? logger = null) : IKnowledgeService
 {
+    private readonly ILogger _log = logger ?? NullLogger<KnowledgeService>.Instance;
+
     public async Task<KnowledgeEntry> CreateAsync(
         CreateKnowledgeEntryRequest request,
         IAuditService audit,
@@ -20,6 +25,8 @@ public class KnowledgeService(TikrDbContext db) : IKnowledgeService
         ICurrentUserService currentUser,
         CancellationToken ct = default)
     {
+        TikrActionLog.Started(_log, "Vault.Create", $"Title={request.Title} Category={request.Category}");
+
         var entity = new KnowledgeEntry
         {
             Id = Guid.NewGuid(),
@@ -40,11 +47,14 @@ public class KnowledgeService(TikrDbContext db) : IKnowledgeService
         await db.SaveChangesAsync(ct);
         await tx.CommitAsync(ct);
 
+        TikrActionLog.Completed(_log, "Vault.Create", $"EntryId={entity.Id} Title={entity.Title}");
         return entity;
     }
 
     public async Task<KnowledgeEntry> UpdateAsync(Guid id, UpdateKnowledgeEntryRequest request, IAuditService audit, IHybridAiService ai, ICurrentUserService currentUser, CancellationToken ct = default)
     {
+        TikrActionLog.Started(_log, "Vault.Update", $"EntryId={id} Title={request.Title}");
+
         var entity = await db.KnowledgeEntries.FindAsync(id);
         if (entity is null) throw new KeyNotFoundException($"Knowledge entry {id} not found.");
 
@@ -67,11 +77,14 @@ public class KnowledgeService(TikrDbContext db) : IKnowledgeService
         await db.SaveChangesAsync(ct);
         await tx.CommitAsync(ct);
 
+        TikrActionLog.Completed(_log, "Vault.Update", $"EntryId={entity.Id} Title={entity.Title}");
         return entity;
     }
 
     public async Task DeleteAsync(Guid id, IAuditService audit, ICurrentUserService currentUser, CancellationToken ct = default)
     {
+        TikrActionLog.Started(_log, "Vault.Delete", $"EntryId={id}");
+
         var entity = await db.KnowledgeEntries.FindAsync(id);
         if (entity is null) throw new KeyNotFoundException($"Knowledge entry {id} not found.");
 
@@ -85,5 +98,7 @@ public class KnowledgeService(TikrDbContext db) : IKnowledgeService
         await audit.LogAsync("Delete", nameof(KnowledgeEntry), id, entity.Title, currentUser.UserId, ct);
         await db.SaveChangesAsync(ct);
         await tx.CommitAsync(ct);
+
+        TikrActionLog.Completed(_log, "Vault.Delete", $"EntryId={id} Title={entity.Title} ChunksRemoved={chunks.Count}");
     }
 }

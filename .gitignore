@@ -14,6 +14,11 @@ docker/.env
 user-secrets.json
 **/appsettings.Development.json
 
+# Local runtime data / Data Protection keys / clerk-rotated secrets (never commit)
+.local-data/
+**/runtime-secrets.env
+**/data/.dpkeys/
+
 # Cursor agent skills (install locally via npx skills add — see docs/ai-tooling.md)
 .agents/
 

@@ -5,14 +5,24 @@ namespace TIKR.Infrastructure.Services;
 
 public class OllamaChatClientFactory : IOllamaChatClientFactory
 {
-    public string ChatModel { get; }
-    public string OllamaHost { get; }
+    private readonly FeatureSettingsState? _state;
+    private readonly string? _fixedHost;
+    private readonly string? _fixedModel;
 
+    public OllamaChatClientFactory(FeatureSettingsState state)
+    {
+        _state = state;
+    }
+
+    /// <summary>Test / legacy constructor with a fixed host and model.</summary>
     public OllamaChatClientFactory(string ollamaHost, string chatModel)
     {
-        OllamaHost = ollamaHost;
-        ChatModel = chatModel;
+        _fixedHost = ollamaHost;
+        _fixedModel = chatModel;
     }
+
+    public string ChatModel => _fixedModel ?? _state!.Current.OllamaChatModel;
+    public string OllamaHost => _fixedHost ?? _state!.Current.OllamaHost;
 
     public IChatClient CreateChatClient() =>
         new OllamaApiClient(new Uri(EnsureTrailingSlash(OllamaHost)), ChatModel);

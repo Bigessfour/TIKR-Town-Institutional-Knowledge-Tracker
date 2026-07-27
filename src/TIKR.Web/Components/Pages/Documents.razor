@@ -4,27 +4,52 @@
 @inject TikrApiClient Api
 @inject ClerkToastService Toast
 @inject IJSRuntime JS
+@inject ILogger<Documents> Logger
 
 @using System.Text.Json
+@using Microsoft.AspNetCore.Components.Forms
 @using Syncfusion.Blazor.DocumentEditor
+@using Syncfusion.Blazor.FileManager
 @using Syncfusion.Blazor.Layouts
 @using Syncfusion.Blazor.Navigations
+@using Syncfusion.Blazor.SmartPdfViewer
 @using Syncfusion.Blazor.Spreadsheet
+@using TIKR.Shared.Diagnostics
 @using TIKR.Shared.DTOs
 @using TIKR.Shared.Enums
+@using TIKR.Shared.Helpers
 @using TIKR.Web.Components.Shared
 @using TIKR.Web.Helpers
 
 <div class="page-header">
     <div class="page-header-main">
         <h2>Document Library</h2>
-        <p>Upload, AI-tag, organize, and search municipal documents</p>
+        <p>Upload, AI-tag, organize, and open files in the Syncfusion document workspace</p>
     </div>
     <div class="page-header-actions">
         <PageTourButton Route="/documents" />
-        <PageHelp DataTour="@ClerkTourIds.HelpDocuments" HelpText="Store ordinances, minutes, forms, and correspondence. AI auto-tags and suggests folders on upload. Everything stays on your local NAS." />
+        <PageHelp DataTour="@ClerkTourIds.HelpDocuments" HelpText="Library mode: AI tags and search. Browse mode: Syncfusion File Manager folders. Open Full Screen for Smart PDF (annotate, summarize, redact, form fill), Word editor, or Spreadsheet — then Save to NAS. Convert Word/Excel/images to PDF when needed." />
     </div>
 </div>
+
+<div class="mode-toggle mb-2" role="group" aria-label="Documents view mode">
+    <SfButton CssClass="@(_viewMode == "library" && !_showRecycleBin ? "tikr-action-btn active" : "tikr-action-btn")"
+              Content="Library"
+              OnClick="@(() => SetViewMode("library"))" />
+    <SfButton CssClass="@(_viewMode == "browse" && !_showRecycleBin ? "tikr-action-btn active" : "tikr-action-btn")"
+              Content="Browse (File Manager)"
+              OnClick="@(() => SetViewMode("browse"))" />
+    <SfButton CssClass="@(_showRecycleBin ? "tikr-action-btn active" : "tikr-action-btn")"
+              Content="Recycle bin"
+              OnClick="ToggleRecycleBinAsync" />
+</div>
+
+@if (_showRecycleBin)
+{
+    <div class="tikr-empty-state" style="margin:0.5rem 0; text-align:left;">
+        Recycle bin — soft-deleted documents. Restore to bring them back, or purge permanently.
+    </div>
+}
 
 <!-- Prominent large uploader -->
 <div class="uploader-zone" data-tour="@ClerkTourIds.DocUploader">
@@ -108,6 +133,31 @@
     </div>
 }
 
+@if (_viewMode == "browse")
+{
+    <div class="documents-browse-host" data-tour="@ClerkTourIds.DocLibrary" style="min-height:28rem;">
+        <p class="text-muted mb-2">
+            Syncfusion File Manager over your library folders. Double-click a file to open the full document workspace (annotate PDF, edit Word/Excel, Save to NAS).
+        </p>
+        <SfFileManager TValue="FileManagerDirectoryContent"
+                       Height="520px"
+                       AllowMultiSelection="true"
+                       View="ViewType.Details"
+                       CssClass="doc-filemanager">
+            <FileManagerEvents TValue="FileManagerDirectoryContent"
+                               OnRead="OnFileManagerReadAsync"
+                               ItemsDeleting="OnFileManagerDeletingAsync"
+                               ItemRenaming="OnFileManagerRenamingAsync"
+                               ItemsMoving="OnFileManagerMovingAsync"
+                               FolderCreating="OnFileManagerFolderCreatingAsync"
+                               Searching="OnFileManagerSearchingAsync"
+                               OnFileOpen="OnFileManagerFileOpenAsync" />
+            <FileManagerToolbarSettings ToolbarItems="@_fileManagerToolbarItems" />
+        </SfFileManager>
+    </div>
+}
+else
+{
 <!-- Main resizable layout: Tree | Grid | Preview -->
 <!-- Wrapped in flex host so Height="100%" on splitter works against .tikr-main-content flex column (Phase 2 Item 4) -->
 <div class="documents-splitter-host" data-tour="@ClerkTourIds.DocLibrary">
@@ -139,7 +189,8 @@
                                        CheckboxOnly="true"
                                        PersistSelection="true" />
                 <GridEvents RowSelected="@((RowSelectEventArgs<DocumentDto> e) => OnRowSelected(e))"
-                            RowDeselected="@((RowDeselectEventArgs<DocumentDto> e) => OnRowDeselected(e))" />
+                            RowDeselected="@((RowDeselectEventArgs<DocumentDto> e) => OnRowDeselected(e))"
+                            OnRecordDoubleClick="@((RecordDoubleClickEventArgs<DocumentDto> e) => OnRecordDoubleClickAsync(e))" />
                 <GridTemplates>
                     <EmptyRecordTemplate>
                         <div class="tikr-empty-state">
@@ -150,6 +201,14 @@
                 </GridTemplates>
                 <GridColumns>
                     <GridColumn Type="ColumnType.CheckBox" Width="50" />
+                    <GridColumn HeaderText="" Width="44">
+                        <Template>
+                            @{
+                                var iconDoc = (context as DocumentDto)!;
+                            }
+                            <span class="@DocumentUiMessages.FileTypeIconCss(iconDoc.FileName)" aria-hidden="true" title="@Path.GetExtension(iconDoc.FileName)"></span>
+                        </Template>
+                    </GridColumn>
                     <GridColumn Field="@nameof(DocumentDto.FileName)" HeaderText="File Name" Width="220" />
                     <GridColumn HeaderText="AI Tags" Width="160">
                         <Template>
@@ -178,21 +237,96 @@
             </SfGrid>
         </SplitterPane>
 
-        <!-- Right: Preview pane -->
-        <SplitterPane Size="24%" Min="200px">
-            <div class="preview-pane">
+        <!-- Right: selection summary + Open Full Screen -->
+        <SplitterPane Size="34%" Min="260px">
+            <div class="preview-pane doc-workspace">
                 @if (_selectedPreview is not null)
                 {
                     var d = _selectedPreview;
-                    <h4 class="preview-title">@d.FileName</h4>
+                    <div class="doc-workspace-header">
+                        <h4 class="preview-title">@d.FileName</h4>
+                    </div>
                     <div class="preview-meta">
                         <div><strong>Uploaded:</strong> @d.UploadedAt.ToLocalTime().ToString("g")</div>
                         <div><strong>Size:</strong> @DisplayFormat.FormatBytes(d.FileSizeBytes)</div>
+                        <div><strong>Type:</strong> <span class="@DocumentUiMessages.FileTypeIconCss(d.FileName)"></span> @DocumentPreviewHelper.PreviewLabel(_previewKind)</div>
                         @if (!string.IsNullOrWhiteSpace(d.SuggestedFolder))
                         {
                             <div><strong>AI Folder:</strong> @d.SuggestedFolder</div>
                         }
+                        @if (d.VersionCount > 0)
+                        {
+                            <div><strong>Prior versions:</strong> @d.VersionCount</div>
+                        }
+                        @if (d.LinkedRequirementCount > 0)
+                        {
+                            <div><strong>Linked requirements:</strong> @d.LinkedRequirementCount</div>
+                        }
                     </div>
+
+                    @if (_linkedRequirements.Count > 0)
+                    {
+                        <div class="preview-tags" style="margin-top:0.5rem;">
+                            <strong>Requirements:</strong>
+                            <ul class="mt-1" style="margin:0; padding-left:1.2rem;">
+                                @foreach (var link in _linkedRequirements.Take(5))
+                                {
+                                    <li>
+                                        <a href="@($"/requirements?highlight={link.RequirementId}")">@link.Title</a>
+                                        @if (link.DueDate is { } due)
+                                        {
+                                            <span class="text-muted"> — due @due.ToString("MMM d")</span>
+                                        }
+                                    </li>
+                                }
+                            </ul>
+                        </div>
+                    }
+
+                    @if (_documentVersions.Count > 0 && !_showRecycleBin)
+                    {
+                        <div class="preview-tags" style="margin-top:0.5rem;">
+                            <strong>Version history:</strong>
+                            <ul class="mt-1" style="margin:0; padding-left:1.2rem;">
+                                @foreach (var v in _documentVersions.Take(5))
+                                {
+                                    <li>
+                                        v@v.VersionNumber — @v.CreatedAt.ToLocalTime().ToString("g")
+                                        (@DisplayFormat.FormatBytes(v.FileSizeBytes))
+                                        <SfButton CssClass="tikr-action-btn" Content="Restore"
+                                                  Disabled="@_savingPreview"
+                                                  OnClick="@(async () => await RestoreVersionAsync(d, v))" />
+                                    </li>
+                                }
+                            </ul>
+                        </div>
+                    }
+
+                    @if (!_showRecycleBin
+                         && _previewKind == DocumentPreviewHelper.PreviewKind.Pdf
+                         && _pdfBytes is { Length: > 0 }
+                         && !_fullScreenOpen)
+                    {
+                        <div class="preview-inline-pdf" style="margin-top:0.75rem; min-height:220px; border:1px solid var(--tikr-border, #ddd); border-radius:6px; overflow:hidden;">
+                            <div class="preview-sdk-label">Inline Smart PDF preview</div>
+                            <SfSmartPdfViewer @key="@($"side-{_pdfViewerKey}")"
+                                             @ref="_sidePdfViewer"
+                                             Height="220px"
+                                             Width="100%"
+                                             EnableDownload="false"
+                                             EnablePrint="false"
+                                             EnableToolbar="false"
+                                             EnableAnnotationToolbar="false"
+                                             EnableNavigationToolbar="false"
+                                             EnableTextSearch="false"
+                                             EnableChunkMessages="true">
+                                <AssistViewSettings Enable="false" />
+                                <SmartRedactSettings Enable="false" />
+                                <SmartFillSettings Enable="false" />
+                                <PdfViewerEvents Created="OnSidePdfViewerCreated" />
+                            </SfSmartPdfViewer>
+                        </div>
+                    }
 
                     <div class="preview-tags">
                         <strong>Tags:</strong>
@@ -203,118 +337,276 @@
                         @if (DisplayFormat.ParseTags(d.AiTags).Length == 0) { <span class="text-muted">None yet</span> }
                     </div>
 
-                    <div class="preview-actions">
-                        <SfButton CssClass="tikr-action-btn" Content="Re-tag with AI" OnClick="@(async () => await RetagOne(d))" />
-                        <SfButton CssClass="tikr-action-btn danger" Content="Delete" OnClick="@(() => RequestDelete(d))" />
-                        <SfButton CssClass="tikr-action-btn"
-                                  Content="@(_downloadingDocId == d.Id ? "Downloading…" : "Download")"
-                                  Disabled="@(_downloadingDocId == d.Id)"
-                                  OnClick="@(async () => await DownloadDocumentAsync(d))" />
-                        @if (DocumentUiMessages.CanConvertToPdf(d.FileName))
-                        {
-                            <SfButton CssClass="tikr-action-btn"
-                                      Content="@(_convertingDocId == d.Id ? "Converting…" : "Convert to PDF")"
-                                      Disabled="@(_convertingDocId == d.Id)"
-                                      OnClick="@(async () => await ConvertDocumentToPdfAsync(d))" />
-                        }
-                        <SfButton CssClass="tikr-action-btn"
-                                  Content="Extract Text/Tables to Vault"
-                                  OnClick="@(async () => await ExtractToVaultAsync(d))" />
+                    <div class="doc-open-hero">
+                        <SfButton CssClass="tikr-action-btn primary doc-open-fullscreen-btn"
+                                  Content="@(_previewLoading ? "Preparing…" : "Open Full Screen")"
+                                  Disabled="@(_previewLoading || !CanOpenFullScreen)"
+                                  OnClick="OpenFullScreenAsync" />
+                        <p class="text-muted doc-open-hint">
+                            Opens the full Syncfusion workspace — Smart PDF (annotate, AI summarize, smart redact/fill), Word editor, or Spreadsheet with toolbars. Save changes back to NAS.
+                        </p>
+                    </div>
+
+                    <div class="doc-tools" role="toolbar" aria-label="Quick document actions">
+                        <div class="doc-tools-group">
+                            <span class="doc-tools-label">Quick</span>
+                            @if (_showRecycleBin)
+                            {
+                                <SfButton CssClass="tikr-action-btn primary" Content="Restore"
+                                          OnClick="@(async () => await RestoreDocumentAsync(d))" />
+                                <SfButton CssClass="tikr-action-btn danger" Content="Purge permanently"
+                                          OnClick="@(() => RequestPurge(d))" />
+                            }
+                            else
+                            {
+                                <SfButton CssClass="tikr-action-btn"
+                                          Content="@(_downloadingDocId == d.Id ? "Downloading…" : "Download")"
+                                          Disabled="@(_downloadingDocId == d.Id)"
+                                          OnClick="@(async () => await DownloadDocumentAsync(d))" />
+                                @if (DocumentUiMessages.CanConvertToPdf(d.FileName))
+                                {
+                                    <SfButton CssClass="tikr-action-btn"
+                                              Content="@(_convertingDocId == d.Id ? "Converting…" : "Convert to PDF & open")"
+                                              Disabled="@(_convertingDocId == d.Id)"
+                                              OnClick="@(async () => await ConvertDocumentToPdfAsync(d))" />
+                                }
+                                <SfButton CssClass="tikr-action-btn" Content="Re-tag" OnClick="@(async () => await RetagOne(d))" />
+                                <SfButton CssClass="tikr-action-btn danger" Content="Delete" OnClick="@(() => RequestDelete(d))" />
+                            }
+                        </div>
                     </div>
 
                     @if (_previewLoading && _previewDocId == d.Id)
                     {
                         <div class="tikr-loading-state" style="margin:0.5rem 0;" role="status" aria-live="polite" aria-busy="true">
                             <div class="tikr-loading-spinner" aria-hidden="true"></div>
-                            <span>Loading preview…</span>
-                        </div>
-                    }
-                    else if (_previewKind == DocumentPreviewHelper.PreviewKind.Pdf
-                             && !string.IsNullOrEmpty(_pdfPreviewUrl)
-                             && _previewDocId == d.Id)
-                    {
-                        <div class="preview-pdf">
-                            <div class="preview-sdk-label">@DocumentPreviewHelper.PreviewLabel(_previewKind)</div>
-                            <SfPdfViewer2 DocumentPath="@_pdfPreviewUrl" Height="360px" Width="100%" EnableDownload="false" EnablePrint="false" />
-                        </div>
-                    }
-                    else if (_previewKind == DocumentPreviewHelper.PreviewKind.Word
-                             && !string.IsNullOrEmpty(_wordSfdt)
-                             && _previewDocId == d.Id)
-                    {
-                        <div class="preview-word">
-                            <div class="preview-sdk-label">@DocumentPreviewHelper.PreviewLabel(_previewKind) (editable)</div>
-                            <div class="preview-actions" style="margin-bottom:0.35rem;">
-                                <SfButton CssClass="tikr-action-btn primary"
-                                          Content="@(_savingPreview ? "Saving…" : "Save to NAS")"
-                                          Disabled="@_savingPreview"
-                                          OnClick="SaveWordPreviewAsync" />
-                            </div>
-                            <SfDocumentEditorContainer @ref="_wordContainer"
-                                                       EnableToolbar="true"
-                                                       RestrictEditing="false"
-                                                       Height="420px"
-                                                       Width="100%">
-                                <DocumentEditorContainerEvents Created="OnWordEditorCreated" />
-                            </SfDocumentEditorContainer>
-                        </div>
-                    }
-                    else if (_previewKind == DocumentPreviewHelper.PreviewKind.Spreadsheet
-                             && _spreadsheetBytes is { Length: > 0 }
-                             && _previewDocId == d.Id)
-                    {
-                        <div class="preview-sheet">
-                            <div class="preview-sdk-label">@DocumentPreviewHelper.PreviewLabel(_previewKind) (editable)</div>
-                            <div class="preview-actions" style="margin-bottom:0.35rem;">
-                                <SfButton CssClass="tikr-action-btn primary"
-                                          Content="@(_savingPreview ? "Saving…" : "Save to NAS")"
-                                          Disabled="@_savingPreview"
-                                          OnClick="SaveSpreadsheetPreviewAsync" />
-                            </div>
-                            <SfSpreadsheet @ref="_spreadsheetRef" DataSource="@_spreadsheetBytes" Height="420px" AllowEditing="true" AllowSave="true">
-                                <SpreadsheetRibbon />
-                            </SfSpreadsheet>
-                        </div>
-                    }
-                    else if (_previewKind == DocumentPreviewHelper.PreviewKind.Text && HasTextPreview(d))
-                    {
-                        <div class="preview-text">
-                            <div class="preview-sdk-label">@DocumentPreviewHelper.PreviewLabel(_previewKind)</div>
-                            <pre class="preview-text-body">@d.FullTextContent</pre>
-                        </div>
-                    }
-                    else if (_previewKind == DocumentPreviewHelper.PreviewKind.ConvertHint)
-                    {
-                        <div class="tikr-empty-state" style="margin:0.5rem 0;">
-                            Native preview is not available for this type. Use <strong>Convert to PDF</strong> above, then open the PDF for PDF Viewer.
+                            <span>Preparing document…</span>
                         </div>
                     }
                     else if (!string.IsNullOrEmpty(_previewError))
                     {
                         <div class="tikr-empty-state" style="margin:0.5rem 0;">@_previewError</div>
                     }
-                    else
+                    else if (_previewKind == DocumentPreviewHelper.PreviewKind.Text && HasTextPreview(d))
                     {
-                        <div class="tikr-empty-state" style="margin:0.5rem 0;">Preview not available for this file type.</div>
+                        <div class="preview-text">
+                            <div class="preview-sdk-label">Text preview (open full screen for tools)</div>
+                            <pre class="preview-text-body">@TruncatePreview(d.FullTextContent, 1200)</pre>
+                        </div>
+                    }
+                    else if (_previewKind == DocumentPreviewHelper.PreviewKind.ConvertHint)
+                    {
+                        <div class="tikr-empty-state" style="margin:0.5rem 0;">
+                            Convert this file to PDF, then open full screen to view it.
+                        </div>
+                    }
+                    else if (CanOpenFullScreen)
+                    {
+                        <div class="tikr-empty-state" style="margin:0.5rem 0;">
+                            Ready. Press <strong>Open Full Screen</strong> to work with this document.
+                        </div>
                     }
                 }
                 else
                 {
-                    <div class="tikr-empty-state" style="margin:0.5rem 0;">Select a document in the list to see details and actions.</div>
+                    <div class="tikr-empty-state" style="margin:0.5rem 0;">Select a document in the list, then open it full screen to work with it.</div>
                 }
             </div>
         </SplitterPane>
     </SplitterPanes>
 </SfSplitter>
 </div>
+}
+
+@* Full-screen Syncfusion document workspace *@
+<SfDialog @bind-Visible="_fullScreenOpen"
+          Width="100%"
+          Height="100%"
+          CssClass="tikr-doc-fullscreen"
+          IsModal="true"
+          ShowCloseIcon="true"
+          AllowDragging="false"
+          Header="@FullScreenHeader"
+          CloseOnEscape="false"
+          Closed="OnFullScreenClosed">
+    <DialogTemplates>
+        <Content>
+            @if (_selectedPreview is { } d)
+            {
+                <div class="tikr-doc-fullscreen-body">
+                    <div class="doc-tools tikr-doc-fullscreen-tools" role="toolbar" aria-label="Document management tools">
+                        <div class="doc-tools-group">
+                            <span class="doc-tools-label">File</span>
+                            <SfButton CssClass="tikr-action-btn"
+                                      Content="@(_downloadingDocId == d.Id ? "Downloading…" : "Download")"
+                                      Disabled="@(_downloadingDocId == d.Id)"
+                                      OnClick="@(async () => await DownloadDocumentAsync(d))" />
+                            @if (DocumentUiMessages.CanConvertToPdf(d.FileName))
+                            {
+                                <SfButton CssClass="tikr-action-btn"
+                                          Content="@(_convertingDocId == d.Id ? "Converting…" : "Convert to PDF & open")"
+                                          Disabled="@(_convertingDocId == d.Id)"
+                                          OnClick="@(async () => await ConvertDocumentToPdfAsync(d))" />
+                            }
+                            <SfButton CssClass="tikr-action-btn danger" Content="Delete" OnClick="@(() => RequestDelete(d))" />
+                        </div>
+                        <div class="doc-tools-group">
+                            <span class="doc-tools-label">AI</span>
+                            <SfButton CssClass="tikr-action-btn" Content="Re-tag with AI" OnClick="@(async () => await RetagOne(d))" />
+                            <SfButton CssClass="tikr-action-btn"
+                                      Content="Extract text to Vault"
+                                      OnClick="@(async () => await ExtractToVaultAsync(d))" />
+                            @if (_previewKind == DocumentPreviewHelper.PreviewKind.Pdf)
+                            {
+                                <span class="text-muted" style="font-size:0.85rem;">Use Assist in the viewer for summarize / Q&amp;A (Ollama).</span>
+                            }
+                        </div>
+                        @if (_previewKind is DocumentPreviewHelper.PreviewKind.Word
+                            or DocumentPreviewHelper.PreviewKind.Spreadsheet
+                            or DocumentPreviewHelper.PreviewKind.Pdf)
+                        {
+                            <div class="doc-tools-group">
+                                <span class="doc-tools-label">Edit</span>
+                                <SfButton CssClass="tikr-action-btn primary"
+                                          Content="@(_savingPreview ? "Saving…" : (_workspaceDirty ? "Save changes to NAS *" : "Save to NAS"))"
+                                          Disabled="@_savingPreview"
+                                          OnClick="SaveWorkspaceAsync" />
+                                @if (_workspaceDirty)
+                                {
+                                    <span class="text-muted" style="font-size:0.85rem;">Unsaved changes</span>
+                                }
+                                else if (_previewKind == DocumentPreviewHelper.PreviewKind.Pdf)
+                                {
+                                    <span class="text-muted" style="font-size:0.85rem;">Annotate, redact, or fill forms, then Save to NAS.</span>
+                                }
+                                else if (_previewKind is DocumentPreviewHelper.PreviewKind.Word
+                                         or DocumentPreviewHelper.PreviewKind.Spreadsheet)
+                                {
+                                    <span class="text-muted" style="font-size:0.85rem;">Edit in-place, or Convert to PDF &amp; open for PDF tools.</span>
+                                }
+                            </div>
+                        }
+                        @if (_previewKind == DocumentPreviewHelper.PreviewKind.Pdf)
+                        {
+                            <div class="doc-tools-group">
+                                <span class="doc-tools-label">Annotations</span>
+                                <SfButton CssClass="tikr-action-btn" Content="Export JSON"
+                                          Disabled="@_savingPreview"
+                                          OnClick="@(async () => await ExportAnnotationsAsync(AnnotationDataFormat.Json))" />
+                                <SfButton CssClass="tikr-action-btn" Content="Export XFDF"
+                                          Disabled="@_savingPreview"
+                                          OnClick="@(async () => await ExportAnnotationsAsync(AnnotationDataFormat.Xfdf))" />
+                                <InputFile OnChange="OnAnnotationImportSelected" accept=".json,.xfdf" />
+                            </div>
+                        }
+                        <div class="doc-tools-group doc-tools-close">
+                            <SfButton CssClass="tikr-action-btn e-outline" Content="Close workspace" OnClick="RequestCloseFullScreen" />
+                        </div>
+                    </div>
+
+                    @if (_previewKind == DocumentPreviewHelper.PreviewKind.Pdf
+                         && _pdfBytes is { Length: > 0 })
+                    {
+                        <div class="tikr-doc-fullscreen-surface">
+                            <SfSmartPdfViewer @key="_pdfViewerKey"
+                                             @ref="_pdfViewer"
+                                             Height="calc(100vh - 11rem)"
+                                             Width="100%"
+                                             EnableDownload="false"
+                                             EnablePrint="true"
+                                             EnableErrorDialog="true"
+                                             EnableChunkMessages="true"
+                                             EnableToolbar="true"
+                                             EnableNavigationToolbar="true"
+                                             EnableThumbnailPanel="true"
+                                             EnableBookmarkPanel="true"
+                                             EnableTextSearch="true"
+                                             EnableTextSelection="true"
+                                             EnableMagnification="true"
+                                             EnableHyperlink="true"
+                                             EnableAnnotationToolbar="true"
+                                             EnableFormDesigner="true"
+                                             EnableFormFields="true"
+                                             EnableCommentPanel="true">
+                                <AssistViewSettings Enable="true"
+                                                    StreamResponse="true"
+                                                    MaxRetryAttempts="3"
+                                                    Timeout="90"
+                                                    ShowPromptSuggestions="true"
+                                                    Placeholder="Ask about this PDF (summarize, find dates, key points)…">
+                                    <InitialPromptSettings Prompt="Summarize this municipal document for a town clerk."
+                                                           SuggestedPrompts="@_smartPdfSuggestedPrompts" />
+                                </AssistViewSettings>
+                                <SmartRedactSettings Enable="true" RedactPatterns="@_smartRedactPatterns" />
+                                <SmartFillSettings Enable="true" />
+                                <PdfViewerEvents Created="OnPdfViewerCreated"
+                                                 DocumentLoaded="OnPdfDocumentLoaded"
+                                                 DocumentLoadFailed="OnPdfDocumentLoadFailed"
+                                                 DocumentEdited="OnPdfDocumentEdited" />
+                            </SfSmartPdfViewer>
+                        </div>
+                    }
+                    else if (_previewKind == DocumentPreviewHelper.PreviewKind.Word
+                             && !string.IsNullOrEmpty(_wordSfdt))
+                    {
+                        <div class="tikr-doc-fullscreen-surface">
+                            <SfDocumentEditorContainer @ref="_wordContainer"
+                                                       EnableToolbar="true"
+                                                       RestrictEditing="false"
+                                                       EnableSpellCheck="false"
+                                                       ToolbarItems="@_wordToolbarItems"
+                                                       Height="calc(100vh - 11rem)"
+                                                       Width="100%">
+                                <DocumentEditorContainerEvents Created="OnWordEditorCreated"
+                                                               OnToolbarClick="OnWordToolbarClick" />
+                            </SfDocumentEditorContainer>
+                        </div>
+                    }
+                    else if (_previewKind == DocumentPreviewHelper.PreviewKind.Spreadsheet
+                             && _spreadsheetBytes is { Length: > 0 })
+                    {
+                        <div class="tikr-doc-fullscreen-surface">
+                            <SfSpreadsheet @ref="_spreadsheetRef"
+                                           DataSource="@_spreadsheetBytes"
+                                           Height="calc(100vh - 11rem)"
+                                           AllowEditing="true"
+                                           AllowSave="true"
+                                           AllowOpen="false"
+                                           ShowRibbon="true"
+                                           ShowFormulaBar="true"
+                                           ShowSheetTabs="true">
+                                <SpreadsheetRibbon />
+                            </SfSpreadsheet>
+                        </div>
+                    }
+                    else if (_previewKind == DocumentPreviewHelper.PreviewKind.Text && HasTextPreview(d))
+                    {
+                        <div class="tikr-doc-fullscreen-surface preview-text">
+                            <pre class="preview-text-body preview-text-body-full">@d.FullTextContent</pre>
+                        </div>
+                    }
+                    else if (!string.IsNullOrEmpty(_previewError))
+                    {
+                        <div class="tikr-empty-state">@_previewError</div>
+                    }
+                    else
+                    {
+                        <div class="tikr-empty-state">This file type has no full-screen editor yet. Try Convert to PDF.</div>
+                    }
+                </div>
+            }
+        </Content>
+    </DialogTemplates>
+</SfDialog>
 
 <!-- Context menu (right-click on grid area) -->
 <SfContextMenu TValue="MenuItem" Target=".doc-grid .e-gridcontent" CssClass="doc-context-menu">
     <MenuItems>
+        <MenuItem Text="Open Full Screen" Id="cm-open-fullscreen" IconCss="e-icons e-full-screen" />
         <MenuItem Text="Re-tag with AI" Id="cm-retag" IconCss="e-icons e-reload" />
         <MenuItem Text="Delete" Id="cm-delete" IconCss="e-icons e-trash" />
         <MenuItem Text="Download" Id="cm-download" IconCss="e-icons e-download" />
-        <MenuItem Text="Convert to PDF" Id="cm-convert-pdf" IconCss="e-icons e-export-pdf" />
+        <MenuItem Text="Convert to PDF & open" Id="cm-convert-pdf" IconCss="e-icons e-export-pdf" />
         <MenuItem Text="Extract Text/Tables to Vault" Id="cm-extract-vault" IconCss="e-icons e-description" />
     </MenuItems>
     <MenuEvents TValue="MenuItem" ItemSelected="OnContextMenuSelected" />
@@ -329,6 +621,11 @@
                      ItemName="@_confirmDeleteLabel"
                      OnConfirm="ConfirmDeleteAsync" />
 
+@* Reuses delete-confirm dialog chrome for discard (ItemName = human label) *@
+<ConfirmDeleteDialog @bind-Visible="_confirmDiscardVisible"
+                     ItemName="unsaved edits (will be discarded)"
+                     OnConfirm="ConfirmDiscardAndCloseAsync" />
+
 @code {
     [SupplyParameterFromQuery(Name = "action")]
     public string? Action { get; set; }
@@ -341,6 +638,8 @@
     private int SelectedCount => _selectedIds.Count;
     private string _searchQuery = "";
     private string SearchMode { get; set; } = "full"; // "full" | "semantic"
+    private string _viewMode = "library"; // "library" | "browse"
+    private bool _showRecycleBin;
     private string? _statusMessage;
     private bool _showUploadBanner;
     private TagDocumentResponse? _lastTagSuggestion;
@@ -351,8 +650,38 @@
     private string _confirmDeleteLabel = string.Empty;
     private DocumentDto? _pendingDeleteDoc;
     private bool _pendingBulkDelete;
+    private bool _pendingPurge;
+    private bool _confirmDiscardVisible;
 
-    private string? _pdfPreviewUrl;
+    private SfSmartPdfViewer? _pdfViewer;
+    private SfSmartPdfViewer? _sidePdfViewer;
+
+    private static readonly string[] _smartPdfSuggestedPrompts =
+    [
+        "Summarize this document for a town clerk.",
+        "List important dates and deadlines.",
+        "What actions or requirements does this document create?",
+        "Identify parties, amounts, and key terms."
+    ];
+
+    private static readonly string[] _smartRedactPatterns =
+    [
+        "Person Names",
+        "Email Addresses",
+        "Phone Numbers",
+        "Addresses",
+        "Account Numbers",
+        "Credit Card Numbers",
+        "Dates"
+    ];
+    private bool _sidePdfLoadPending;
+    private List<DocumentVersionDto> _documentVersions = [];
+    private List<DocumentRequirementLinkDto> _linkedRequirements = [];
+    private byte[]? _pdfBytes;
+    private int _pdfViewerKey;
+    private bool _pdfLoadPending;
+    private bool _pdfViewerReady;
+    private bool _fullScreenOpen;
     private Guid? _previewDocId;
     private bool _previewLoading;
     private string? _previewError;
@@ -362,8 +691,41 @@
     private byte[]? _spreadsheetBytes;
     private SfSpreadsheet? _spreadsheetRef;
     private bool _savingPreview;
+    private bool _workspaceDirty;
     private Guid? _downloadingDocId;
     private Guid? _convertingDocId;
+    private HashSet<string> _extraFolders = new(StringComparer.OrdinalIgnoreCase);
+    private List<FileManagerDirectoryContent> _fileManagerData = [];
+
+    private readonly List<ToolBarItemModel> _fileManagerToolbarItems =
+    [
+        new() { Name = "NewFolder" },
+        new() { Name = "Delete" },
+        new() { Name = "Download" },
+        new() { Name = "Rename" },
+        new() { Name = "SortBy" },
+        new() { Name = "Refresh" },
+        new() { Name = "Selection" },
+        new() { Name = "View" },
+        new() { Name = "Details" }
+    ];
+
+    private readonly List<object> _wordToolbarItems =
+    [
+        "New", "Open", "Separator",
+        new CustomToolbarItemModel
+        {
+            Id = "tikr-save-nas",
+            Text = "Save to NAS",
+            PrefixIcon = "e-icons e-save",
+            TooltipText = "Save Word document back to the town NAS library"
+        },
+        "Separator", "Undo", "Redo", "Separator",
+        "Image", "Table", "Hyperlink", "Bookmark", "TableOfContents", "Separator",
+        "Header", "Footer", "PageSetup", "PageNumber", "Break", "InsertFootnote",
+        "InsertEndnote", "Separator", "Find", "Separator", "Comments", "TrackChanges",
+        "Separator", "LocalClipboard", "RestrictEditing", "Separator", "FormFields", "UpdateFields"
+    ];
 
     private List<DocumentLibraryLogic.FolderNode> _folderNodes = [];
     private bool _loading = true;
@@ -393,14 +755,35 @@
 
     private async Task LoadDocumentsAsync(string? query = null)
     {
-        _documents = await Api.GetDocumentsAsync(query);
+        _documents = await Api.GetDocumentsAsync(query, deleted: _showRecycleBin);
         RebuildFolderTree();
+        RebuildFileManagerData();
         await ClearSelection();
         _statusMessage = null;
     }
 
+    private async Task ToggleRecycleBinAsync()
+    {
+        _showRecycleBin = !_showRecycleBin;
+        if (_showRecycleBin)
+            _viewMode = "library";
+        await LoadDocumentsAsync();
+    }
+
     private void RebuildFolderTree() =>
         _folderNodes = DocumentLibraryLogic.BuildFolderTree(_documents);
+
+    private void RebuildFileManagerData() =>
+        _fileManagerData = DocumentFileManagerMapper.ToFileManagerItems(_documents, _extraFolders);
+
+    private async Task SetViewMode(string mode)
+    {
+        _showRecycleBin = false;
+        _viewMode = mode is "browse" ? "browse" : "library";
+        if (_viewMode == "browse")
+            RebuildFileManagerData();
+        await LoadDocumentsAsync();
+    }
 
     private CancellationTokenSource? _semanticDebounceCts;
 
@@ -484,6 +867,9 @@
         {
             if (file.File is null) continue;
 
+            TikrActionLog.Started(Logger, "UI.Documents.Upload",
+                $"FileName={file.FileInfo.Name} Transient={!_keepForAssistantContext}");
+
             await using var stream = file.File.OpenReadStream(long.MaxValue);
             var uploadResp = await Api.UploadDocumentAsync(stream, file.FileInfo.Name, isTransient: !_keepForAssistantContext);
 
@@ -492,13 +878,19 @@
                 var created = await uploadResp.Content.ReadFromJsonAsync<DocumentDto>();
                 if (created is not null)
                 {
+                    TikrActionLog.Info(Logger, "UI.Documents.Upload",
+                        $"Created DocumentId={created.Id}; tagging…");
                     var tagResp = await Api.TagDocumentAsync(created.Id);
                     _lastTagSuggestion = tagResp;           // drives the banner
                     _statusMessage = DocumentUiMessages.UploadSuccess(created.FileName);
+                    TikrActionLog.Completed(Logger, "UI.Documents.Upload",
+                        $"DocumentId={created.Id} Tags={tagResp?.Tags?.Length ?? 0}");
                 }
             }
             else
             {
+                TikrActionLog.Failed(Logger, "UI.Documents.Upload",
+                    $"HTTP {(int)uploadResp.StatusCode}", file.FileInfo.Name);
                 _statusMessage = DocumentUiMessages.UploadFailure(file.FileInfo.Name);
             }
         }
@@ -585,7 +977,12 @@
         _previewError = null;
         _previewKind = DocumentPreviewHelper.ResolveKind(doc.FileName, doc.ContentType, HasTextPreview(doc));
         _previewDocId = doc.Id;
+        _documentVersions = [];
+        _linkedRequirements = [];
         StateHasChanged();
+
+        TikrActionLog.Started(Logger, "UI.Documents.Preview",
+            $"DocumentId={doc.Id} FileName={doc.FileName} Kind={_previewKind}");
 
         try
         {
@@ -605,11 +1002,41 @@
                 case DocumentPreviewHelper.PreviewKind.None:
                     break;
             }
+
+            if (!_showRecycleBin)
+            {
+                try
+                {
+                    _documentVersions = await Api.GetDocumentVersionsAsync(doc.Id);
+                    _linkedRequirements = await Api.GetDocumentRequirementLinksAsync(doc.Id);
+                    TikrActionLog.Info(Logger, "UI.Documents.Preview.Meta",
+                        $"DocumentId={doc.Id} Versions={_documentVersions.Count} ReqLinks={_linkedRequirements.Count}");
+                }
+                catch (Exception ex)
+                {
+                    TikrActionLog.Failed(Logger, "UI.Documents.Preview.Meta", ex, $"DocumentId={doc.Id}");
+                    _documentVersions = [];
+                    _linkedRequirements = [];
+                }
+            }
+
+            if (!string.IsNullOrEmpty(_previewError))
+                TikrActionLog.Failed(Logger, "UI.Documents.Preview", _previewError, doc.FileName);
+            else
+                TikrActionLog.Completed(Logger, "UI.Documents.Preview",
+                    $"DocumentId={doc.Id} Kind={_previewKind} PdfBytes={_pdfBytes?.Length ?? 0}");
+        }
+        catch (JSException ex)
+        {
+            _previewError = "Couldn't prepare this file for preview. Try Download, or Call Steve for help.";
+            _previewKind = DocumentPreviewHelper.PreviewKind.None;
+            TikrActionLog.Failed(Logger, "UI.Documents.Preview", ex, $"DocumentId={doc.Id} (JS)");
         }
         catch (Exception ex)
         {
-            _previewError = $"Could not open preview: {ex.Message}";
+            _previewError = "Couldn't open this preview. Try Download, or Call Steve for help.";
             _previewKind = DocumentPreviewHelper.PreviewKind.None;
+            TikrActionLog.Failed(Logger, "UI.Documents.Preview", ex, $"DocumentId={doc.Id}");
         }
         finally
         {
@@ -617,27 +1044,439 @@
         }
     }
 
+    /// <summary>
+    /// Fetch PDF bytes and stage Syncfusion SfSmartPdfViewer LoadAsync (official in-memory path).
+    /// </summary>
     private async Task LoadPdfViewerAsync(DocumentDto doc)
     {
+        TikrActionLog.Started(Logger, "UI.Documents.PdfPreview",
+            $"DocumentId={doc.Id} FileName={doc.FileName} Engine=SfSmartPdfViewer");
+
         var bytes = await Api.GetDocumentContentAsync(doc.Id) ?? [];
         if (bytes.Length == 0)
         {
-            _previewError = "PDF content is empty.";
+            _previewError = "This PDF has no content to show.";
             _previewKind = DocumentPreviewHelper.PreviewKind.None;
+            TikrActionLog.Failed(Logger, "UI.Documents.PdfPreview", "empty content", doc.FileName);
             return;
         }
 
         if (!DocumentPreviewHelper.LooksLikePdf(bytes))
         {
-            _previewError = "File does not look like a PDF. Re-upload or use Convert to PDF.";
+            _previewError = "This file doesn't look like a PDF. Re-upload it, or use Convert to PDF.";
             _previewKind = DocumentPreviewHelper.PreviewKind.None;
+            TikrActionLog.Failed(Logger, "UI.Documents.PdfPreview", "not a PDF magic header", doc.FileName);
             return;
         }
 
-        _pdfPreviewUrl = await JS.InvokeAsync<string>(
-            "tikrDownload.createBlobUrl",
-            bytes,
-            "application/pdf");
+        // Keep under SignalR / browser memory comfort; EnableChunkMessages helps larger files.
+        const int maxPreviewBytes = 40 * 1024 * 1024;
+        if (bytes.Length > maxPreviewBytes)
+        {
+            _previewError = "This PDF is too large to preview here. Use Download to open it.";
+            _previewKind = DocumentPreviewHelper.PreviewKind.None;
+            TikrActionLog.Failed(Logger, "UI.Documents.PdfPreview", $"too large ({bytes.Length} bytes)", doc.FileName);
+            return;
+        }
+
+        _pdfBytes = bytes;
+        _pdfLoadPending = true;
+        _sidePdfLoadPending = true;
+        _pdfViewerReady = false; // wait for Created after remount
+        _pdfViewerKey++; // remount viewer so Created fires cleanly for each document
+        TikrActionLog.Info(Logger, "UI.Documents.PdfPreview",
+            $"Staged {bytes.Length} bytes for LoadAsync; viewerKey={_pdfViewerKey}");
+    }
+
+    private async Task OnPdfViewerCreated()
+    {
+        // Client-side Pdfium + JS interop are ready only after Created.
+        // Loading earlier (e.g. OnAfterRender) completes server-side but paints a blank canvas.
+        _pdfViewerReady = true;
+        TikrActionLog.Info(Logger, "UI.Documents.PdfPreview", "SfSmartPdfViewer Created (client ready)");
+        await TryLoadPdfIntoViewerAsync("Created");
+    }
+
+    private async Task OnSidePdfViewerCreated()
+    {
+        if (_sidePdfLoadPending && _sidePdfViewer is not null && _pdfBytes is { Length: > 0 })
+        {
+            _sidePdfLoadPending = false;
+            try
+            {
+                await _sidePdfViewer.LoadAsync(_pdfBytes, string.Empty);
+                await _sidePdfViewer.UpdateViewerContainerAsync();
+            }
+            catch (Exception ex)
+            {
+                TikrActionLog.Failed(Logger, "UI.Documents.SidePdfPreview", ex);
+            }
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        // Only load if the viewer already finished Created (e.g. bytes staged after first open).
+        if (_pdfLoadPending && _pdfViewerReady)
+            await TryLoadPdfIntoViewerAsync("AfterRender-ready");
+        if (_sidePdfLoadPending && _sidePdfViewer is not null && _pdfBytes is { Length: > 0 } && !_fullScreenOpen)
+            await OnSidePdfViewerCreated();
+    }
+
+    private async Task TryLoadPdfIntoViewerAsync(string trigger)
+    {
+        if (!_pdfLoadPending || !_pdfViewerReady || _pdfViewer is null || _pdfBytes is not { Length: > 0 })
+        {
+            TikrActionLog.Info(Logger, "UI.Documents.PdfPreview.LoadAsync",
+                $"Skip trigger={trigger} pending={_pdfLoadPending} ready={_pdfViewerReady} hasViewer={_pdfViewer is not null} bytes={_pdfBytes?.Length ?? 0}");
+            return;
+        }
+
+        _pdfLoadPending = false;
+        try
+        {
+            TikrActionLog.Started(Logger, "UI.Documents.PdfPreview.LoadAsync",
+                $"Trigger={trigger} Bytes={_pdfBytes.Length}");
+            // Official Syncfusion API: load from byte[] once client Created has fired.
+            await _pdfViewer.LoadAsync(_pdfBytes, string.Empty);
+            await _pdfViewer.UpdateViewerContainerAsync();
+            TikrActionLog.Completed(Logger, "UI.Documents.PdfPreview.LoadAsync",
+                $"Trigger={trigger} Bytes={_pdfBytes.Length}");
+        }
+        catch (Exception ex)
+        {
+            _previewError = "The PDF Viewer could not open this file. Try Download, or Call Steve for help.";
+            TikrActionLog.Failed(Logger, "UI.Documents.PdfPreview.LoadAsync", ex, $"Trigger={trigger}");
+            StateHasChanged();
+        }
+    }
+
+    private async Task ExportAnnotationsAsync(AnnotationDataFormat format)
+    {
+        if (_pdfViewer is null || _selectedPreview is null)
+            return;
+        try
+        {
+            await using var stream = await _pdfViewer.ExportAnnotationAsStreamAsync(format);
+            if (stream.Length == 0)
+            {
+                Toast.Show("No annotations to export (or export returned empty).");
+                return;
+            }
+
+            await using var ms = new MemoryStream();
+            stream.Position = 0;
+            await stream.CopyToAsync(ms);
+            var ext = format == AnnotationDataFormat.Xfdf ? "xfdf" : "json";
+            var name = Path.GetFileNameWithoutExtension(_selectedPreview.FileName) + $"-annotations.{ext}";
+            await JS.InvokeVoidAsync(
+                "tikrDownload.downloadFromBytes",
+                name,
+                format == AnnotationDataFormat.Xfdf ? "application/vnd.adobe.xfdf" : "application/json",
+                ms.ToArray());
+            Toast.Show(DocumentUiMessages.AnnotationExportSuccess());
+            TikrActionLog.Completed(Logger, "UI.Documents.AnnotationExport", $"Format={format} File={name}");
+        }
+        catch (Exception ex)
+        {
+            Toast.Show($"Annotation export failed: {ex.Message}");
+            TikrActionLog.Failed(Logger, "UI.Documents.AnnotationExport", ex);
+        }
+    }
+
+    private async Task OnAnnotationImportSelected(InputFileChangeEventArgs args)
+    {
+        if (_pdfViewer is null || args.FileCount == 0)
+            return;
+        try
+        {
+            var file = args.File;
+            await using var stream = file.OpenReadStream(5 * 1024 * 1024);
+            await using var ms = new MemoryStream();
+            await stream.CopyToAsync(ms);
+            ms.Position = 0;
+            var format = file.Name.EndsWith(".xfdf", StringComparison.OrdinalIgnoreCase)
+                ? AnnotationDataFormat.Xfdf
+                : AnnotationDataFormat.Json;
+            await _pdfViewer.ImportAnnotationAsync(ms, format);
+            _workspaceDirty = true;
+            Toast.Show(DocumentUiMessages.AnnotationImportSuccess());
+            TikrActionLog.Completed(Logger, "UI.Documents.AnnotationImport", $"Format={format}");
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Toast.Show($"Annotation import failed: {ex.Message}");
+            TikrActionLog.Failed(Logger, "UI.Documents.AnnotationImport", ex);
+        }
+    }
+
+    private async Task RestoreVersionAsync(DocumentDto doc, DocumentVersionDto version)
+    {
+        _savingPreview = true;
+        StateHasChanged();
+        try
+        {
+            var updated = await Api.RestoreDocumentVersionAsync(doc.Id, version.Id);
+            if (updated is null)
+            {
+                Toast.Show(DocumentUiMessages.WorkspaceSaveFailed("version restore"));
+                return;
+            }
+
+            Toast.Show(DocumentUiMessages.VersionRestored(version.VersionNumber));
+            await LoadDocumentsAsync();
+            var reloaded = _documents.FirstOrDefault(d => d.Id == doc.Id);
+            if (reloaded is not null)
+            {
+                _selectedPreview = reloaded;
+                await LoadDocumentPreviewAsync(reloaded);
+            }
+        }
+        catch (Exception ex)
+        {
+            Toast.Show($"Restore version failed: {ex.Message}");
+        }
+        finally
+        {
+            _savingPreview = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task RestoreDocumentAsync(DocumentDto doc)
+    {
+        await Api.RestoreDocumentAsync(doc.Id);
+        Toast.Show(DocumentUiMessages.Restored(doc.FileName));
+        await LoadDocumentsAsync();
+    }
+
+    private void RequestPurge(DocumentDto doc)
+    {
+        _pendingPurge = true;
+        _pendingBulkDelete = false;
+        _pendingDeleteDoc = doc;
+        _confirmDeleteLabel = $"{doc.FileName} (permanent)";
+        _confirmDeleteVisible = true;
+    }
+
+    private bool CanOpenFullScreen =>
+        _selectedPreview is not null
+        && _previewKind is DocumentPreviewHelper.PreviewKind.Pdf
+            or DocumentPreviewHelper.PreviewKind.Word
+            or DocumentPreviewHelper.PreviewKind.Spreadsheet
+            or DocumentPreviewHelper.PreviewKind.Text
+        && string.IsNullOrEmpty(_previewError)
+        && (_previewKind != DocumentPreviewHelper.PreviewKind.Pdf || _pdfBytes is { Length: > 0 })
+        && (_previewKind != DocumentPreviewHelper.PreviewKind.Word || !string.IsNullOrEmpty(_wordSfdt))
+        && (_previewKind != DocumentPreviewHelper.PreviewKind.Spreadsheet || _spreadsheetBytes is { Length: > 0 })
+        && (_previewKind != DocumentPreviewHelper.PreviewKind.Text || HasTextPreview(_selectedPreview));
+
+    private string FullScreenHeader =>
+        _selectedPreview is null
+            ? "Document workspace"
+            : $"Working on: {_selectedPreview.FileName}";
+
+    private async Task OpenFullScreenAsync()
+    {
+        if (_selectedPreview is null)
+            return;
+
+        // Ensure content is staged (selection already loads preview payload).
+        if (_previewDocId != _selectedPreview.Id || NeedsPayloadReload())
+            await LoadDocumentPreviewAsync(_selectedPreview);
+
+        if (!CanOpenFullScreen)
+        {
+            Toast.Show(_previewError ?? "This document is not ready to open yet.");
+            return;
+        }
+
+        // Remount PDF viewer inside the dialog so Created → LoadAsync runs on the full surface.
+        if (_previewKind == DocumentPreviewHelper.PreviewKind.Pdf && _pdfBytes is { Length: > 0 })
+        {
+            _pdfLoadPending = true;
+            _pdfViewerReady = false;
+            _pdfViewerKey++;
+        }
+
+        _fullScreenOpen = true;
+        TikrActionLog.Info(Logger, "UI.Documents.FullScreen",
+            $"Open FileName={_selectedPreview.FileName} Kind={_previewKind}");
+        StateHasChanged();
+    }
+
+    private bool NeedsPayloadReload() => _previewKind switch
+    {
+        DocumentPreviewHelper.PreviewKind.Pdf => _pdfBytes is null or { Length: 0 },
+        DocumentPreviewHelper.PreviewKind.Word => string.IsNullOrEmpty(_wordSfdt),
+        DocumentPreviewHelper.PreviewKind.Spreadsheet => _spreadsheetBytes is null or { Length: 0 },
+        DocumentPreviewHelper.PreviewKind.Text => _selectedPreview is null || !HasTextPreview(_selectedPreview),
+        _ => true
+    };
+
+    private void RequestCloseFullScreen()
+    {
+        if (_workspaceDirty)
+        {
+            _confirmDiscardVisible = true;
+            StateHasChanged();
+            return;
+        }
+
+        CloseFullScreen();
+    }
+
+    private void ConfirmDiscardAndCloseAsync()
+    {
+        _workspaceDirty = false;
+        CloseFullScreen();
+    }
+
+    private void CloseFullScreen()
+    {
+        _fullScreenOpen = false;
+        _workspaceDirty = false;
+        TikrActionLog.Info(Logger, "UI.Documents.FullScreen", "Close");
+        StateHasChanged();
+    }
+
+    private async Task OnFullScreenClosed()
+    {
+        TikrActionLog.Info(Logger, "UI.Documents.FullScreen", "Closed");
+        // Unload PDF from the full-screen instance so next open remounts cleanly.
+        if (_pdfViewer is not null)
+        {
+            try { await _pdfViewer.UnloadAsync(); }
+            catch { /* disposing */ }
+        }
+
+        _pdfViewer = null;
+        _pdfViewerReady = false;
+        _workspaceDirty = false;
+        // Keep staged bytes so re-open is instant; side panel does not mount the heavy control.
+        await Task.CompletedTask;
+    }
+
+    private async Task OnRecordDoubleClickAsync(RecordDoubleClickEventArgs<DocumentDto> args)
+    {
+        if (args?.RowData is not { } doc)
+            return;
+
+        await OpenDocumentWorkspaceAsync(doc);
+    }
+
+    /// <summary>Select a library row, stage Syncfusion preview payloads, and open the full workspace.</summary>
+    private async Task OpenDocumentWorkspaceAsync(DocumentDto doc)
+    {
+        _selectedIds.Clear();
+        _selectedIds.Add(doc.Id);
+        _selectedPreview = doc;
+        await LoadDocumentPreviewAsync(doc);
+        await OpenFullScreenAsync();
+    }
+
+    private async Task SaveWorkspaceAsync()
+    {
+        if (_previewKind == DocumentPreviewHelper.PreviewKind.Pdf)
+            await SavePdfPreviewAsync();
+        else if (_previewKind == DocumentPreviewHelper.PreviewKind.Word)
+            await SaveWordPreviewAsync();
+        else if (_previewKind == DocumentPreviewHelper.PreviewKind.Spreadsheet)
+            await SaveSpreadsheetPreviewAsync();
+    }
+
+    /// <summary>
+    /// Syncfusion-documented PDF save-back: GetDocumentAsync → PUT content to NAS.
+    /// </summary>
+    private async Task SavePdfPreviewAsync()
+    {
+        if (_selectedPreview is null || _pdfViewer is null)
+            return;
+
+        _savingPreview = true;
+        _statusMessage = DocumentUiMessages.PdfSaveInProgress();
+        StateHasChanged();
+        TikrActionLog.Started(Logger, "UI.Documents.PdfSave",
+            $"DocumentId={_selectedPreview.Id} FileName={_selectedPreview.FileName}");
+        try
+        {
+            var bytes = await _pdfViewer.GetDocumentAsync();
+            if (bytes is null || bytes.Length == 0)
+            {
+                Toast.Show(DocumentUiMessages.WorkspaceSaveFailed("empty PDF from viewer"));
+                TikrActionLog.Failed(Logger, "UI.Documents.PdfSave", "empty GetDocumentAsync");
+                return;
+            }
+
+            await using var stream = new MemoryStream(bytes);
+            var updated = await Api.ReplaceDocumentContentAsync(
+                _selectedPreview.Id,
+                stream,
+                _selectedPreview.FileName,
+                "application/pdf");
+            if (updated is null)
+            {
+                Toast.Show(DocumentUiMessages.WorkspaceSaveFailed());
+                TikrActionLog.Failed(Logger, "UI.Documents.PdfSave", "API replace failed");
+                return;
+            }
+
+            _pdfBytes = bytes;
+            _workspaceDirty = false;
+            _selectedPreview = updated;
+            Toast.Show(DocumentUiMessages.WorkspaceSaveSuccess(updated.FileName));
+            _statusMessage = DocumentUiMessages.WorkspaceSaveSuccess(updated.FileName);
+            TikrActionLog.Completed(Logger, "UI.Documents.PdfSave",
+                $"DocumentId={updated.Id} Bytes={bytes.Length}");
+            await LoadDocumentsAsync();
+            // Restore selection after reload
+            _selectedPreview = _documents.FirstOrDefault(d => d.Id == updated.Id) ?? updated;
+        }
+        catch (Exception ex)
+        {
+            Toast.Show(DocumentUiMessages.WorkspaceSaveFailed(ex.Message));
+            TikrActionLog.Failed(Logger, "UI.Documents.PdfSave", ex);
+        }
+        finally
+        {
+            _savingPreview = false;
+            StateHasChanged();
+        }
+    }
+
+    private void OnPdfDocumentEdited(DocumentEditedEventArgs args)
+    {
+        _workspaceDirty = true;
+        StateHasChanged();
+    }
+
+    private static string TruncatePreview(string? text, int maxChars)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+            return string.Empty;
+        var t = text.Trim();
+        return t.Length <= maxChars ? t : t[..maxChars] + "…";
+    }
+
+    private void OnPdfDocumentLoaded(LoadEventArgs args)
+    {
+        TikrActionLog.Completed(Logger, "UI.Documents.PdfPreview",
+            $"DocumentLoaded name={args?.DocumentName ?? "(none)"}");
+    }
+
+    private void OnPdfDocumentLoadFailed(LoadFailedEventArgs args)
+    {
+        var name = string.IsNullOrWhiteSpace(args?.DocumentName) ? "document" : args.DocumentName;
+        if (args?.IsPasswordRequired == true)
+            _previewError = "This PDF is password protected. Download it and open with a password, or Call Steve for help.";
+        else
+            _previewError = "The PDF Viewer could not load this file. Try Download, or Call Steve for help.";
+
+        TikrActionLog.Failed(Logger, "UI.Documents.PdfPreview",
+            args?.IsPasswordRequired == true ? "password required" : "DocumentLoadFailed",
+            name);
+        StateHasChanged();
     }
 
     private async Task LoadWordPreviewAsync(DocumentDto doc)
@@ -671,6 +1510,15 @@
             return;
 
         await _wordContainer.DocumentEditor.OpenAsync(_wordSfdt);
+        _workspaceDirty = false;
+    }
+
+    private async Task OnWordToolbarClick(Syncfusion.Blazor.DocumentEditor.ClickEventArgs args)
+    {
+        if (args?.Item?.Id is "tikr-save-nas")
+            await SaveWordPreviewAsync();
+        else
+            _workspaceDirty = true;
     }
 
     private async Task SaveWordPreviewAsync()
@@ -680,11 +1528,20 @@
 
         _savingPreview = true;
         StateHasChanged();
+        TikrActionLog.Started(Logger, "UI.Documents.WordSave",
+            $"DocumentId={_selectedPreview.Id} FileName={_selectedPreview.FileName}");
         try
         {
-            await using var stream = new MemoryStream();
-            await _wordContainer.DocumentEditor.SaveAsync(stream);
-            stream.Position = 0;
+            // Syncfusion documented server save: SaveAsBlobAsync → bytes → storage
+            var base64 = await _wordContainer.DocumentEditor.SaveAsBlobAsync(FormatType.Docx);
+            if (string.IsNullOrWhiteSpace(base64))
+            {
+                Toast.Show(DocumentUiMessages.WorkspaceSaveFailed("empty Word blob"));
+                return;
+            }
+
+            var bytes = Convert.FromBase64String(base64);
+            await using var stream = new MemoryStream(bytes);
             var updated = await Api.ReplaceDocumentContentAsync(
                 _selectedPreview.Id,
                 stream,
@@ -692,20 +1549,26 @@
                 "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
             if (updated is null)
             {
-                Toast.Show("Could not save Word document to NAS.");
+                Toast.Show(DocumentUiMessages.WorkspaceSaveFailed());
                 return;
             }
 
-            Toast.Show($"Saved \"{updated.FileName}\" to NAS");
+            _workspaceDirty = false;
+            Toast.Show(DocumentUiMessages.WorkspaceSaveSuccess(updated.FileName));
+            TikrActionLog.Completed(Logger, "UI.Documents.WordSave",
+                $"DocumentId={updated.Id} Bytes={bytes.Length}");
             await LoadDocumentsAsync();
+            _selectedPreview = _documents.FirstOrDefault(d => d.Id == updated.Id) ?? updated;
         }
         catch (Exception ex)
         {
-            Toast.Show($"Save failed: {ex.Message}");
+            Toast.Show(DocumentUiMessages.WorkspaceSaveFailed(ex.Message));
+            TikrActionLog.Failed(Logger, "UI.Documents.WordSave", ex);
         }
         finally
         {
             _savingPreview = false;
+            StateHasChanged();
         }
     }
 
@@ -716,32 +1579,193 @@
 
         _savingPreview = true;
         StateHasChanged();
+        TikrActionLog.Started(Logger, "UI.Documents.SpreadsheetSave",
+            $"DocumentId={_selectedPreview.Id} FileName={_selectedPreview.FileName}");
         try
         {
+            // Syncfusion documented: SaveAsStreamAsync for server persistence
             await using var stream = await _spreadsheetRef.SaveAsStreamAsync();
             stream.Position = 0;
+            var fileName = Path.ChangeExtension(_selectedPreview.FileName, ".xlsx") ?? _selectedPreview.FileName;
             var updated = await Api.ReplaceDocumentContentAsync(
                 _selectedPreview.Id,
                 stream,
-                Path.ChangeExtension(_selectedPreview.FileName, ".xlsx") ?? _selectedPreview.FileName,
+                fileName,
                 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
             if (updated is null)
             {
-                Toast.Show("Could not save spreadsheet to NAS.");
+                Toast.Show(DocumentUiMessages.WorkspaceSaveFailed());
                 return;
             }
 
-            Toast.Show($"Saved \"{updated.FileName}\" to NAS");
+            _workspaceDirty = false;
+            Toast.Show(DocumentUiMessages.WorkspaceSaveSuccess(updated.FileName));
+            TikrActionLog.Completed(Logger, "UI.Documents.SpreadsheetSave",
+                $"DocumentId={updated.Id}");
             await LoadDocumentsAsync();
+            _selectedPreview = _documents.FirstOrDefault(d => d.Id == updated.Id) ?? updated;
         }
         catch (Exception ex)
         {
-            Toast.Show($"Save failed: {ex.Message}");
+            Toast.Show(DocumentUiMessages.WorkspaceSaveFailed(ex.Message));
+            TikrActionLog.Failed(Logger, "UI.Documents.SpreadsheetSave", ex);
         }
         finally
         {
             _savingPreview = false;
+            StateHasChanged();
         }
+    }
+
+    // ─── Syncfusion File Manager (Browse mode) — documented event/OnRead pattern ───
+
+    private async Task OnFileManagerReadAsync(ReadEventArgs<FileManagerDirectoryContent> args)
+    {
+        RebuildFileManagerData();
+        args.Response = DocumentFileManagerMapper.BuildReadResponse(_fileManagerData, args.Path);
+        await Task.CompletedTask;
+    }
+
+    private async Task OnFileManagerSearchingAsync(SearchEventArgs<FileManagerDirectoryContent> args)
+    {
+        RebuildFileManagerData();
+        args.Response = DocumentFileManagerMapper.BuildSearchResponse(_fileManagerData, args.SearchText ?? "");
+        await Task.CompletedTask;
+    }
+
+    private async Task OnFileManagerDeletingAsync(ItemsDeleteEventArgs<FileManagerDirectoryContent> args)
+    {
+        foreach (var file in args.Files)
+        {
+            if (!file.IsFile || !DocumentFileManagerLogic.TryParseFileId(file.Id, out var docId))
+                continue;
+            try
+            {
+                await Api.DeleteDocumentAsync(docId);
+            }
+            catch (Exception ex)
+            {
+                TikrActionLog.Failed(Logger, "UI.Documents.FileManager.Delete", ex, file.Name);
+            }
+        }
+
+        await LoadDocumentsAsync();
+        RebuildFileManagerData();
+        args.Response = DocumentFileManagerMapper.BuildReadResponse(_fileManagerData, args.Path);
+    }
+
+    private async Task OnFileManagerRenamingAsync(ItemRenameEventArgs<FileManagerDirectoryContent> args)
+    {
+        if (args.File.IsFile && DocumentFileManagerLogic.TryParseFileId(args.File.Id, out var docId))
+        {
+            var updated = await Api.UpdateDocumentMetadataAsync(
+                docId, new UpdateDocumentMetadataRequest(FileName: args.NewName));
+            if (updated is null)
+            {
+                args.Cancel = true;
+                Toast.Show(DocumentUiMessages.WorkspaceSaveFailed("rename"));
+                return;
+            }
+        }
+        else if (!args.File.IsFile && DocumentFileManagerLogic.TryParseFolderId(args.File.Id, out var oldFolder))
+        {
+            // Rename folder: move all docs in folder + update virtual set
+            var newName = args.NewName?.Trim() ?? "";
+            if (string.IsNullOrWhiteSpace(newName))
+            {
+                args.Cancel = true;
+                return;
+            }
+
+            foreach (var doc in _documents.Where(d =>
+                         DocumentFileManagerLogic.IsUncategorized(oldFolder)
+                             ? string.IsNullOrWhiteSpace(d.SuggestedFolder)
+                             : string.Equals(d.SuggestedFolder, oldFolder, StringComparison.OrdinalIgnoreCase)).ToList())
+            {
+                await Api.UpdateDocumentMetadataAsync(
+                    doc.Id,
+                    new UpdateDocumentMetadataRequest(
+                        SuggestedFolder: DocumentFileManagerLogic.ToSuggestedFolder(newName),
+                        ClearSuggestedFolder: DocumentFileManagerLogic.IsUncategorized(newName)));
+            }
+
+            _extraFolders.Remove(oldFolder);
+            if (!DocumentFileManagerLogic.IsUncategorized(newName))
+                _extraFolders.Add(newName);
+        }
+
+        await LoadDocumentsAsync();
+        RebuildFileManagerData();
+        args.Response = DocumentFileManagerMapper.BuildReadResponse(_fileManagerData, args.Path);
+    }
+
+    private async Task OnFileManagerMovingAsync(ItemsMoveEventArgs<FileManagerDirectoryContent> args)
+    {
+        var targetFolder = ResolveTargetFolderName(args.TargetPath, args.TargetData);
+        foreach (var file in args.Files.Where(f => f.IsFile))
+        {
+            if (!DocumentFileManagerLogic.TryParseFileId(file.Id, out var docId))
+                continue;
+            await Api.UpdateDocumentMetadataAsync(
+                docId,
+                new UpdateDocumentMetadataRequest(
+                    SuggestedFolder: DocumentFileManagerLogic.ToSuggestedFolder(targetFolder),
+                    ClearSuggestedFolder: DocumentFileManagerLogic.IsUncategorized(targetFolder)));
+        }
+
+        await LoadDocumentsAsync();
+        RebuildFileManagerData();
+        args.Response = DocumentFileManagerMapper.BuildReadResponse(_fileManagerData, args.TargetPath);
+    }
+
+    private async Task OnFileManagerFolderCreatingAsync(FolderCreateEventArgs<FileManagerDirectoryContent> args)
+    {
+        var name = args.FolderName?.Trim();
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            args.Cancel = true;
+            return;
+        }
+
+        _extraFolders.Add(name);
+        RebuildFileManagerData();
+        var created = _fileManagerData.FirstOrDefault(f =>
+            !f.IsFile && string.Equals(f.Name, name, StringComparison.OrdinalIgnoreCase));
+        args.Response = new FileManagerResponse<FileManagerDirectoryContent>
+        {
+            Files = created is null ? [] : [created]
+        };
+        await Task.CompletedTask;
+    }
+
+    private async Task OnFileManagerFileOpenAsync(FileOpenEventArgs<FileManagerDirectoryContent> args)
+    {
+        if (args.FileDetails is null || !args.FileDetails.IsFile)
+            return;
+        if (!DocumentFileManagerLogic.TryParseFileId(args.FileDetails.Id, out var docId))
+            return;
+
+        var doc = _documents.FirstOrDefault(d => d.Id == docId);
+        if (doc is null)
+            return;
+
+        args.Cancel = true; // prevent default navigation; we open the workspace
+        await OpenDocumentWorkspaceAsync(doc);
+    }
+
+    private static string ResolveTargetFolderName(string? targetPath, FileManagerDirectoryContent? targetData)
+    {
+        if (targetData is not null && !targetData.IsFile && !string.IsNullOrWhiteSpace(targetData.Name)
+            && !string.Equals(targetData.Id, DocumentFileManagerLogic.RootId, StringComparison.Ordinal))
+            return targetData.Name;
+
+        if (string.IsNullOrWhiteSpace(targetPath) || targetPath is "/" or "\\")
+            return DocumentFileManagerLogic.UncategorizedFolderName;
+
+        var segment = targetPath.Trim().Replace('\\', '/').Trim('/').Split('/').LastOrDefault();
+        return string.IsNullOrWhiteSpace(segment)
+            ? DocumentFileManagerLogic.UncategorizedFolderName
+            : segment;
     }
 
     private async Task LoadSpreadsheetPreviewAsync(DocumentDto doc)
@@ -760,19 +1784,24 @@
 
     private async Task ClearPreviewStateAsync()
     {
-        if (!string.IsNullOrEmpty(_pdfPreviewUrl))
+        if (_pdfViewer is not null)
         {
             try
             {
-                await JS.InvokeVoidAsync("tikrDownload.revokeBlobUrl", _pdfPreviewUrl);
+                await _pdfViewer.UnloadAsync();
             }
             catch
             {
-                /* circuit may be disposing */
+                /* viewer may already be disposing */
             }
         }
 
-        _pdfPreviewUrl = null;
+        _pdfViewer = null;
+        _sidePdfViewer = null;
+        _pdfBytes = null;
+        _pdfLoadPending = false;
+        _sidePdfLoadPending = false;
+        _pdfViewerReady = false;
         _previewDocId = null;
         _previewError = null;
         _previewKind = DocumentPreviewHelper.PreviewKind.None;
@@ -781,6 +1810,8 @@
         _spreadsheetBytes = null;
         _spreadsheetRef = null;
         _savingPreview = false;
+        _documentVersions = [];
+        _linkedRequirements = [];
     }
 
     private static bool HasTextPreview(DocumentDto doc) =>
@@ -791,6 +1822,8 @@
         if (!DocumentUiMessages.CanConvertToPdf(doc.FileName))
             return;
 
+        TikrActionLog.Started(Logger, "UI.Documents.ConvertToPdf",
+            $"DocumentId={doc.Id} FileName={doc.FileName}");
         _convertingDocId = doc.Id;
         _statusMessage = DocumentUiMessages.ConvertToPdfInProgress(doc.FileName);
         StateHasChanged();
@@ -798,19 +1831,82 @@
         try
         {
             var result = await Api.ConvertStoredDocumentToPdfAsync(doc.Id, doc.FileName);
-            if (result.Document is null)
+            if (result.Document is null || result.Document.Content is null || result.Document.Content.Length == 0)
             {
+                TikrActionLog.Failed(Logger, "UI.Documents.ConvertToPdf",
+                    result.ErrorMessage ?? "null result", doc.FileName);
                 _statusMessage = DocumentUiMessages.GenerationFailed(result.ErrorMessage);
+                Toast.Show(DocumentUiMessages.GenerationFailed(result.ErrorMessage));
                 return;
             }
 
+            var pdfName = string.IsNullOrWhiteSpace(result.Document.FileName)
+                ? Path.ChangeExtension(doc.FileName, ".pdf") ?? "converted.pdf"
+                : result.Document.FileName;
+            var contentType = string.IsNullOrWhiteSpace(result.Document.ContentType)
+                ? "application/pdf"
+                : result.Document.ContentType;
+
+            // Always offer a local download (Word→PDF / Excel→PDF / image→PDF proof).
             await JS.InvokeVoidAsync(
                 "tikrDownload.downloadFromBytes",
-                result.Document.FileName,
-                result.Document.ContentType,
+                pdfName,
+                contentType,
                 result.Document.Content);
-            _statusMessage = DocumentUiMessages.ConvertToPdfSuccess(doc.FileName);
-            Toast.Show(DocumentUiMessages.GenerationSuccess(result.Document.FileName));
+
+            // Save the PDF into the library and open Smart PDF workspace so clerks can annotate immediately.
+            DocumentDto? saved = null;
+            try
+            {
+                await using var uploadStream = new MemoryStream(result.Document.Content);
+                var uploadResp = await Api.UploadDocumentAsync(uploadStream, pdfName, isTransient: false);
+                if (uploadResp.IsSuccessStatusCode)
+                {
+                    saved = await uploadResp.Content.ReadFromJsonAsync<DocumentDto>();
+                    await LoadDocumentsAsync();
+                    if (saved is not null)
+                        saved = _documents.FirstOrDefault(d => d.Id == saved.Id) ?? saved;
+                    else
+                    {
+                        saved = _documents.FirstOrDefault(d =>
+                            string.Equals(d.FileName, pdfName, StringComparison.OrdinalIgnoreCase))
+                            ?? _documents
+                                .Where(d => d.FileName.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase))
+                                .OrderByDescending(d => d.UploadedAt)
+                                .FirstOrDefault();
+                    }
+                }
+                else
+                {
+                    TikrActionLog.Failed(Logger, "UI.Documents.ConvertToPdf.Upload",
+                        $"Status={(int)uploadResp.StatusCode}", pdfName);
+                }
+            }
+            catch (Exception uploadEx)
+            {
+                TikrActionLog.Failed(Logger, "UI.Documents.ConvertToPdf.Upload", uploadEx, pdfName);
+            }
+
+            if (saved is not null)
+            {
+                _statusMessage = DocumentUiMessages.ConvertToPdfLibraryOnly(saved.FileName);
+                Toast.Show(DocumentUiMessages.ConvertToPdfLibraryOnly(saved.FileName));
+                TikrActionLog.Completed(Logger, "UI.Documents.ConvertToPdf",
+                    $"OutFile={pdfName} Bytes={result.Document.Content.Length} LibraryId={saved.Id}");
+                await OpenDocumentWorkspaceAsync(saved);
+            }
+            else
+            {
+                _statusMessage = DocumentUiMessages.ConvertToPdfSuccess(doc.FileName);
+                Toast.Show(DocumentUiMessages.GenerationSuccess(pdfName));
+                TikrActionLog.Completed(Logger, "UI.Documents.ConvertToPdf",
+                    $"OutFile={pdfName} Bytes={result.Document.Content.Length} (download only)");
+            }
+        }
+        catch (Exception ex)
+        {
+            TikrActionLog.Failed(Logger, "UI.Documents.ConvertToPdf", ex, doc.FileName);
+            Toast.Show(DocumentUiMessages.GenerationFailed(ex.Message));
         }
         finally
         {
@@ -821,6 +1917,8 @@
 
     private async Task ExtractToVaultAsync(DocumentDto doc)
     {
+        TikrActionLog.Started(Logger, "UI.Documents.ExtractToVault",
+            $"DocumentId={doc.Id} FileName={doc.FileName}");
         _statusMessage = DocumentUiMessages.ExtractToVaultInProgress(doc.FileName);
         StateHasChanged();
 
@@ -860,6 +1958,8 @@
     private async Task DownloadDocumentAsync(DocumentDto doc)
     {
         const long largeFileThresholdBytes = 52_428_800;
+        TikrActionLog.Started(Logger, "UI.Documents.Download",
+            $"DocumentId={doc.Id} FileName={doc.FileName} Bytes={doc.FileSizeBytes}");
 
         if (doc.FileSizeBytes > largeFileThresholdBytes)
             _statusMessage = DocumentUiMessages.DownloadLargeFileWarning(doc.FileName, doc.FileSizeBytes);
@@ -873,6 +1973,7 @@
             var bytes = await Api.GetDocumentContentAsync(doc.Id);
             if (bytes is null || bytes.Length == 0)
             {
+                TikrActionLog.Failed(Logger, "UI.Documents.Download", "Empty content", doc.FileName);
                 _statusMessage = DocumentUiMessages.DownloadFailed(doc.FileName);
                 return;
             }
@@ -883,6 +1984,13 @@
                 doc.ContentType ?? "application/octet-stream",
                 bytes);
             _statusMessage = DocumentUiMessages.DownloadSuccess(doc.FileName);
+            TikrActionLog.Completed(Logger, "UI.Documents.Download",
+                $"DocumentId={doc.Id} DownloadedBytes={bytes.Length}");
+        }
+        catch (Exception ex)
+        {
+            TikrActionLog.Failed(Logger, "UI.Documents.Download", ex, doc.FileName);
+            throw;
         }
         finally
         {
@@ -931,12 +2039,18 @@
         if (_pendingBulkDelete)
         {
             var count = SelectedCount;
+            TikrActionLog.Started(Logger, "UI.Documents.BulkDelete", $"Count={count}");
             foreach (var id in _selectedIds.ToList())
             {
-                try { await Api.DeleteDocumentAsync(id); } catch { /* continue */ }
+                try { await Api.DeleteDocumentAsync(id); }
+                catch (Exception ex)
+                {
+                    TikrActionLog.Failed(Logger, "UI.Documents.BulkDelete", ex, $"DocumentId={id}");
+                }
             }
 
-            Toast.Show($"Deleted {count} document{(count == 1 ? "" : "s")}");
+            TikrActionLog.Completed(Logger, "UI.Documents.BulkDelete", $"RequestedCount={count}");
+            Toast.Show($"Moved {count} document{(count == 1 ? "" : "s")} to Recycle bin");
             _statusMessage = DocumentUiMessages.BulkDelete(count);
             await LoadDocumentsAsync();
             // LoadDocumentsAsync already clears selection
@@ -949,19 +2063,25 @@
 
         var doc = _pendingDeleteDoc;
         _pendingDeleteDoc = null;
+        var purge = _pendingPurge;
+        _pendingPurge = false;
 
-        // Capture bytes before delete so Undo can re-upload (parity with Vault/Requirements).
-        var content = await Api.GetDocumentContentAsync(doc.Id) ?? [];
-        var fileName = doc.FileName;
+        TikrActionLog.Started(Logger, purge ? "UI.Documents.Purge" : "UI.Documents.Delete",
+            $"DocumentId={doc.Id} FileName={doc.FileName}");
 
-        await Api.DeleteDocumentAsync(doc.Id);
-        Toast.Show($"Deleted \"{fileName}\"", async () =>
+        if (purge)
         {
-            if (content.Length == 0)
-                return;
+            await Api.PurgeDocumentAsync(doc.Id);
+            Toast.Show(DocumentUiMessages.Purged(doc.FileName));
+            await LoadDocumentsAsync();
+            return;
+        }
 
-            await using var stream = new MemoryStream(content);
-            await Api.UploadDocumentAsync(stream, fileName);
+        // Soft-delete; Undo restores via restore API (keeps same document id).
+        await Api.DeleteDocumentAsync(doc.Id);
+        Toast.Show(DocumentUiMessages.SoftDeleted(doc.FileName), async () =>
+        {
+            await Api.RestoreDocumentAsync(doc.Id);
             await LoadDocumentsAsync();
         });
         await LoadDocumentsAsync();
@@ -973,17 +2093,33 @@
     private async Task BulkRetagAsync()
     {
         var ids = _selectedIds.ToList();
+        TikrActionLog.Started(Logger, "UI.Documents.BulkRetag", $"Count={ids.Count}");
         foreach (var id in ids)
         {
-            try { await Api.TagDocumentAsync(id); } catch { }
+            try { await Api.TagDocumentAsync(id); }
+            catch (Exception ex)
+            {
+                TikrActionLog.Failed(Logger, "UI.Documents.BulkRetag", ex, $"DocumentId={id}");
+            }
         }
+        TikrActionLog.Completed(Logger, "UI.Documents.BulkRetag", $"Count={ids.Count}");
         _statusMessage = DocumentUiMessages.BulkRetag(ids.Count);
         await LoadDocumentsAsync();
     }
 
     private async Task RetagOne(DocumentDto doc)
     {
-        await Api.TagDocumentAsync(doc.Id);
+        TikrActionLog.Started(Logger, "UI.Documents.Retag", $"DocumentId={doc.Id} FileName={doc.FileName}");
+        try
+        {
+            await Api.TagDocumentAsync(doc.Id);
+            TikrActionLog.Completed(Logger, "UI.Documents.Retag", $"DocumentId={doc.Id}");
+        }
+        catch (Exception ex)
+        {
+            TikrActionLog.Failed(Logger, "UI.Documents.Retag", ex, doc.FileName);
+            throw;
+        }
         await LoadDocumentsAsync();
     }
 
@@ -996,6 +2132,14 @@
         var itemId = args.Item?.Id ?? "";
         switch (itemId)
         {
+            case "cm-open-fullscreen":
+                if (targetDoc is not null)
+                {
+                    _selectedPreview = targetDoc;
+                    await LoadDocumentPreviewAsync(targetDoc);
+                    await OpenFullScreenAsync();
+                }
+                break;
             case "cm-retag":
                 _ = RetagOne(targetDoc);
                 break;

@@ -52,4 +52,36 @@ public interface IDocumentService
         IAuditService audit,
         ICurrentUserService currentUser,
         CancellationToken ct = default);
+
+    /// <summary>
+    /// Update clerk-facing metadata (rename / move between AI folders) for File Manager Browse mode.
+    /// </summary>
+    Task<Document> UpdateMetadataAsync(
+        Guid id,
+        string? fileName,
+        string? suggestedFolder,
+        bool updateFolder,
+        IAuditService audit,
+        ICurrentUserService currentUser,
+        CancellationToken ct = default);
+
+    /// <summary>Soft-delete (recycle bin). Prefer over hard delete for clerk recovery.</summary>
+    Task SoftDeleteAsync(Guid id, IAuditService audit, ICurrentUserService currentUser, CancellationToken ct = default);
+
+    /// <summary>Restore a soft-deleted document to the active library.</summary>
+    Task RestoreAsync(Guid id, IAuditService audit, ICurrentUserService currentUser, CancellationToken ct = default);
+
+    /// <summary>Permanently remove soft-deleted document + storage (and versions).</summary>
+    Task PurgeAsync(Guid id, IFileStorageService storage, IAuditService audit, ICurrentUserService currentUser, CancellationToken ct = default);
+
+    Task<IReadOnlyList<DocumentVersion>> ListVersionsAsync(Guid documentId, CancellationToken ct = default);
+
+    /// <summary>Restore a prior version as the current content (creates a new version of the current bytes first).</summary>
+    Task<Document> RestoreVersionAsync(
+        Guid documentId,
+        Guid versionId,
+        IFileStorageService storage,
+        IAuditService audit,
+        ICurrentUserService currentUser,
+        CancellationToken ct = default);
 }
