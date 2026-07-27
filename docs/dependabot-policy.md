@@ -6,7 +6,7 @@ How TIKR handles dependency update pull requests. Config: [`.github/dependabot.y
 
 - **Security updates** take priority over routine version bumps.
 - **Reduce PR noise** via grouped patch/minor updates and `open-pull-requests-limit`.
-- **Never merge** a Dependabot PR with failing required checks (`build-and-test`, `trunk_check`).
+- **Never merge** a Dependabot PR with failing required checks (`build-and-test`, `trunk-check`).
 - **Major upgrades** require manual review; some test-stack majors are deferred (see ignore rules in config).
 
 ## Merge tiers
@@ -17,11 +17,12 @@ How TIKR handles dependency update pull requests. Config: [`.github/dependabot.y
 | Patch / minor | NuGet, GitHub Actions | **Auto-merge** when required checks pass |
 | Major | NuGet (general) | Manual review + `dotnet test`; owner merges |
 | Major | `bunit`, `coverlet.collector`, `Microsoft.NET.Test.Sdk` | **Deferred** until Phase 7 test harness work — ignored in config |
+| Major | `SkiaSharp.NativeAssets.Linux`, `HarfBuzzSharp.NativeAssets.Linux` | **Deferred** — Syncfusion DocIO/XlsIO PDF natives; coordinate with renderer smoke — ignored in config |
 
 ## Required CI (non-negotiable)
 
 - **TIKR CI** — `build-and-test` (restore, build, test, Docker smoke optional)
-- **Trunk** — `trunk_check` (gitleaks, yaml/md/docker lint, dotnet format verify)
+- **Trunk** — `trunk-check` (gitleaks, yaml/md/docker lint, dotnet format verify)
 
 ## Weekly rhythm
 
@@ -39,7 +40,7 @@ If `main` moved or CI was broken when a PR opened:
 
 ### Never do
 
-- Merge with red `build-and-test` or `trunk_check`.
+- Merge with red `build-and-test` or `trunk-check`.
 - Auto-merge **major** version updates.
 - Auto-merge **security** PRs without review (manual merge preferred).
 

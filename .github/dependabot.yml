@@ -24,6 +24,7 @@ updates:
         patterns:
           - "*"
     ignore:
+      # Test harness majors deferred (see docs/dependabot-policy.md)
       - dependency-name: bunit
         update-types:
           - version-update:semver-major
@@ -31,6 +32,13 @@ updates:
         update-types:
           - version-update:semver-major
       - dependency-name: Microsoft.NET.Test.Sdk
+        update-types:
+          - version-update:semver-major
+      # Syncfusion DocIO/XlsIO PDF render natives — majors need coordinated smoke on NAS/Docker
+      - dependency-name: SkiaSharp.NativeAssets.Linux
+        update-types:
+          - version-update:semver-major
+      - dependency-name: HarfBuzzSharp.NativeAssets.Linux
         update-types:
           - version-update:semver-major
 
@@ -55,5 +63,26 @@ updates:
           - "*"
       actions-security:
         applies-to: security-updates
+        patterns:
+          - "*"
+
+  # Root package-lock is repomix/MCP tooling only (not clerk runtime)
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"  # yamllint disable-line rule:quoted-strings
+      timezone: America/Denver
+    open-pull-requests-limit: 3
+    labels:
+      - dependencies
+      - javascript
+    groups:
+      npm-patch-minor:
+        applies-to: version-updates
+        update-types:
+          - patch
+          - minor
         patterns:
           - "*"

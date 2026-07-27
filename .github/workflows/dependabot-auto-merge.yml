@@ -1,5 +1,9 @@
-# Approves and auto-merges Dependabot patch/minor PRs after required checks pass.
+# Enables auto-merge for Dependabot patch/minor PRs after required checks pass.
 # Job skips instantly for non-Dependabot PRs (no follow-on workflows).
+#
+# Note: GITHUB_TOKEN cannot approve PRs unless the repo setting
+# "Allow GitHub Actions to create and approve pull requests" is enabled.
+# Approving is optional here (main requires 0 reviews); we only enable auto-merge.
 name: Dependabot auto-merge
 
 on:
@@ -11,7 +15,7 @@ on:
 
 permissions:
   pull-requests: write
-  contents: read
+  contents: write
 
 concurrency:
   group: dependabot-auto-merge-${{ github.event.pull_request.number }}
@@ -28,20 +32,11 @@ jobs:
         with:
           github-token: "${{ secrets.GITHUB_TOKEN }}"
 
-      - name: Approve patch/minor version updates
-        if: |
-          steps.metadata.outputs.update-type == 'version-update:semver-patch' ||
-          steps.metadata.outputs.update-type == 'version-update:semver-minor'
-        run: gh pr review --approve "$PR_URL"
-        env:
-          PR_URL: ${{ github.event.pull_request.html_url }}
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Enable auto-merge for patch/minor
         if: |
           steps.metadata.outputs.update-type == 'version-update:semver-patch' ||
           steps.metadata.outputs.update-type == 'version-update:semver-minor'
-        run: gh pr merge --auto --merge "$PR_URL"
+        run: gh pr merge --auto --squash "$PR_URL"
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
