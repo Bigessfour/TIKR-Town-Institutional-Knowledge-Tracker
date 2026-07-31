@@ -166,12 +166,17 @@ public class AssistantPageTests : ClerkTestContext
     private void RegisterApi(string? prioritiesJson = null)
     {
         prioritiesJson ??= "[]";
+        const string emptySession = """
+            {"conversation":{"id":"11111111-1111-1111-1111-111111111111","title":"New chat","updatedAtUtc":"2026-01-01T00:00:00Z","messages":[]},"memoryFacts":[]}
+            """;
         var handler = new StubHandler((req, _) =>
         {
             var path = req.RequestUri!.PathAndQuery;
             var json = path switch
             {
                 _ when path.Contains("dashboard-priorities", StringComparison.Ordinal) => prioritiesJson,
+                _ when path.Contains("/assistant/session", StringComparison.Ordinal) => emptySession,
+                _ when path.Contains("/assistant/conversations/", StringComparison.Ordinal) => emptySession,
                 _ when path.Contains("semantic-search-knowledge", StringComparison.Ordinal) =>
                     """{"query":"","considered":0,"hits":[],"embeddingAvailable":true}""",
                 _ when path.Contains("semantic-search", StringComparison.Ordinal) =>

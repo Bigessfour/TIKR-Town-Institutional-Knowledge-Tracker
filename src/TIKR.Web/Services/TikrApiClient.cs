@@ -485,4 +485,51 @@ public class TikrApiClient(HttpClient http)
             return null;
         }
     }
+
+    public async Task<AssistantSessionDto?> GetAssistantSessionAsync()
+    {
+        try
+        {
+            return await http.GetFromJsonAsync<AssistantSessionDto>("/api/assistant/session");
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    public async Task<AssistantSessionDto?> StartNewAssistantSessionAsync()
+    {
+        try
+        {
+            var response = await http.PostAsync("/api/assistant/session/new", content: null);
+            return response.IsSuccessStatusCode
+                ? await response.Content.ReadFromJsonAsync<AssistantSessionDto>()
+                : null;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    public async Task<AssistantSessionDto?> AppendAssistantTurnAsync(Guid conversationId, string userText, string assistantText)
+    {
+        try
+        {
+            var response = await http.PostAsJsonAsync(
+                $"/api/assistant/conversations/{conversationId}/turns",
+                new AppendChatTurnRequest(userText, assistantText));
+            return response.IsSuccessStatusCode
+                ? await response.Content.ReadFromJsonAsync<AssistantSessionDto>()
+                : null;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    public async Task<List<UserMemoryFactDto>> GetAssistantMemoryFactsAsync() =>
+        await http.GetFromJsonAsync<List<UserMemoryFactDto>>("/api/assistant/memory") ?? [];
 }

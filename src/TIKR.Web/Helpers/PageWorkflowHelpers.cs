@@ -1,18 +1,23 @@
 using System.Text.RegularExpressions;
+using Markdig;
 using Microsoft.Extensions.AI;
+using Syncfusion.Blazor.InteractiveChat;
 using TIKR.Shared.DTOs;
 using TIKR.Shared.Enums;
 using TIKR.Shared.Helpers;
 using TIKR.Web.Services;
+using ChatMessage = Microsoft.Extensions.AI.ChatMessage;
 
 namespace TIKR.Web.Helpers;
 
 public static partial class AssistantPromptBuilder
 {
-    /// <summary>Max prior user+assistant pairs kept in the Ollama request (circuit-scoped).</summary>
+    /// <summary>Max prior user+assistant pairs kept in the Ollama request (DB stores full thread).</summary>
     public const int DefaultMaxHistoryTurns = 8;
 
-    public static string BuildSystemPrompt(ColoradoResourceCatalog catalog)
+    public static string BuildSystemPrompt(
+        ColoradoResourceCatalog catalog,
+        IEnumerable<(string Key, string Value)>? memoryFacts = null)
     {
         const string basePrompt =
             "You are TIKR, a helpful AI assistant for a one-person Colorado municipal town clerk. " +
@@ -30,13 +35,68 @@ public static partial class AssistantPromptBuilder
             "planning, tool calls, function calls, XML/HTML control tags, or scratchpad lines " +
             "(no <think>, Thought:, Action:, FunctionCall, or JSON tool payloads).";
 
-        var catalogBlock = catalog.ToSystemPromptBlock();
-        if (string.IsNullOrWhiteSpace(catalogBlock))
-            return basePrompt;
+        var parts = new List<string> { basePrompt };
 
-        return basePrompt +
-            "\n\nTrusted external sources for Colorado municipal clerks (cite name + URL when referring users out):\n" +
-            catalogBlock;
+        var memoryBlock = UserMemoryFactExtractor.FormatForPrompt(memoryFacts ?? []);
+        if (!string.IsNullOrWhiteSpace(memoryBlock))
+            parts.Add(memoryBlock);
+
+        var catalogBlock = catalog.ToSystemPromptBlock();
+        if (!string.IsNullOrWhiteSpace(catalogBlock))
+        {
+            parts.Add(
+                "Trusted external sources for Colorado municipal clerks (cite name + URL when referring users out):\n" +
+                catalogBlock);
+        }
+
+        return string.Join("\n\n", parts);
+    }
+
+    /// <summary>Rebuild in-memory MEAI history from persisted plain turns (skips RAG-packed junk).</summary>
+    public static List<ChatMessage> HistoryFromPersistedMessages(
+        IEnumerable<ChatMessageDto> messages,
+        int maxTurns = DefaultMaxHistoryTurns)
+    {
+        var history = new List<ChatMessage>();
+        foreach (var msg in messages.OrderBy(m => m.CreatedAtUtc))
+        {
+            if (string.IsNullOrWhiteSpace(msg.Content))
+                continue;
+            if (LooksLikeRagPackedUserMessage(msg.Content))
+                continue;
+
+            var role = msg.Role.Equals("assistant", StringComparison.OrdinalIgnoreCase)
+                ? ChatRole.Assistant
+                : ChatRole.User;
+            history.Add(new ChatMessage(role, msg.Content));
+        }
+
+        TrimToMaxTurns(history, maxTurns);
+        return history;
+    }
+
+    public static List<AssistViewPrompt> AssistViewPromptsFromPersisted(
+        IEnumerable<ChatMessageDto> messages)
+    {
+        var prompts = new List<AssistViewPrompt>();
+        string? pendingUser = null;
+        foreach (var msg in messages.OrderBy(m => m.CreatedAtUtc))
+        {
+            if (msg.Role.Equals("user", StringComparison.OrdinalIgnoreCase))
+            {
+                pendingUser = msg.Content;
+                continue;
+            }
+
+            if (msg.Role.Equals("assistant", StringComparison.OrdinalIgnoreCase) && pendingUser is not null)
+            {
+                var html = Markdown.ToHtml(msg.Content ?? string.Empty);
+                prompts.Add(new AssistViewPrompt { Prompt = pendingUser, Response = html });
+                pendingUser = null;
+            }
+        }
+
+        return prompts;
     }
 
     /// <summary>

@@ -16,11 +16,11 @@
 <div class="page-header">
     <div class="page-header-main">
         <h2>AI Assistant</h2>
-        <p>Local Ollama for everyday questions; Grok for advanced reasoning when enabled.</p>
+        <p>Local Ollama for everyday questions; Grok for advanced reasoning when enabled. Chat history is saved per clerk.</p>
     </div>
     <div class="page-header-actions">
         <PageTourButton Route="/assistant" />
-        <PageHelp DataTour="@ClerkTourIds.HelpAssistant" HelpText="Ask questions in plain English. Follow-ups stay in this browser session. Your data stays local unless you choose Ask Advanced AI." />
+        <PageHelp DataTour="@ClerkTourIds.HelpAssistant" HelpText="Ask questions in plain English. Follow-ups and personal facts (like birthday) are saved for your login only — Deb and Paige each have separate history. Clear conversation starts a new thread but keeps remembered facts." />
     </div>
 </div>
 
@@ -42,6 +42,7 @@
                     ID="tikrAssistant"
                     Prompt="What should I be working on this week?"
                     PromptPlaceholder="Ask about deadlines, documents, or municipal procedures..."
+                    Prompts="_assistPrompts"
                     EnableStreaming="false"
                     Width="100%"
                     Height="100%"
@@ -53,7 +54,7 @@
 <div class="mt-3" data-tour="@ClerkTourIds.AsstAdvanced">
     <label class="me-2">Vault search scope:</label>
     <SfDropDownList TValue="string" TItem="string" DataSource="@_vaultCategoryOptions" @bind-Value="_vaultCategoryFilter" Width="220px" />
-    <SfButton CssClass="tikr-action-btn ms-2" IsPrimary="false" Content="Clear conversation" OnClick="ClearConversation"></SfButton>
+    <SfButton CssClass="tikr-action-btn ms-2" IsPrimary="false" Content="Clear conversation" OnClick="ClearConversationAsync"></SfButton>
     <SfButton CssClass="tikr-action-btn ms-2" IsPrimary="false" Content="Ask Advanced AI (Grok)" OnClick="AskAdvancedAsync"></SfButton>
     @if (!string.IsNullOrEmpty(_advancedNote))
     {
@@ -115,6 +116,9 @@
     private SfAIAssistView? _assistView;
     private int _assistViewKey;
     private readonly List<Microsoft.Extensions.AI.ChatMessage> _modelHistory = [];
+    private List<AssistViewPrompt> _assistPrompts = [];
+    private Guid? _conversationId;
+    private List<(string Key, string Value)> _memoryFacts = [];
     private string _contextSummary = "";
     private string _advancedNote = "";
     private string _advancedAnswer = "";
@@ -126,7 +130,7 @@
     private string? ResolveVaultCategoryFilter() =>
         _vaultCategoryFilter == "All" ? null : _vaultCategoryFilter;
 
-    private string SystemPrompt => AssistantPromptBuilder.BuildSystemPrompt(ResourceCatalog);
+    private string SystemPrompt => AssistantPromptBuilder.BuildSystemPrompt(ResourceCatalog, _memoryFacts);
 
     protected override async Task OnInitializedAsync()
     {
@@ -139,6 +143,64 @@
         catch
         {
             _contextSummary = "Unable to load deadline context from API.";
+        }
+
+        await LoadPersistedSessionAsync();
+    }
+
+    private async Task LoadPersistedSessionAsync()
+    {
+        try
+        {
+            var session = await Api.GetAssistantSessionAsync();
+            if (session is null)
+                return;
+
+            ApplySession(session);
+            TikrActionLog.Info(Logger, "UI.Assistant.Session",
+                $"Loaded Conversation={_conversationId} Turns={_modelHistory.Count / 2} Facts={_memoryFacts.Count}");
+        }
+        catch (Exception ex)
+        {
+            TikrActionLog.Failed(Logger, "UI.Assistant.Session", ex, "Could not load persisted chat; using empty session");
+        }
+    }
+
+    private void ApplySession(AssistantSessionDto session)
+    {
+        _conversationId = session.Conversation.Id;
+        _memoryFacts = session.MemoryFacts
+            .Select(f => (f.Key, f.Value))
+            .ToList();
+        _modelHistory.Clear();
+        _modelHistory.AddRange(AssistantPromptBuilder.HistoryFromPersistedMessages(session.Conversation.Messages));
+        _assistPrompts = AssistantPromptBuilder.AssistViewPromptsFromPersisted(session.Conversation.Messages);
+    }
+
+    private async Task PersistTurnAsync(string userText, string assistantText)
+    {
+        try
+        {
+            if (_conversationId is null)
+            {
+                var session = await Api.GetAssistantSessionAsync();
+                if (session is not null)
+                    ApplySession(session);
+            }
+
+            if (_conversationId is null)
+                return;
+
+            var updated = await Api.AppendAssistantTurnAsync(_conversationId.Value, userText, assistantText);
+            if (updated is not null)
+            {
+                _conversationId = updated.Conversation.Id;
+                _memoryFacts = updated.MemoryFacts.Select(f => (f.Key, f.Value)).ToList();
+            }
+        }
+        catch (Exception ex)
+        {
+            TikrActionLog.Failed(Logger, "UI.Assistant.PersistTurn", ex);
         }
     }
 
@@ -202,6 +264,7 @@
                 args.Response = fallbackHtml;
                 await SafeUpdateResponseAsync(fallbackHtml);
                 AssistantPromptBuilder.AppendTurn(_modelHistory, args.Prompt, fallbackText);
+                await PersistTurnAsync(args.Prompt, fallbackText);
                 TikrActionLog.Completed(Logger, "UI.Assistant.Prompt",
                     $"Path=advanced UsedGrok={fallbackResult?.UsedGrok} AnswerLen={fallbackText.Length}",
                     turnSw.ElapsedMilliseconds);
@@ -324,6 +387,7 @@
 
             // Store plain question + cleaned reply only — not RAG packs or think tokens.
             AssistantPromptBuilder.AppendTurn(_modelHistory, args.Prompt, replyMarkdown);
+            await PersistTurnAsync(args.Prompt, replyMarkdown);
             TikrActionLog.Completed(Logger, "UI.Assistant.Prompt",
                 $"Path=local-buffered Chunks={streamChunks} RawLen={raw.Length} CleanLen={replyMarkdown.Length} Citations={citations.Count}",
                 turnSw.ElapsedMilliseconds);
@@ -347,6 +411,7 @@
                 args.Response = fbHtml;
                 await SafeUpdateResponseAsync(fbHtml);
                 AssistantPromptBuilder.AppendTurn(_modelHistory, args.Prompt, fbText);
+                await PersistTurnAsync(args.Prompt, fbText);
                 TikrActionLog.Completed(Logger, "UI.Assistant.Prompt",
                     $"Path=fallback-after-error AnswerLen={fbText.Length}", turnSw.ElapsedMilliseconds);
             }
@@ -395,15 +460,33 @@
     private void OnResponseStopped(ResponseStoppedEventArgs args) =>
         _streamingCts?.Cancel();
 
-    private void ClearConversation()
+    private async Task ClearConversationAsync()
     {
         TikrActionLog.Info(Logger, "UI.Assistant.ClearConversation",
-            $"Cleared {_modelHistory.Count / 2} turn(s)");
+            $"Cleared {_modelHistory.Count / 2} turn(s); starting new persisted thread");
         _streamingCts?.Cancel();
         _modelHistory.Clear();
+        _assistPrompts = [];
         _lastPrompt = null;
-        _advancedNote = "Conversation cleared. Follow-ups start fresh.";
         _advancedAnswer = "";
+
+        try
+        {
+            var session = await Api.StartNewAssistantSessionAsync();
+            if (session is not null)
+                ApplySession(session);
+            else
+                _conversationId = null;
+
+            _advancedNote = "Conversation cleared. Follow-ups start fresh; remembered facts for your account stay.";
+        }
+        catch (Exception ex)
+        {
+            TikrActionLog.Failed(Logger, "UI.Assistant.ClearConversation", ex);
+            _conversationId = null;
+            _advancedNote = "Conversation cleared locally. Server history may still have the previous thread.";
+        }
+
         _assistViewKey++;
         StateHasChanged();
     }
