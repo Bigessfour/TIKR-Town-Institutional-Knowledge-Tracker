@@ -8,11 +8,20 @@ public class UserMemoryFactExtractorTests
     [Theory]
     [InlineData("My birthday is March 15", "birthday", "March 15")]
     [InlineData("Please call me Deb", "preferred_name", "Deb")]
-    [InlineData("Remember that the mill levy packet is in the blue binder", "note", "the mill levy packet is in the blue binder")]
     public void Extract_RecognizesCommonClerkPhrases(string text, string key, string value)
     {
         var facts = UserMemoryFactExtractor.Extract(text);
         facts.Should().ContainSingle(f => f.Key == key && f.Value == value);
+    }
+
+    [Fact]
+    public void Extract_RememberThat_UsesDistinctKeys()
+    {
+        var first = UserMemoryFactExtractor.Extract("Remember that the mill levy packet is in the blue binder");
+        var second = UserMemoryFactExtractor.Extract("Remember that the gate code is 1234");
+        first.Should().ContainSingle(f => f.Key.StartsWith("note:") && f.Value.Contains("mill levy"));
+        second.Should().ContainSingle(f => f.Key.StartsWith("note:") && f.Value.Contains("gate code"));
+        first[0].Key.Should().NotBe(second[0].Key);
     }
 
     [Fact]

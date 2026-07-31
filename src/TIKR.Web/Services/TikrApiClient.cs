@@ -490,7 +490,12 @@ public class TikrApiClient(HttpClient http)
     {
         try
         {
-            return await http.GetFromJsonAsync<AssistantSessionDto>("/api/assistant/session");
+            var response = await http.GetAsync("/api/assistant/session");
+            if (response.StatusCode is System.Net.HttpStatusCode.Unauthorized)
+                return null;
+            if (!response.IsSuccessStatusCode)
+                return null;
+            return await response.Content.ReadFromJsonAsync<AssistantSessionDto>();
         }
         catch
         {
@@ -503,9 +508,9 @@ public class TikrApiClient(HttpClient http)
         try
         {
             var response = await http.PostAsync("/api/assistant/session/new", content: null);
-            return response.IsSuccessStatusCode
-                ? await response.Content.ReadFromJsonAsync<AssistantSessionDto>()
-                : null;
+            if (!response.IsSuccessStatusCode)
+                return null;
+            return await response.Content.ReadFromJsonAsync<AssistantSessionDto>();
         }
         catch
         {
@@ -513,23 +518,42 @@ public class TikrApiClient(HttpClient http)
         }
     }
 
-    public async Task<AssistantSessionDto?> AppendAssistantTurnAsync(Guid conversationId, string userText, string assistantText)
+    public async Task<ChatPersistResult> AppendAssistantTurnAsync(Guid conversationId, string userText, string assistantText)
     {
         try
         {
             var response = await http.PostAsJsonAsync(
                 $"/api/assistant/conversations/{conversationId}/turns",
                 new AppendChatTurnRequest(userText, assistantText));
-            return response.IsSuccessStatusCode
-                ? await response.Content.ReadFromJsonAsync<AssistantSessionDto>()
-                : null;
+            if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+                return ChatPersistResult.MissingConversation();
+            if (!response.IsSuccessStatusCode)
+                return ChatPersistResult.Failed();
+            var session = await response.Content.ReadFromJsonAsync<AssistantSessionDto>();
+            return session is null ? ChatPersistResult.Failed() : ChatPersistResult.Ok(session);
         }
         catch
         {
-            return null;
+            return ChatPersistResult.Failed();
         }
     }
 
-    public async Task<List<UserMemoryFactDto>> GetAssistantMemoryFactsAsync() =>
-        await http.GetFromJsonAsync<List<UserMemoryFactDto>>("/api/assistant/memory") ?? [];
+    public async Task<List<UserMemoryFactDto>> GetAssistantMemoryFactsAsync()
+    {
+        try
+        {
+            return await http.GetFromJsonAsync<List<UserMemoryFactDto>>("/api/assistant/memory") ?? [];
+        }
+        catch
+        {
+            return [];
+        }
+    }
+}
+
+public sealed record ChatPersistResult(bool Succeeded, bool ConversationMissing, AssistantSessionDto? Session)
+{
+    public static ChatPersistResult Ok(AssistantSessionDto session) => new(true, false, session);
+    public static ChatPersistResult MissingConversation() => new(false, true, null);
+    public static ChatPersistResult Failed() => new(false, false, null);
 }

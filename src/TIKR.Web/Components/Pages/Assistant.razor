@@ -189,17 +189,37 @@
             }
 
             if (_conversationId is null)
-                return;
-
-            var updated = await Api.AppendAssistantTurnAsync(_conversationId.Value, userText, assistantText);
-            if (updated is not null)
             {
-                _conversationId = updated.Conversation.Id;
-                _memoryFacts = updated.MemoryFacts.Select(f => (f.Key, f.Value)).ToList();
+                _advancedNote = "Chat history could not be saved (no session). Answers still show here.";
+                return;
             }
+
+            var result = await Api.AppendAssistantTurnAsync(_conversationId.Value, userText, assistantText);
+            if (!result.Succeeded && result.ConversationMissing)
+            {
+                // Stale/archived id (cleared in another tab) — refresh active session and retry once.
+                var refreshed = await Api.GetAssistantSessionAsync()
+                    ?? await Api.StartNewAssistantSessionAsync();
+                if (refreshed is not null)
+                {
+                    ApplySession(refreshed);
+                    result = await Api.AppendAssistantTurnAsync(_conversationId.Value, userText, assistantText);
+                }
+            }
+
+            if (result is { Succeeded: true, Session: not null })
+            {
+                _conversationId = result.Session.Conversation.Id;
+                _memoryFacts = result.Session.MemoryFacts.Select(f => (f.Key, f.Value)).ToList();
+                return;
+            }
+
+            _advancedNote = "Chat history could not be saved to the server. Your answer is still shown; try again if this persists.";
+            TikrActionLog.Failed(Logger, "UI.Assistant.PersistTurn", "Append failed after retry");
         }
         catch (Exception ex)
         {
+            _advancedNote = "Chat history could not be saved to the server. Your answer is still shown.";
             TikrActionLog.Failed(Logger, "UI.Assistant.PersistTurn", ex);
         }
     }

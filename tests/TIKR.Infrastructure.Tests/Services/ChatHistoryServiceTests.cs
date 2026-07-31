@@ -1,6 +1,7 @@
 using FluentAssertions;
 using TIKR.Infrastructure.Services;
 using TIKR.Infrastructure.Tests.Helpers;
+using TIKR.Shared.Helpers;
 
 namespace TIKR.Infrastructure.Tests.Services;
 
@@ -48,5 +49,31 @@ public class ChatHistoryServiceTests
         var list = await sut.ListConversationsAsync("deb@town.gov");
         list.Should().Contain(c => c.Id == first.Conversation.Id && c.IsArchived);
         list.Should().Contain(c => c.Id == second.Conversation.Id && !c.IsArchived);
+    }
+
+    [Fact]
+    public async Task AppendTurn_TruncatesOversizedContent()
+    {
+        await using var db = await TestDbContextFactory.CreateMigratedAsync();
+        var sut = new ChatHistoryService(db);
+        var session = await sut.GetOrCreateSessionAsync("deb@town.gov");
+        var huge = new string('x', ChatHistoryLimits.MaxMessageChars + 500);
+        var updated = await sut.AppendTurnAsync("deb@town.gov", session.Conversation.Id, huge, "ok");
+        updated.Conversation.Messages.Should().Contain(m =>
+            m.Role == "user" && m.Content.Length == ChatHistoryLimits.MaxMessageChars);
+    }
+
+    [Fact]
+    public async Task RememberThat_KeepsMultipleDistinctNotes()
+    {
+        await using var db = await TestDbContextFactory.CreateMigratedAsync();
+        var sut = new ChatHistoryService(db);
+        var session = await sut.GetOrCreateSessionAsync("deb@town.gov");
+        await sut.AppendTurnAsync("deb@town.gov", session.Conversation.Id,
+            "Remember that the mill levy packet is in the blue binder", "Noted.");
+        await sut.AppendTurnAsync("deb@town.gov", session.Conversation.Id,
+            "Remember that the gate code is 1234", "Noted.");
+        var facts = await sut.ListMemoryFactsAsync("deb@town.gov");
+        facts.Count(f => f.Key.StartsWith("note:")).Should().Be(2);
     }
 }

@@ -16,7 +16,7 @@ public class ChatHistoryService(TikrDbContext db, ILogger<ChatHistoryService>? l
 
     public async Task<AssistantSessionDto> GetOrCreateSessionAsync(string userId, CancellationToken ct = default)
     {
-        userId = NormalizeUserId(userId);
+        userId = RequireUserId(userId);
         var conversation = await GetActiveConversationAsync(userId, ct)
             ?? await CreateConversationAsync(userId, ct);
         var facts = await ListMemoryFactsAsync(userId, ct);
@@ -26,7 +26,7 @@ public class ChatHistoryService(TikrDbContext db, ILogger<ChatHistoryService>? l
     public async Task<IReadOnlyList<ChatConversationSummaryDto>> ListConversationsAsync(
         string userId, int take = 20, CancellationToken ct = default)
     {
-        userId = NormalizeUserId(userId);
+        userId = RequireUserId(userId);
         take = Math.Clamp(take, 1, 100);
 
         return await db.ChatConversations
@@ -46,7 +46,7 @@ public class ChatHistoryService(TikrDbContext db, ILogger<ChatHistoryService>? l
     public async Task<ChatConversationDetailDto?> GetConversationAsync(
         string userId, Guid conversationId, CancellationToken ct = default)
     {
-        userId = NormalizeUserId(userId);
+        userId = RequireUserId(userId);
         var conversation = await db.ChatConversations
             .AsNoTracking()
             .Include(c => c.Messages.OrderBy(m => m.CreatedAtUtc))
@@ -61,9 +61,12 @@ public class ChatHistoryService(TikrDbContext db, ILogger<ChatHistoryService>? l
         string assistantText,
         CancellationToken ct = default)
     {
-        userId = NormalizeUserId(userId);
+        userId = RequireUserId(userId);
+        userText = ChatHistoryLimits.TruncateMessage(userText);
+        assistantText = ChatHistoryLimits.TruncateMessage(assistantText);
+
         TikrActionLog.Started(_log, "Chat.AppendTurn",
-            $"User={userId} Conversation={conversationId} UserLen={userText?.Length ?? 0}");
+            $"User={userId} Conversation={conversationId} UserLen={userText.Length}");
 
         var conversation = await db.ChatConversations
             .Include(c => c.Messages)
@@ -80,7 +83,7 @@ public class ChatHistoryService(TikrDbContext db, ILogger<ChatHistoryService>? l
             ConversationId = conversation.Id,
             UserId = userId,
             Role = "user",
-            Content = userText?.Trim() ?? string.Empty,
+            Content = userText,
             CreatedAtUtc = now
         };
         var assistantMsg = new ChatMessageRecord
@@ -89,7 +92,7 @@ public class ChatHistoryService(TikrDbContext db, ILogger<ChatHistoryService>? l
             ConversationId = conversation.Id,
             UserId = userId,
             Role = "assistant",
-            Content = assistantText?.Trim() ?? string.Empty,
+            Content = assistantText,
             CreatedAtUtc = now.AddMilliseconds(1)
         };
 
@@ -106,7 +109,6 @@ public class ChatHistoryService(TikrDbContext db, ILogger<ChatHistoryService>? l
 
         await db.SaveChangesAsync(ct);
 
-        // Reload ordered messages for response.
         await db.Entry(conversation).Collection(c => c.Messages).Query()
             .OrderBy(m => m.CreatedAtUtc).LoadAsync(ct);
 
@@ -118,12 +120,19 @@ public class ChatHistoryService(TikrDbContext db, ILogger<ChatHistoryService>? l
 
     public async Task<AssistantSessionDto> StartNewConversationAsync(string userId, CancellationToken ct = default)
     {
-        userId = NormalizeUserId(userId);
-        var active = await GetActiveConversationAsync(userId, ct);
-        if (active is not null)
+        userId = RequireUserId(userId);
+        var actives = await db.ChatConversations
+            .Where(c => c.UserId == userId && !c.IsArchived)
+            .ToListAsync(ct);
+        if (actives.Count > 0)
         {
-            active.IsArchived = true;
-            active.UpdatedAtUtc = DateTime.UtcNow;
+            var now = DateTime.UtcNow;
+            foreach (var active in actives)
+            {
+                active.IsArchived = true;
+                active.UpdatedAtUtc = now;
+            }
+
             await db.SaveChangesAsync(ct);
         }
 
@@ -134,7 +143,7 @@ public class ChatHistoryService(TikrDbContext db, ILogger<ChatHistoryService>? l
 
     public async Task<IReadOnlyList<UserMemoryFactDto>> ListMemoryFactsAsync(string userId, CancellationToken ct = default)
     {
-        userId = NormalizeUserId(userId);
+        userId = RequireUserId(userId);
         return await db.UserMemoryFacts
             .AsNoTracking()
             .Where(f => f.UserId == userId && f.Confirmed)
@@ -151,7 +160,7 @@ public class ChatHistoryService(TikrDbContext db, ILogger<ChatHistoryService>? l
         Guid? sourceMessageId = null,
         CancellationToken ct = default)
     {
-        userId = NormalizeUserId(userId);
+        userId = RequireUserId(userId);
         var fact = await UpsertMemoryFactCoreAsync(userId, key, value, confirmed, sourceMessageId, ct);
         await db.SaveChangesAsync(ct);
         return new UserMemoryFactDto(fact.Id, fact.Key, fact.Value, fact.Confirmed, fact.UpdatedAtUtc);
@@ -159,7 +168,7 @@ public class ChatHistoryService(TikrDbContext db, ILogger<ChatHistoryService>? l
 
     public async Task<bool> DeleteMemoryFactAsync(string userId, Guid factId, CancellationToken ct = default)
     {
-        userId = NormalizeUserId(userId);
+        userId = RequireUserId(userId);
         var fact = await db.UserMemoryFacts
             .FirstOrDefaultAsync(f => f.Id == factId && f.UserId == userId, ct);
         if (fact is null)
@@ -177,8 +186,8 @@ public class ChatHistoryService(TikrDbContext db, ILogger<ChatHistoryService>? l
         Guid? sourceMessageId,
         CancellationToken ct)
     {
-        key = (key ?? string.Empty).Trim().ToLowerInvariant();
-        value = (value ?? string.Empty).Trim();
+        key = ChatHistoryLimits.Truncate((key ?? string.Empty).Trim().ToLowerInvariant(), ChatHistoryLimits.MaxMemoryFactKeyChars);
+        value = ChatHistoryLimits.Truncate(value, ChatHistoryLimits.MaxMemoryFactValueChars);
         if (string.IsNullOrWhiteSpace(key) || string.IsNullOrWhiteSpace(value))
             throw new ArgumentException("Memory fact key and value are required.");
 
@@ -218,17 +227,36 @@ public class ChatHistoryService(TikrDbContext db, ILogger<ChatHistoryService>? l
 
     private async Task<ChatConversation> CreateConversationAsync(string userId, CancellationToken ct)
     {
-        var conversation = new ChatConversation
+        // Unique filtered index enforces one active thread per user; retry if a race lost.
+        for (var attempt = 0; attempt < 3; attempt++)
         {
-            Id = Guid.NewGuid(),
-            UserId = userId,
-            Title = "New chat",
-            CreatedAtUtc = DateTime.UtcNow,
-            UpdatedAtUtc = DateTime.UtcNow
-        };
-        db.ChatConversations.Add(conversation);
-        await db.SaveChangesAsync(ct);
-        return conversation;
+            var existing = await GetActiveConversationAsync(userId, ct);
+            if (existing is not null)
+                return existing;
+
+            var conversation = new ChatConversation
+            {
+                Id = Guid.NewGuid(),
+                UserId = userId,
+                Title = "New chat",
+                CreatedAtUtc = DateTime.UtcNow,
+                UpdatedAtUtc = DateTime.UtcNow
+            };
+            db.ChatConversations.Add(conversation);
+            try
+            {
+                await db.SaveChangesAsync(ct);
+                return conversation;
+            }
+            catch (DbUpdateException)
+            {
+                db.Entry(conversation).State = EntityState.Detached;
+                // Another request created the active conversation — loop and load it.
+            }
+        }
+
+        return await GetActiveConversationAsync(userId, ct)
+            ?? throw new InvalidOperationException("Could not create or load an active conversation.");
     }
 
     private static ChatConversationDetailDto ToDetail(ChatConversation conversation) =>
@@ -241,10 +269,12 @@ public class ChatHistoryService(TikrDbContext db, ILogger<ChatHistoryService>? l
                 .Select(m => new ChatMessageDto(m.Id, m.Role, m.Content, m.CreatedAtUtc))
                 .ToList());
 
-    private static string NormalizeUserId(string? userId)
+    private static string RequireUserId(string? userId)
     {
         var id = userId?.Trim();
-        return string.IsNullOrWhiteSpace(id) ? "anonymous" : id;
+        if (string.IsNullOrWhiteSpace(id) || id.Equals("anonymous", StringComparison.OrdinalIgnoreCase))
+            throw new ArgumentException("A concrete clerk user id is required for chat history.");
+        return id;
     }
 
     private static string TruncateTitle(string text)

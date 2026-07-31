@@ -1,4 +1,6 @@
 using System.Text.RegularExpressions;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace TIKR.Shared.Helpers;
 
@@ -24,7 +26,13 @@ public static partial class UserMemoryFactExtractor
     {
         var list = facts
             .Where(f => !string.IsNullOrWhiteSpace(f.Key) && !string.IsNullOrWhiteSpace(f.Value))
-            .Select(f => $"- {f.Key}: {f.Value.Trim()}")
+            .Select(f =>
+            {
+                var label = f.Key.StartsWith("note:", StringComparison.OrdinalIgnoreCase)
+                    ? "note"
+                    : f.Key;
+                return $"- {label}: {f.Value.Trim()}";
+            })
             .ToList();
         if (list.Count == 0)
             return string.Empty;
@@ -40,7 +48,7 @@ public static partial class UserMemoryFactExtractor
             return;
         var value = m.Groups["value"].Value.Trim().TrimEnd('.', '!', '?');
         if (value.Length > 0)
-            results.Add(("birthday", value));
+            results.Add(("birthday", ChatHistoryLimits.Truncate(value, ChatHistoryLimits.MaxMemoryFactValueChars)));
     }
 
     private static void TryPreferredName(string text, List<(string Key, string Value)> results)
@@ -59,8 +67,14 @@ public static partial class UserMemoryFactExtractor
         if (!m.Success)
             return;
         var value = m.Groups["fact"].Value.Trim().TrimEnd('.', '!', '?');
-        if (value.Length is > 0 and < 500)
-            results.Add(("note", value));
+        value = ChatHistoryLimits.Truncate(value, ChatHistoryLimits.MaxMemoryFactValueChars);
+        if (value.Length < 3)
+            return;
+
+        // Unique key per distinct note so later “remember that …” does not overwrite earlier ones.
+        var hash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(value.ToLowerInvariant())))[..12]
+            .ToLowerInvariant();
+        results.Add(($"note:{hash}", value));
     }
 
     [GeneratedRegex(

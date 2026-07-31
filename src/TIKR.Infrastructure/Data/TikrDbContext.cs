@@ -116,6 +116,11 @@ public class TikrDbContext : IdentityDbContext<ApplicationUser>
             entity.Property(e => e.Title).HasMaxLength(200).IsRequired();
             entity.Property(e => e.Summary).HasMaxLength(4000);
             entity.HasIndex(e => new { e.UserId, e.IsArchived, e.UpdatedAtUtc });
+            // At most one active (non-archived) conversation per clerk.
+            entity.HasIndex(e => e.UserId)
+                .IsUnique()
+                .HasFilter("IsArchived = 0")
+                .HasDatabaseName("IX_ChatConversations_UserId_Active");
             entity.HasMany(e => e.Messages)
                 .WithOne(m => m.Conversation)
                 .HasForeignKey(m => m.ConversationId)
