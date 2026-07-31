@@ -873,6 +873,8 @@ api.MapPut("/ai/feature-settings", async (UpdateFeatureSettingsRequest request, 
     }
 });
 api.MapGet("/ai/dashboard-priorities", async (IHybridAiService ai) => await ai.GetDashboardPrioritiesAsync());
+api.MapGet("/dashboard/summary", async (IDashboardService dashboard) =>
+    Results.Ok(await dashboard.GetSummaryAsync()));
 api.MapPost("/ai/tag-document", async (TagDocumentRequest request, IHybridAiService ai) =>
 {
     try

@@ -3,8 +3,8 @@ using System.Text;
 using System.Text.Json;
 using Bunit;
 using FluentAssertions;
+using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.DependencyInjection;
-using Syncfusion.Blazor;
 using TIKR.Shared.DTOs;
 using TIKR.Web.Components.Pages;
 using TIKR.Web.Services;
@@ -15,36 +15,46 @@ public class HomePageTests : ClerkTestContext
 {
     public HomePageTests()
     {
-        Services.AddSingleton(new AuthSettings { IsEnabled = false });
+        JSInterop.Setup<string?>("tikrDashboardLayout.get", _ => true).SetResult(null);
+        JSInterop.SetupVoid("tikrDashboardLayout.set", _ => true);
+        JSInterop.SetupVoid("tikrDashboardLayout.remove", _ => true);
     }
 
     [Fact]
-    public void Home_RendersPriorityCardsFromApi()
+    public void Home_RendersDueOutGridFromSummary()
     {
-        var json = JsonSerializer.Serialize(new List<DashboardPriority>
-        {
-            new("Overdue budget", "Past due", DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-2)), "Overdue"),
-            new("Soon audit", "Coming up", DateOnly.FromDateTime(DateTime.UtcNow.AddDays(5)), "High")
-        });
-        RegisterApi(json);
+        RegisterApi(new DashboardSummaryDto(
+            1, 2, 1, 0, 0,
+            [
+                new DashboardDueOutDto(
+                    Guid.NewGuid(),
+                    "Sales Tax Filing",
+                    "Quarterly",
+                    DateOnly.FromDateTime(DateTime.UtcNow.AddDays(5)),
+                    "High",
+                    "DOR",
+                    null,
+                    null,
+                    null,
+                    false,
+                    1,
+                    [new RequirementLinkedDocumentDto(Guid.NewGuid(), "sales-tax.pdf", null)])
+            ]));
 
+        SetRendererInfo(new RendererInfo("Server", true));
         var cut = RenderComponent<Home>();
-        cut.WaitForAssertion(() => cut.Markup.Should().Contain("Overdue budget"));
-        cut.Markup.Should().Contain("priority-overdue");
-        cut.Markup.Should().Contain("priority-high");
+        cut.WaitForAssertion(() => cut.Markup.Should().Contain("e-dashboardlayout"));
+        cut.Markup.Should().Contain("due-out-grid");
+        cut.Markup.Should().Contain("urgency-strip");
     }
 
     [Fact]
-    public void Home_AppliesMediumPriorityCssClass()
+    public void Home_ShowsResetLayoutButton()
     {
-        var json = JsonSerializer.Serialize(new List<DashboardPriority>
-        {
-            new("Routine filing", "Due later", DateOnly.FromDateTime(DateTime.UtcNow.AddDays(20)), "Medium")
-        });
-        RegisterApi(json);
-
+        RegisterApi(EmptySummary());
+        SetRendererInfo(new RendererInfo("Server", true));
         var cut = RenderComponent<Home>();
-        cut.WaitForAssertion(() => cut.Markup.Should().Contain("priority-medium"));
+        cut.WaitForAssertion(() => cut.Markup.Should().Contain("Reset layout"));
     }
 
     [Fact]
@@ -52,30 +62,46 @@ public class HomePageTests : ClerkTestContext
     {
         var handler = new StubHandler((_, _) => new HttpResponseMessage(HttpStatusCode.InternalServerError));
         Services.AddSingleton(new TikrApiClient(new HttpClient(handler) { BaseAddress = new Uri("http://localhost/") }));
+        SetRendererInfo(new RendererInfo("Server", true));
 
         var cut = RenderComponent<Home>();
-        cut.WaitForAssertion(() => cut.Markup.Should().Contain("tikr-empty-state"));
-        cut.Markup.Should().Contain("No priorities right now.");
+        cut.WaitForAssertion(() => cut.Markup.Should().Contain("Could not load dashboard"));
     }
 
     [Fact]
-    public void Home_ShowsEmptyStateWhenApiReturnsEmpty()
+    public void Home_ShowsEmptyDueOutsWhenSummaryEmpty()
     {
-        RegisterApi("[]");
+        RegisterApi(EmptySummary());
+        SetRendererInfo(new RendererInfo("Server", true));
 
         var cut = RenderComponent<Home>();
-        cut.WaitForAssertion(() => cut.Markup.Should().Contain("tikr-empty-state"));
-        cut.Markup.Should().Contain("No priorities right now.");
+        cut.WaitForAssertion(() => cut.Markup.Should().Contain("due-out-grid"));
     }
 
-    private void RegisterApi(string json)
+    private static DashboardSummaryDto EmptySummary() =>
+        new(0, 0, 0, 0, 0, []);
+
+    private void RegisterApi(DashboardSummaryDto summary)
     {
-        var handler = new StubHandler((_, _) => new HttpResponseMessage(HttpStatusCode.OK)
+        var summaryJson = JsonSerializer.Serialize(summary);
+        var handler = new StubHandler((request, _) =>
         {
-            Content = new StringContent(json, Encoding.UTF8, "application/json")
+            var path = request.RequestUri?.PathAndQuery ?? "";
+            if (path.Contains("/api/dashboard/summary", StringComparison.Ordinal))
+                return Json(summaryJson);
+            if (path.Contains("/api/audit", StringComparison.Ordinal))
+                return Json("[]");
+            if (path.Contains("/api/ai/corpus-health", StringComparison.Ordinal))
+                return Json("""{"documentsTotal":0,"documentsWithChunks":0,"documentsTransient":0,"documentsSparseText":0,"knowledgeTotal":0,"knowledgeWithChunks":0,"documentsChunkCoveragePercent":100,"knowledgeChunkCoveragePercent":100,"needsAttention":[]}""");
+            if (path.Contains("/api/system/local-status", StringComparison.Ordinal))
+                return Json("""{"townName":"Wiley","storageLabel":"Synology NAS","dataLastModifiedUtc":null,"ollamaAvailable":true}""");
+            return new HttpResponseMessage(HttpStatusCode.NotFound);
         });
         Services.AddSingleton(new TikrApiClient(new HttpClient(handler) { BaseAddress = new Uri("http://localhost/") }));
     }
+
+    private static HttpResponseMessage Json(string json) =>
+        new(HttpStatusCode.OK) { Content = new StringContent(json, Encoding.UTF8, "application/json") };
 
     private sealed class StubHandler(Func<HttpRequestMessage, CancellationToken, HttpResponseMessage> handler)
         : HttpMessageHandler

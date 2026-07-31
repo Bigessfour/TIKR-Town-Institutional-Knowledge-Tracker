@@ -1510,3 +1510,70 @@ html[data-theme="high-contrast"] .tikr-doc-fullscreen-surface {
         flex: none !important;
     }
 }
+
+/* Dashboard command center (004-clerk-command-dashboard) */
+.dashboard-panel {
+    padding: 0.75rem 1rem;
+    height: 100%;
+    box-sizing: border-box;
+}
+
+.dashboard-panel-title {
+    margin: 0 0 0.75rem;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.dashboard-urgency-strip {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.dashboard-urgency-strip .urgency-pill {
+    display: inline-block;
+    padding: 0.35rem 0.75rem;
+    border-radius: 999px;
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+
+.dashboard-quick-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.dashboard-due-out-detail {
+    padding: 0.75rem 1rem;
+    font-size: 0.9rem;
+}
+
+.dashboard-linked-docs {
+    list-style: none;
+    padding: 0;
+    margin: 0.5rem 0 0;
+}
+
+.dashboard-linked-docs li {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.35rem;
+}
+
+.dashboard-missing-list,
+.dashboard-activity-list {
+    margin: 0;
+    padding-left: 1.1rem;
+    font-size: 0.9rem;
+}
+
+.dashboard-corpus-banner {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: center;
+    font-size: 0.9rem;
+}
