@@ -1,5 +1,14 @@
+import path from 'node:path';
 import { test, expect, type Page } from '@playwright/test';
 import { gotoClerkPage } from './e2e-helpers';
+
+const sampleDocFixture = path.join(
+  __dirname,
+  '..',
+  'fixtures',
+  'agent-scan',
+  'wiley-periodic-report.txt',
+);
 
 async function collectConsoleErrors(page: Page): Promise<string[]> {
   const errors: string[] = [];
@@ -65,13 +74,22 @@ test.describe('TIKR page readiness (nav + primary controls)', () => {
   test('documents row checkbox selects and shows preview pane', async ({ page }) => {
     await page.setViewportSize({ width: 1600, height: 1000 });
     await gotoClerkPage(page, '/documents');
-    await expect(page.getByRole('treeitem', { name: /All Documents \(\d+\)/ })).toBeVisible({ timeout: 25_000 });
-    await expect(page.getByText(/\d+ of \d+ pages/)).toBeVisible({ timeout: 25_000 });
-    await expect(async () => {
-      await expect(page.getByRole('gridcell', { name: 'sample-doc.txt' }).first()).toBeVisible();
-      await page.locator('.e-gridcontent .e-checkbox-wrapper').first().click();
-    }).toPass({ timeout: 30_000 });
-    await expect(page.locator('.preview-pane')).toContainText(/sample-doc|Uploaded|Size|Full text/i, { timeout: 15_000 });
+    await expect(page.getByRole('heading', { name: 'Document Library' })).toBeVisible();
+
+    // Fresh Docker DBs have no seed docs — upload a fixture so selection/preview can run.
+    const uploader = page.locator('.uploader-zone');
+    await expect(uploader.locator('input[type="file"]')).toBeAttached({ timeout: 20_000 });
+    await page.waitForTimeout(500);
+    await uploader.locator('input[type="file"]').setInputFiles(sampleDocFixture);
+
+    await expect(page.getByRole('gridcell', { name: /wiley-periodic-report\.txt/i }).first()).toBeVisible({
+      timeout: 45_000,
+    });
+    await page.locator('.e-gridcontent .e-checkbox-wrapper').first().click();
+    await expect(page.locator('.preview-pane')).toContainText(
+      /wiley-periodic-report|Uploaded|Size|Full text|Type/i,
+      { timeout: 15_000 },
+    );
   });
 
   test('vault tabs and copy affordance', async ({ page }) => {
@@ -91,10 +109,15 @@ test.describe('TIKR page readiness (nav + primary controls)', () => {
 
   test('settings loads API status cards', async ({ page }) => {
     await gotoClerkPage(page, '/settings');
-    await expect(page.getByText('Local storage (Synology NAS)')).toBeVisible();
-    await expect(page.getByText('Syncfusion Document SDK')).toBeVisible();
-    await expect(page.getByText('AI Status')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Settings' })).toBeVisible();
+    // Clerk-facing Settings cards (chat memory redesign + helper/storage).
+    await expect(page.getByText(/Chat memory/i).first()).toBeVisible();
+    await expect(page.getByText('This computer')).toBeVisible();
+    await expect(
+      page.getByText(/Keys & passwords|Town helper \(local AI\)|Town settings/i).first(),
+    ).toBeVisible({ timeout: 15_000 });
   });
+
 
   test('calendar grid renders (schedule when Blazor license valid)', async ({ page }) => {
     await gotoClerkPage(page, '/calendar');
