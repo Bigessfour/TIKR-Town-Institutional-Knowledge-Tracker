@@ -10,6 +10,9 @@ public class TikrApiClient(HttpClient http)
     public async Task<List<DashboardPriority>> GetDashboardPrioritiesAsync() =>
         await http.GetFromJsonAsync<List<DashboardPriority>>("/api/ai/dashboard-priorities") ?? [];
 
+    public async Task<DashboardSummaryDto?> GetDashboardSummaryAsync() =>
+        await http.GetFromJsonAsync<DashboardSummaryDto>("/api/dashboard/summary");
+
     public async Task<List<RequirementDto>> GetRequirementsAsync() =>
         await http.GetFromJsonAsync<List<RequirementDto>>("/api/requirements") ?? [];
 

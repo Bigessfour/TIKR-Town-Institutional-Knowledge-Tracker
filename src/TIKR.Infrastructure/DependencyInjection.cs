@@ -78,6 +78,7 @@ public static class DependencyInjection
         services.AddScoped<IDocumentAgentService, DocumentAgentService>();
         services.AddScoped<IDocumentService, DocumentService>();
         services.AddScoped<IRequirementService, RequirementService>();
+        services.AddScoped<IDashboardService, DashboardService>();
         services.AddScoped<IKnowledgeService, KnowledgeService>();
         services.AddScoped<IChatHistoryService, ChatHistoryService>();
         services.AddSyncfusionDocumentGeneration(configuration);

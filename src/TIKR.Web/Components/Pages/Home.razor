@@ -3,7 +3,11 @@
 @inject TikrApiClient Api
 @inject ClerkUserGuideService Guide
 @inject ChatClerkIdentityService ClerkIdentity
+@inject IJSRuntime JS
+@inject NavigationManager Navigation
 
+@using TIKR.Shared.DTOs
+@using TIKR.Shared.Entities
 @using TIKR.Web.Components.Shared
 @using TIKR.Web.Services
 
@@ -13,11 +17,13 @@
         <p>What should you be working on today?</p>
     </div>
     <div class="page-header-actions">
+        <SfButton CssClass="tikr-action-btn e-outline" OnClick="ResetLayoutAsync">Reset layout</SfButton>
         <TourAnchor TourId="@ClerkTourIds.DashboardUserGuide">
             <SfButton CssClass="tikr-action-btn" OnClick="OpenGuide">User guide</SfButton>
         </TourAnchor>
         <PageTourButton Route="/" />
-        <PageHelp DataTour="@ClerkTourIds.HelpDashboard" HelpText="Your daily priorities from Colorado deadlines and open requirements. Everything is computed locally from your NAS database. Chat memory follows this computer’s clerk (Deb Dillon or Paige Lindo)." />
+        <PageHelp DataTour="@ClerkTourIds.HelpDashboard"
+                  HelpText="Your command center for Colorado due-outs, linked NAS documents, and clerk quick actions. Drag panels to personalize; Reset layout restores the default. Chat memory follows this computer’s clerk (Deb Dillon or Paige Lindo)." />
     </div>
 </div>
 
@@ -28,57 +34,224 @@
 {
     <div class="tikr-loading-state" role="status" aria-live="polite" aria-busy="true">
         <div class="tikr-loading-spinner" aria-hidden="true"></div>
-        <span>Loading priorities…</span>
-    </div>
-    <!-- Lightweight skeleton for cards (Phase 3 Item 10) -->
-    <div class="tikr-skeleton-grid" aria-hidden="true">
-        <div class="tikr-skeleton-row w-85"></div>
-        <div class="tikr-skeleton-row w-95"></div>
-        <div class="tikr-skeleton-row w-70"></div>
+        <span>Loading dashboard…</span>
     </div>
 }
-else if (_priorities.Count == 0)
+else if (_summary is null)
 {
-    <div class="tikr-empty-state" role="status" aria-live="polite">
-        <strong>No priorities right now.</strong>
-        <div class="tikr-empty-action">Check the <a href="/calendar">Calendar</a> for upcoming statutory deadlines, or add requirements in the Requirements Manager.</div>
+    <div class="tikr-empty-state" role="status">
+        <strong>Could not load dashboard.</strong>
+        <div class="tikr-empty-action">Check the <a href="/settings">Settings</a> page for NAS/API status.</div>
     </div>
 }
 else
 {
-    <div class="e-card-deck">
-        @foreach (var item in _priorities)
-        {
-            <SfCard CssClass="mb-3">
-                <CardHeader Title="@item.Title" />
-                <CardContent>
-                    <p>@item.Reason</p>
-                    @if (item.DueDate.HasValue)
+    <SfDashboardLayout Columns="12"
+                       CellSpacing="@(new double[] { 12, 12 })"
+                       AllowDragging="true"
+                       AllowResizing="true">
+        <DashboardLayoutEvents Changed="OnLayoutChanged" />
+        <DashboardLayoutPanels>
+            @foreach (var panel in _panels)
+            {
+                <DashboardLayoutPanel Id="@panel.PanelId"
+                                      Column="@panel.Column"
+                                      Row="@panel.Row"
+                                      SizeX="@panel.SizeX"
+                                      SizeY="@panel.SizeY"
+                                      MinSizeX="@panel.MinSizeX"
+                                      MinSizeY="@panel.MinSizeY">
+                    @switch (panel.PanelId)
                     {
-                        <p><strong>Due:</strong> @item.DueDate.Value.ToString("MMM d, yyyy")</p>
+                        case "urgency-strip":
+                            <div class="dashboard-panel dashboard-urgency-strip">
+                                <span class="urgency-pill priority-overdue">Overdue: @_summary.OverdueCount</span>
+                                <span class="urgency-pill priority-high">High: @_summary.HighCount</span>
+                                <span class="urgency-pill priority-medium">Medium: @_summary.MediumCount</span>
+                                <span class="urgency-pill priority-low">Low: @_summary.LowCount</span>
+                                @if (_summary.MissingPacketCount > 0)
+                                {
+                                    <span class="urgency-pill">Missing packet: @_summary.MissingPacketCount</span>
+                                }
+                            </div>
+                            break;
+                        case "quick-actions":
+                            <div class="dashboard-panel">
+                                <h3 class="dashboard-panel-title">Quick actions</h3>
+                                <div class="dashboard-quick-actions">
+                                    <SfButton CssClass="tikr-action-btn" Content="Add requirement" OnClick="@(() => Navigation.NavigateTo("/requirements"))" />
+                                    <SfButton CssClass="tikr-action-btn" Content="AI Scan" OnClick="@(() => Navigation.NavigateTo("/requirements"))" />
+                                    <SfButton CssClass="tikr-action-btn" Content="Upload document" OnClick="@(() => Navigation.NavigateTo("/documents?action=upload"))" />
+                                    <SfButton CssClass="tikr-action-btn" Content="Calendar" OnClick="@(() => Navigation.NavigateTo("/calendar"))" />
+                                    <SfButton CssClass="tikr-action-btn" Content="Assistant" OnClick="@(() => Navigation.NavigateTo("/assistant"))" />
+                                </div>
+                            </div>
+                            break;
+                        case "due-out-grid":
+                            <div class="dashboard-panel">
+                                <h3 class="dashboard-panel-title">Due-outs</h3>
+                                @if (_summary.DueOuts.Count == 0)
+                                {
+                                    <div class="tikr-empty-state">No open due-outs in the next 30 days.</div>
+                                }
+                                else
+                                {
+                                    <SfGrid DataSource="@_summary.DueOuts"
+                                            AllowPaging="true"
+                                            PageSize="8"
+                                            AllowSorting="true"
+                                            Height="100%">
+                                        <GridColumns>
+                                            <GridColumn Field="@nameof(DashboardDueOutDto.Title)" HeaderText="Title" Width="180" />
+                                            <GridColumn Field="@nameof(DashboardDueOutDto.DueDate)" HeaderText="Due" Width="100" Format="MMM d, yyyy" Type="ColumnType.Date" />
+                                            <GridColumn Field="@nameof(DashboardDueOutDto.Urgency)" HeaderText="Urgency" Width="90" />
+                                            <GridColumn Field="@nameof(DashboardDueOutDto.SubmitTo)" HeaderText="Submit to" Width="120" />
+                                            <GridColumn Field="@nameof(DashboardDueOutDto.LinkedDocumentCount)" HeaderText="Docs" Width="60" />
+                                        </GridColumns>
+                                        <GridTemplates>
+                                            <DetailTemplate Context="row">
+                                                @{
+                                                    var dueOut = (DashboardDueOutDto)row;
+                                                }
+                                                <div class="dashboard-due-out-detail">
+                                                    @if (!string.IsNullOrWhiteSpace(dueOut.Description))
+                                                    {
+                                                        <p>@dueOut.Description</p>
+                                                    }
+                                                    @if (!string.IsNullOrWhiteSpace(dueOut.ContactName) || !string.IsNullOrWhiteSpace(dueOut.ContactEmail))
+                                                    {
+                                                        <p><strong>Contact:</strong> @FormatContact(dueOut)</p>
+                                                    }
+                                                    @if (dueOut.LinkedDocuments.Count == 0)
+                                                    {
+                                                        <p class="text-muted">No linked document — attach one in Requirements.</p>
+                                                    }
+                                                    else
+                                                    {
+                                                        <ul class="dashboard-linked-docs">
+                                                            @foreach (var link in dueOut.LinkedDocuments)
+                                                            {
+                                                                <li>
+                                                                    <span>@link.FileName</span>
+                                                                    <SfButton CssClass="tikr-action-btn e-small"
+                                                                              Content="Edit"
+                                                                              OnClick="@(() => OpenWorkspaceAsync(dueOut, link))" />
+                                                                </li>
+                                                            }
+                                                        </ul>
+                                                    }
+                                                </div>
+                                            </DetailTemplate>
+                                        </GridTemplates>
+                                    </SfGrid>
+                                }
+                            </div>
+                            break;
+                        case "missing-packets":
+                            <div class="dashboard-panel">
+                                <h3 class="dashboard-panel-title">Due soon — no packet</h3>
+                                @{
+                                    var missing = _summary.DueOuts
+                                        .Where(d => d.LinkedDocumentCount == 0)
+                                        .Take(5)
+                                        .ToList();
+                                }
+                                @if (missing.Count == 0)
+                                {
+                                    <p class="text-muted">All upcoming due-outs have linked documents.</p>
+                                }
+                                else
+                                {
+                                    <ul class="dashboard-missing-list">
+                                        @foreach (var item in missing)
+                                        {
+                                            <li>@item.Title — due @item.DueDate.ToString("MMM d")</li>
+                                        }
+                                    </ul>
+                                }
+                            </div>
+                            break;
+                        case "recent-activity":
+                            <div class="dashboard-panel">
+                                <h3 class="dashboard-panel-title">Recent activity</h3>
+                                @if (_audit.Count == 0)
+                                {
+                                    <p class="text-muted">No recent activity.</p>
+                                }
+                                else
+                                {
+                                    <ul class="dashboard-activity-list">
+                                        @foreach (var entry in _audit)
+                                        {
+                                            <li><strong>@entry.Action</strong> @entry.EntityType — @entry.Details <span class="text-muted">@entry.Timestamp.ToLocalTime().ToString("g")</span></li>
+                                        }
+                                    </ul>
+                                }
+                            </div>
+                            break;
+                        case "corpus-attention":
+                            <div class="dashboard-panel dashboard-corpus-banner">
+                                @if (_corpusAttention is { Count: > 0 })
+                                {
+                                    <span>@string.Join(" · ", _corpusAttention)</span>
+                                    <a href="/settings">Settings → reindex</a>
+                                }
+                                else if (_localStatus is not null)
+                                {
+                                    <span>@_localStatus.StorageLabel — Ollama @(_localStatus.OllamaAvailable ? "ready" : "offline")</span>
+                                }
+                                else
+                                {
+                                    <span>All data stays local on Synology NAS</span>
+                                }
+                            </div>
+                            break;
                     }
-                    <span class="@GetPriorityClass(item.Priority)">@item.Priority priority</span>
-                </CardContent>
-            </SfCard>
-        }
-    </div>
+                </DashboardLayoutPanel>
+            }
+        </DashboardLayoutPanels>
+    </SfDashboardLayout>
 }
 </div>
 
+<DocumentWorkspaceDialog @bind-Visible="_workspaceVisible"
+                         Document="_workspaceDocument"
+                         ShowExtendedTools="false"
+                         OnSaved="HandleWorkspaceSaved" />
+
 @code {
-    private List<DashboardPriority> _priorities = [];
+    private DashboardSummaryDto? _summary;
+    private List<DashboardLayoutPanelDto> _panels = DashboardLayoutService.DefaultPanels.ToList();
+    private List<AuditLog> _audit = [];
+    private IReadOnlyList<string> _corpusAttention = [];
+    private LocalStorageStatusDto? _localStatus;
     private bool _loading = true;
+
+    private bool _workspaceVisible;
+    private DocumentDto? _workspaceDocument;
+    private Guid? _activeDueOutId;
 
     protected override async Task OnInitializedAsync()
     {
         ClerkIdentity.EnsureResolved();
+        await LoadLayoutFromStorageAsync();
+        await RefreshAsync();
+    }
+
+    private async Task RefreshAsync()
+    {
+        _loading = true;
         try
         {
-            _priorities = await Api.GetDashboardPrioritiesAsync();
+            _summary = await Api.GetDashboardSummaryAsync();
+            _audit = await Api.GetRecentAuditAsync(8);
+            var corpus = await Api.GetCorpusHealthAsync();
+            _corpusAttention = corpus?.NeedsAttention ?? [];
+            _localStatus = await Api.GetLocalStorageStatusAsync();
         }
         catch
         {
-            _priorities = [];
+            _summary = null;
         }
         finally
         {
@@ -86,13 +259,83 @@ else
         }
     }
 
-    private static string GetPriorityClass(string priority) => priority switch
+    private async Task LoadLayoutFromStorageAsync()
     {
-        "High" => "priority-high",
-        "Overdue" => "priority-overdue",
-        "Medium" => "priority-medium",
-        _ => ""
-    };
+        try
+        {
+            var json = await JS.InvokeAsync<string?>("tikrDashboardLayout.get", DashboardLayoutService.StorageKey);
+            var restored = DashboardLayoutService.TryDeserialize(json);
+            if (restored is not null)
+                _panels = restored.ToList();
+        }
+        catch
+        {
+            _panels = DashboardLayoutService.DefaultPanels.ToList();
+        }
+    }
+
+    private async Task PersistLayoutAsync()
+    {
+        var json = DashboardLayoutService.Serialize(_panels);
+        await JS.InvokeVoidAsync("tikrDashboardLayout.set", DashboardLayoutService.StorageKey, json);
+    }
+
+    private async Task OnLayoutChanged(Syncfusion.Blazor.Layouts.ChangeEventArgs args)
+    {
+        if (args?.ChangedPanels is null)
+            return;
+
+        foreach (var changed in args.ChangedPanels)
+        {
+            var existing = _panels.FirstOrDefault(p => p.PanelId == changed.Id);
+            if (existing is null)
+                continue;
+
+            var index = _panels.IndexOf(existing);
+            _panels[index] = existing with
+            {
+                Column = changed.Column,
+                Row = changed.Row,
+                SizeX = changed.SizeX,
+                SizeY = changed.SizeY
+            };
+        }
+
+        await PersistLayoutAsync();
+    }
+
+    private async Task ResetLayoutAsync()
+    {
+        _panels = DashboardLayoutService.DefaultPanels.ToList();
+        await JS.InvokeVoidAsync("tikrDashboardLayout.remove", DashboardLayoutService.StorageKey);
+        StateHasChanged();
+    }
+
+    private static string FormatContact(DashboardDueOutDto dueOut)
+    {
+        var parts = new List<string>();
+        if (!string.IsNullOrWhiteSpace(dueOut.ContactName)) parts.Add(dueOut.ContactName);
+        if (!string.IsNullOrWhiteSpace(dueOut.ContactEmail)) parts.Add(dueOut.ContactEmail);
+        if (!string.IsNullOrWhiteSpace(dueOut.ContactPhone)) parts.Add(dueOut.ContactPhone);
+        return string.Join(" · ", parts);
+    }
+
+    private void OpenWorkspaceAsync(DashboardDueOutDto dueOut, RequirementLinkedDocumentDto link)
+    {
+        _activeDueOutId = dueOut.RequirementId;
+        _workspaceDocument = new DocumentDto(
+            link.DocumentId,
+            link.FileName,
+            null,
+            0,
+            null,
+            null,
+            DateTime.UtcNow,
+            link.Summary);
+        _workspaceVisible = true;
+    }
+
+    private Task HandleWorkspaceSaved(DocumentDto _) => RefreshAsync();
 
     private void OpenGuide() => Guide.Open();
 }

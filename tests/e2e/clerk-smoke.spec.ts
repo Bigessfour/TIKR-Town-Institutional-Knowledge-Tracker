@@ -5,6 +5,8 @@ test.describe('TIKR clerk smoke', () => {
   test('dashboard loads with local footer', async ({ page }) => {
     await gotoClerkPage(page, '/');
     await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Reset layout' })).toBeVisible();
+    await expect(page.locator('#due-out-grid')).toBeVisible();
     await expect(page.getByRole('contentinfo')).toContainText(/Synology|local/i);
   });
 
