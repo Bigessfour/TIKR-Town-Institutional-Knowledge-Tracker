@@ -14,7 +14,8 @@ public record DashboardPriority(
     string? ContactEmail = null,
     string? ContactPhone = null);
 
-public record AskAdvancedRequest(string Prompt, string? Context);
+/// <param name="PreferCloud">When true (Assistant auto-route), try Grok first if enabled.</param>
+public record AskAdvancedRequest(string Prompt, string? Context, bool PreferCloud = false);
 
 public record AskAdvancedResponse(string Answer, bool UsedGrok);
 

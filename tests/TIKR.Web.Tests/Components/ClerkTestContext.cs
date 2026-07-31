@@ -1,6 +1,7 @@
 using Bunit;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.AI;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
 using Syncfusion.Blazor;
@@ -43,6 +44,8 @@ public abstract class ClerkTestContext : TestContext
         Services.AddSingleton<IWebHostEnvironment>(new ClerkTestWebHostEnvironment());
         Services.AddScoped<ClerkUserGuideService>();
         Services.AddScoped<ClerkTourService>();
+        Services.AddSingleton<IConfiguration>(new ConfigurationBuilder().Build());
+        Services.AddScoped<ChatClerkIdentityService>();
         Services.AddSingleton(new AuthSettings { IsEnabled = false });
         JSInterop.Mode = JSRuntimeMode.Loose;
         JSInterop.SetupVoid("tikrTour.run");

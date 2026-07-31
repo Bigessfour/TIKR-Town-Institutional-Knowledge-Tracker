@@ -89,9 +89,9 @@ test.describe('TIKR page readiness (nav + primary controls)', () => {
     await page.getByRole('tab', { name: 'How-To' }).click();
   });
 
-  test('assistant advanced button and prompt area', async ({ page }) => {
+  test('assistant clear button and prompt area', async ({ page }) => {
     await gotoRoute(page, '/assistant');
-    await expect(page.getByRole('button', { name: /Ask Advanced AI/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /Clear conversation/i })).toBeVisible();
     const prompt = page.locator('.e-aiassistview, .e-assistview, textarea, [contenteditable="true"]').first();
     await expect(prompt).toBeVisible({ timeout: 20_000 });
   });

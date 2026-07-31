@@ -2,6 +2,7 @@
 @rendermode InteractiveServer
 @inject TikrApiClient Api
 @inject ClerkUserGuideService Guide
+@inject ChatClerkIdentityService ClerkIdentity
 @inject IJSRuntime JS
 @inject NavigationManager Navigation
 
@@ -22,9 +23,11 @@
         </TourAnchor>
         <PageTourButton Route="/" />
         <PageHelp DataTour="@ClerkTourIds.HelpDashboard"
-                  HelpText="Your command center for Colorado due-outs, linked NAS documents, and clerk quick actions. Drag panels to personalize; Reset layout restores the default." />
+                  HelpText="Your command center for Colorado due-outs, linked NAS documents, and clerk quick actions. Drag panels to personalize; Reset layout restores the default. Chat memory follows this computer’s clerk (Deb Dillon or Paige Lindo)." />
     </div>
 </div>
+
+<ClerkIdentityBanner Compact="true" />
 
 <div data-tour="@ClerkTourIds.DashboardPriorities">
 @if (_loading)
@@ -230,6 +233,7 @@ else
 
     protected override async Task OnInitializedAsync()
     {
+        ClerkIdentity.EnsureResolved();
         await LoadLayoutFromStorageAsync();
         await RefreshAsync();
     }

@@ -198,6 +198,8 @@ var api = app.MapGroup("/api");
 if (authEnabled)
     api.RequireAuthorization(TikrAuthPolicies.Authenticated);
 
+api.MapChatHistoryEndpoints();
+
 api.MapGet("/system/local-status", async (IConfiguration config, IHybridAiService ai, FeatureSettingsState settings) =>
 {
     var snap = settings.Current;

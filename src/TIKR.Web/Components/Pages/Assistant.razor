@@ -4,25 +4,41 @@
 @inject IChatClient ChatClient
 @inject TikrApiClient Api
 @inject ColoradoResourceCatalog ResourceCatalog
+@inject ChatClerkIdentityService ClerkIdentity
+@inject IJSRuntime JS
 @inject ILogger<Assistant> Logger
 @using Markdig
 @using Microsoft.Extensions.AI
 @using TIKR.Shared.Diagnostics
 @using TIKR.Shared.DTOs
 @using TIKR.Shared.Enums
+@using TIKR.Shared.Helpers
 @using TIKR.Web.Components.Shared
 @using TIKR.Web.Helpers
+@using TIKR.Web.Services
 
 <div class="page-header">
     <div class="page-header-main">
         <h2>AI Assistant</h2>
-        <p>Local Ollama for everyday questions; Grok for advanced reasoning when enabled.</p>
+        <p>Your energetic local deputy — town documents, vault, TIKR how-tos, and Syncfusion workspace coaching. Chat memory follows this computer’s clerk.</p>
     </div>
     <div class="page-header-actions">
         <PageTourButton Route="/assistant" />
-        <PageHelp DataTour="@ClerkTourIds.HelpAssistant" HelpText="Ask questions in plain English. Follow-ups stay in this browser session. Your data stays local unless you choose Ask Advanced AI." />
+        <PageHelp DataTour="@ClerkTourIds.HelpAssistant" HelpText="Ask about deadlines, documents, how TIKR works, or Full Screen PDF tools. History and personal facts stay with Deb Dillon or Paige Lindo for this PC. Clear conversation keeps remembered facts." />
     </div>
 </div>
+
+<ClerkIdentityBanner />
+
+@if (!string.IsNullOrEmpty(_proactiveBrief))
+{
+    <SfCard CssClass="mb-3" data-tour="assistant-proactive-brief">
+        <CardHeader Title="Today’s brief" />
+        <CardContent>
+            <p class="mb-0">@_proactiveBrief</p>
+        </CardContent>
+    </SfCard>
+}
 
 @if (!string.IsNullOrEmpty(_contextSummary))
 {
@@ -30,6 +46,41 @@
         <CardHeader Title="Clerk context" />
         <CardContent>
             <p class="mb-0" style="white-space: pre-wrap">@_contextSummary</p>
+        </CardContent>
+    </SfCard>
+}
+
+@if (_suggestionChips.Count > 0)
+{
+    <div class="assistant-suggestion-chips mb-3" role="group" aria-label="Suggested questions">
+        @foreach (var chip in _suggestionChips)
+        {
+            <SfButton CssClass="tikr-action-btn e-outline e-small"
+                      Content="@chip"
+                      OnClick="@(() => ApplySuggestionChip(chip))" />
+        }
+    </div>
+}
+
+@if (_memoryFacts.Count > 0)
+{
+    <SfCard CssClass="mb-3" data-tour="assistant-memory-facts">
+        <CardHeader Title="@($"Remembered for {ClerkIdentity.DisplayName}")" />
+        <CardContent>
+            <ul class="assistant-memory-list">
+                @foreach (var fact in _memoryFacts)
+                {
+                    <li>
+                        <span><strong>@MemoryFactLabel(fact.Key):</strong> @fact.Value</span>
+                        <SfButton CssClass="tikr-action-btn e-small e-outline"
+                                  Content="Forget"
+                                  OnClick="@(() => ForgetMemoryFactAsync(fact.Id))" />
+                    </li>
+                }
+            </ul>
+            <p class="text-muted mb-0" style="font-size:0.85rem;">
+                Say “my birthday is…”, “call me…”, or “remember that…” to teach the assistant. Facts survive Clear conversation.
+            </p>
         </CardContent>
     </SfCard>
 }
@@ -42,6 +93,7 @@
                     ID="tikrAssistant"
                     Prompt="What should I be working on this week?"
                     PromptPlaceholder="Ask about deadlines, documents, or municipal procedures..."
+                    Prompts="_assistPrompts"
                     EnableStreaming="false"
                     Width="100%"
                     Height="100%"
@@ -53,23 +105,16 @@
 <div class="mt-3" data-tour="@ClerkTourIds.AsstAdvanced">
     <label class="me-2">Vault search scope:</label>
     <SfDropDownList TValue="string" TItem="string" DataSource="@_vaultCategoryOptions" @bind-Value="_vaultCategoryFilter" Width="220px" />
-    <SfButton CssClass="tikr-action-btn ms-2" IsPrimary="false" Content="Clear conversation" OnClick="ClearConversation"></SfButton>
-    <SfButton CssClass="tikr-action-btn ms-2" IsPrimary="false" Content="Ask Advanced AI (Grok)" OnClick="AskAdvancedAsync"></SfButton>
+    <SfButton CssClass="tikr-action-btn ms-2" IsPrimary="false" Content="Clear conversation" OnClick="ClearConversationAsync"></SfButton>
+    @if (!string.IsNullOrEmpty(_routeNote))
+    {
+        <p class="mt-2 text-muted" data-tour="assistant-route-note">@_routeNote</p>
+    }
     @if (!string.IsNullOrEmpty(_advancedNote))
     {
         <p class="mt-2 text-muted">@_advancedNote</p>
     }
 </div>
-
-@if (!string.IsNullOrEmpty(_advancedAnswer))
-{
-    <SfCard CssClass="mt-3">
-        <CardHeader Title="Advanced AI (Grok)" />
-        <CardContent>
-            <div>@((MarkupString)_advancedAnswer)</div>
-        </CardContent>
-    </SfCard>
-}
 
 <style>
     .assistant-container {
@@ -115,10 +160,16 @@
     private SfAIAssistView? _assistView;
     private int _assistViewKey;
     private readonly List<Microsoft.Extensions.AI.ChatMessage> _modelHistory = [];
+    private List<AssistViewPrompt> _assistPrompts = [];
+    private Guid? _conversationId;
+    private List<UserMemoryFactDto> _memoryFacts = [];
     private string _contextSummary = "";
+    private string? _proactiveBrief;
+    private List<string> _suggestionChips = ProductHelpCatalog.DefaultSuggestionChips.ToList();
     private string _advancedNote = "";
-    private string _advancedAnswer = "";
+    private string _routeNote = "";
     private string? _lastPrompt;
+    private bool _grokEnabled;
     private CancellationTokenSource? _streamingCts;
     private string _vaultCategoryFilter = "All";
     private readonly List<string> _vaultCategoryOptions = ["All", .. Enum.GetNames<KnowledgeCategory>()];
@@ -126,19 +177,170 @@
     private string? ResolveVaultCategoryFilter() =>
         _vaultCategoryFilter == "All" ? null : _vaultCategoryFilter;
 
-    private string SystemPrompt => AssistantPromptBuilder.BuildSystemPrompt(ResourceCatalog);
+    private string SystemPrompt => AssistantPromptBuilder.BuildSystemPrompt(
+        ResourceCatalog,
+        _memoryFacts.Select(f => (f.Key, f.Value)));
 
     protected override async Task OnInitializedAsync()
     {
+        await InitializeClerkIdentityAsync();
+
         try
         {
             var priorities = await Api.GetDashboardPrioritiesAsync();
             if (priorities.Count > 0)
+            {
                 _contextSummary = AssistantPromptBuilder.FormatDeadlineContext(priorities);
+                _proactiveBrief = AssistantPromptBuilder.BuildProactiveBrief(
+                    priorities,
+                    ClerkIdentity.IsResolved ? ClerkIdentity.DisplayName : null);
+            }
         }
         catch
         {
             _contextSummary = "Unable to load deadline context from API.";
+            _proactiveBrief = null;
+        }
+
+        if (!ClerkIdentity.IsResolved)
+        {
+            _advancedNote = ClerkIdentity.StatusDetail();
+            return;
+        }
+
+        await LoadPersistedSessionAsync();
+    }
+
+    private void ApplySuggestionChip(string chip)
+    {
+        _lastPrompt = chip;
+        // AssistView uses Prompt property as the input seed when user sends; set field for advanced path.
+        // Fire a synthetic prompt request through the same pipeline.
+        _ = InvokeAsync(async () =>
+        {
+            var args = new AssistViewPromptRequestedEventArgs { Prompt = chip };
+            await OnPromptRequested(args);
+            if (!string.IsNullOrEmpty(args.Response) && !string.IsNullOrWhiteSpace(chip))
+            {
+                _assistPrompts.Add(new AssistViewPrompt { Prompt = chip, Response = args.Response });
+                _assistViewKey++;
+                StateHasChanged();
+            }
+        });
+    }
+
+    private async Task InitializeClerkIdentityAsync()
+    {
+        ClerkIdentity.ResolveFromHost();
+        try
+        {
+            var overrideKey = await JS.InvokeAsync<string?>(
+                "localStorage.getItem", ChatClerkProfiles.BrowserOverrideStorageKey);
+            if (!string.IsNullOrWhiteSpace(overrideKey))
+                ClerkIdentity.ApplyManualOverride(overrideKey);
+        }
+        catch
+        {
+            /* host mapping stands */
+        }
+    }
+
+    private async Task LoadPersistedSessionAsync()
+    {
+        if (!ClerkIdentity.IsResolved)
+            return;
+
+        try
+        {
+            var session = await Api.GetAssistantSessionAsync();
+            if (session is null)
+            {
+                _conversationId = null;
+                _memoryFacts = [];
+                _modelHistory.Clear();
+                _assistPrompts = [];
+                return;
+            }
+
+            ApplySession(session);
+            TikrActionLog.Info(Logger, "UI.Assistant.Session",
+                $"Clerk={ClerkIdentity.ActiveProfileKey} Source={ClerkIdentity.ResolutionSource} Machine={ClerkIdentity.MachineName} Conversation={_conversationId} Turns={_modelHistory.Count / 2} Facts={_memoryFacts.Count}");
+        }
+        catch (Exception ex)
+        {
+            TikrActionLog.Failed(Logger, "UI.Assistant.Session", ex, "Could not load persisted chat; using empty session");
+        }
+    }
+
+    private void ApplySession(AssistantSessionDto session)
+    {
+        _conversationId = session.Conversation.Id;
+        _memoryFacts = session.MemoryFacts.ToList();
+        _modelHistory.Clear();
+        _modelHistory.AddRange(AssistantPromptBuilder.HistoryFromPersistedMessages(session.Conversation.Messages));
+        _assistPrompts = AssistantPromptBuilder.AssistViewPromptsFromPersisted(session.Conversation.Messages);
+    }
+
+    private static string MemoryFactLabel(string key) =>
+        key.StartsWith("note:", StringComparison.OrdinalIgnoreCase) ? "note" : key;
+
+    private async Task ForgetMemoryFactAsync(Guid factId)
+    {
+        if (!await Api.DeleteAssistantMemoryFactAsync(factId))
+        {
+            _advancedNote = "Could not remove that remembered fact. Try again.";
+            return;
+        }
+
+        _memoryFacts = _memoryFacts.Where(f => f.Id != factId).ToList();
+        _advancedNote = "Forgot that fact for " + ClerkIdentity.DisplayName + ".";
+        StateHasChanged();
+    }
+
+    private async Task PersistTurnAsync(string userText, string assistantText)
+    {
+        try
+        {
+            if (_conversationId is null)
+            {
+                var session = await Api.GetAssistantSessionAsync();
+                if (session is not null)
+                    ApplySession(session);
+            }
+
+            if (_conversationId is null)
+            {
+                _advancedNote = "Chat history could not be saved (no session). Answers still show here.";
+                return;
+            }
+
+            var result = await Api.AppendAssistantTurnAsync(_conversationId.Value, userText, assistantText);
+            if (!result.Succeeded && result.ConversationMissing)
+            {
+                // Stale/archived id (cleared in another tab) — refresh active session and retry once.
+                var refreshed = await Api.GetAssistantSessionAsync()
+                    ?? await Api.StartNewAssistantSessionAsync();
+                if (refreshed is not null)
+                {
+                    ApplySession(refreshed);
+                    result = await Api.AppendAssistantTurnAsync(_conversationId.Value, userText, assistantText);
+                }
+            }
+
+            if (result is { Succeeded: true, Session: not null })
+            {
+                _conversationId = result.Session.Conversation.Id;
+                _memoryFacts = result.Session.MemoryFacts.ToList();
+                return;
+            }
+
+            _advancedNote = "Chat history could not be saved to the server. Your answer is still shown; try again if this persists.";
+            TikrActionLog.Failed(Logger, "UI.Assistant.PersistTurn", "Append failed after retry");
+        }
+        catch (Exception ex)
+        {
+            _advancedNote = "Chat history could not be saved to the server. Your answer is still shown.";
+            TikrActionLog.Failed(Logger, "UI.Assistant.PersistTurn", ex);
         }
     }
 
@@ -174,45 +376,25 @@
 
             // Initialize the response so the SfAIAssistView knows to render an assistant message for this prompt.
             args.Response = string.Empty;
+            _routeNote = "";
 
-            // Validate Ollama first. Fallback to Grok (via advanced) depending on prompt context or availability.
-            bool useLocal = true;
+            bool ollamaOk = true;
             try
             {
                 var status = await Api.GetAiStatusAsync();
-                bool ollamaOk = status?.OllamaAvailable ?? false;
-                bool preferGrok = ShouldPreferGrokForPrompt(args.Prompt);
-                useLocal = ollamaOk && !preferGrok;
-                TikrActionLog.Info(Logger, "UI.Assistant.Prompt",
-                    $"Route={(useLocal ? "local-stream" : "advanced")} Ollama={ollamaOk} PreferGrok={preferGrok}");
+                ollamaOk = status?.OllamaAvailable ?? false;
+                _grokEnabled = status?.GrokEnabled ?? false;
             }
             catch (Exception ex)
             {
-                useLocal = true; // best effort, try local streaming
+                ollamaOk = true; // try local first
                 TikrActionLog.Info(Logger, "UI.Assistant.Prompt", $"AI status check failed; trying local: {ex.Message}");
             }
 
-            if (!useLocal)
-            {
-                // Fallback path — still pack RAG so Advanced/Grok stays grounded.
-                var fallbackContext = await BuildRagContextAsync(args.Prompt);
-                var fallbackResult = await Api.AskAdvancedAsync(args.Prompt, fallbackContext);
-                var fallbackText = fallbackResult?.Answer ?? "Advanced AI fallback unavailable.";
-                var fallbackHtml = Markdown.ToHtml(fallbackText);
-                args.Response = fallbackHtml;
-                await SafeUpdateResponseAsync(fallbackHtml);
-                AssistantPromptBuilder.AppendTurn(_modelHistory, args.Prompt, fallbackText);
-                TikrActionLog.Completed(Logger, "UI.Assistant.Prompt",
-                    $"Path=advanced UsedGrok={fallbackResult?.UsedGrok} AnswerLen={fallbackText.Length}",
-                    turnSw.ElapsedMilliseconds);
-                return;
-            }
-
+            // Always pack RAG first so routing can use hit counts + Grok stays grounded.
             var retrievalQuery = AssistantPromptBuilder.BuildRetrievalQuery(
                 args.Prompt,
                 AssistantPromptBuilder.GetRecentUserTexts(_modelHistory, take: 2));
-            TikrActionLog.Info(Logger, "UI.Assistant.Prompt",
-                $"RetrievalQueryLen={retrievalQuery.Length}");
 
             SemanticSearchResponse? docSearch = null;
             SemanticSearchKnowledgeResponse? vaultSearch = null;
@@ -220,8 +402,6 @@
             try
             {
                 docSearch = await Api.SemanticSearchDocumentsAsync(retrievalQuery, topK: 5);
-                TikrActionLog.Info(Logger, "UI.Assistant.Rag",
-                    $"Docs hits={docSearch?.Hits.Count ?? 0} embedding={docSearch?.EmbeddingAvailable}");
             }
             catch (Exception ex)
             {
@@ -232,8 +412,6 @@
             try
             {
                 vaultSearch = await Api.SemanticSearchKnowledgeAsync(retrievalQuery, topK: 5, category: ResolveVaultCategoryFilter());
-                TikrActionLog.Info(Logger, "UI.Assistant.Rag",
-                    $"Vault hits={vaultSearch?.Hits.Count ?? 0} embedding={vaultSearch?.EmbeddingAvailable}");
             }
             catch (Exception ex)
             {
@@ -244,6 +422,8 @@
             var docContext = AssistantPromptBuilder.FormatDocumentRagBlock(docSearch, out var docsDown);
             var vaultContext = AssistantPromptBuilder.FormatVaultRagBlock(vaultSearch, out var vaultDown);
             searchUnavailable = searchUnavailable || docsDown || vaultDown;
+            var productHits = ProductHelpCatalog.Search(args.Prompt, topK: 3);
+            var productContext = ProductHelpCatalog.FormatForPrompt(productHits);
             var citations = AssistantPromptBuilder.CollectCitationLabels(docSearch, vaultSearch);
             var userMessage = AssistantPromptBuilder.BuildUserMessageWithRag(
                 args.Prompt,
@@ -251,16 +431,34 @@
                 docContext,
                 vaultContext,
                 searchUnavailable,
-                citations);
+                citations,
+                productContext);
+
+            // LangChain-style decision matrix: Ollama for routine; auto-Grok when needed.
+            var decision = AssistantAgentRouter.Decide(
+                args.Prompt,
+                ollamaAvailable: ollamaOk,
+                grokEnabled: _grokEnabled,
+                historyTurnCount: _modelHistory.Count / 2,
+                searchUnavailable: searchUnavailable,
+                productHelpHitCount: productHits.Count,
+                documentHitCount: docSearch?.Hits.Count ?? 0,
+                vaultHitCount: vaultSearch?.Hits.Count ?? 0);
+
+            TikrActionLog.Info(Logger, "UI.Assistant.Route",
+                $"Route={decision.Route} Conf={decision.Confidence:F2} Reason={decision.Reason}");
+
+            if (decision.Route == AiRoute.CloudGrok)
+            {
+                await CompleteViaGrokAsync(args, userMessage, decision, turnSw);
+                return;
+            }
 
             var messages = AssistantPromptBuilder.BuildChatMessages(
                 SystemPrompt,
                 _modelHistory,
                 userMessage);
 
-            // Syncfusion docs: UpdateResponseAsync APPENDS streaming chunks. Pushing full
-            // accumulated text on every tick double-renders and flashes broken markdown/think
-            // tokens. Buffer the entire Ollama stream, sanitize once, then publish once.
             var preparing = AssistantPromptBuilder.FormatPreparingHtml(
                 searchUnavailable
                     ? "Preparing your answer…"
@@ -271,7 +469,6 @@
             var streamChunks = 0;
             await foreach (var update in ChatClient.GetStreamingResponseAsync(messages, cancellationToken: token))
             {
-                // Collect text + any non-text content parts (some models leak tool JSON via ToString).
                 if (!string.IsNullOrEmpty(update.Text))
                 {
                     streamChunks++;
@@ -283,31 +480,31 @@
                 {
                     foreach (var part in update.Contents)
                     {
-                        // Fully-qualify: Syncfusion PDF viewer also defines TextContent.
                         if (part is Microsoft.Extensions.AI.TextContent tc && !string.IsNullOrEmpty(tc.Text))
                         {
                             streamChunks++;
                             markdownBuilder.Append(tc.Text);
                         }
-                        // Intentionally ignore FunctionCallContent / usage / other non-user parts.
                     }
                 }
             }
 
             var raw = markdownBuilder.ToString();
-            if (raw.Length > 0)
+            var replyMarkdown = AssistantPromptBuilder.SanitizeModelOutput(raw);
+
+            // Empty/failed local → escalate to Grok when enabled (no manual button).
+            if (string.IsNullOrWhiteSpace(replyMarkdown) && _grokEnabled)
             {
-                var preview = raw.Length <= 240 ? raw : raw[..240] + "…";
-                TikrActionLog.Info(Logger, "UI.Assistant.Prompt",
-                    $"RawPreview={preview.Replace('\n', ' ')}");
+                var escalate = AssistantAgentRouter.EscalateAfterLocalFailure(grokEnabled: true);
+                TikrActionLog.Info(Logger, "UI.Assistant.Route", escalate.Reason);
+                await CompleteViaGrokAsync(args, userMessage, escalate, turnSw);
+                return;
             }
 
-            var replyMarkdown = AssistantPromptBuilder.SanitizeModelOutput(raw);
             if (string.IsNullOrWhiteSpace(replyMarkdown))
             {
-                // Model only emitted scratchpad/thinking — never leave the clerk with empty UI.
                 replyMarkdown = "I could not produce a clear answer from the local helper. " +
-                                "Try rephrasing, or use Ask Advanced AI.";
+                                "Check that Ollama is running, or enable Grok in Settings for automatic help on harder questions.";
             }
 
             if (citations.Count > 0 && !replyMarkdown.Contains("Sources", StringComparison.OrdinalIgnoreCase))
@@ -317,15 +514,15 @@
                                 string.Join("\n", citations.Select(c => $"- {c}"));
             }
 
-            // Single final publish: clean HTML only (no intermediate partials).
             var html = Markdown.ToHtml(replyMarkdown);
             args.Response = html;
             await SafeUpdateResponseAsync(html);
+            _routeNote = "Answered locally (Ollama on the NAS).";
 
-            // Store plain question + cleaned reply only — not RAG packs or think tokens.
             AssistantPromptBuilder.AppendTurn(_modelHistory, args.Prompt, replyMarkdown);
+            await PersistTurnAsync(args.Prompt, replyMarkdown);
             TikrActionLog.Completed(Logger, "UI.Assistant.Prompt",
-                $"Path=local-buffered Chunks={streamChunks} RawLen={raw.Length} CleanLen={replyMarkdown.Length} Citations={citations.Count}",
+                $"Path=local-buffered Chunks={streamChunks} RawLen={raw.Length} CleanLen={replyMarkdown.Length} Citations={citations.Count} Route={decision.Reason}",
                 turnSw.ElapsedMilliseconds);
         }
         catch (OperationCanceledException)
@@ -337,27 +534,62 @@
         }
         catch (Exception ex)
         {
-            TikrActionLog.Failed(Logger, "UI.Assistant.Prompt", ex, "Local stream failed; trying advanced fallback");
+            TikrActionLog.Failed(Logger, "UI.Assistant.Prompt", ex, "Local stream failed; auto-escalate if Grok on");
             try
             {
-                var fbContext = await BuildRagContextAsync(args.Prompt);
-                var fb = await Api.AskAdvancedAsync(args.Prompt, fbContext);
-                var fbText = fb?.Answer ?? $"Local AI unavailable: {ex.Message}. Is Ollama running?";
-                var fbHtml = Markdown.ToHtml(fbText);
-                args.Response = fbHtml;
-                await SafeUpdateResponseAsync(fbHtml);
-                AssistantPromptBuilder.AppendTurn(_modelHistory, args.Prompt, fbText);
-                TikrActionLog.Completed(Logger, "UI.Assistant.Prompt",
-                    $"Path=fallback-after-error AnswerLen={fbText.Length}", turnSw.ElapsedMilliseconds);
+                var escalate = AssistantAgentRouter.EscalateAfterLocalFailure(_grokEnabled);
+                var fbContext = await BuildRagContextAsync(args.Prompt ?? "");
+                if (escalate.Route == AiRoute.CloudGrok)
+                {
+                    await CompleteViaGrokAsync(args, fbContext, escalate, turnSw);
+                    return;
+                }
+
+                var err = $"<p class='text-danger'>Local AI unavailable: {ex.Message}. Is Ollama running?</p>";
+                args.Response = err;
+                await SafeUpdateResponseAsync(err);
             }
             catch (Exception fbEx)
             {
-                TikrActionLog.Failed(Logger, "UI.Assistant.Prompt", fbEx, "Advanced fallback also failed");
-                var err = $"<p class='text-danger'>Local AI unavailable: {ex.Message}. Is Ollama running? Grok fallback also failed.</p>";
+                TikrActionLog.Failed(Logger, "UI.Assistant.Prompt", fbEx, "Grok escalate also failed");
+                var err = $"<p class='text-danger'>Local AI unavailable: {ex.Message}. Cloud fallback also failed.</p>";
                 args.Response = err;
                 await SafeUpdateResponseAsync(err);
             }
         }
+    }
+
+    private async Task CompleteViaGrokAsync(
+        AssistViewPromptRequestedEventArgs args,
+        string ragPackedContext,
+        AiRouteDecision decision,
+        System.Diagnostics.Stopwatch turnSw)
+    {
+        var preparing = AssistantPromptBuilder.FormatPreparingHtml("Working on a deeper answer…");
+        args.Response = preparing;
+        await SafeUpdateResponseAsync(preparing);
+
+        // PreferCloud so API honors the Web decision matrix (does not re-score down to Ollama).
+        var result = await Api.AskAdvancedAsync(args.Prompt ?? "", ragPackedContext, preferCloud: true);
+        var replyMarkdown = result?.Answer ?? "Advanced AI is unavailable. Check Settings (Grok) or try again when Ollama is ready.";
+        replyMarkdown = AssistantPromptBuilder.SanitizeModelOutput(replyMarkdown);
+        if (string.IsNullOrWhiteSpace(replyMarkdown))
+            replyMarkdown = result?.Answer ?? "No answer returned.";
+
+        var html = Markdown.ToHtml(replyMarkdown);
+        args.Response = html;
+        await SafeUpdateResponseAsync(html);
+
+        var usedGrok = result?.UsedGrok == true;
+        _routeNote = usedGrok
+            ? "Answered with Grok (auto-selected for this question)."
+            : "Answered via advanced path (local). " + decision.Reason;
+
+        AssistantPromptBuilder.AppendTurn(_modelHistory, args.Prompt ?? "", replyMarkdown);
+        await PersistTurnAsync(args.Prompt ?? "", replyMarkdown);
+        TikrActionLog.Completed(Logger, "UI.Assistant.Prompt",
+            $"Path=auto-route UsedGrok={usedGrok} Reason={decision.Reason} AnswerLen={replyMarkdown.Length}",
+            turnSw.ElapsedMilliseconds);
     }
 
     /// <summary>
@@ -379,58 +611,37 @@
         }
     }
 
-    private static bool ShouldPreferGrokForPrompt(string prompt)
-    {
-        if (string.IsNullOrWhiteSpace(prompt)) return false;
-        var p = prompt.ToLowerInvariant();
-        return p.Contains("grok") ||
-               p.Contains("advanced") ||
-               p.Contains("complex reasoning") ||
-               p.Contains("deep analysis") ||
-               p.Contains("detailed step") ||
-               (p.Contains("step by step") && p.Length > 80) ||
-               p.Contains("thorough explanation");
-    }
-
     private void OnResponseStopped(ResponseStoppedEventArgs args) =>
         _streamingCts?.Cancel();
 
-    private void ClearConversation()
+    private async Task ClearConversationAsync()
     {
         TikrActionLog.Info(Logger, "UI.Assistant.ClearConversation",
-            $"Cleared {_modelHistory.Count / 2} turn(s)");
+            $"Cleared {_modelHistory.Count / 2} turn(s); starting new persisted thread");
         _streamingCts?.Cancel();
         _modelHistory.Clear();
+        _assistPrompts = [];
         _lastPrompt = null;
-        _advancedNote = "Conversation cleared. Follow-ups start fresh.";
-        _advancedAnswer = "";
+        _routeNote = "";
+
+        try
+        {
+            var session = await Api.StartNewAssistantSessionAsync();
+            if (session is not null)
+                ApplySession(session);
+            else
+                _conversationId = null;
+
+            _advancedNote = "Conversation cleared. Follow-ups start fresh; remembered facts for your account stay.";
+        }
+        catch (Exception ex)
+        {
+            TikrActionLog.Failed(Logger, "UI.Assistant.ClearConversation", ex);
+            _conversationId = null;
+            _advancedNote = "Conversation cleared locally. Server history may still have the previous thread.";
+        }
+
         _assistViewKey++;
-        StateHasChanged();
-    }
-
-    private async Task AskAdvancedAsync()
-    {
-        if (string.IsNullOrWhiteSpace(_lastPrompt))
-        {
-            _advancedNote = "Send a message in the chat first, then click Ask Advanced AI.";
-            StateHasChanged();
-            return;
-        }
-
-        var context = await BuildRagContextAsync(_lastPrompt);
-        var result = await Api.AskAdvancedAsync(_lastPrompt, context);
-        if (result is null)
-        {
-            _advancedNote = "Advanced AI unavailable. Enable USE_GROK=true and GROK_API_KEY on the API.";
-            StateHasChanged();
-            return;
-        }
-
-        _advancedNote = result.UsedGrok
-            ? "Grok response shown below (with document/vault context)."
-            : "Advanced AI response shown below (with document/vault context).";
-
-        _advancedAnswer = Markdown.ToHtml(result.Answer);
         StateHasChanged();
     }
 
@@ -464,6 +675,7 @@
         var docContext = AssistantPromptBuilder.FormatDocumentRagBlock(docSearch, out var docsDown);
         var vaultContext = AssistantPromptBuilder.FormatVaultRagBlock(vaultSearch, out var vaultDown);
         searchUnavailable = searchUnavailable || docsDown || vaultDown;
+        var productContext = ProductHelpCatalog.FormatForPrompt(ProductHelpCatalog.Search(prompt, topK: 3));
         var citations = AssistantPromptBuilder.CollectCitationLabels(docSearch, vaultSearch);
         return AssistantPromptBuilder.BuildUserMessageWithRag(
             prompt,
@@ -471,7 +683,8 @@
             docContext,
             vaultContext,
             searchUnavailable,
-            citations);
+            citations,
+            productContext);
     }
 
     public void Dispose()

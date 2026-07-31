@@ -77,9 +77,14 @@ public class TikrApiClient(HttpClient http)
             : null;
     }
 
-    public async Task<AskAdvancedResponse?> AskAdvancedAsync(string prompt, string? context = null)
+    public async Task<AskAdvancedResponse?> AskAdvancedAsync(
+        string prompt,
+        string? context = null,
+        bool preferCloud = false)
     {
-        var response = await http.PostAsJsonAsync("/api/ai/ask-advanced", new AskAdvancedRequest(prompt, context));
+        var response = await http.PostAsJsonAsync(
+            "/api/ai/ask-advanced",
+            new AskAdvancedRequest(prompt, context, PreferCloud: preferCloud));
         return response.IsSuccessStatusCode
             ? await response.Content.ReadFromJsonAsync<AskAdvancedResponse>()
             : null;
@@ -488,4 +493,101 @@ public class TikrApiClient(HttpClient http)
             return null;
         }
     }
+
+    public async Task<AssistantSessionDto?> GetAssistantSessionAsync()
+    {
+        try
+        {
+            var response = await http.GetAsync("/api/assistant/session");
+            if (response.StatusCode is System.Net.HttpStatusCode.Unauthorized)
+                return null;
+            if (!response.IsSuccessStatusCode)
+                return null;
+            return await response.Content.ReadFromJsonAsync<AssistantSessionDto>();
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    public async Task<AssistantSessionDto?> StartNewAssistantSessionAsync()
+    {
+        try
+        {
+            var response = await http.PostAsync("/api/assistant/session/new", content: null);
+            if (!response.IsSuccessStatusCode)
+                return null;
+            return await response.Content.ReadFromJsonAsync<AssistantSessionDto>();
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    public async Task<ChatPersistResult> AppendAssistantTurnAsync(Guid conversationId, string userText, string assistantText)
+    {
+        try
+        {
+            var response = await http.PostAsJsonAsync(
+                $"/api/assistant/conversations/{conversationId}/turns",
+                new AppendChatTurnRequest(userText, assistantText));
+            if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+                return ChatPersistResult.MissingConversation();
+            if (!response.IsSuccessStatusCode)
+                return ChatPersistResult.Failed();
+            var session = await response.Content.ReadFromJsonAsync<AssistantSessionDto>();
+            return session is null ? ChatPersistResult.Failed() : ChatPersistResult.Ok(session);
+        }
+        catch
+        {
+            return ChatPersistResult.Failed();
+        }
+    }
+
+    public async Task<List<UserMemoryFactDto>> GetAssistantMemoryFactsAsync()
+    {
+        try
+        {
+            return await http.GetFromJsonAsync<List<UserMemoryFactDto>>("/api/assistant/memory") ?? [];
+        }
+        catch
+        {
+            return [];
+        }
+    }
+
+    public async Task<bool> DeleteAssistantMemoryFactAsync(Guid factId)
+    {
+        try
+        {
+            var response = await http.DeleteAsync($"/api/assistant/memory/{factId}");
+            return response.IsSuccessStatusCode;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    public async Task<List<ChatConversationSummaryDto>> ListAssistantConversationsAsync()
+    {
+        try
+        {
+            return await http.GetFromJsonAsync<List<ChatConversationSummaryDto>>("/api/assistant/conversations")
+                   ?? [];
+        }
+        catch
+        {
+            return [];
+        }
+    }
+}
+
+public sealed record ChatPersistResult(bool Succeeded, bool ConversationMissing, AssistantSessionDto? Session)
+{
+    public static ChatPersistResult Ok(AssistantSessionDto session) => new(true, false, session);
+    public static ChatPersistResult MissingConversation() => new(false, true, null);
+    public static ChatPersistResult Failed() => new(false, false, null);
 }
