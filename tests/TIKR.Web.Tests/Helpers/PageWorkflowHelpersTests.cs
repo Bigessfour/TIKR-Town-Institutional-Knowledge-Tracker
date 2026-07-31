@@ -2,6 +2,7 @@ using FluentAssertions;
 using Microsoft.Extensions.AI;
 using TIKR.Shared.DTOs;
 using TIKR.Shared.Enums;
+using TIKR.Shared.Helpers;
 using TIKR.Web.Helpers;
 using TIKR.Web.Services;
 
@@ -153,7 +154,41 @@ public class PageWorkflowHelpersTests
         var catalog = new ColoradoResourceCatalog([], null);
         AssistantPromptBuilder.BuildSystemPrompt(catalog)
             .Should().Contain("ONLY from that context")
-            .And.Contain("Sources");
+            .And.Contain("Sources")
+            .And.Contain("energetic")
+            .And.Contain("product help");
+    }
+
+    [Fact]
+    public void BuildUserMessageWithRag_IncludesProductHelp()
+    {
+        var msg = AssistantPromptBuilder.BuildUserMessageWithRag(
+            "How do I save?",
+            deadlineContext: null,
+            docContext: null,
+            vaultContext: null,
+            searchUnavailable: false,
+            citations: [],
+            productHelpContext: ProductHelpCatalog.FormatForPrompt(ProductHelpCatalog.Search("save NAS", 1)));
+
+        msg.Should().Contain("TIKR product help");
+        msg.Should().Contain("Question: How do I save?");
+    }
+
+    [Fact]
+    public void BuildProactiveBrief_SummarizesPriorities()
+    {
+        var brief = AssistantPromptBuilder.BuildProactiveBrief(
+            [
+                new DashboardPriority("Sales tax", "Due soon", DateOnly.FromDateTime(DateTime.UtcNow.AddDays(3)), "High"),
+                new DashboardPriority("Old item", "Late", DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-2)), "Overdue"),
+            ],
+            "Deb Dillon");
+
+        brief.Should().NotBeNullOrWhiteSpace();
+        brief.Should().Contain("Deb Dillon");
+        brief.Should().Contain("overdue");
+        brief.Should().Contain("Sales tax");
     }
 
     [Fact]
@@ -258,7 +293,7 @@ public class PageWorkflowHelpersTests
             citations: []);
 
         msg.Should().StartWith("What is the permit fee?");
-        msg.Should().Contain("No matching documents or vault entries were retrieved");
+        msg.Should().Contain("No matching documents, vault entries, or product help were retrieved");
         msg.Should().Contain("say so");
     }
 

@@ -122,4 +122,33 @@ public class ChatHistoryAuthOffEndpointTests : IClassFixture<TikrWebApplicationF
         debReload!.Conversation.Messages.Should().HaveCount(2);
         debReload.MemoryFacts.Should().Contain(f => f.Key == "preferred_name" && f.Value == "Deb");
     }
+
+    [Fact]
+    public async Task Session_WithNamedDebAndPaigeProfiles_AreIsolated()
+    {
+        var deb = _factory.CreateClient();
+        deb.DefaultRequestHeaders.Add(ChatHistoryLimits.ChatUserHeaderName, ChatClerkProfiles.Deb);
+        var debSession = await deb.GetFromJsonAsync<AssistantSessionDto>("/api/assistant/session");
+        await deb.PostAsJsonAsync(
+            $"/api/assistant/conversations/{debSession!.Conversation.Id}/turns",
+            new AppendChatTurnRequest("My birthday is March 15", "Got it."));
+
+        var paige = _factory.CreateClient();
+        paige.DefaultRequestHeaders.Add(ChatHistoryLimits.ChatUserHeaderName, ChatClerkProfiles.Paige);
+        var paigeSession = await paige.GetFromJsonAsync<AssistantSessionDto>("/api/assistant/session");
+
+        paigeSession!.Conversation.Id.Should().NotBe(debSession.Conversation.Id);
+        paigeSession.Conversation.Messages.Should().BeEmpty();
+        paigeSession.MemoryFacts.Should().BeEmpty();
+
+        var debReload = await deb.GetFromJsonAsync<AssistantSessionDto>("/api/assistant/session");
+        debReload!.MemoryFacts.Should().Contain(f => f.Key == "birthday" && f.Value == "March 15");
+
+        var forgetId = debReload.MemoryFacts.Single(f => f.Key == "birthday").Id;
+        var delete = await deb.DeleteAsync($"/api/assistant/memory/{forgetId}");
+        delete.StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        var afterForget = await deb.GetFromJsonAsync<List<UserMemoryFactDto>>("/api/assistant/memory");
+        afterForget.Should().NotContain(f => f.Key == "birthday");
+    }
 }

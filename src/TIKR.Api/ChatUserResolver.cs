@@ -18,12 +18,31 @@ public static class ChatUserResolver
         if (TikrConfiguration.IsAuthEnabled(configuration))
             return null;
 
-        // Auth off (local/dev): isolate by browser-issued GUID header.
-        if (request.Headers.TryGetValue(ChatHistoryLimits.ChatUserHeaderName, out var values))
+        // Auth off (Deb/Paige shared PC or local dev): isolate by header.
+        if (!request.Headers.TryGetValue(ChatHistoryLimits.ChatUserHeaderName, out var values))
+            return null;
+
+        var raw = values.FirstOrDefault()?.Trim();
+        if (string.IsNullOrWhiteSpace(raw))
+            return null;
+
+        // Named clerk profiles (preferred for shared trusted PC).
+        if (ChatClerkProfiles.TryNormalize(raw, out var profileKey))
+            return ChatClerkProfiles.ToUserId(profileKey);
+
+        // Browser-issued GUID (tests / legacy cookies).
+        if (Guid.TryParse(raw, out var id))
+            return $"local:{id:N}";
+
+        // Already-prefixed local ids from prior requests.
+        if (raw.StartsWith("local:", StringComparison.OrdinalIgnoreCase)
+            && raw.Length > "local:".Length)
         {
-            var raw = values.FirstOrDefault()?.Trim();
-            if (Guid.TryParse(raw, out var id))
-                return $"local:{id:N}";
+            var rest = raw["local:".Length..];
+            if (ChatClerkProfiles.TryNormalize(rest, out var nested))
+                return ChatClerkProfiles.ToUserId(nested);
+            if (Guid.TryParse(rest, out var nestedGuid))
+                return $"local:{nestedGuid:N}";
         }
 
         return null;

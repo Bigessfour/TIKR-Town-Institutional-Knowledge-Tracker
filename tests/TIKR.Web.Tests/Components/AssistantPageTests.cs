@@ -21,6 +21,9 @@ public class AssistantPageTests : ClerkTestContext
         Services.AddSingleton(new ColoradoResourceCatalog([
             new ColoradoResource("CML", "https://www.cml.org", "organization", ["gov"], "Colorado Municipal League")
         ], "2026-06-28"));
+        JSInterop.Setup<string?>("localStorage.getItem", _ => true).SetResult(null);
+        JSInterop.SetupVoid("localStorage.setItem", _ => true);
+        JSInterop.SetupVoid("localStorage.removeItem", _ => true);
     }
 
     [Fact]
@@ -115,6 +118,40 @@ public class AssistantPageTests : ClerkTestContext
     }
 
     [Fact]
+    public void Assistant_ShowsClerkIdentityBanner()
+    {
+        RegisterApi();
+        // Unmapped CI host → banner explains assignment; Settings link available.
+        var cut = RenderComponent<Assistant>();
+        cut.WaitForAssertion(() => cut.Markup.Should().Contain("data-tour=\"clerk-identity\""));
+        cut.Markup.Should().Contain("Chat memory");
+    }
+
+    [Fact]
+    public void Assistant_ShowsSuggestionChips()
+    {
+        RegisterApi();
+        var cut = RenderComponent<Assistant>();
+        cut.WaitForAssertion(() => cut.Markup.Should().Contain("Suggested questions"));
+        cut.Markup.Should().Contain("What should I work on this week?");
+    }
+
+    [Fact]
+    public void Assistant_ShowsRememberedFactsWhenSessionHasMemory()
+    {
+        // Unmapped CI host: apply clerk override so session + memory load.
+        JSInterop.Setup<string?>("localStorage.getItem", _ => true).SetResult("deb");
+        const string sessionWithFact = """
+            {"conversation":{"id":"11111111-1111-1111-1111-111111111111","title":"New chat","updatedAtUtc":"2026-01-01T00:00:00Z","messages":[]},"memoryFacts":[{"id":"22222222-2222-2222-2222-222222222222","key":"birthday","value":"March 15","confirmed":true,"updatedAtUtc":"2026-01-01T00:00:00Z"}]}
+            """;
+        RegisterApi(sessionJson: sessionWithFact);
+        var cut = RenderComponent<Assistant>();
+        cut.WaitForAssertion(() => cut.Markup.Should().Contain("March 15"));
+        cut.Markup.Should().Contain("Remembered for");
+        cut.Markup.Should().Contain("Forget");
+    }
+
+    [Fact]
     public async Task Assistant_MainChatPrompt_ReceivesStreamedResponse()
     {
         RegisterApi();
@@ -163,10 +200,10 @@ public class AssistantPageTests : ClerkTestContext
         args.Response.Should().Contain("TIKR");
     }
 
-    private void RegisterApi(string? prioritiesJson = null)
+    private void RegisterApi(string? prioritiesJson = null, string? sessionJson = null)
     {
         prioritiesJson ??= "[]";
-        const string emptySession = """
+        sessionJson ??= """
             {"conversation":{"id":"11111111-1111-1111-1111-111111111111","title":"New chat","updatedAtUtc":"2026-01-01T00:00:00Z","messages":[]},"memoryFacts":[]}
             """;
         var handler = new StubHandler((req, _) =>
@@ -175,8 +212,9 @@ public class AssistantPageTests : ClerkTestContext
             var json = path switch
             {
                 _ when path.Contains("dashboard-priorities", StringComparison.Ordinal) => prioritiesJson,
-                _ when path.Contains("/assistant/session", StringComparison.Ordinal) => emptySession,
-                _ when path.Contains("/assistant/conversations/", StringComparison.Ordinal) => emptySession,
+                _ when path.Contains("/assistant/session", StringComparison.Ordinal) => sessionJson,
+                _ when path.Contains("/assistant/conversations/", StringComparison.Ordinal) => sessionJson,
+                _ when path.Contains("/assistant/memory", StringComparison.Ordinal) => "[]",
                 _ when path.Contains("semantic-search-knowledge", StringComparison.Ordinal) =>
                     """{"query":"","considered":0,"hits":[],"embeddingAvailable":true}""",
                 _ when path.Contains("semantic-search", StringComparison.Ordinal) =>

@@ -1,10 +1,12 @@
+using Microsoft.Extensions.DependencyInjection;
 using TIKR.Shared.Helpers;
 
 namespace TIKR.Web.Services;
 
 /// <summary>
-/// Ensures a durable browser chat-user cookie exists (auth-off isolation) and
-/// forwards JWT + <see cref="ChatHistoryLimits.ChatUserHeaderName"/> to the API.
+/// Forwards JWT + <see cref="ChatHistoryLimits.ChatUserHeaderName"/> to the API.
+/// Prefer the circuit's <see cref="ChatClerkIdentityService"/> (machine-mapped Deb/Paige);
+/// fall back to a durable browser GUID cookie for tests / unmapped hosts.
 /// </summary>
 public class JwtAuthorizationHandler(IHttpContextAccessor httpContextAccessor) : DelegatingHandler
 {
@@ -22,7 +24,7 @@ public class JwtAuthorizationHandler(IHttpContextAccessor httpContextAccessor) :
                     new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
             }
 
-            var chatUser = EnsureChatUserCookie(context);
+            var chatUser = ResolveChatUserHeader(context);
             if (!string.IsNullOrWhiteSpace(chatUser)
                 && !request.Headers.Contains(ChatHistoryLimits.ChatUserHeaderName))
             {
@@ -33,8 +35,17 @@ public class JwtAuthorizationHandler(IHttpContextAccessor httpContextAccessor) :
         return base.SendAsync(request, cancellationToken);
     }
 
-    private static string EnsureChatUserCookie(HttpContext context)
+    private static string ResolveChatUserHeader(HttpContext context)
     {
+        var identity = context.RequestServices.GetService<ChatClerkIdentityService>();
+        if (identity is not null)
+        {
+            identity.EnsureResolved();
+            if (ChatClerkProfiles.TryNormalize(identity.HeaderValue, out var profile))
+                return profile;
+        }
+
+        // Tests / unmapped host isolation cookie (random GUID → local:{guid} on API).
         if (context.Request.Cookies.TryGetValue(AuthCookie.ChatUserName, out var existing)
             && Guid.TryParse(existing, out _))
         {

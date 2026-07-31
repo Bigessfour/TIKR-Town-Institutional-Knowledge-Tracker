@@ -1510,3 +1510,62 @@ html[data-theme="high-contrast"] .tikr-doc-fullscreen-surface {
         flex: none !important;
     }
 }
+
+/* Assistant: Deb / Paige switcher + memory facts */
+.assistant-clerk-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.assistant-clerk-label {
+    font-weight: 600;
+    margin-right: 0.25rem;
+}
+
+.assistant-clerk-bar .tikr-action-btn.active {
+    outline: 2px solid var(--tikr-accent, #0b5cab);
+    outline-offset: 1px;
+}
+
+.assistant-memory-list {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 0.75rem;
+}
+
+.assistant-memory-list li {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding: 0.35rem 0;
+    border-bottom: 1px solid var(--tikr-border, #e5e7eb);
+}
+
+/* Clerk identity (machine-mapped chat memory) */
+.clerk-identity-banner {
+    margin: 0 0 1rem;
+    padding: 0.65rem 0.9rem;
+    border-radius: 8px;
+    border: 1px solid var(--tikr-border, #e5e7eb);
+    background: color-mix(in srgb, var(--tikr-accent, #0b5cab) 6%, transparent);
+    font-size: 0.95rem;
+}
+
+.clerk-identity-banner-compact {
+    padding: 0.45rem 0.75rem;
+    font-size: 0.9rem;
+}
+
+.clerk-identity-banner code {
+    font-size: 0.85em;
+}
+
+.assistant-suggestion-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}

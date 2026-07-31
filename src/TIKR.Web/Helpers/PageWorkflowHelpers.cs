@@ -20,20 +20,19 @@ public static partial class AssistantPromptBuilder
         IEnumerable<(string Key, string Value)>? memoryFacts = null)
     {
         const string basePrompt =
-            "You are TIKR, a helpful AI assistant for a one-person Colorado municipal town clerk. " +
-            "Answer concisely about deadlines, documents, procedures, and institutional knowledge. " +
-            "When document or vault context is provided, answer ONLY from that context. " +
-            "Document hits are labeled with a content topic when known " +
-            "(e.g. [Retirement Package Form DD-2656] Scanned Document.pdf), an About summary, and an Excerpt. " +
-            "Use the topic and About line to identify which file is relevant before relying on the Excerpt. " +
-            "If the context is missing, empty, or does not contain the answer, say you do not have matching " +
-            "documents or institutional knowledge in TIKR — do not invent procedures or fees. " +
-            "When you use context, end with a Sources section listing the topic-labeled document names and vault titles used. " +
-            "If unsure, say so and recommend the most relevant external source below by name and URL; " +
-            "for binding legal questions, always advise consulting the town attorney. " +
-            "Output ONLY the final clerk-facing answer. Do not write chain-of-thought, analysis steps, " +
-            "planning, tool calls, function calls, XML/HTML control tags, or scratchpad lines " +
-            "(no <think>, Thought:, Action:, FunctionCall, or JSON tool payloads).";
+            "You are TIKR — an energetic, warm deputy for Colorado municipal town clerks (Deb Dillon and Paige Lindo). " +
+            "Be concise, practical, and encouraging. Speak like a capable office partner, not a legal brief. " +
+            "Prefer short paragraphs and bullet next steps when helpful. " +
+            "SOURCE RULES: " +
+            "(1) For how-to questions about using TIKR or Syncfusion document tools, prefer TIKR product help when provided. " +
+            "(2) For town substance (what a filing says, what is due, tribal knowledge), use document/vault context when provided and answer ONLY from that context. " +
+            "Document hits include topic labels, About summaries, and Excerpts — use them before guessing. " +
+            "If required context is missing or empty, say you do not have matching documents or TIKR help — do not invent procedures, fees, or UI that is not in help. " +
+            "When you use town documents or vault entries, end with a Sources section listing those titles. " +
+            "When you use product help, name the TIKR page (e.g. Document Library, Settings). " +
+            "End useful answers with 1–3 concrete next steps (e.g. open Requirements, Open Full Screen, Save to NAS) when it helps the clerk act. " +
+            "If unsure on binding legal questions, say so and recommend the town attorney and trusted external sources below. " +
+            "Output ONLY the final clerk-facing answer. No chain-of-thought, tool JSON, <think>, FunctionCall, or scratchpad.";
 
         var parts = new List<string> { basePrompt };
 
@@ -154,22 +153,50 @@ public static partial class AssistantPromptBuilder
         string? docContext,
         string? vaultContext,
         bool searchUnavailable,
-        IReadOnlyList<string> citations)
+        IReadOnlyList<string> citations,
+        string? productHelpContext = null)
     {
         var blocks = new List<string>();
         if (searchUnavailable)
-            blocks.Add("Note: Document/vault search is temporarily unavailable (local embedding service offline). Answer only from deadlines below if present; otherwise say you cannot search TIKR knowledge right now.");
+            blocks.Add("Note: Document/vault search is temporarily unavailable (local embedding service offline). You may still use TIKR product help and deadlines below; otherwise say you cannot search town documents right now.");
         if (!string.IsNullOrWhiteSpace(deadlineContext))
             blocks.Add($"Upcoming priorities:\n{deadlineContext}");
+        if (!string.IsNullOrWhiteSpace(productHelpContext))
+            blocks.Add(productHelpContext);
         if (!string.IsNullOrWhiteSpace(docContext))
             blocks.Add(docContext);
         if (!string.IsNullOrWhiteSpace(vaultContext))
             blocks.Add(vaultContext);
         if (citations.Count > 0)
-            blocks.Add("Required Sources to cite if used:\n" + string.Join("\n", citations.Select(c => $"- {c}")));
+            blocks.Add("Required Sources to cite if used (town documents / vault):\n" + string.Join("\n", citations.Select(c => $"- {c}")));
         if (blocks.Count == 0)
-            return question + "\n\n(No matching documents or vault entries were retrieved. If you cannot answer from general clerk practice, say so.)";
+            return question + "\n\n(No matching documents, vault entries, or product help were retrieved. If you cannot answer from general clerk practice, say so.)";
         return string.Join("\n\n", blocks) + $"\n\nQuestion: {question}";
+    }
+
+    /// <summary>One-line proactive brief for Assistant open (from dashboard priorities).</summary>
+    public static string? BuildProactiveBrief(
+        IReadOnlyList<DashboardPriority>? priorities,
+        string? clerkDisplayName = null)
+    {
+        if (priorities is not { Count: > 0 })
+            return null;
+
+        var overdue = priorities.Count(p =>
+            string.Equals(p.Priority, "Overdue", StringComparison.OrdinalIgnoreCase));
+        var high = priorities.Count(p =>
+            string.Equals(p.Priority, "High", StringComparison.OrdinalIgnoreCase));
+        var who = string.IsNullOrWhiteSpace(clerkDisplayName) ? "there" : clerkDisplayName.Trim();
+        var head = $"Hi {who} — quick brief: {priorities.Count} open priority item(s)";
+        if (overdue > 0)
+            head += $", {overdue} overdue";
+        if (high > 0)
+            head += $", {high} high";
+        head += ".";
+        var top = priorities.Take(3).Select(p =>
+            p.DueDate is { } d ? $"{p.Title} ({p.Priority}, due {d:MMM d})" : $"{p.Title} ({p.Priority})");
+        return head + " Top: " + string.Join("; ", top) +
+               " Ask me anything, or try a suggestion chip below.";
     }
 
     public static string FormatDeadlineContext(IReadOnlyList<DashboardPriority> priorities) =>

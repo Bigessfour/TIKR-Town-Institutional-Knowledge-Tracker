@@ -141,6 +141,7 @@ builder.Services.AddScoped<TikrAuthenticationStateProvider>();
 builder.Services.AddScoped<AuthenticationStateProvider>(sp =>
     sp.GetRequiredService<TikrAuthenticationStateProvider>());
 builder.Services.AddScoped<IAuthSessionService, AuthSessionService>();
+builder.Services.AddScoped<ChatClerkIdentityService>();
 builder.Services.AddTransient<JwtAuthorizationHandler>();
 
 if (authEnabled)

@@ -5,10 +5,13 @@
 @inject ClerkTourService Tour
 @inject ClerkUserGuideService Guide
 @inject ClerkToastService Toast
+@inject ChatClerkIdentityService ClerkIdentity
+@inject IJSRuntime JS
 
 @using Syncfusion.Licensing
 @using TIKR.Shared.DTOs
 @using TIKR.Shared.Entities
+@using TIKR.Shared.Helpers
 @using TIKR.Web.Components.Shared
 @using TIKR.Web.Helpers
 @using TIKR.Web.Services
@@ -20,14 +23,44 @@
     </div>
     <div class="page-header-actions">
         <PageTourButton Route="/settings" />
-        <PageHelp DataTour="@ClerkTourIds.HelpSettings" HelpText="Change how TIKR looks, turn the helper AI on or off, and update town details. If something looks confusing, tap Call Steve for help." />
+        <PageHelp DataTour="@ClerkTourIds.HelpSettings" HelpText="Change how TIKR looks, turn the helper AI on or off, and update town details. Chat memory is locked to this computer’s clerk (Deb Dillon or Paige Lindo) from the NAS backup inventory. If something looks confusing, tap Call Steve for help." />
     </div>
 </div>
 
 <SfCard CssClass="mb-3">
+    <CardHeader Title="Chat memory — who uses this computer" />
+    <CardContent>
+        <ClerkIdentityBanner />
+        <p class="text-muted mt-2 mb-2">@ClerkIdentity.StatusDetail()</p>
+        <p class="text-muted mb-2">
+            Town NAS inventory: <code>DESKTOP-KN6INHL</code> → Deb Dillon,
+            <code>DESKTOP-O9TCKP1</code> → Paige Lindo.
+            Windows login is not used (both PCs may share a municipal account).
+        </p>
+        @if (!ClerkIdentity.IsMachineMapped || ClerkIdentity.IsManualOverride || !ClerkIdentity.IsResolved)
+        {
+            <div class="mt-3">
+                <label class="me-2"><strong>Rare override</strong> (unmapped PC, demo, or Steve only):</label>
+                <SfDropDownList TValue="string"
+                                TItem="string"
+                                DataSource="@_clerkOverrideOptions"
+                                @bind-Value="_clerkOverrideSelection"
+                                Placeholder="Use machine mapping"
+                                Width="220px"
+                                CssClass="e-outline" />
+                <div class="tikr-settings-help-actions mt-2">
+                    <SfButton CssClass="tikr-action-btn" OnClick="SaveClerkOverrideAsync">Save override</SfButton>
+                    <SfButton CssClass="tikr-action-btn e-outline" OnClick="ClearClerkOverrideAsync">Clear override</SfButton>
+                </div>
+            </div>
+        }
+    </CardContent>
+</SfCard>
+
+<SfCard CssClass="mb-3">
     <CardHeader Title="This computer" />
     <CardContent>
-        <p class="text-muted mb-2">These choices stay on this computer only — they do not change Paige’s or Deb’s other machines.</p>
+        <p class="text-muted mb-2">Theme and walkthrough choices stay on this computer only.</p>
         <div class="tikr-settings-theme">
             <TikrThemeSelector SelectId="tikr-theme-settings" />
         </div>
@@ -482,8 +515,18 @@ else
     private int _editLibraryMax = 500;
     private string _editEmailPath = "";
 
+    private readonly List<string> _clerkOverrideOptions =
+    [
+        "Use machine mapping",
+        .. ChatClerkProfiles.All.Select(p => p.Label)
+    ];
+
+    private string _clerkOverrideSelection = "Use machine mapping";
+
     protected override async Task OnInitializedAsync()
     {
+        await InitializeClerkIdentityAsync();
+
         try
         {
             _status = await Api.GetAiStatusAsync();
@@ -509,6 +552,83 @@ else
         }
 
         _autoTourDisabled = await Tour.IsAutoTourDisabledForUiAsync();
+    }
+
+    private async Task InitializeClerkIdentityAsync()
+    {
+        ClerkIdentity.ResolveFromHost();
+        try
+        {
+            var overrideKey = await JS.InvokeAsync<string?>(
+                "localStorage.getItem", ChatClerkProfiles.BrowserOverrideStorageKey);
+            if (!string.IsNullOrWhiteSpace(overrideKey)
+                && ChatClerkProfiles.TryNormalize(overrideKey, out var key))
+            {
+                ClerkIdentity.ApplyManualOverride(key);
+                _clerkOverrideSelection = ChatClerkProfiles.DisplayName(key);
+            }
+            else
+            {
+                _clerkOverrideSelection = ClerkIdentity.IsResolved
+                    ? ClerkIdentity.DisplayName
+                    : "Use machine mapping";
+            }
+        }
+        catch
+        {
+            _clerkOverrideSelection = "Use machine mapping";
+        }
+    }
+
+    private async Task SaveClerkOverrideAsync()
+    {
+        if (string.Equals(_clerkOverrideSelection, "Use machine mapping", StringComparison.OrdinalIgnoreCase)
+            || string.IsNullOrWhiteSpace(_clerkOverrideSelection))
+        {
+            await ClearClerkOverrideAsync();
+            return;
+        }
+
+        if (!ChatClerkProfiles.TryNormalize(_clerkOverrideSelection, out var key))
+        {
+            Toast.Show("Choose Deb Dillon or Paige Lindo.");
+            return;
+        }
+
+        ClerkIdentity.ApplyManualOverride(key);
+        try
+        {
+            await JS.InvokeVoidAsync(
+                "localStorage.setItem", ChatClerkProfiles.BrowserOverrideStorageKey, key);
+        }
+        catch
+        {
+            /* best effort */
+        }
+
+        Toast.Show($"Chat memory override: {ClerkIdentity.DisplayName}.");
+        StateHasChanged();
+    }
+
+    private async Task ClearClerkOverrideAsync()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("localStorage.removeItem", ChatClerkProfiles.BrowserOverrideStorageKey);
+        }
+        catch
+        {
+            /* best effort */
+        }
+
+        ClerkIdentity.ResolveFromHost();
+        _clerkOverrideSelection = ClerkIdentity.IsResolved
+            ? ClerkIdentity.DisplayName
+            : "Use machine mapping";
+        Toast.Show(ClerkIdentity.IsResolved
+            ? $"Using machine mapping: {ClerkIdentity.DisplayName}."
+            : "Override cleared. This computer is still unmapped — pick Deb Dillon or Paige Lindo if needed.");
+        StateHasChanged();
     }
 
     private void CallSteve() => Toast.Show(SteveHelpMessage);

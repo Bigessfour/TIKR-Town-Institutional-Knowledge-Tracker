@@ -549,6 +549,32 @@ public class TikrApiClient(HttpClient http)
             return [];
         }
     }
+
+    public async Task<bool> DeleteAssistantMemoryFactAsync(Guid factId)
+    {
+        try
+        {
+            var response = await http.DeleteAsync($"/api/assistant/memory/{factId}");
+            return response.IsSuccessStatusCode;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    public async Task<List<ChatConversationSummaryDto>> ListAssistantConversationsAsync()
+    {
+        try
+        {
+            return await http.GetFromJsonAsync<List<ChatConversationSummaryDto>>("/api/assistant/conversations")
+                   ?? [];
+        }
+        catch
+        {
+            return [];
+        }
+    }
 }
 
 public sealed record ChatPersistResult(bool Succeeded, bool ConversationMissing, AssistantSessionDto? Session)
