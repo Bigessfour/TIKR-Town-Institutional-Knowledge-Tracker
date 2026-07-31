@@ -517,7 +517,6 @@ public class HybridAiService(
             ? request.Prompt
             : $"Context:\n{request.Context}\n\nQuestion:\n{request.Prompt}";
 
-        // Validate Ollama first per requirements. Use local unless unavailable or prompt context requires advanced/Grok reasoning.
         bool ollamaAvailable = false;
         try
         {
@@ -525,41 +524,45 @@ public class HybridAiService(
         }
         catch { /* best effort */ }
 
-        bool preferGrokByContext = ShouldPreferGrokForPrompt(prompt);
+        // PreferCloud: Web already ran AssistantAgentRouter and chose Grok.
+        // Otherwise re-score the clerk question (API-only callers).
+        var routePrompt = string.IsNullOrWhiteSpace(request.Prompt) ? prompt : request.Prompt;
+        var decision = request.PreferCloud && grokService.IsEnabled
+            ? new AiRouteDecision(AiRoute.CloudGrok, "Caller PreferCloud", 1.0)
+            : AssistantAgentRouter.Decide(
+                routePrompt,
+                ollamaAvailable: ollamaAvailable,
+                grokEnabled: grokService.IsEnabled);
 
-        if (!ollamaAvailable || (preferGrokByContext && grokService.IsEnabled))
-        {
-            if (grokService.IsEnabled)
-            {
-                var grokAnswer = await grokService.CompleteAsync(prompt, cancellationToken: cancellationToken);
-                if (!string.IsNullOrWhiteSpace(grokAnswer))
-                {
-                    TikrActionLog.Completed(logger, "AI.AskAdvanced",
-                        $"UsedGrok=true AnswerLen={grokAnswer.Length} OllamaAvailable={ollamaAvailable}",
-                        sw.ElapsedMilliseconds);
-                    return new AskAdvancedResponse(grokAnswer, UsedGrok: true);
-                }
-            }
-        }
-
-        // Prefer local (validated) first
-        var localAnswer = await GetLocalCompletionAsync(prompt, cancellationToken);
-        if (!string.IsNullOrWhiteSpace(localAnswer))
-        {
-            TikrActionLog.Completed(logger, "AI.AskAdvanced",
-                $"UsedGrok=false AnswerLen={localAnswer.Length} OllamaAvailable={ollamaAvailable}",
-                sw.ElapsedMilliseconds);
-            return new AskAdvancedResponse(localAnswer, UsedGrok: false);
-        }
-
-        // Fallback to Grok if local failed and Grok enabled (even if not preferred by context)
-        if (grokService.IsEnabled)
+        if (decision.Route == AiRoute.CloudGrok && grokService.IsEnabled)
         {
             var grokAnswer = await grokService.CompleteAsync(prompt, cancellationToken: cancellationToken);
             if (!string.IsNullOrWhiteSpace(grokAnswer))
             {
                 TikrActionLog.Completed(logger, "AI.AskAdvanced",
-                    $"UsedGrok=true (fallback) AnswerLen={grokAnswer.Length}",
+                    $"UsedGrok=true Route={decision.Reason} AnswerLen={grokAnswer.Length} OllamaAvailable={ollamaAvailable}",
+                    sw.ElapsedMilliseconds);
+                return new AskAdvancedResponse(grokAnswer, UsedGrok: true);
+            }
+        }
+
+        var localAnswer = await GetLocalCompletionAsync(prompt, cancellationToken);
+        if (!string.IsNullOrWhiteSpace(localAnswer))
+        {
+            TikrActionLog.Completed(logger, "AI.AskAdvanced",
+                $"UsedGrok=false Route={decision.Reason} AnswerLen={localAnswer.Length} OllamaAvailable={ollamaAvailable}",
+                sw.ElapsedMilliseconds);
+            return new AskAdvancedResponse(localAnswer, UsedGrok: false);
+        }
+
+        if (grokService.IsEnabled)
+        {
+            var escalate = AssistantAgentRouter.EscalateAfterLocalFailure(grokEnabled: true);
+            var grokAnswer = await grokService.CompleteAsync(prompt, cancellationToken: cancellationToken);
+            if (!string.IsNullOrWhiteSpace(grokAnswer))
+            {
+                TikrActionLog.Completed(logger, "AI.AskAdvanced",
+                    $"UsedGrok=true ({escalate.Reason}) AnswerLen={grokAnswer.Length}",
                     sw.ElapsedMilliseconds);
                 return new AskAdvancedResponse(grokAnswer, UsedGrok: true);
             }
@@ -567,20 +570,6 @@ public class HybridAiService(
 
         TikrActionLog.Failed(logger, "AI.AskAdvanced", "No answer from Ollama or Grok");
         return new AskAdvancedResponse("Unable to get a response. Check Ollama connectivity (or enable USE_GROK with a valid GROK_API_KEY).", UsedGrok: false);
-    }
-
-    private static bool ShouldPreferGrokForPrompt(string prompt)
-    {
-        if (string.IsNullOrWhiteSpace(prompt)) return false;
-        var p = prompt.ToLowerInvariant();
-        // Context-dependent: trigger Grok for explicit advanced/complex reasoning prompts
-        return p.Contains("grok") ||
-               p.Contains("advanced") ||
-               p.Contains("complex reasoning") ||
-               p.Contains("deep analysis") ||
-               p.Contains("detailed step") ||
-               (p.Contains("step by step") && p.Length > 80) ||
-               p.Contains("thorough explanation");
     }
 
     public async Task<AiStatusResponse> GetStatusAsync(CancellationToken cancellationToken = default)

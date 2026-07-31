@@ -20,6 +20,9 @@ public class TikrDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<EmbeddingChunk> EmbeddingChunks => Set<EmbeddingChunk>();
     public DbSet<LibraryImportRecord> LibraryImportRecords => Set<LibraryImportRecord>();
     public DbSet<AppSetting> AppSettings => Set<AppSetting>();
+    public DbSet<ChatConversation> ChatConversations => Set<ChatConversation>();
+    public DbSet<ChatMessageRecord> ChatMessages => Set<ChatMessageRecord>();
+    public DbSet<UserMemoryFact> UserMemoryFacts => Set<UserMemoryFact>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -104,6 +107,43 @@ public class TikrDbContext : IdentityDbContext<ApplicationUser>
             entity.HasKey(e => e.Key);
             entity.Property(e => e.Key).HasMaxLength(100);
             entity.Property(e => e.Value).HasMaxLength(4000).IsRequired();
+        });
+
+        modelBuilder.Entity<ChatConversation>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.UserId).HasMaxLength(450).IsRequired();
+            entity.Property(e => e.Title).HasMaxLength(200).IsRequired();
+            entity.Property(e => e.Summary).HasMaxLength(4000);
+            entity.HasIndex(e => new { e.UserId, e.IsArchived, e.UpdatedAtUtc });
+            // At most one active (non-archived) conversation per clerk.
+            entity.HasIndex(e => e.UserId)
+                .IsUnique()
+                .HasFilter("IsArchived = 0")
+                .HasDatabaseName("IX_ChatConversations_UserId_Active");
+            entity.HasMany(e => e.Messages)
+                .WithOne(m => m.Conversation)
+                .HasForeignKey(m => m.ConversationId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<ChatMessageRecord>(entity =>
+        {
+            entity.ToTable("ChatMessages");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.UserId).HasMaxLength(450).IsRequired();
+            entity.Property(e => e.Role).HasMaxLength(20).IsRequired();
+            entity.Property(e => e.Content).IsRequired();
+            entity.HasIndex(e => new { e.UserId, e.ConversationId, e.CreatedAtUtc });
+        });
+
+        modelBuilder.Entity<UserMemoryFact>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.UserId).HasMaxLength(450).IsRequired();
+            entity.Property(e => e.Key).HasMaxLength(100).IsRequired();
+            entity.Property(e => e.Value).HasMaxLength(2000).IsRequired();
+            entity.HasIndex(e => new { e.UserId, e.Key }).IsUnique();
         });
     }
 }

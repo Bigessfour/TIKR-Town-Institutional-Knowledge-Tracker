@@ -1,0 +1,44 @@
+@inject ChatClerkIdentityService ClerkIdentity
+@inject NavigationManager Navigation
+
+@using TIKR.Web.Services
+
+<div class="clerk-identity-banner @(Compact ? "clerk-identity-banner-compact" : null)"
+     role="status"
+     data-tour="clerk-identity">
+    @if (ClerkIdentity.IsResolved)
+    {
+        <span>
+            Chat memory:
+            <strong>@ClerkIdentity.DisplayName</strong>
+            @if (ClerkIdentity.IsMachineMapped && !ClerkIdentity.IsManualOverride)
+            {
+                <span class="text-muted"> — this computer (@ClerkIdentity.MachineName)</span>
+            }
+            else if (ClerkIdentity.IsManualOverride)
+            {
+                <span class="text-muted"> — manual override</span>
+            }
+        </span>
+    }
+    else
+    {
+        <span>
+            Chat memory is not assigned for this computer
+            (<code>@ClerkIdentity.MachineName</code>).
+            @if (_showSettingsLink)
+            {
+                <a href="/settings">Set clerk in Settings</a>
+            }
+        </span>
+    }
+</div>
+
+@code {
+    [Parameter] public bool Compact { get; set; }
+
+    private bool _showSettingsLink =>
+        !Navigation.Uri.Contains("/settings", StringComparison.OrdinalIgnoreCase);
+
+    protected override void OnInitialized() => ClerkIdentity.EnsureResolved();
+}

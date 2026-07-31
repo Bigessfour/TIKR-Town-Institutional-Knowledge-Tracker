@@ -80,6 +80,7 @@ public static class DependencyInjection
         services.AddScoped<IRequirementService, RequirementService>();
         services.AddScoped<IDashboardService, DashboardService>();
         services.AddScoped<IKnowledgeService, KnowledgeService>();
+        services.AddScoped<IChatHistoryService, ChatHistoryService>();
         services.AddSyncfusionDocumentGeneration(configuration);
         services.AddScoped<ICouncilPacketService, CouncilPacketService>();
         services.AddHttpClient<GrokService>();
