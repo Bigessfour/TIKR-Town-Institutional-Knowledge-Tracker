@@ -24,7 +24,10 @@ public class GrokLicensedTests : IClassFixture<GrokAgentWebApplicationFactory>
 
         var response = await _client.PostAsJsonAsync(
             "/api/ai/ask-advanced",
-            new AskAdvancedRequest("Reply with the phrase TIKR-GROK-OK and nothing else.", null));
+            new AskAdvancedRequest(
+                "Reply with the phrase TIKR-GROK-OK and nothing else.",
+                null,
+                PreferCloud: true));
 
         response.IsSuccessStatusCode.Should().BeTrue();
         var body = await response.Content.ReadFromJsonAsync<AskAdvancedResponse>();

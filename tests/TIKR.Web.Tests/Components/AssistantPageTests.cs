@@ -27,46 +27,12 @@ public class AssistantPageTests : ClerkTestContext
     }
 
     [Fact]
-    public async Task Assistant_ShowsUnavailableMessageWhenAskAdvancedFails()
-    {
-        var handler = new StubHandler((req, _) =>
-        {
-            var path = req.RequestUri!.PathAndQuery;
-            if (path.Contains("ask-advanced", StringComparison.Ordinal))
-                return new HttpResponseMessage(HttpStatusCode.ServiceUnavailable);
-
-            return new HttpResponseMessage(HttpStatusCode.OK)
-            {
-                Content = new StringContent(
-                    """{"ollamaAvailable":true,"ollamaModel":"llama3.2:3b","grokEnabled":false}""",
-                    Encoding.UTF8,
-                    "application/json")
-            };
-        });
-        Services.AddSingleton(new TikrApiClient(new HttpClient(handler) { BaseAddress = new Uri("http://localhost/") }));
-
-        var cut = RenderComponent<Assistant>();
-        cut.Instance.GetType().GetField("_lastPrompt", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!
-            .SetValue(cut.Instance, "What is mill levy?");
-        var advancedButton = cut.FindAll("button")
-            .Single(b => b.TextContent.Contains("Ask Advanced AI", StringComparison.Ordinal));
-        await cut.InvokeAsync(() => advancedButton.Click());
-
-        cut.WaitForAssertion(() =>
-            cut.Markup.Should().Contain("Advanced AI unavailable"));
-    }
-
-    [Fact]
-    public async Task Assistant_ShowsAdvancedAiNoteWhenNoPriorPrompt()
+    public void Assistant_DoesNotShowManualAskGrokButton()
     {
         RegisterApi();
         var cut = RenderComponent<Assistant>();
-
-        var advancedButton = cut.FindAll("button")
-            .Single(b => b.TextContent.Contains("Ask Advanced AI", StringComparison.Ordinal));
-        await cut.InvokeAsync(() => advancedButton.Click());
-        cut.WaitForAssertion(() =>
-            cut.Markup.Should().Contain("Send a message in the chat first, then click Ask Advanced AI"));
+        cut.WaitForAssertion(() => cut.Markup.Should().Contain("Clear conversation"));
+        cut.Markup.Should().NotContain("Ask Advanced AI");
     }
 
     [Fact]

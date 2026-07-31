@@ -74,9 +74,14 @@ public class TikrApiClient(HttpClient http)
             : null;
     }
 
-    public async Task<AskAdvancedResponse?> AskAdvancedAsync(string prompt, string? context = null)
+    public async Task<AskAdvancedResponse?> AskAdvancedAsync(
+        string prompt,
+        string? context = null,
+        bool preferCloud = false)
     {
-        var response = await http.PostAsJsonAsync("/api/ai/ask-advanced", new AskAdvancedRequest(prompt, context));
+        var response = await http.PostAsJsonAsync(
+            "/api/ai/ask-advanced",
+            new AskAdvancedRequest(prompt, context, PreferCloud: preferCloud));
         return response.IsSuccessStatusCode
             ? await response.Content.ReadFromJsonAsync<AskAdvancedResponse>()
             : null;
