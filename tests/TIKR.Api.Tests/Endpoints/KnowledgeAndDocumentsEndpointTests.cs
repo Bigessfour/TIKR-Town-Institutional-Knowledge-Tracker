@@ -335,6 +335,14 @@ public class AiEndpointTests : IClassFixture<TikrWebApplicationFactory>
     }
 
     [Fact]
+    public async Task GetDashboardSummary_ReturnsDueOuts()
+    {
+        var summary = await _client.GetFromJsonAsync<DashboardSummaryDto>("/api/dashboard/summary");
+        summary.Should().NotBeNull();
+        summary!.DueOuts.Should().NotBeNull();
+    }
+
+    [Fact]
     public async Task AskAdvanced_WhenGrokDisabled_FallsBackToOllamaStub()
     {
         var response = await _client.PostAsJsonAsync(

@@ -1,0 +1,550 @@
+@inject TikrApiClient Api
+@inject ClerkToastService Toast
+@inject IJSRuntime JS
+@inject ILogger<DocumentWorkspaceDialog> Logger
+@inject NavigationManager Navigation
+
+@using System.Text.Json
+@using Microsoft.AspNetCore.Components.Forms
+@using Syncfusion.Blazor.DocumentEditor
+@using Syncfusion.Blazor.Popups
+@using Syncfusion.Blazor.SmartPdfViewer
+@using Syncfusion.Blazor.Spreadsheet
+@using TIKR.Shared.Diagnostics
+@using TIKR.Shared.DTOs
+@using TIKR.Web.Helpers
+
+<SfDialog @bind-Visible="Visible"
+          IsModal="true"
+          ShowCloseIcon="true"
+          Width="96vw"
+          Height="96vh"
+          CssClass="tikr-doc-fullscreen-dialog"
+          Header="@HeaderText"
+          CloseOnEscape="false"
+          Closed="OnDialogClosedAsync">
+    <DialogTemplates>
+        <Content>
+            @if (_document is { } d)
+            {
+                <div class="tikr-doc-fullscreen-body">
+                    <div class="doc-tools tikr-doc-fullscreen-tools" role="toolbar" aria-label="Document workspace tools">
+                        @if (ShowExtendedTools)
+                        {
+                            <div class="doc-tools-group">
+                                <span class="doc-tools-label">File</span>
+                                <SfButton CssClass="tikr-action-btn"
+                                          Content="@(_downloading ? "Downloading…" : "Download")"
+                                          Disabled="@_downloading"
+                                          OnClick="@(async () => await DownloadAsync(d))" />
+                            </div>
+                        }
+                        @if (_previewKind is DocumentPreviewHelper.PreviewKind.Word
+                            or DocumentPreviewHelper.PreviewKind.Spreadsheet
+                            or DocumentPreviewHelper.PreviewKind.Pdf)
+                        {
+                            <div class="doc-tools-group">
+                                <span class="doc-tools-label">Edit</span>
+                                <SfButton CssClass="tikr-action-btn primary"
+                                          Content="@(_saving ? "Saving…" : (_dirty ? "Save changes to NAS *" : "Save to NAS"))"
+                                          Disabled="@_saving"
+                                          OnClick="SaveAsync" />
+                                @if (_dirty)
+                                {
+                                    <span class="text-muted" style="font-size:0.85rem;">Unsaved changes</span>
+                                }
+                            </div>
+                        }
+                        <div class="doc-tools-group doc-tools-close">
+                            <SfButton CssClass="tikr-action-btn e-outline" Content="Close workspace" OnClick="RequestClose" />
+                        </div>
+                    </div>
+
+                    @if (_loading)
+                    {
+                        <div class="tikr-loading-state" role="status"><span>Loading document…</span></div>
+                    }
+                    else if (_previewKind == DocumentPreviewHelper.PreviewKind.Pdf && _pdfBytes is { Length: > 0 })
+                    {
+                        <div class="tikr-doc-fullscreen-surface">
+                            <SfSmartPdfViewer @key="_pdfViewerKey"
+                                             @ref="_pdfViewer"
+                                             Height="calc(100vh - 11rem)"
+                                             Width="100%"
+                                             EnableDownload="false"
+                                             EnablePrint="true"
+                                             EnableToolbar="true"
+                                             EnableAnnotationToolbar="true"
+                                             EnableFormDesigner="true"
+                                             EnableFormFields="true">
+                                <AssistViewSettings Enable="true"
+                                                    StreamResponse="true"
+                                                    Placeholder="Ask about this PDF…">
+                                    <InitialPromptSettings Prompt="Summarize this municipal document for a town clerk." />
+                                </AssistViewSettings>
+                                <PdfViewerEvents Created="OnPdfViewerCreated"
+                                                 DocumentEdited="OnPdfDocumentEdited" />
+                            </SfSmartPdfViewer>
+                        </div>
+                    }
+                    else if (_previewKind == DocumentPreviewHelper.PreviewKind.Word && !string.IsNullOrEmpty(_wordSfdt))
+                    {
+                        <div class="tikr-doc-fullscreen-surface">
+                            <SfDocumentEditorContainer @ref="_wordContainer"
+                                                       EnableToolbar="true"
+                                                       RestrictEditing="false"
+                                                       ToolbarItems="@_wordToolbarItems"
+                                                       Height="calc(100vh - 11rem)"
+                                                       Width="100%">
+                                <DocumentEditorContainerEvents Created="OnWordEditorCreated"
+                                                               OnToolbarClick="OnWordToolbarClick" />
+                            </SfDocumentEditorContainer>
+                        </div>
+                    }
+                    else if (_previewKind == DocumentPreviewHelper.PreviewKind.Spreadsheet && _spreadsheetBytes is { Length: > 0 })
+                    {
+                        <div class="tikr-doc-fullscreen-surface">
+                            <SfSpreadsheet @ref="_spreadsheetRef"
+                                           DataSource="@_spreadsheetBytes"
+                                           Height="calc(100vh - 11rem)"
+                                           AllowEditing="true"
+                                           AllowSave="true"
+                                           ShowRibbon="true"
+                                           ShowFormulaBar="true"
+                                           ShowSheetTabs="true">
+                                <SpreadsheetRibbon />
+                            </SfSpreadsheet>
+                        </div>
+                    }
+                    else if (_previewKind == DocumentPreviewHelper.PreviewKind.Text && !string.IsNullOrWhiteSpace(d.FullTextContent))
+                    {
+                        <div class="tikr-doc-fullscreen-surface preview-text">
+                            <pre class="preview-text-body preview-text-body-full">@d.FullTextContent</pre>
+                        </div>
+                    }
+                    else if (!string.IsNullOrEmpty(_previewError))
+                    {
+                        <div class="tikr-empty-state">
+                            @_previewError
+                            @if (_licenseFallback)
+                            {
+                                <div class="tikr-empty-action mt-2">
+                                    <SfButton CssClass="tikr-action-btn" Content="Open in Document Library"
+                                              OnClick="NavigateToDocumentsFallback" />
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="tikr-empty-state">This file type has no full-screen editor yet.</div>
+                    }
+                </div>
+            }
+        </Content>
+    </DialogTemplates>
+</SfDialog>
+
+<ConfirmDeleteDialog @bind-Visible="_confirmDiscardVisible"
+                     ItemName="unsaved edits (will be discarded)"
+                     OnConfirm="ConfirmDiscardAndClose" />
+
+@code {
+    [Parameter] public bool Visible { get; set; }
+    [Parameter] public EventCallback<bool> VisibleChanged { get; set; }
+    [Parameter] public DocumentDto? Document { get; set; }
+    [Parameter] public bool ShowExtendedTools { get; set; } = true;
+    [Parameter] public EventCallback<DocumentDto> OnSaved { get; set; }
+
+    private DocumentDto? _document;
+    private bool _loading;
+    private bool _saving;
+    private bool _downloading;
+    private bool _dirty;
+    private bool _licenseFallback;
+    private bool _confirmDiscardVisible;
+    private string? _previewError;
+    private DocumentPreviewHelper.PreviewKind _previewKind = DocumentPreviewHelper.PreviewKind.None;
+
+    private SfSmartPdfViewer? _pdfViewer;
+    private byte[]? _pdfBytes;
+    private int _pdfViewerKey;
+    private bool _pdfLoadPending;
+    private bool _pdfViewerReady;
+
+    private string? _wordSfdt;
+    private SfDocumentEditorContainer? _wordContainer;
+    private byte[]? _spreadsheetBytes;
+    private SfSpreadsheet? _spreadsheetRef;
+
+    private readonly List<object> _wordToolbarItems =
+    [
+        "New", "Open", "Separator",
+        new CustomToolbarItemModel
+        {
+            Id = "tikr-save-nas",
+            Text = "Save to NAS",
+            PrefixIcon = "e-icons e-save",
+            TooltipText = "Save Word document back to the town NAS library"
+        },
+        "Separator", "Undo", "Redo", "Separator",
+        "Image", "Table", "Hyperlink", "Bookmark", "Separator",
+        "Find", "Comments", "TrackChanges"
+    ];
+
+    private string HeaderText =>
+        _document is null ? "Document workspace" : $"Working on: {_document.FileName}";
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (Visible && Document is not null && (_document is null || _document.Id != Document.Id))
+            await LoadDocumentAsync(Document);
+    }
+
+    private async Task LoadDocumentAsync(DocumentDto doc)
+    {
+        _document = doc;
+        _loading = true;
+        _previewError = null;
+        _licenseFallback = false;
+        _dirty = false;
+        _previewKind = DocumentPreviewHelper.ResolveKind(doc.FileName, doc.ContentType, HasText(doc));
+        StateHasChanged();
+
+        try
+        {
+            var sdk = await Api.GetDocumentSdkStatusAsync();
+            if (sdk is { LicenseKeyConfigured: false } &&
+                _previewKind is DocumentPreviewHelper.PreviewKind.Pdf
+                    or DocumentPreviewHelper.PreviewKind.Word
+                    or DocumentPreviewHelper.PreviewKind.Spreadsheet)
+            {
+                _previewError = "Syncfusion Document SDK license is not configured. Open in Document Library or configure the license in Settings.";
+                _licenseFallback = true;
+                return;
+            }
+
+            switch (_previewKind)
+            {
+                case DocumentPreviewHelper.PreviewKind.Pdf:
+                    await LoadPdfAsync(doc);
+                    break;
+                case DocumentPreviewHelper.PreviewKind.Word:
+                    await LoadWordAsync(doc);
+                    break;
+                case DocumentPreviewHelper.PreviewKind.Spreadsheet:
+                    await LoadSpreadsheetAsync(doc);
+                    break;
+            }
+        }
+        catch (Exception ex)
+        {
+            _previewError = $"Could not open this document: {ex.Message}";
+            TikrActionLog.Failed(Logger, "UI.DocumentWorkspace.Load", ex, doc.FileName);
+        }
+        finally
+        {
+            _loading = false;
+            if (_previewKind == DocumentPreviewHelper.PreviewKind.Pdf && _pdfBytes is { Length: > 0 })
+            {
+                _pdfLoadPending = true;
+                _pdfViewerReady = false;
+                _pdfViewerKey++;
+            }
+            StateHasChanged();
+        }
+    }
+
+    private static bool HasText(DocumentDto doc) =>
+        !string.IsNullOrWhiteSpace(doc.FullTextContent);
+
+    private async Task LoadPdfAsync(DocumentDto doc)
+    {
+        var bytes = await Api.GetDocumentContentAsync(doc.Id) ?? [];
+        if (bytes.Length == 0)
+        {
+            _previewError = "This PDF has no content to show.";
+            return;
+        }
+
+        if (!DocumentPreviewHelper.LooksLikePdf(bytes))
+        {
+            _previewError = "This file doesn't look like a PDF.";
+            return;
+        }
+
+        _pdfBytes = bytes;
+    }
+
+    private async Task LoadWordAsync(DocumentDto doc)
+    {
+        var bytes = await Api.GetDocumentContentAsync(doc.Id) ?? [];
+        if (bytes.Length == 0)
+        {
+            _previewError = "Word document content is empty.";
+            return;
+        }
+
+        await using var stream = new MemoryStream(bytes);
+        var format = DocumentPreviewHelper.IsLegacyDoc(doc.FileName)
+            ? ImportFormatType.Doc
+            : ImportFormatType.Docx;
+        var wordDocument = WordDocument.Load(stream, format);
+        try
+        {
+            _wordSfdt = JsonSerializer.Serialize(wordDocument);
+        }
+        finally
+        {
+            wordDocument.Dispose();
+        }
+    }
+
+    private async Task LoadSpreadsheetAsync(DocumentDto doc)
+    {
+        _spreadsheetBytes = await Api.GetDocumentContentAsync(doc.Id);
+        if (_spreadsheetBytes is null or { Length: 0 })
+            _previewError = "Spreadsheet content is empty.";
+    }
+
+    private async Task OnPdfViewerCreated()
+    {
+        _pdfViewerReady = true;
+        await TryLoadPdfIntoViewerAsync();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_pdfLoadPending && _pdfViewerReady)
+            await TryLoadPdfIntoViewerAsync();
+    }
+
+    private async Task TryLoadPdfIntoViewerAsync()
+    {
+        if (!_pdfLoadPending || !_pdfViewerReady || _pdfViewer is null || _pdfBytes is not { Length: > 0 })
+            return;
+
+        _pdfLoadPending = false;
+        try
+        {
+            await _pdfViewer.LoadAsync(_pdfBytes, string.Empty);
+            await _pdfViewer.UpdateViewerContainerAsync();
+        }
+        catch (Exception ex)
+        {
+            _previewError = "The PDF Viewer could not open this file.";
+            TikrActionLog.Failed(Logger, "UI.DocumentWorkspace.PdfLoad", ex);
+            StateHasChanged();
+        }
+    }
+
+    private void OnPdfDocumentEdited(DocumentEditedEventArgs _) { _dirty = true; StateHasChanged(); }
+
+    private async Task OnWordEditorCreated(object _)
+    {
+        if (_wordContainer?.DocumentEditor is null || string.IsNullOrEmpty(_wordSfdt))
+            return;
+        await _wordContainer.DocumentEditor.OpenAsync(_wordSfdt);
+        _dirty = false;
+    }
+
+    private async Task OnWordToolbarClick(ClickEventArgs args)
+    {
+        if (args?.Item?.Id is "tikr-save-nas")
+            await SaveWordAsync();
+        else
+            _dirty = true;
+    }
+
+    private async Task SaveAsync()
+    {
+        if (_previewKind == DocumentPreviewHelper.PreviewKind.Pdf)
+            await SavePdfAsync();
+        else if (_previewKind == DocumentPreviewHelper.PreviewKind.Word)
+            await SaveWordAsync();
+        else if (_previewKind == DocumentPreviewHelper.PreviewKind.Spreadsheet)
+            await SaveSpreadsheetAsync();
+    }
+
+    private async Task SavePdfAsync()
+    {
+        if (_document is null || _pdfViewer is null) return;
+        _saving = true;
+        StateHasChanged();
+        try
+        {
+            var bytes = await _pdfViewer.GetDocumentAsync();
+            if (bytes is null or { Length: 0 })
+            {
+                Toast.Show(DocumentUiMessages.WorkspaceSaveFailed("empty PDF"));
+                return;
+            }
+
+            await using var stream = new MemoryStream(bytes);
+            var updated = await Api.ReplaceDocumentContentAsync(_document.Id, stream, _document.FileName, "application/pdf");
+            if (updated is null)
+            {
+                Toast.Show(DocumentUiMessages.WorkspaceSaveFailed());
+                return;
+            }
+
+            _document = updated;
+            _pdfBytes = bytes;
+            _dirty = false;
+            Toast.Show(DocumentUiMessages.WorkspaceSaveSuccess(updated.FileName));
+            await OnSaved.InvokeAsync(updated);
+        }
+        catch (Exception ex)
+        {
+            Toast.Show(DocumentUiMessages.WorkspaceSaveFailed(ex.Message));
+        }
+        finally
+        {
+            _saving = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task SaveWordAsync()
+    {
+        if (_document is null || _wordContainer?.DocumentEditor is null) return;
+        _saving = true;
+        StateHasChanged();
+        try
+        {
+            var base64 = await _wordContainer.DocumentEditor.SaveAsBlobAsync(FormatType.Docx);
+            if (string.IsNullOrWhiteSpace(base64))
+            {
+                Toast.Show(DocumentUiMessages.WorkspaceSaveFailed("empty Word blob"));
+                return;
+            }
+
+            var bytes = Convert.FromBase64String(base64);
+            await using var stream = new MemoryStream(bytes);
+            var updated = await Api.ReplaceDocumentContentAsync(
+                _document.Id, stream, _document.FileName,
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
+            if (updated is null)
+            {
+                Toast.Show(DocumentUiMessages.WorkspaceSaveFailed());
+                return;
+            }
+
+            _document = updated;
+            _dirty = false;
+            Toast.Show(DocumentUiMessages.WorkspaceSaveSuccess(updated.FileName));
+            await OnSaved.InvokeAsync(updated);
+        }
+        catch (Exception ex)
+        {
+            Toast.Show(DocumentUiMessages.WorkspaceSaveFailed(ex.Message));
+        }
+        finally
+        {
+            _saving = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task SaveSpreadsheetAsync()
+    {
+        if (_document is null || _spreadsheetRef is null) return;
+        _saving = true;
+        StateHasChanged();
+        try
+        {
+            await using var stream = await _spreadsheetRef.SaveAsStreamAsync();
+            stream.Position = 0;
+            var fileName = Path.ChangeExtension(_document.FileName, ".xlsx") ?? _document.FileName;
+            var updated = await Api.ReplaceDocumentContentAsync(
+                _document.Id, stream, fileName,
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+            if (updated is null)
+            {
+                Toast.Show(DocumentUiMessages.WorkspaceSaveFailed());
+                return;
+            }
+
+            _document = updated;
+            _dirty = false;
+            Toast.Show(DocumentUiMessages.WorkspaceSaveSuccess(updated.FileName));
+            await OnSaved.InvokeAsync(updated);
+        }
+        catch (Exception ex)
+        {
+            Toast.Show(DocumentUiMessages.WorkspaceSaveFailed(ex.Message));
+        }
+        finally
+        {
+            _saving = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task DownloadAsync(DocumentDto doc)
+    {
+        _downloading = true;
+        StateHasChanged();
+        try
+        {
+            var bytes = await Api.GetDocumentContentAsync(doc.Id);
+            if (bytes is null or { Length: 0 })
+            {
+                Toast.Show("Download failed — empty file.");
+                return;
+            }
+
+            await JS.InvokeVoidAsync("tikrDownload.downloadFromBytes", doc.FileName,
+                doc.ContentType ?? "application/octet-stream", bytes);
+        }
+        finally
+        {
+            _downloading = false;
+            StateHasChanged();
+        }
+    }
+
+    private void RequestClose()
+    {
+        if (_dirty)
+        {
+            _confirmDiscardVisible = true;
+            return;
+        }
+
+        _ = CloseAsync();
+    }
+
+    private void ConfirmDiscardAndClose()
+    {
+        _dirty = false;
+        _ = CloseAsync();
+    }
+
+    private async Task CloseAsync()
+    {
+        if (_pdfViewer is not null)
+        {
+            try { await _pdfViewer.UnloadAsync(); }
+            catch { /* best effort */ }
+        }
+
+        _pdfViewer = null;
+        Visible = false;
+        await VisibleChanged.InvokeAsync(false);
+    }
+
+    private async Task OnDialogClosedAsync()
+    {
+        _pdfViewer = null;
+        _pdfViewerReady = false;
+        _dirty = false;
+        await Task.CompletedTask;
+    }
+
+    private void NavigateToDocumentsFallback()
+    {
+        if (_document is null) return;
+        Navigation.NavigateTo($"/documents?documentId={_document.Id}");
+    }
+}
