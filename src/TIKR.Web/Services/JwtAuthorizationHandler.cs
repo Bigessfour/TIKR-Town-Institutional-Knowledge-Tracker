@@ -37,7 +37,8 @@ public class JwtAuthorizationHandler(IHttpContextAccessor httpContextAccessor) :
 
     private static string ResolveChatUserHeader(HttpContext context)
     {
-        var identity = context.RequestServices.GetService<ChatClerkIdentityService>();
+        // RequestServices can be null in unit tests that use a bare DefaultHttpContext.
+        var identity = context.RequestServices?.GetService<ChatClerkIdentityService>();
         if (identity is not null)
         {
             identity.EnsureResolved();
