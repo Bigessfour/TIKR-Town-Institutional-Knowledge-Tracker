@@ -14,6 +14,7 @@ concurrency:
 
 permissions:
   contents: read
+  actions: read
 
 jobs:
   build-and-test:
@@ -21,30 +22,55 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Need base commit available so PR diffs are not empty/unknown.
+          fetch-depth: 0
 
       - name: Detect code vs docs-only changes (skip expensive build/test/E2E/coverage for pure docs PRs)
         id: changes
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           set +e
+          # Fail open: if we cannot determine changed files, run full CI.
+          echo "code_changed=true" >> "$GITHUB_OUTPUT"
+          echo "recent_green=false" >> "$GITHUB_OUTPUT"
+
           if [ "${{ github.event_name }}" = "pull_request" ]; then
-            git diff --name-only "${{ github.event.pull_request.base.sha }}" "${{ github.sha }}" > /tmp/changed.txt 2>/dev/null || echo "unknown" > /tmp/changed.txt
+            BASE="${{ github.event.pull_request.base.sha }}"
+            HEAD="${{ github.sha }}"
+            git fetch --no-tags --depth=1 origin "$BASE" >/dev/null 2>&1 || true
+            if git cat-file -e "$BASE^{commit}" 2>/dev/null && git cat-file -e "$HEAD^{commit}" 2>/dev/null; then
+              git diff --name-only "$BASE" "$HEAD" > /tmp/changed.txt 2>/dev/null || echo "unknown" > /tmp/changed.txt
+            else
+              echo "unknown" > /tmp/changed.txt
+            fi
           else
             echo "code" > /tmp/changed.txt
           fi
-          if grep -qE '\.(cs|csproj|sln|razor|sh)$|Dockerfile|docker/|scripts/|tests/|coverlet|global\.json|\.ya?ml$' /tmp/changed.txt 2>/dev/null; then
-            echo "code_changed=true" >> "$GITHUB_OUTPUT"
+
+          if grep -qx 'unknown' /tmp/changed.txt 2>/dev/null || [ ! -s /tmp/changed.txt ]; then
+            echo "Could not resolve PR file list — running full build/test/coverage/E2E."
+          elif grep -qE '\.(cs|csproj|sln|razor|sh)$|Dockerfile|docker/|scripts/|tests/|coverlet|global\.json|\.ya?ml$' /tmp/changed.txt 2>/dev/null; then
             echo "Code changes detected — running full build/test/coverage/E2E."
           else
+            # Only skip when we positively know the PR is docs/non-code.
             echo "code_changed=false" >> "$GITHUB_OUTPUT"
             echo "Only docs/markdown or unrelated files changed — skipping heavy steps to save runner time."
           fi
           cat /tmp/changed.txt | head -20 || true
 
-          # Also check for "recently green on this exact SHA" (avoid re-running heavy parts on re-runs or duplicate commits)
-          SHA="${{ github.sha }}"
-          if gh run list --head-sha "$SHA" --status completed --json conclusion --jq '.[].conclusion' 2>/dev/null | grep -q '^success$'; then
-            echo "recent_green=true" >> "$GITHUB_OUTPUT"
-            echo "A previous run for this exact SHA was already successful — will skip redundant heavy steps."
+          # Skip redundant heavy steps only on explicit re-runs of an already-green SHA.
+          if [ "${{ github.run_attempt }}" != "1" ]; then
+            SHA="${{ github.sha }}"
+            CURRENT_RUN_ID="${{ github.run_id }}"
+            if gh run list --workflow "TIKR CI" --head-sha "$SHA" --status completed --limit 20 \
+              --json conclusion,databaseId \
+              --jq ".[] | select(.databaseId != ($CURRENT_RUN_ID | tonumber)) | .conclusion" 2>/dev/null \
+              | grep -q '^success$'; then
+              echo "recent_green=true" >> "$GITHUB_OUTPUT"
+              echo "A previous TIKR CI run for this SHA succeeded — skipping redundant heavy steps on re-run."
+            fi
           fi
 
       - name: Setup .NET 10
@@ -66,10 +92,12 @@ jobs:
       - name: Test with coverage
         if: (steps.changes.outputs.code_changed == 'true' || steps.changes.outputs.code_changed == '') && steps.changes.outputs.recent_green != 'true'
         run: |
+          # GrokLicensed is opt-in live xAI (TIKR_RUN_GROK_LIVE=true); never block default CI.
           dotnet test TIKR.sln \
             --no-build \
             --configuration Release \
             --verbosity normal \
+            --filter "Category!=GrokLicensed" \
             --settings coverlet.runsettings \
             --collect:"XPlat Code Coverage" \
             --results-directory coverage

@@ -12,12 +12,44 @@ public class GrokAgentWebApplicationFactory : WebApplicationFactory<Program>
     private readonly string _dbPath = Path.Combine(Path.GetTempPath(), $"tikr-grok-api-{Guid.NewGuid():N}.db");
     private readonly string _storagePath = Path.Combine(Path.GetTempPath(), $"tikr-grok-api-storage-{Guid.NewGuid():N}");
 
-    internal static bool IsConfigured =>
-        !string.IsNullOrWhiteSpace(ResolveGrokApiKey());
+    /// <summary>
+    /// Live Grok tests opt in via <c>TIKR_RUN_GROK_LIVE=true</c> plus a real API key.
+    /// Placeholder / stub keys (docker/.env samples, other test factories) must not trigger these.
+    /// </summary>
+    internal static bool IsConfigured
+    {
+        get
+        {
+            if (!string.Equals(
+                    Environment.GetEnvironmentVariable("TIKR_RUN_GROK_LIVE"),
+                    "true",
+                    StringComparison.OrdinalIgnoreCase))
+                return false;
+
+            var key = ResolveGrokApiKey();
+            if (string.IsNullOrWhiteSpace(key))
+                return false;
+
+            return !IsPlaceholderOrStubKey(key);
+        }
+    }
 
     internal static string? ResolveGrokApiKey() =>
         Environment.GetEnvironmentVariable("GROK_API_KEY")
         ?? Environment.GetEnvironmentVariable("XAI_API_KEY");
+
+    internal static bool IsPlaceholderOrStubKey(string key)
+    {
+        var trimmed = key.Trim();
+        if (trimmed.Contains("your_grok_api_key", StringComparison.OrdinalIgnoreCase)
+            || trimmed.Contains("your-api-key", StringComparison.OrdinalIgnoreCase)
+            || trimmed.Equals("stub-key", StringComparison.OrdinalIgnoreCase)
+            || trimmed.StartsWith("unit-test-", StringComparison.OrdinalIgnoreCase)
+            || trimmed.Length < 20)
+            return true;
+
+        return false;
+    }
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {

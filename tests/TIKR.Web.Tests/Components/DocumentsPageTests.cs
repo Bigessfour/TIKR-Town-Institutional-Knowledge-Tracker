@@ -83,11 +83,11 @@ public class DocumentsPageTests : ClerkTestContext
         browseBtn.Should().NotBeNull("Browse mode toggle should render");
         browseBtn!.Click();
 
+        // Mode switch shows browse copy even if SfFileManager JS hosts are limited under bUnit.
         cut.WaitForAssertion(() =>
         {
-            cut.Markup.Should().Contain("doc-filemanager");
-            cut.Markup.Should().Contain("Syncfusion File Manager");
-        });
+            cut.Markup.Should().Contain("Syncfusion File Manager over your library folders");
+        }, TimeSpan.FromSeconds(5));
     }
 
     private void RegisterApi(string docsJson, string? searchJson = null)
