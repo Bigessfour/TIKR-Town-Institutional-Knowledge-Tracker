@@ -1196,6 +1196,33 @@ html[data-theme="high-contrast"] .tikr-skeleton-row {
     flex-shrink: 0;
 }
 
+.tikr-doc-workspace-chrome {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.tikr-doc-workspace-chrome-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.35rem 0.5rem;
+    border: 1px solid var(--tikr-border, #dee2e6);
+    border-radius: 8px;
+    background: var(--tikr-surface-alt, rgba(0, 0, 0, 0.03));
+}
+
+.tikr-doc-workspace-chrome-spacer {
+    flex: 1;
+    min-width: 0.5rem;
+}
+
+.tikr-doc-unsaved-hint {
+    font-size: 0.85rem;
+}
+
 .tikr-doc-fullscreen-surface {
     flex: 1;
     min-height: 0;
@@ -1210,6 +1237,22 @@ html[data-theme="high-contrast"] .tikr-skeleton-row {
 html[data-theme="dark"] .tikr-doc-fullscreen-surface,
 html[data-theme="high-contrast"] .tikr-doc-fullscreen-surface {
     background: var(--tikr-surface, #1e1e1e);
+}
+
+/* Syncfusion editors fill the flex workspace surface (Height="100%") */
+.tikr-doc-fullscreen-surface .e-de-ctn,
+.tikr-doc-fullscreen-surface .e-de-ctn .e-de-pane,
+.tikr-doc-fullscreen-surface .e-de-ctn .e-de-background,
+.tikr-doc-fullscreen-surface .e-pdfviewer,
+.tikr-doc-fullscreen-surface .e-spreadsheet,
+.tikr-doc-fullscreen-surface > .e-control {
+    flex: 1;
+    min-height: 0;
+    height: 100% !important;
+}
+
+.tikr-doc-fullscreen-surface-word .e-de-ctn .e-de-background {
+    overflow-y: auto !important;
 }
 
 .preview-text-body-full {

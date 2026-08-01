@@ -5,6 +5,7 @@
 @inject ClerkToastService Toast
 
 @using TIKR.Shared.DTOs
+@using TIKR.Shared.Helpers
 @using TIKR.Web.Components.Shared
 @using TIKR.Web.Helpers
 
@@ -35,7 +36,7 @@
         <SfButton CssClass="tikr-action-btn" IconCss="e-icons e-export" Content="Export CSV" OnClick="ExportCsvAsync" />
     </TourAnchor>
     <SfButton CssClass="tikr-action-btn primary" IsPrimary="true" IconCss="e-icons e-export-pdf" Content="@CouncilPacketButtonLabel" Disabled="@(_generating is not null)" OnClick="GenerateCouncilPacketAsync" />
-    <SfButton CssClass="tikr-action-btn" IconCss="e-icons e-export-pdf" Content="@AgendaPdfButtonLabel" Disabled="@(_generating is not null)" OnClick="DownloadAgendaPdfAsync" />
+    <SfButton CssClass="tikr-action-btn" IconCss="e-icons e-export-pdf" Content="@AgendaPdfButtonLabel" Disabled="@(_generating is not null)" OnClick="OpenAgendaBuilderDialogAsync" />
     <SfButton CssClass="tikr-action-btn" IconCss="e-icons e-export-excel" Content="@ComplianceExcelButtonLabel" Disabled="@(_generating is not null)" OnClick="DownloadComplianceReportAsync" />
     <SfButton CssClass="tikr-action-btn" IconCss="e-icons e-description" Content="Meeting minutes" OnClick="OpenMinutesDialog" />
     <SfButton CssClass="tikr-action-btn" IconCss="e-icons e-print" Content="Print council packet" OnClick="PrintPacketAsync" />
@@ -283,15 +284,50 @@ else
     </DialogTemplates>
 </SfDialog>
 
-<SfDialog @bind-Visible="_minutesDialogVisible" Width="480px" IsModal="true" ShowCloseIcon="true" Header="Generate meeting minutes">
+<SfDialog @bind-Visible="_minutesDialogVisible" Width="560px" IsModal="true" ShowCloseIcon="true" Header="Draft meeting minutes">
     <DialogTemplates>
         <Content>
-            <div class="mb-2">
-                <label class="form-label">Meeting date</label>
-                <SfDatePicker TValue="DateTime?" @bind-Value="_minutesMeetingDate" Format="d" Placeholder="Select meeting date" />
+            <p class="text-muted small mb-2">
+                Pre-fill from the posted agenda (linked on the Post Agenda requirement). Each line becomes a minutes section with motion/vote placeholders.
+            </p>
+            <div class="row g-2 mb-2">
+                <div class="col-md-6">
+                    <label class="form-label">Meeting date</label>
+                    <SfDatePicker TValue="DateTime?" @bind-Value="_minutesMeetingDate" Format="d" Placeholder="2nd Monday" ValueChange="OnMinutesMeetingDateChanged" />
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Board</label>
+                    <SfDropDownList TValue="string" TItem="string"
+                                    DataSource="@_agendaBoardOptions"
+                                    @bind-Value="_minutesBoardCode"
+                                    ValueChange="OnMinutesBoardChangedAsync">
+                    </SfDropDownList>
+                </div>
+            </div>
+            @if (_minutesPreviewLoading)
+            {
+                <p class="text-muted">Loading actioned agenda…</p>
+            }
+            else if (_minutesPreview is not null)
+            {
+                @if (!string.IsNullOrWhiteSpace(_minutesPreview.ActionedAgendaFileName))
+                {
+                    <p class="small mb-2">Actioned agenda: <strong>@_minutesPreview.ActionedAgendaFileName</strong></p>
+                }
+                else
+                {
+                    <p class="small text-warning mb-2">No agenda document linked yet — using agenda builder scaffold. Attach the posted agenda to the Post Agenda requirement.</p>
+                }
+                @if (!string.IsNullOrWhiteSpace(_minutesPreview.DraftMinutesRequirementTitle))
+                {
+                    <p class="small mb-2">Close-out requirement: @_minutesPreview.DraftMinutesRequirementTitle</p>
+                }
+            }
+            <div class="d-flex flex-wrap gap-2 mb-2">
+                <SfButton CssClass="tikr-action-btn" Content="Load from actioned agenda" Disabled="@_minutesPreviewLoading" OnClick="RefreshMinutesPreviewAsync" />
             </div>
             <div class="mb-2">
-                <label class="form-label">Board name</label>
+                <label class="form-label">Board name (on minutes)</label>
                 <SfTextBox @bind-Value="_minutesBoardName" Placeholder="Board of Trustees" />
             </div>
             <div class="mb-2">
@@ -299,17 +335,96 @@ else
                 <SfTextBox Multiline="true" @bind-Value="_minutesAttendeesText" Placeholder="Mayor&#10;Clerk&#10;Trustee" />
             </div>
             <div class="mb-2">
-                <label class="form-label">Agenda items (one per line)</label>
+                <label class="form-label">Agenda lines (from actioned agenda)</label>
                 <SfTextBox Multiline="true" @bind-Value="_minutesAgendaText" Placeholder="Call to order&#10;Budget hearing" />
             </div>
             <div class="mb-2">
-                <label class="form-label">Minutes notes</label>
-                <SfTextBox Multiline="true" @bind-Value="_minutesNotes" Placeholder="Motions, votes, and discussion…" />
+                <label class="form-label">Additional notes</label>
+                <SfTextBox Multiline="true" @bind-Value="_minutesNotes" Placeholder="General notes, announcements…" />
             </div>
+            @if (_minutesPreview?.DraftMinutesRequirementId is null && _minutesPreview is not null)
+            {
+                <p class="small text-warning mb-2">No Draft Minutes requirement for this date — save will download only (no link).</p>
+            }
+            <label class="requirements-completed-toggle mb-1">
+                <input type="checkbox" @bind="_minutesSaveToLibrary" disabled="@(_minutesPreview?.DraftMinutesRequirementId is null)" />
+                Save to document library and link to Draft Minutes requirement
+            </label>
+            @if (_minutesSaveToLibrary)
+            {
+                <label class="requirements-completed-toggle ms-3">
+                    <input type="checkbox" @bind="_minutesMarkComplete" />
+                    Mark Draft Minutes requirement complete
+                </label>
+            }
         </Content>
         <FooterTemplate>
             <SfButton CssClass="tikr-action-btn" Content="Cancel" OnClick="CloseMinutesDialog" />
             <SfButton CssClass="tikr-action-btn primary" Content="@MinutesGenerateButtonLabel" Disabled="@(_generating is not null)" OnClick="DownloadMeetingMinutesAsync" />
+        </FooterTemplate>
+    </DialogTemplates>
+</SfDialog>
+
+<SfDialog @bind-Visible="_agendaDialogVisible" Width="640px" IsModal="true" ShowCloseIcon="true" Header="Council agenda builder">
+    <DialogTemplates>
+        <Content>
+            <p class="text-muted small mb-2">
+                Order of business follows Colorado DLG parliamentary procedure (Call to Order → Minutes → Public Comment → Reports → Old Business → New Business → Adjourn).
+            </p>
+            <div class="row g-2 mb-2">
+                <div class="col-md-6">
+                    <label class="form-label">Meeting date</label>
+                    <SfDatePicker TValue="DateTime?" @bind-Value="_agendaMeetingDate" Format="d" Placeholder="2nd Monday" ValueChange="OnAgendaMeetingDateChanged" />
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Board</label>
+                    <SfDropDownList TValue="string" TItem="string"
+                                    DataSource="@_agendaBoardOptions"
+                                    @bind-Value="_agendaBoard"
+                                    ValueChange="OnAgendaBoardChangedAsync">
+                    </SfDropDownList>
+                </div>
+            </div>
+            <div class="d-flex flex-wrap gap-2 mb-3">
+                <SfButton CssClass="tikr-action-btn" Content="Refresh preview" Disabled="@_agendaPreviewLoading" OnClick="RefreshAgendaPreviewAsync" />
+                <SfButton CssClass="tikr-action-btn" Content="Suggest unfinished business" Disabled="@_agendaPreviewLoading" OnClick="LoadUnfinishedBusinessAsync" />
+            </div>
+            @if (_agendaPreviewLoading)
+            {
+                <p class="text-muted">Loading agenda preview…</p>
+            }
+            else if (_agendaPreview is not null)
+            {
+                <div class="agenda-builder-preview">
+                    @foreach (var agendaSection in _agendaPreview.Sections)
+                    {
+                        <div class="mb-2">
+                            <strong>@agendaSection.Title</strong>
+                            @if (!string.IsNullOrWhiteSpace(agendaSection.Notes))
+                            {
+                                <div class="small text-muted">@agendaSection.Notes</div>
+                            }
+                            @if (agendaSection.Items.Count > 0)
+                            {
+                                <ul class="mb-0 ps-3">
+                                    @foreach (var item in agendaSection.Items)
+                                    {
+                                        <li>@item.Title</li>
+                                    }
+                                </ul>
+                            }
+                        </div>
+                    }
+                </div>
+            }
+            @if (_unfinishedSuggestions.Count > 0)
+            {
+                <p class="small text-muted mt-2">@_unfinishedSuggestions.Count unfinished-business suggestion(s) merged into Old Business.</p>
+            }
+        </Content>
+        <FooterTemplate>
+            <SfButton CssClass="tikr-action-btn" Content="Cancel" OnClick="CloseAgendaBuilderDialog" />
+            <SfButton CssClass="tikr-action-btn primary" Content="@AgendaPdfButtonLabel" Disabled="@(_generating is not null || _agendaPreview is null)" OnClick="DownloadAgendaFromBuilderAsync" />
         </FooterTemplate>
     </DialogTemplates>
 </SfDialog>
@@ -352,16 +467,28 @@ else
     private string? _generating;
     private string? _packetStatus;
     private bool _minutesDialogVisible;
-    private DateTime? _minutesMeetingDate = DateTime.Today;
+    private bool _minutesPreviewLoading;
+    private DateTime? _minutesMeetingDate;
+    private string _minutesBoardCode = "TOW";
     private string _minutesBoardName = "Board of Trustees";
     private string? _minutesAttendeesText;
     private string? _minutesAgendaText;
     private string? _minutesNotes;
+    private CouncilMinutesBuilderPreview? _minutesPreview;
+    private bool _minutesSaveToLibrary;
+    private bool _minutesMarkComplete;
+    private bool _agendaDialogVisible;
+    private bool _agendaPreviewLoading;
+    private DateTime? _agendaMeetingDate;
+    private string _agendaBoard = "TOW";
+    private CouncilAgendaBuilderPreview? _agendaPreview;
+    private List<UnfinishedBusinessSuggestion> _unfinishedSuggestions = [];
+    private readonly List<string> _agendaBoardOptions = ["TOW", "WSD"];
 
     private string CouncilPacketButtonLabel => _generating == "packet" ? "Generating packet…" : "Council packet";
-    private string AgendaPdfButtonLabel => _generating == "agenda" ? "Generating PDF…" : "Agenda PDF";
+    private string AgendaPdfButtonLabel => _generating == "agenda" ? "Generating PDF…" : "Download agenda PDF";
     private string ComplianceExcelButtonLabel => _generating == "compliance" ? "Generating Excel…" : "Compliance Excel";
-    private string MinutesGenerateButtonLabel => _generating == "minutes" ? "Generating…" : "Download DOCX";
+    private string MinutesGenerateButtonLabel => _generating == "minutes" ? "Generating…" : "Generate minutes DOCX";
 
     private readonly List<string> _categoryOptions = ["All", .. Enum.GetNames<RequirementCategory>()];
     private readonly List<string> _urgencyOptions = ["All", "Overdue", "High", "Medium", "Low", "Done"];
@@ -666,20 +793,99 @@ else
         }
     }
 
-    private async Task DownloadAgendaPdfAsync()
+    private async Task OpenAgendaBuilderDialogAsync()
     {
+        _agendaMeetingDate ??= DefaultAgendaMeetingDateTime();
+        _agendaDialogVisible = true;
+        await RefreshAgendaPreviewAsync();
+    }
+
+    private void CloseAgendaBuilderDialog() => _agendaDialogVisible = false;
+
+    private async Task OnAgendaMeetingDateChanged(Syncfusion.Blazor.Calendars.ChangedEventArgs<DateTime?> _) =>
+        await RefreshAgendaPreviewAsync();
+
+    private async Task OnAgendaBoardChangedAsync(Syncfusion.Blazor.DropDowns.ChangeEventArgs<string, string> _) =>
+        await RefreshAgendaPreviewAsync();
+
+    private async Task RefreshAgendaPreviewAsync()
+    {
+        if (_agendaMeetingDate is null)
+            return;
+
+        _agendaPreviewLoading = true;
+        _unfinishedSuggestions = [];
+        try
+        {
+            var meetingDate = DateOnly.FromDateTime(_agendaMeetingDate.Value);
+            _agendaPreview = await Api.GetCouncilAgendaPreviewAsync(meetingDate, _agendaBoard);
+        }
+        catch
+        {
+            _agendaPreview = null;
+            _error = "Could not load agenda preview. Is the API running?";
+        }
+        finally
+        {
+            _agendaPreviewLoading = false;
+        }
+    }
+
+    private async Task LoadUnfinishedBusinessAsync()
+    {
+        if (_agendaMeetingDate is null)
+            return;
+
+        _agendaPreviewLoading = true;
+        try
+        {
+            var meetingDate = DateOnly.FromDateTime(_agendaMeetingDate.Value);
+            _unfinishedSuggestions = (await Api.SuggestCouncilUnfinishedBusinessAsync(meetingDate, _agendaBoard)).ToList();
+            await RefreshAgendaPreviewAsync();
+        }
+        finally
+        {
+            _agendaPreviewLoading = false;
+        }
+    }
+
+    private async Task DownloadAgendaFromBuilderAsync()
+    {
+        if (_agendaPreview is null || _agendaMeetingDate is null)
+            return;
+
         _error = null;
         _generating = "agenda";
         try
         {
+            var meetingDate = DateOnly.FromDateTime(_agendaMeetingDate.Value);
             var result = await Api.GenerateCouncilAgendaPdfAsync(
-                new CouncilAgendaRequest(_townName, DateOnly.FromDateTime(DateTime.UtcNow), []));
-            await HandleGeneratedDownloadAsync(result, "council agenda PDF");
+                new CouncilAgendaRequest(
+                    _townName,
+                    meetingDate,
+                    [],
+                    _agendaBoard,
+                    _agendaPreview.Sections));
+
+            if (await HandleGeneratedDownloadAsync(result, "council agenda PDF"))
+                _agendaDialogVisible = false;
         }
         finally
         {
             _generating = null;
         }
+    }
+
+    private static DateTime DefaultAgendaMeetingDateTime()
+    {
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var candidate = CouncilMeetingSchedule.SecondMonday(today.Year, today.Month);
+        if (candidate >= today)
+            return candidate.ToDateTime(TimeOnly.MinValue);
+
+        return today.Month == 12
+            ? CouncilMeetingSchedule.SecondMonday(today.Year + 1, 1).ToDateTime(TimeOnly.MinValue)
+            : CouncilMeetingSchedule.SecondMonday(today.Year, today.Month + 1).ToDateTime(TimeOnly.MinValue);
     }
 
     private async Task DownloadComplianceReportAsync()
@@ -698,15 +904,53 @@ else
         }
     }
 
-    private void OpenMinutesDialog()
+    private async Task OpenMinutesDialog()
     {
-        _minutesAgendaText ??= string.Join(
-            Environment.NewLine,
-            VisibleRequirements.Take(12).Select(r => r.Title));
+        _minutesMeetingDate ??= DefaultAgendaMeetingDateTime();
+        _minutesBoardName = _minutesBoardCode == "WSD"
+            ? "Wiley Sanitation District"
+            : "Board of Trustees";
         _minutesDialogVisible = true;
+        await RefreshMinutesPreviewAsync();
     }
 
     private void CloseMinutesDialog() => _minutesDialogVisible = false;
+
+    private async Task OnMinutesMeetingDateChanged(Syncfusion.Blazor.Calendars.ChangedEventArgs<DateTime?> _) =>
+        await RefreshMinutesPreviewAsync();
+
+    private async Task OnMinutesBoardChangedAsync(Syncfusion.Blazor.DropDowns.ChangeEventArgs<string, string> args)
+    {
+        _minutesBoardName = args.Value == "WSD"
+            ? "Wiley Sanitation District"
+            : "Board of Trustees";
+        await RefreshMinutesPreviewAsync();
+    }
+
+    private async Task RefreshMinutesPreviewAsync()
+    {
+        if (_minutesMeetingDate is null)
+            return;
+
+        _minutesPreviewLoading = true;
+        try
+        {
+            var meetingDate = DateOnly.FromDateTime(_minutesMeetingDate.Value);
+            _minutesPreview = await Api.GetCouncilMinutesPreviewAsync(meetingDate, _minutesBoardCode);
+            _minutesSaveToLibrary = _minutesPreview?.DraftMinutesRequirementId is not null;
+            if (_minutesPreview is { AgendaLines.Count: > 0 })
+                _minutesAgendaText = string.Join(Environment.NewLine, _minutesPreview.AgendaLines);
+        }
+        catch
+        {
+            _minutesPreview = null;
+            _error = "Could not load minutes preview from actioned agenda.";
+        }
+        finally
+        {
+            _minutesPreviewLoading = false;
+        }
+    }
 
     private async Task DownloadMeetingMinutesAsync()
     {
@@ -718,17 +962,94 @@ else
                 ? DateOnly.FromDateTime(_minutesMeetingDate.Value)
                 : DateOnly.FromDateTime(DateTime.UtcNow);
 
+            var agendaLines = SplitLines(_minutesAgendaText) ?? [];
+            var structured = agendaLines.Count > 0;
+
             var request = new MeetingMinutesRequest(
                 _townName,
                 meetingDate,
                 string.IsNullOrWhiteSpace(_minutesBoardName) ? null : _minutesBoardName.Trim(),
                 SplitLines(_minutesAttendeesText),
-                SplitLines(_minutesAgendaText),
-                string.IsNullOrWhiteSpace(_minutesNotes) ? null : _minutesNotes.Trim());
+                agendaLines.Count > 0 ? agendaLines : null,
+                string.IsNullOrWhiteSpace(_minutesNotes) ? null : _minutesNotes.Trim(),
+                StructuredByAgendaItem: structured);
 
             var result = await Api.GenerateMeetingMinutesDocxAsync(request);
-            if (await HandleGeneratedDownloadAsync(result, "meeting minutes"))
-                _minutesDialogVisible = false;
+            if (result.Document is null)
+            {
+                _error = DocumentUiMessages.GenerationFailed(result.ErrorMessage);
+                return;
+            }
+
+            if (_minutesSaveToLibrary)
+            {
+                if (_minutesPreview?.DraftMinutesRequirementId is not { } requirementId)
+                {
+                    _error = "No Draft Minutes requirement found for this meeting date and board. Downloading minutes only.";
+                }
+                else
+                {
+                var fileName = _minutesPreview.SuggestedFileName;
+                await using var stream = new MemoryStream(result.Document.Content);
+                var uploaded = await Api.UploadDocumentAndReturnAsync(stream, fileName);
+                if (uploaded is not null)
+                {
+                    var linked = await Api.LinkRequirementDocumentAsync(requirementId, uploaded.Id);
+                    if (linked is null)
+                    {
+                        _error = "Minutes saved to library but could not link to the Draft Minutes requirement.";
+                        Toast.Show("Minutes uploaded but linking failed — check Requirements and attach manually.");
+                        await JS.InvokeVoidAsync(
+                            "tikrDownload.downloadFromBytes",
+                            result.Document.FileName,
+                            result.Document.ContentType,
+                            result.Document.Content);
+                        return;
+                    }
+
+                    if (_minutesMarkComplete)
+                    {
+                        var req = _requirements.FirstOrDefault(r => r.Id == requirementId)
+                            ?? await Api.GetRequirementAsync(requirementId);
+                        if (req is not null)
+                        {
+                            await Api.UpdateRequirementAsync(requirementId, new UpdateRequirementRequest(
+                                req.Title,
+                                req.Description,
+                                req.DueDate,
+                                req.Recurrence,
+                                req.Category,
+                                IsCompleted: true,
+                                req.SubmitTo,
+                                req.ContactName,
+                                req.ContactEmail,
+                                req.ContactPhone));
+                            await LoadAsync();
+                        }
+                    }
+
+                    Toast.Show($"Minutes saved as {fileName} and linked to requirement.");
+                    _minutesDialogVisible = false;
+                    return;
+                }
+
+                Toast.Show("Minutes generated but library upload failed — downloaded locally.");
+                await JS.InvokeVoidAsync(
+                    "tikrDownload.downloadFromBytes",
+                    result.Document.FileName,
+                    result.Document.ContentType,
+                    result.Document.Content);
+                return;
+                }
+            }
+
+            await JS.InvokeVoidAsync(
+                "tikrDownload.downloadFromBytes",
+                result.Document.FileName,
+                result.Document.ContentType,
+                result.Document.Content);
+            Toast.Show(DocumentUiMessages.GenerationSuccess(result.Document.FileName));
+            _minutesDialogVisible = false;
         }
         finally
         {

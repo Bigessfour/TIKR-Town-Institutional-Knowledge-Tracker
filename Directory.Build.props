@@ -5,6 +5,6 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
     <!-- Suppress transitive SQLite audit noise in IDE until EF Core updates the dependency -->
-    <NoWarn>$(NoWarn);NU1903</NoWarn>
+    <NoWarn>$(NoWarn);NU1903;CS9057</NoWarn>
   </PropertyGroup>
 </Project>

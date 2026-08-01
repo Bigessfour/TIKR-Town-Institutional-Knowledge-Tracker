@@ -7,7 +7,9 @@ public record CouncilAgendaItem(string Title, string? Description, DateOnly? Due
 public record CouncilAgendaRequest(
     string TownName,
     DateOnly MeetingDate,
-    IReadOnlyList<CouncilAgendaItem> Items);
+    IReadOnlyList<CouncilAgendaItem> Items,
+    string Board = "TOW",
+    IReadOnlyList<CouncilAgendaSection>? Sections = null);
 
 public record MeetingMinutesRequest(
     string TownName,
@@ -15,7 +17,8 @@ public record MeetingMinutesRequest(
     string? BoardName,
     IReadOnlyList<string>? Attendees,
     IReadOnlyList<string>? AgendaItems,
-    string? Notes);
+    string? Notes,
+    bool StructuredByAgendaItem = false);
 
 public record ClerkMemoRequest(
     string TownName,

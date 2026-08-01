@@ -55,7 +55,7 @@ public class RequirementsPageTests : ClerkTestContext
         var cut = RenderComponent<Requirements>();
 
         cut.Markup.Should().Contain("Council packet");
-        cut.Markup.Should().Contain("Agenda PDF");
+        cut.Markup.Should().Contain("Download agenda PDF");
         cut.Markup.Should().Contain("Compliance Excel");
         cut.Markup.Should().Contain("Meeting minutes");
     }

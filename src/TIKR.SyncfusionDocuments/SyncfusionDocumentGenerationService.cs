@@ -12,6 +12,7 @@ using Syncfusion.XlsIO;
 using Syncfusion.XlsIORenderer;
 using TIKR.Shared.Configuration;
 using TIKR.Shared.DTOs;
+using TIKR.Shared.Helpers;
 using TIKR.Shared.Interfaces;
 
 namespace TIKR.SyncfusionDocuments;
@@ -34,47 +35,107 @@ public sealed class SyncfusionDocumentGenerationService(
         ArgumentException.ThrowIfNullOrWhiteSpace(request.TownName);
         EnsureLicenseConfigured();
 
+        var boardLabel = request.Board.Equals("WSD", StringComparison.OrdinalIgnoreCase)
+            ? "Wiley Sanitation District"
+            : $"{request.TownName} Board of Trustees";
+
+        var sections = request.Sections is { Count: > 0 }
+            ? request.Sections
+            : CouncilAgendaScaffold.CreateOrderOfBusiness(
+                request.Board,
+                request.MeetingDate,
+                CouncilMeetingSchedule.PreviousSecondMonday(request.MeetingDate),
+                request.Items);
+
         using var document = new PdfDocument();
         var page = document.Pages.Add();
         var graphics = page.Graphics;
         var titleFont = new PdfStandardFont(PdfFontFamily.Helvetica, 16, PdfFontStyle.Bold);
         var headingFont = new PdfStandardFont(PdfFontFamily.Helvetica, 12, PdfFontStyle.Bold);
         var bodyFont = new PdfStandardFont(PdfFontFamily.Helvetica, 11);
+        var smallFont = new PdfStandardFont(PdfFontFamily.Helvetica, 9);
 
         var y = PdfMargin;
-        graphics.DrawString($"{request.TownName} — Council Agenda", titleFont, PdfBrushes.Black, new PointF(PdfMargin, y));
+        graphics.DrawString($"{boardLabel} — Regular Meeting Agenda", titleFont, PdfBrushes.Black, new PointF(PdfMargin, y));
         y += PdfLineHeight * 2;
         graphics.DrawString($"Meeting date: {request.MeetingDate:MMMM d, yyyy}", bodyFont, PdfBrushes.Black, new PointF(PdfMargin, y));
-        y += PdfLineHeight * 2;
-        graphics.DrawString("Agenda items", headingFont, PdfBrushes.Black, new PointF(PdfMargin, y));
         y += PdfLineHeight * 1.5f;
+        graphics.DrawString(
+            "Order of business per Colorado Division of Local Government parliamentary procedure.",
+            smallFont,
+            PdfBrushes.DarkGray,
+            new PointF(PdfMargin, y));
+        y += PdfLineHeight * 2;
 
-        var index = 1;
-        foreach (var item in request.Items)
+        var sectionIndex = 1;
+        foreach (var section in sections)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            var line = $"{index}. {item.Title}";
-            if (item.DueDate is { } due)
-                line += $" (due {due:MMM d, yyyy})";
+            (page, graphics, y) = EnsureVerticalSpace(document, page, graphics, y, PdfLineHeight * 4);
 
-            graphics.DrawString(line, bodyFont, PdfBrushes.Black, new PointF(PdfMargin, y));
-            y += PdfLineHeight;
+            graphics.DrawString($"{sectionIndex}. {section.Title}", headingFont, PdfBrushes.Black, new PointF(PdfMargin, y));
+            y += PdfLineHeight * 1.25f;
 
-            if (!string.IsNullOrWhiteSpace(item.Description))
+            if (!string.IsNullOrWhiteSpace(section.Notes))
             {
-                foreach (var wrapped in WrapText(item.Description, 90))
+                foreach (var wrapped in WrapText(section.Notes, 90))
                 {
-                    graphics.DrawString(wrapped, bodyFont, PdfBrushes.DarkGray, new PointF(PdfMargin + 12, y));
+                    (page, graphics, y) = EnsureVerticalSpace(document, page, graphics, y, PdfLineHeight);
+                    graphics.DrawString(wrapped, smallFont, PdfBrushes.DarkGray, new PointF(PdfMargin + 12, y));
                     y += PdfLineHeight;
                 }
             }
 
-            y += 4;
-            index++;
+            var itemIndex = 1;
+            foreach (var item in section.Items)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                var line = section.Items.Count > 1
+                    ? $"{sectionIndex}.{itemIndex} {item.Title}"
+                    : item.Title;
+                if (item.DueDate is { } due)
+                    line += $" (due {due:MMM d, yyyy})";
+
+                (page, graphics, y) = EnsureVerticalSpace(document, page, graphics, y, PdfLineHeight);
+                graphics.DrawString(line, bodyFont, PdfBrushes.Black, new PointF(PdfMargin + 12, y));
+                y += PdfLineHeight;
+
+                if (!string.IsNullOrWhiteSpace(item.Description))
+                {
+                    foreach (var wrapped in WrapText(item.Description, 88))
+                    {
+                        (page, graphics, y) = EnsureVerticalSpace(document, page, graphics, y, PdfLineHeight);
+                        graphics.DrawString(wrapped, bodyFont, PdfBrushes.DarkGray, new PointF(PdfMargin + 24, y));
+                        y += PdfLineHeight;
+                    }
+                }
+
+                itemIndex++;
+            }
+
+            y += 6;
+            sectionIndex++;
         }
 
-        var fileName = $"council-agenda-{request.MeetingDate:yyyy-MM-dd}.pdf";
+        var boardSuffix = request.Board.Equals("WSD", StringComparison.OrdinalIgnoreCase) ? "wsd" : "tow";
+        var fileName = $"council-agenda-{boardSuffix}-{request.MeetingDate:yyyy-MM-dd}.pdf";
         return Task.FromResult(SavePdf(document, fileName));
+    }
+
+    private static (PdfPage Page, PdfGraphics Graphics, float Y) EnsureVerticalSpace(
+        PdfDocument document,
+        PdfPage page,
+        PdfGraphics graphics,
+        float y,
+        float needed)
+    {
+        var bottom = page.Size.Height - PdfMargin;
+        if (y + needed <= bottom)
+            return (page, graphics, y);
+
+        page = document.Pages.Add();
+        graphics = page.Graphics;
+        return (page, graphics, PdfMargin);
     }
 
     public Task<GeneratedDocumentResult> GenerateMeetingMinutesDocxAsync(
@@ -104,20 +165,46 @@ public sealed class SyncfusionDocumentGenerationService(
 
         if (request.AgendaItems is { Count: > 0 })
         {
-            AddSubheading(section, "Agenda");
-            foreach (var item in request.AgendaItems)
+            if (request.StructuredByAgendaItem)
             {
-                cancellationToken.ThrowIfCancellationRequested();
-                AddBullet(section, item);
+                AddSubheading(section, "Meeting record by agenda item");
+                foreach (var item in request.AgendaItems)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    AddSubheading(section, item);
+                    AddParagraph(section, "Discussion:");
+                    AddParagraph(section, "Motion:");
+                    AddParagraph(section, "Vote:");
+                }
+            }
+            else
+            {
+                AddSubheading(section, "Agenda");
+                foreach (var item in request.AgendaItems)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    AddBullet(section, item);
+                }
             }
         }
 
-        AddSubheading(section, "Minutes");
-        AddParagraph(section, string.IsNullOrWhiteSpace(request.Notes)
-            ? "Minutes to be recorded."
-            : request.Notes);
+        if (!request.StructuredByAgendaItem)
+        {
+            AddSubheading(section, "Minutes");
+            AddParagraph(section, string.IsNullOrWhiteSpace(request.Notes)
+                ? "Minutes to be recorded."
+                : request.Notes);
+        }
+        else if (!string.IsNullOrWhiteSpace(request.Notes))
+        {
+            AddSubheading(section, "Additional notes");
+            AddParagraph(section, request.Notes);
+        }
 
-        var fileName = $"meeting-minutes-{request.MeetingDate:yyyy-MM-dd}.docx";
+        var boardSuffix = request.BoardName?.Contains("Sanitation", StringComparison.OrdinalIgnoreCase) == true
+            ? "wsd"
+            : "tow";
+        var fileName = $"meeting-minutes-{boardSuffix}-{request.MeetingDate:yyyy-MM-dd}.docx";
         return Task.FromResult(SaveWord(document, fileName));
     }
 

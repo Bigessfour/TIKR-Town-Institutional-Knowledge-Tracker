@@ -9,6 +9,7 @@ public static class DocumentTagHeuristics
     public const string PersonnelHr = "Personnel / HR";
     public const string BudgetFinance = "Budget / Finance";
     public const string Ordinances = "Ordinances";
+    public const string Agenda = "Agenda";
     public const string Minutes = "Minutes";
     public const string Correspondence = "Correspondence";
     public const string Forms = "Forms";
@@ -18,6 +19,7 @@ public static class DocumentTagHeuristics
     public static readonly string[] FolderVocabulary =
     [
         Ordinances,
+        Agenda,
         Minutes,
         BudgetFinance,
         Correspondence,
@@ -53,6 +55,8 @@ public static class DocumentTagHeuristics
             return BudgetFinance;
         if (ContainsAny(lowerHaystack, "ordinance", "municipal code", "codified"))
             return Ordinances;
+        if (ContainsAny(lowerHaystack, "agenda", "meeting notice", "posted agenda"))
+            return Agenda;
         if (ContainsAny(lowerHaystack, "minutes", "council meeting", "board meeting"))
             return Minutes;
         if (ContainsAny(lowerHaystack, "contract", "agreement", "mou ", "memorandum of understanding"))
@@ -75,6 +79,8 @@ public static class DocumentTagHeuristics
             return ["budget", "finance"];
         if (ContainsAny(lowerHaystack, "ordinance"))
             return ["ordinance"];
+        if (ContainsAny(lowerHaystack, "agenda"))
+            return ["agenda", "council"];
         if (ContainsAny(lowerHaystack, "minutes"))
             return ["minutes"];
         if (ContainsAny(lowerHaystack, "contract", "agreement"))

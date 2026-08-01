@@ -5,7 +5,17 @@
     "COMPOSE_FILE": "docker/docker-compose.yml"
   },
   "csharp.analysis.exclude": [
-    "**/bin/**"
+    "**/.tmp-sf-reflect/**",
+    "**/bin/**",
+    "**/obj/**"
+  ],
+  "cSpell.ignorePaths": [
+    "**/.agents/**",
+    "**/.rag_index/**",
+    "**/.venv/**",
+    "**/bin/**",
+    "**/docs/function-inventory.generated.md",
+    "**/obj/**"
   ],
   "docker.lsp.experimental.vulnerabilityDiagnostics": false,
   "dotnet.defaultSolution": "TIKR.sln",
@@ -14,19 +24,26 @@
     "docker-compose*.yaml": "compose"
   },
   "files.exclude": {
+    "**/.agents": true,
     "**/.rag_index": true,
     "**/.venv": true,
     "**/bin": true,
     "**/coverage": true
   },
   "files.watcherExclude": {
+    "**/.agents/**": true,
     "**/.rag_index/**": true,
     "**/.venv/**": true,
     "**/bin/**": true,
     "**/coverage/**": true,
     "**/obj/**": true
   },
+  "markdownlint.ignore": [
+    "**/.agents/**",
+    "**/docs/function-inventory.generated.md"
+  ],
   "search.exclude": {
+    "**/.agents": true,
     "**/.rag_index": true,
     "**/.venv": true,
     "**/bin": true,

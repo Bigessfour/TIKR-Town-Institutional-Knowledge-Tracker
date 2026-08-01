@@ -15,7 +15,7 @@ flowchart TB
 
     subgraph ClerkWorkflows["Clerk Workflows"]
         Dashboard["/ (Home)\nUrgency pills • AI summary • Quick actions • Due grid"]
-        Requirements["/requirements\nGrid CRUD • CSV • AI Scan • Packet export • Print"]
+        Requirements["/requirements\nGrid CRUD • CSV • AI Scan • Council agenda builder • Minutes close-out • Packet export • Print"]
         Documents["/documents\nUpload • Folders/Tree • Semantic search • Download/Preview • Convert"]
         Assistant["/assistant\nSfAIAssistView + per-user DB history\n+ memory facts + RAG"]
         Vault["/vault\nHow-To • Contacts • Tribal • RTE • Copy for new clerk • Voice"]
@@ -55,7 +55,7 @@ flowchart LR
         AI["HybridAiService (Ollama + gated Grok)"]
         RAG["Semantic + embeddings (nomic)"]
         Agent["DocumentAgentService + Syncfusion Orchestrator + ToolRegistry"]
-        Gen["Document generation (Syncfusion) + council packet"]
+        Gen["Document generation (Syncfusion) + council packet + agenda/minutes builder"]
         Auth["Optional ASP.NET Identity + JWT + policies"]
         Audit["Audit log"]
     end
@@ -89,6 +89,7 @@ flowchart TB
 - **AI Scan flow**: Upload (Requirements) → agent ProcessUpload → pre-fill dialog (see 05b-requirements-agent-scan.mmd + action-items).
 - **Semantic + RAG**: Write triggers embed → search prepends context in Assistant + Documents toggle (05c, 05d).
 - **Generation + persist**: Packet / agenda / minutes / memo / compliance → NAS store + audit.
+- **Council meeting cycle (Feature 006)**: Seeded requirements (Post Agenda / Draft Minutes) → agenda builder PDF → link actioned agenda → minutes preview from linked doc text → structured DOCX → link + optional mark complete.
 - **Health everywhere**: Local status footer + SDK badge on all pages.
 
 **Status legend (aligns with diagrams):**

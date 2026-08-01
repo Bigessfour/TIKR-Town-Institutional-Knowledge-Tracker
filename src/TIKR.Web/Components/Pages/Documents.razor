@@ -422,7 +422,8 @@ else
 <DocumentWorkspaceDialog @bind-Visible="_fullScreenOpen"
                          Document="_selectedPreview"
                          ShowExtendedTools="true"
-                         OnSaved="HandleWorkspaceSavedAsync" />
+                         OnSaved="HandleWorkspaceSavedAsync"
+                         OnDocumentListChanged="HandleWorkspaceListChangedAsync" />
 
 <!-- Context menu (right-click on grid area) -->
 <SfContextMenu TValue="MenuItem" Target=".doc-grid .e-gridcontent" CssClass="doc-context-menu">
@@ -503,9 +504,7 @@ else
     private string? _previewError;
     private DocumentPreviewHelper.PreviewKind _previewKind = DocumentPreviewHelper.PreviewKind.None;
     private string? _wordSfdt;
-    private SfDocumentEditorContainer? _wordContainer;
     private byte[]? _spreadsheetBytes;
-    private SfSpreadsheet? _spreadsheetRef;
     private bool _savingPreview;
     private Guid? _downloadingDocId;
     private Guid? _convertingDocId;
@@ -1046,6 +1045,13 @@ else
             await LoadDocumentPreviewAsync(_selectedPreview);
     }
 
+    private async Task HandleWorkspaceListChangedAsync()
+    {
+        await LoadDocumentsAsync();
+        if (_selectedPreview is not null)
+            _selectedPreview = _documents.FirstOrDefault(d => d.Id == _selectedPreview.Id);
+    }
+
     private static string TruncatePreview(string? text, int maxChars)
     {
         if (string.IsNullOrWhiteSpace(text))
@@ -1285,9 +1291,7 @@ else
         _previewError = null;
         _previewKind = DocumentPreviewHelper.PreviewKind.None;
         _wordSfdt = null;
-        _wordContainer = null;
         _spreadsheetBytes = null;
-        _spreadsheetRef = null;
         _savingPreview = false;
         _documentVersions = [];
         _linkedRequirements = [];

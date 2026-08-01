@@ -156,7 +156,7 @@ public class HybridAiService(
             $"QueryLen={request.Query?.Length ?? 0} TopK={request.TopK} Folder={request.Folder ?? "(any)"}");
 
         if (string.IsNullOrWhiteSpace(request.Query))
-            return new SemanticSearchResponse(request.Query, 0, [], EmbeddingAvailable: true);
+            return new SemanticSearchResponse(request.Query ?? string.Empty, 0, [], EmbeddingAvailable: true);
 
         var topK = Math.Clamp(request.TopK, 1, 20);
         var minScore = request.MinScore ?? DefaultMinScore;
@@ -281,7 +281,7 @@ public class HybridAiService(
             $"QueryLen={request.Query?.Length ?? 0} TopK={request.TopK}");
 
         if (string.IsNullOrWhiteSpace(request.Query))
-            return new SemanticSearchKnowledgeResponse(request.Query, 0, [], EmbeddingAvailable: true);
+            return new SemanticSearchKnowledgeResponse(request.Query ?? string.Empty, 0, [], EmbeddingAvailable: true);
 
         var topK = Math.Clamp(request.TopK, 1, 20);
         var minScore = request.MinScore ?? DefaultMinScore;
@@ -514,8 +514,8 @@ public class HybridAiService(
             $"PromptLen={request.Prompt?.Length ?? 0} ContextLen={request.Context?.Length ?? 0}");
 
         var prompt = string.IsNullOrWhiteSpace(request.Context)
-            ? request.Prompt
-            : $"Context:\n{request.Context}\n\nQuestion:\n{request.Prompt}";
+            ? request.Prompt ?? string.Empty
+            : $"Context:\n{request.Context}\n\nQuestion:\n{request.Prompt ?? string.Empty}";
 
         bool ollamaAvailable = false;
         try
