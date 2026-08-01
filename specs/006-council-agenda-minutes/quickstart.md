@@ -37,13 +37,25 @@ dotnet test TIKR.sln --configuration Release --filter "FullyQualifiedName~Counci
 
 ### NAS deploy (after merge)
 
-Restart API (and Web if UI changed) so `InitializeDatabaseAsync` runs the seeder on existing DBs (skips if marker already present):
+Release **v1.0.1** includes Feature 006. On NAS (Tailscale SSH):
 
 ```bash
-ssh mr-storage 'cd /volume1/tikr/app/docker && sudo docker compose -f docker-compose.prod.yml --env-file .env up -d --build tikr-api tikr-web'
+# From Mac (Mr_Storage repo):
+./scripts/deploy-tikr-nas.sh
+
+# Or manually on NAS:
+ssh mr-storage 'cd /volume1/tikr/app/docker && \
+  sudo sed -i "s/^TIKR_VERSION=.*/TIKR_VERSION=1.0.1/" .env && \
+  sudo docker compose -f docker-compose.prod.yml --env-file .env pull tikr-api tikr-web && \
+  sudo docker compose -f docker-compose.prod.yml --env-file .env up -d tikr-api tikr-web'
 ```
 
-Verify: Requirements grid shows Aug–Dec 2026 council cycle rows; curl health on NAS API.
+Verify council endpoints after restart:
+
+```bash
+curl -sS http://mr-storage:5050/api/council/agenda-builder/preview?meetingDate=2026-08-10&board=TOW
+curl -sS http://mr-storage:5050/api/council/minutes-builder/preview?meetingDate=2026-08-10&board=TOW
+```
 
 ---
 

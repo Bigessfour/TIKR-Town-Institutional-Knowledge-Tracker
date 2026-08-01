@@ -234,7 +234,7 @@ See generated inventory + interfaces in TIKR.Shared.
 
 ## Feature 006 — Council Agenda & Minutes (`specs/006-council-agenda-minutes`)
 
-**Branch:** `006-council-agenda-minutes` · **Spec:** [spec.md](../specs/006-council-agenda-minutes/spec.md)
+**Branch:** merged via [PR #88](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/88) · **Release:** v1.0.1 · **Spec:** [spec.md](../specs/006-council-agenda-minutes/spec.md)
 
 Re-run inventory: `./scripts/update-function-inventory.sh` (use `--root .` from repo if multi-root workspace).
 
@@ -271,9 +271,11 @@ Re-run inventory: `./scripts/update-function-inventory.sh` (use `--root .` from 
 
 **Requirements.razor UI (minutes close-out):** `DownloadMeetingMinutesAsync`, `RefreshMinutesPreviewAsync` — **partial proof:** `RequirementsPageTests` (buttons); service/API tests cover data path. Link-failure and missing-requirement paths implemented in UI (2026-08-01 code review fix).
 
-- [x] **590 tests green** (`dotnet test TIKR.sln --configuration Release`) — T025 polish refresh
-- [x] **Docs:** `research.md` R9–R10 (minutes builder + DLG reference), `quickstart.md` US3/US4 validation steps — T023–T024
-- [ ] **Manual NAS validation:** seed → attach posted agenda (with extracted text) → minutes dialog → save/link/complete — see [quickstart](../specs/006-council-agenda-minutes/quickstart.md)
+- [x] **590 tests green** + CI green on PR #88
+- [x] **Docs:** research R9–R10, quickstart US3/US4 — T023–T024
+- [x] **Shipped:** merged to `main`, tagged **v1.0.1**, GHCR images published
+- [ ] **NAS deploy:** run `./scripts/deploy-tikr-nas.sh` from Mr_Storage when `mr-storage` is online (Tailscale showed offline 2026-08-01)
+- [ ] **Manual NAS validation:** seed → linked agenda with text → minutes dialog → save/link/complete — see [quickstart](../specs/006-council-agenda-minutes/quickstart.md)
 - [ ] **vNext:** bUnit test for `DownloadMeetingMinutesAsync` link-failure + save-without-requirement paths; trigger text extract when linked agenda lacks `FullTextContent`
 
 ### Open from inventory (not Feature 006 — review when touched)

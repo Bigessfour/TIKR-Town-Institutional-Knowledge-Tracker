@@ -2,7 +2,7 @@
 
 **Feature Branch**: `006-council-agenda-minutes`
 **Created**: 2026-08-01
-**Status**: Planned — implementation in progress
+**Status**: Shipped — PR #88 merged to `main`, release **v1.0.1** (2026-08-01)
 **Input**: Council meeting cycle for Wiley, CO — 2nd Monday monthly, agenda lead time, minutes close-out, AI unfinished business, NAS corpus reference.
 
 **Related:** [004-clerk-command-dashboard](../004-clerk-command-dashboard/spec.md) · NAS path `COUNCIL MEETINGS/` on Town of Wiley Shared Documents
