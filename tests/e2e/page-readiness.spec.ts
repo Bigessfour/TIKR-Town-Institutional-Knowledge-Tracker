@@ -111,10 +111,14 @@ test.describe('TIKR page readiness (nav + primary controls)', () => {
     await gotoClerkPage(page, '/settings');
     await expect(page.getByRole('heading', { name: 'Settings' })).toBeVisible();
     // Clerk-facing Settings cards (chat memory redesign + helper/storage).
-    await expect(page.getByText(/Chat memory/i).first()).toBeVisible();
-    await expect(page.getByText('This computer')).toBeVisible();
+    // Use exact/role locators — "This computer" also appears in body copy.
+    await expect(page.locator('.e-card-header-title', { hasText: 'Chat memory' }).first()).toBeVisible();
+    await expect(page.locator('.e-card-header-title', { hasText: /^This computer$/ })).toBeVisible();
     await expect(
-      page.getByText(/Keys & passwords|Town helper \(local AI\)|Town settings/i).first(),
+      page
+        .locator('.e-card-header-title')
+        .filter({ hasText: /Keys & passwords|Town helper \(local AI\)|Town settings/i })
+        .first(),
     ).toBeVisible({ timeout: 15_000 });
   });
 
