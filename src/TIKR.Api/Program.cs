@@ -653,24 +653,68 @@ api.MapGet("/documents/{id:guid}/extract", async (Guid id, TikrDbContext db, IFi
 });
 
 var generate = api.MapGroup("/documents/generate");
-generate.MapPost("/council-agenda", async (CouncilAgendaRequest? request, IConfiguration config, TikrDbContext db, IDocumentGenerationService generator) =>
+generate.MapPost("/council-agenda", async (
+    CouncilAgendaRequest? request,
+    IConfiguration config,
+    TikrDbContext db,
+    ICouncilAgendaBuilderService agendaBuilder,
+    IDocumentGenerationService generator) =>
 {
     try
     {
         var town = request?.TownName ?? config["TIKR_TOWN_NAME"] ?? "Wiley";
         var meetingDate = request?.MeetingDate ?? DateOnly.FromDateTime(DateTime.UtcNow);
+        var board = string.IsNullOrWhiteSpace(request?.Board) ? "TOW" : request.Board;
+        IReadOnlyList<CouncilAgendaSection> sections;
+        if (request?.Sections is { Count: > 0 })
+            sections = request.Sections;
+        else
+        {
+            var preview = await agendaBuilder.BuildPreviewAsync(meetingDate, board);
+            sections = preview.Sections;
+        }
+
         var items = request?.Items is { Count: > 0 }
             ? request.Items
             : await BuildCouncilAgendaItemsAsync(db);
 
         var result = await generator.GenerateCouncilAgendaPdfAsync(
-            new CouncilAgendaRequest(town, meetingDate, items));
+            new CouncilAgendaRequest(town, meetingDate, items, board, sections));
         return Results.File(result.Content, result.ContentType, result.FileName);
     }
     catch (InvalidOperationException ex)
     {
         return Results.Json(new { error = ex.Message }, statusCode: StatusCodes.Status503ServiceUnavailable);
     }
+});
+
+var council = api.MapGroup("/council");
+council.MapGet("/agenda-builder/preview", async (
+    DateOnly? meetingDate,
+    string? board,
+    ICouncilAgendaBuilderService agendaBuilder) =>
+{
+    var date = meetingDate ?? DateOnly.FromDateTime(DateTime.UtcNow);
+    var preview = await agendaBuilder.BuildPreviewAsync(date, board ?? "TOW");
+    return Results.Ok(preview);
+});
+
+council.MapPost("/agenda-builder/unfinished-business", async (
+    UnfinishedBusinessRequest request,
+    ICouncilAgendaBuilderService agendaBuilder) =>
+{
+    var suggestions = await agendaBuilder.SuggestUnfinishedBusinessAsync(request.MeetingDate, request.Board);
+    return Results.Ok(suggestions);
+});
+
+council.MapGet("/minutes-builder/preview", async (
+    DateOnly? meetingDate,
+    string? board,
+    ICouncilAgendaBuilderService agendaBuilder) =>
+{
+    var date = meetingDate ?? DateOnly.FromDateTime(DateTime.UtcNow);
+    var preview = await agendaBuilder.BuildMinutesPreviewAsync(date, board ?? "TOW");
+    return Results.Ok(preview);
 });
 
 generate.MapPost("/meeting-minutes", async (MeetingMinutesRequest request, IDocumentGenerationService generator) =>

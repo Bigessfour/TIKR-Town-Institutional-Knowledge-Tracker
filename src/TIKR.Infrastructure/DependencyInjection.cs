@@ -83,6 +83,7 @@ public static class DependencyInjection
         services.AddScoped<IChatHistoryService, ChatHistoryService>();
         services.AddSyncfusionDocumentGeneration(configuration);
         services.AddScoped<ICouncilPacketService, CouncilPacketService>();
+        services.AddScoped<ICouncilAgendaBuilderService, CouncilAgendaBuilderService>();
         services.AddHttpClient<GrokService>();
         services.AddSingleton<IEmailIngestionService, FolderEmailIngestionService>();
         services.AddHostedService<FolderEmailIngestionHostedService>();
@@ -104,6 +105,7 @@ public static class DependencyInjection
         var db = scope.ServiceProvider.GetRequiredService<TikrDbContext>();
         await db.Database.MigrateAsync();
         await DbSeeder.SeedAsync(db);
+        await CouncilMeetingSeeder.SeedAsync(db);
 
         var featureSettings = scope.ServiceProvider.GetRequiredService<IFeatureSettingsService>();
         await featureSettings.LoadIntoStateAsync();

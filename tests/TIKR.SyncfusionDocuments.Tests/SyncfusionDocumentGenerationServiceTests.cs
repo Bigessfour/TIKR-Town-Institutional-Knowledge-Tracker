@@ -85,6 +85,47 @@ public class SyncfusionDocumentGenerationServiceTests
     }
 
     [Fact]
+    [Trait("Category", "SyncfusionLicensed")]
+    public async Task GenerateMeetingMinutesDocx_StructuredByAgendaItem_IncludesMotionBlocks()
+    {
+        var licenseKey = Environment.GetEnvironmentVariable("SYNCFUSION_LICENSE_KEY");
+        if (string.IsNullOrWhiteSpace(licenseKey))
+            return;
+
+        SyncfusionDocumentLicense.RegisterFromConfiguration(
+            new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string?> { ["SYNCFUSION_LICENSE_KEY"] = licenseKey })
+                .Build());
+
+        var service = CreateService(licenseKey);
+        var result = await service.GenerateMeetingMinutesDocxAsync(
+            new MeetingMinutesRequest(
+                "Wiley",
+                new DateOnly(2026, 8, 10),
+                "Board of Trustees",
+                ["Mayor"],
+                ["Call to order", "Budget hearing"],
+                Notes: null,
+                StructuredByAgendaItem: true));
+
+        var xml = ReadDocxMainDocumentXml(result.Content);
+        xml.Should().Contain("Discussion:");
+        xml.Should().Contain("Motion:");
+        xml.Should().Contain("Vote:");
+        xml.Should().Contain("Budget hearing");
+    }
+
+    private static string ReadDocxMainDocumentXml(byte[] content)
+    {
+        using var stream = new MemoryStream(content);
+        using var archive = new System.IO.Compression.ZipArchive(stream, System.IO.Compression.ZipArchiveMode.Read);
+        var entry = archive.GetEntry("word/document.xml");
+        entry.Should().NotBeNull();
+        using var reader = new StreamReader(entry!.Open());
+        return reader.ReadToEnd();
+    }
+
+    [Fact]
     public async Task GenerateComplianceReportXlsx_WhenLicensed_ReturnsSpreadsheet()
     {
         var licenseKey = Environment.GetEnvironmentVariable("SYNCFUSION_LICENSE_KEY");

@@ -12,6 +12,7 @@
 @using Syncfusion.Blazor.Spreadsheet
 @using TIKR.Shared.Diagnostics
 @using TIKR.Shared.DTOs
+@using TIKR.Shared.Enums
 @using TIKR.Web.Helpers
 
 <SfDialog @bind-Visible="Visible"
@@ -19,7 +20,7 @@
           ShowCloseIcon="true"
           Width="96vw"
           Height="96vh"
-          CssClass="tikr-doc-fullscreen-dialog"
+          CssClass="tikr-doc-fullscreen"
           Header="@HeaderText"
           CloseOnEscape="false"
           Closed="OnDialogClosedAsync">
@@ -28,36 +29,69 @@
             @if (_document is { } d)
             {
                 <div class="tikr-doc-fullscreen-body">
-                    <div class="doc-tools tikr-doc-fullscreen-tools" role="toolbar" aria-label="Document workspace tools">
-                        @if (ShowExtendedTools)
-                        {
-                            <div class="doc-tools-group">
-                                <span class="doc-tools-label">File</span>
-                                <SfButton CssClass="tikr-action-btn"
-                                          Content="@(_downloading ? "Downloading…" : "Download")"
-                                          Disabled="@_downloading"
-                                          OnClick="@(async () => await DownloadAsync(d))" />
-                            </div>
-                        }
-                        @if (_previewKind is DocumentPreviewHelper.PreviewKind.Word
-                            or DocumentPreviewHelper.PreviewKind.Spreadsheet
-                            or DocumentPreviewHelper.PreviewKind.Pdf)
-                        {
-                            <div class="doc-tools-group">
-                                <span class="doc-tools-label">Edit</span>
+                    <div class="tikr-doc-workspace-chrome">
+                        <div class="tikr-doc-workspace-chrome-bar" role="toolbar" aria-label="Document workspace controls">
+                            <SfButton CssClass="tikr-action-btn e-outline tikr-doc-tools-toggle"
+                                      Content="@(_workspaceToolsExpanded ? "▲ Hide actions" : "▼ Show actions")"
+                                      OnClick="ToggleWorkspaceTools"
+                                      aria-expanded="@_workspaceToolsExpanded" />
+                            @if (CanSaveInWorkspace)
+                            {
                                 <SfButton CssClass="tikr-action-btn primary"
-                                          Content="@(_saving ? "Saving…" : (_dirty ? "Save changes to NAS *" : "Save to NAS"))"
+                                          Content="@(_saving ? "Saving…" : (_dirty ? "Save to NAS *" : "Save to NAS"))"
                                           Disabled="@_saving"
                                           OnClick="SaveAsync" />
                                 @if (_dirty)
                                 {
-                                    <span class="text-muted" style="font-size:0.85rem;">Unsaved changes</span>
+                                    <span class="text-muted tikr-doc-unsaved-hint">Unsaved changes</span>
+                                }
+                            }
+                            <div class="tikr-doc-workspace-chrome-spacer"></div>
+                            <SfButton CssClass="tikr-action-btn e-outline" Content="Close workspace" OnClick="RequestClose" />
+                        </div>
+                        @if (_workspaceToolsExpanded && ShowExtendedTools)
+                        {
+                            <div class="doc-tools tikr-doc-fullscreen-tools" role="toolbar" aria-label="Document workspace tools">
+                                <div class="doc-tools-group">
+                                    <span class="doc-tools-label">File</span>
+                                    <SfButton CssClass="tikr-action-btn"
+                                              Content="@(_downloading ? "Downloading…" : "Download")"
+                                              Disabled="@_downloading"
+                                              OnClick="@(async () => await DownloadAsync(d))" />
+                                    @if (DocumentUiMessages.CanConvertToPdf(d.FileName))
+                                    {
+                                        <SfButton CssClass="tikr-action-btn"
+                                                  Content="@(_converting ? "Converting…" : "Convert to PDF & open")"
+                                                  Disabled="@_converting"
+                                                  OnClick="@(async () => await ConvertToPdfAsync(d))" />
+                                    }
+                                    <SfButton CssClass="tikr-action-btn danger"
+                                              Content="Delete"
+                                              Disabled="@_deleting"
+                                              OnClick="@(() => _confirmDeleteVisible = true)" />
+                                </div>
+                                <div class="doc-tools-group">
+                                    <span class="doc-tools-label">AI</span>
+                                    <SfButton CssClass="tikr-action-btn"
+                                              Content="@(_retagging ? "Re-tagging…" : "Re-tag with AI")"
+                                              Disabled="@_retagging"
+                                              OnClick="@(async () => await RetagAsync(d))" />
+                                    <SfButton CssClass="tikr-action-btn"
+                                              Content="@(_extracting ? "Extracting…" : "Extract text to Vault")"
+                                              Disabled="@_extracting"
+                                              OnClick="@(async () => await ExtractToVaultAsync(d))" />
+                                </div>
+                                @if (CanSaveInWorkspace)
+                                {
+                                    <div class="doc-tools-group">
+                                        <span class="doc-tools-label">Edit</span>
+                                        <span class="text-muted" style="font-size:0.85rem;">
+                                            Edit in-place, or Convert to PDF &amp; open for PDF tools.
+                                        </span>
+                                    </div>
                                 }
                             </div>
                         }
-                        <div class="doc-tools-group doc-tools-close">
-                            <SfButton CssClass="tikr-action-btn e-outline" Content="Close workspace" OnClick="RequestClose" />
-                        </div>
                     </div>
 
                     @if (_loading)
@@ -66,18 +100,23 @@
                     }
                     else if (_previewKind == DocumentPreviewHelper.PreviewKind.Pdf && _pdfBytes is { Length: > 0 })
                     {
-                        <div class="tikr-doc-fullscreen-surface">
+                        <div class="tikr-doc-fullscreen-surface tikr-doc-fullscreen-surface-pdf">
                             <SfSmartPdfViewer @key="_pdfViewerKey"
                                              @ref="_pdfViewer"
-                                             Height="calc(100vh - 11rem)"
+                                             Height="100%"
                                              Width="100%"
                                              EnableDownload="false"
                                              EnablePrint="true"
                                              EnableToolbar="true"
                                              EnableAnnotationToolbar="true"
+                                             EnableNavigationToolbar="true"
+                                             EnableTextSearch="true"
+                                             EnableTextSelection="true"
+                                             EnableThumbnailPanel="true"
+                                             EnableBookmarkPanel="true"
                                              EnableFormDesigner="true"
                                              EnableFormFields="true">
-                                <AssistViewSettings Enable="true"
+                                <AssistViewSettings Enable="false"
                                                     StreamResponse="true"
                                                     Placeholder="Ask about this PDF…">
                                     <InitialPromptSettings Prompt="Summarize this municipal document for a town clerk." />
@@ -89,12 +128,13 @@
                     }
                     else if (_previewKind == DocumentPreviewHelper.PreviewKind.Word && !string.IsNullOrEmpty(_wordSfdt))
                     {
-                        <div class="tikr-doc-fullscreen-surface">
+                        <div class="tikr-doc-fullscreen-surface tikr-doc-fullscreen-surface-word">
                             <SfDocumentEditorContainer @ref="_wordContainer"
                                                        EnableToolbar="true"
                                                        RestrictEditing="false"
+                                                       LayoutType="LayoutType.Continuous"
                                                        ToolbarItems="@_wordToolbarItems"
-                                                       Height="calc(100vh - 11rem)"
+                                                       Height="100%"
                                                        Width="100%">
                                 <DocumentEditorContainerEvents Created="OnWordEditorCreated"
                                                                OnToolbarClick="OnWordToolbarClick" />
@@ -103,10 +143,10 @@
                     }
                     else if (_previewKind == DocumentPreviewHelper.PreviewKind.Spreadsheet && _spreadsheetBytes is { Length: > 0 })
                     {
-                        <div class="tikr-doc-fullscreen-surface">
+                        <div class="tikr-doc-fullscreen-surface tikr-doc-fullscreen-surface-sheet">
                             <SfSpreadsheet @ref="_spreadsheetRef"
                                            DataSource="@_spreadsheetBytes"
-                                           Height="calc(100vh - 11rem)"
+                                           Height="100%"
                                            AllowEditing="true"
                                            AllowSave="true"
                                            ShowRibbon="true"
@@ -149,20 +189,31 @@
                      ItemName="unsaved edits (will be discarded)"
                      OnConfirm="ConfirmDiscardAndClose" />
 
+<ConfirmDeleteDialog @bind-Visible="_confirmDeleteVisible"
+                     ItemName="@(_document?.FileName ?? "this document")"
+                     OnConfirm="ConfirmDeleteDocumentAsync" />
+
 @code {
     [Parameter] public bool Visible { get; set; }
     [Parameter] public EventCallback<bool> VisibleChanged { get; set; }
     [Parameter] public DocumentDto? Document { get; set; }
     [Parameter] public bool ShowExtendedTools { get; set; } = true;
     [Parameter] public EventCallback<DocumentDto> OnSaved { get; set; }
+    [Parameter] public EventCallback OnDocumentListChanged { get; set; }
 
     private DocumentDto? _document;
     private bool _loading;
     private bool _saving;
     private bool _downloading;
+    private bool _converting;
+    private bool _retagging;
+    private bool _extracting;
+    private bool _deleting;
     private bool _dirty;
     private bool _licenseFallback;
     private bool _confirmDiscardVisible;
+    private bool _confirmDeleteVisible;
+    private bool _workspaceToolsExpanded;
     private string? _previewError;
     private DocumentPreviewHelper.PreviewKind _previewKind = DocumentPreviewHelper.PreviewKind.None;
 
@@ -195,6 +246,13 @@
     private string HeaderText =>
         _document is null ? "Document workspace" : $"Working on: {_document.FileName}";
 
+    private bool CanSaveInWorkspace =>
+        _previewKind is DocumentPreviewHelper.PreviewKind.Word
+            or DocumentPreviewHelper.PreviewKind.Spreadsheet
+            or DocumentPreviewHelper.PreviewKind.Pdf;
+
+    private void ToggleWorkspaceTools() => _workspaceToolsExpanded = !_workspaceToolsExpanded;
+
     protected override async Task OnParametersSetAsync()
     {
         if (Visible && Document is not null && (_document is null || _document.Id != Document.Id))
@@ -208,6 +266,7 @@
         _previewError = null;
         _licenseFallback = false;
         _dirty = false;
+        _workspaceToolsExpanded = false;
         _previewKind = DocumentPreviewHelper.ResolveKind(doc.FileName, doc.ContentType, HasText(doc));
         StateHasChanged();
 
@@ -546,5 +605,146 @@
     {
         if (_document is null) return;
         Navigation.NavigateTo($"/documents?documentId={_document.Id}");
+    }
+
+    private async Task RetagAsync(DocumentDto doc)
+    {
+        _retagging = true;
+        StateHasChanged();
+        try
+        {
+            await Api.TagDocumentAsync(doc.Id);
+            Toast.Show($"Re-tagged {doc.FileName}");
+            await OnDocumentListChanged.InvokeAsync();
+        }
+        catch (Exception ex)
+        {
+            Toast.Show($"Re-tag failed: {ex.Message}");
+        }
+        finally
+        {
+            _retagging = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task ExtractToVaultAsync(DocumentDto doc)
+    {
+        _extracting = true;
+        StateHasChanged();
+        try
+        {
+            var extract = await Api.ExtractTextTablesAsync(doc.Id);
+            var sb = new System.Text.StringBuilder();
+            sb.AppendLine($"Source document: {doc.FileName}");
+            sb.AppendLine($"Extracted: {DateTime.Now:g}");
+            sb.AppendLine();
+            sb.AppendLine(extract?.ExtractedText ?? "(no extractable text)");
+            if (extract is { TablesExtractedCount: > 0 })
+            {
+                sb.AppendLine();
+                sb.AppendLine($"[{extract.TablesExtractedCount} table(s) were detected — see original document for structured data]");
+            }
+
+            await Api.CreateKnowledgeEntryAsync(new CreateKnowledgeEntryRequest(
+                $"Extracted from {doc.FileName}",
+                sb.ToString(),
+                KnowledgeCategory.TribalKnowledge,
+                0));
+            Toast.Show(DocumentUiMessages.ExtractToVaultSuccess(doc.FileName));
+        }
+        catch (Exception ex)
+        {
+            Toast.Show($"Extract failed: {ex.Message}");
+        }
+        finally
+        {
+            _extracting = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task ConvertToPdfAsync(DocumentDto doc)
+    {
+        if (!DocumentUiMessages.CanConvertToPdf(doc.FileName))
+            return;
+
+        _converting = true;
+        StateHasChanged();
+        try
+        {
+            var result = await Api.ConvertStoredDocumentToPdfAsync(doc.Id, doc.FileName);
+            if (result.Document is null or { Content: null or { Length: 0 } })
+            {
+                Toast.Show(DocumentUiMessages.GenerationFailed(result.ErrorMessage));
+                return;
+            }
+
+            var pdfName = string.IsNullOrWhiteSpace(result.Document.FileName)
+                ? Path.ChangeExtension(doc.FileName, ".pdf") ?? "converted.pdf"
+                : result.Document.FileName;
+
+            await JS.InvokeVoidAsync(
+                "tikrDownload.downloadFromBytes",
+                pdfName,
+                result.Document.ContentType ?? "application/pdf",
+                result.Document.Content);
+
+            await using var uploadStream = new MemoryStream(result.Document.Content);
+            var uploadResp = await Api.UploadDocumentAsync(uploadStream, pdfName, isTransient: false);
+            if (!uploadResp.IsSuccessStatusCode)
+            {
+                Toast.Show("PDF created but could not save to library.");
+                return;
+            }
+
+            var saved = await uploadResp.Content.ReadFromJsonAsync<DocumentDto>();
+            if (saved is null)
+            {
+                Toast.Show("PDF saved but could not reopen in workspace.");
+                await OnDocumentListChanged.InvokeAsync();
+                return;
+            }
+
+            Toast.Show($"Converted and saved as {pdfName}");
+            await OnDocumentListChanged.InvokeAsync();
+            _dirty = false;
+            await LoadDocumentAsync(saved);
+        }
+        catch (Exception ex)
+        {
+            Toast.Show(DocumentUiMessages.GenerationFailed(ex.Message));
+        }
+        finally
+        {
+            _converting = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task ConfirmDeleteDocumentAsync()
+    {
+        if (_document is null)
+            return;
+
+        _deleting = true;
+        StateHasChanged();
+        try
+        {
+            await Api.DeleteDocumentAsync(_document.Id);
+            Toast.Show($"Deleted {_document.FileName}");
+            _dirty = false;
+            await OnDocumentListChanged.InvokeAsync();
+            await CloseAsync();
+        }
+        catch (Exception ex)
+        {
+            Toast.Show($"Delete failed: {ex.Message}");
+        }
+        finally
+        {
+            _deleting = false;
+            StateHasChanged();
+        }
     }
 }

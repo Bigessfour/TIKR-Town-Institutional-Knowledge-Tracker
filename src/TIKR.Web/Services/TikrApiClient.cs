@@ -321,6 +321,49 @@ public class TikrApiClient(HttpClient http)
     public Task<DocumentGenerationResponse> GenerateCouncilAgendaPdfAsync(CouncilAgendaRequest? request = null) =>
         PostGeneratedDocumentAsync("/api/documents/generate/council-agenda", request);
 
+    public async Task<CouncilAgendaBuilderPreview?> GetCouncilAgendaPreviewAsync(
+        DateOnly meetingDate,
+        string board = "TOW")
+    {
+        var url =
+            $"/api/council/agenda-builder/preview?meetingDate={meetingDate:yyyy-MM-dd}&board={Uri.EscapeDataString(board)}";
+        return await http.GetFromJsonAsync<CouncilAgendaBuilderPreview>(url);
+    }
+
+    public async Task<IReadOnlyList<UnfinishedBusinessSuggestion>> SuggestCouncilUnfinishedBusinessAsync(
+        DateOnly meetingDate,
+        string board = "TOW")
+    {
+        var response = await http.PostAsJsonAsync(
+            "/api/council/agenda-builder/unfinished-business",
+            new UnfinishedBusinessRequest(meetingDate, board));
+        if (!response.IsSuccessStatusCode)
+            return [];
+
+        return await response.Content.ReadFromJsonAsync<List<UnfinishedBusinessSuggestion>>()
+               ?? [];
+    }
+
+    public async Task<CouncilMinutesBuilderPreview?> GetCouncilMinutesPreviewAsync(
+        DateOnly meetingDate,
+        string board = "TOW")
+    {
+        var url =
+            $"/api/council/minutes-builder/preview?meetingDate={meetingDate:yyyy-MM-dd}&board={Uri.EscapeDataString(board)}";
+        return await http.GetFromJsonAsync<CouncilMinutesBuilderPreview>(url);
+    }
+
+    public async Task<DocumentDto?> UploadDocumentAndReturnAsync(
+        Stream content,
+        string fileName,
+        bool isTransient = false)
+    {
+        var response = await UploadDocumentAsync(content, fileName, isTransient);
+        return response.IsSuccessStatusCode
+            ? await response.Content.ReadFromJsonAsync<DocumentDto>()
+            : null;
+    }
+
     public async Task<CouncilPacketResponse> GenerateCouncilPacketAsync(CreateCouncilPacketRequest? request = null)
     {
         var response = await http.PostAsJsonAsync("/api/documents/generate/council-packet", request);

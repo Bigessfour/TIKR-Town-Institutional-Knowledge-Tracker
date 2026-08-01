@@ -124,8 +124,9 @@ public class AssistantPageTests : ClerkTestContext
         var cut = RenderComponent<Assistant>();
 
         var method = cut.Instance.GetType().GetMethod("OnPromptRequested", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+        method.Should().NotBeNull();
         var args = new Syncfusion.Blazor.InteractiveChat.AssistViewPromptRequestedEventArgs { Prompt = "What is the budget?" };
-        var task = (Task)method.Invoke(cut.Instance, new object[] { args });
+        var task = (Task)method!.Invoke(cut.Instance, new object[] { args })!;
         await cut.InvokeAsync(async () => await task);
 
         // Stub yields "stub stream"; we set args.Response to the Markdown HTML containing it

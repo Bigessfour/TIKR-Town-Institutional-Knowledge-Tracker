@@ -346,14 +346,19 @@
 
     private async Task OnPromptRequested(AssistViewPromptRequestedEventArgs args)
     {
-        _lastPrompt = args.Prompt;
+        var prompt = args.Prompt ?? string.Empty;
+        _lastPrompt = prompt;
         var turnSw = System.Diagnostics.Stopwatch.StartNew();
         TikrActionLog.Started(Logger, "UI.Assistant.Prompt",
-            $"PromptLen={args.Prompt?.Length ?? 0} HistoryTurns={_modelHistory.Count / 2}");
+            $"PromptLen={prompt.Length} HistoryTurns={_modelHistory.Count / 2}");
 
-        // Dispose the previous streaming CTS before allocating a new one so we
-        // don't leak CancellationTokenSource instances across chat turns in a
-        // long-running Blazor Server circuit.
+        if (string.IsNullOrWhiteSpace(prompt))
+        {
+            args.Response = "<p class='text-muted'>Enter a question to get started.</p>";
+            return;
+        }
+
+        // Dispose the previous streaming CTS
         _streamingCts?.Cancel();
         _streamingCts?.Dispose();
         _streamingCts = new CancellationTokenSource();
@@ -393,7 +398,7 @@
 
             // Always pack RAG first so routing can use hit counts + Grok stays grounded.
             var retrievalQuery = AssistantPromptBuilder.BuildRetrievalQuery(
-                args.Prompt,
+                prompt,
                 AssistantPromptBuilder.GetRecentUserTexts(_modelHistory, take: 2));
 
             SemanticSearchResponse? docSearch = null;
@@ -422,11 +427,11 @@
             var docContext = AssistantPromptBuilder.FormatDocumentRagBlock(docSearch, out var docsDown);
             var vaultContext = AssistantPromptBuilder.FormatVaultRagBlock(vaultSearch, out var vaultDown);
             searchUnavailable = searchUnavailable || docsDown || vaultDown;
-            var productHits = ProductHelpCatalog.Search(args.Prompt, topK: 3);
+            var productHits = ProductHelpCatalog.Search(prompt, topK: 3);
             var productContext = ProductHelpCatalog.FormatForPrompt(productHits);
             var citations = AssistantPromptBuilder.CollectCitationLabels(docSearch, vaultSearch);
             var userMessage = AssistantPromptBuilder.BuildUserMessageWithRag(
-                args.Prompt,
+                prompt,
                 _contextSummary,
                 docContext,
                 vaultContext,
@@ -436,7 +441,7 @@
 
             // LangChain-style decision matrix: Ollama for routine; auto-Grok when needed.
             var decision = AssistantAgentRouter.Decide(
-                args.Prompt,
+                prompt,
                 ollamaAvailable: ollamaOk,
                 grokEnabled: _grokEnabled,
                 historyTurnCount: _modelHistory.Count / 2,
@@ -450,7 +455,7 @@
 
             if (decision.Route == AiRoute.CloudGrok)
             {
-                await CompleteViaGrokAsync(args, userMessage, decision, turnSw);
+                await CompleteViaGrokAsync(args, prompt, userMessage, decision, turnSw);
                 return;
             }
 
@@ -497,7 +502,7 @@
             {
                 var escalate = AssistantAgentRouter.EscalateAfterLocalFailure(grokEnabled: true);
                 TikrActionLog.Info(Logger, "UI.Assistant.Route", escalate.Reason);
-                await CompleteViaGrokAsync(args, userMessage, escalate, turnSw);
+                await CompleteViaGrokAsync(args, prompt, userMessage, escalate, turnSw);
                 return;
             }
 
@@ -519,8 +524,8 @@
             await SafeUpdateResponseAsync(html);
             _routeNote = "Answered locally (Ollama on the NAS).";
 
-            AssistantPromptBuilder.AppendTurn(_modelHistory, args.Prompt, replyMarkdown);
-            await PersistTurnAsync(args.Prompt, replyMarkdown);
+            AssistantPromptBuilder.AppendTurn(_modelHistory, prompt, replyMarkdown);
+            await PersistTurnAsync(prompt, replyMarkdown);
             TikrActionLog.Completed(Logger, "UI.Assistant.Prompt",
                 $"Path=local-buffered Chunks={streamChunks} RawLen={raw.Length} CleanLen={replyMarkdown.Length} Citations={citations.Count} Route={decision.Reason}",
                 turnSw.ElapsedMilliseconds);
@@ -538,10 +543,10 @@
             try
             {
                 var escalate = AssistantAgentRouter.EscalateAfterLocalFailure(_grokEnabled);
-                var fbContext = await BuildRagContextAsync(args.Prompt ?? "");
+                var fbContext = await BuildRagContextAsync(prompt);
                 if (escalate.Route == AiRoute.CloudGrok)
                 {
-                    await CompleteViaGrokAsync(args, fbContext, escalate, turnSw);
+                    await CompleteViaGrokAsync(args, prompt, fbContext, escalate, turnSw);
                     return;
                 }
 
@@ -561,6 +566,7 @@
 
     private async Task CompleteViaGrokAsync(
         AssistViewPromptRequestedEventArgs args,
+        string prompt,
         string ragPackedContext,
         AiRouteDecision decision,
         System.Diagnostics.Stopwatch turnSw)
@@ -570,7 +576,7 @@
         await SafeUpdateResponseAsync(preparing);
 
         // PreferCloud so API honors the Web decision matrix (does not re-score down to Ollama).
-        var result = await Api.AskAdvancedAsync(args.Prompt ?? "", ragPackedContext, preferCloud: true);
+        var result = await Api.AskAdvancedAsync(prompt, ragPackedContext, preferCloud: true);
         var replyMarkdown = result?.Answer ?? "Advanced AI is unavailable. Check Settings (Grok) or try again when Ollama is ready.";
         replyMarkdown = AssistantPromptBuilder.SanitizeModelOutput(replyMarkdown);
         if (string.IsNullOrWhiteSpace(replyMarkdown))
@@ -585,8 +591,8 @@
             ? "Answered with Grok (auto-selected for this question)."
             : "Answered via advanced path (local). " + decision.Reason;
 
-        AssistantPromptBuilder.AppendTurn(_modelHistory, args.Prompt ?? "", replyMarkdown);
-        await PersistTurnAsync(args.Prompt ?? "", replyMarkdown);
+        AssistantPromptBuilder.AppendTurn(_modelHistory, prompt, replyMarkdown);
+        await PersistTurnAsync(prompt, replyMarkdown);
         TikrActionLog.Completed(Logger, "UI.Assistant.Prompt",
             $"Path=auto-route UsedGrok={usedGrok} Reason={decision.Reason} AnswerLen={replyMarkdown.Length}",
             turnSw.ElapsedMilliseconds);

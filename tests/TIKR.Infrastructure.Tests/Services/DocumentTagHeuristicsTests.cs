@@ -13,6 +13,7 @@ public class DocumentTagHeuristicsTests
     [InlineData("budget-2026.pdf", null, DocumentTagHeuristics.BudgetFinance)]
     [InlineData("Ordinance_12.pdf", null, DocumentTagHeuristics.Ordinances)]
     [InlineData("council-minutes.pdf", null, DocumentTagHeuristics.Minutes)]
+    [InlineData("7-july-agenda.docx", null, DocumentTagHeuristics.Agenda)]
     public void FillGaps_InfersFolderFromFilename(string fileName, string? content, string expectedFolder)
     {
         var (tags, folder) = DocumentTagHeuristics.FillGaps(fileName, content, [], null);

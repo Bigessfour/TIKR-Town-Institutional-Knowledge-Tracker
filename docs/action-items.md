@@ -96,7 +96,7 @@ Do these before Deb walkthrough + tag:
 
 Reference lines from generated inventory (re-run script to refresh).
 
-**Function inventory clean (0 without proof):** ✅ 2026-07-25 — **700 tracked / 698 with proof** (remaining 2: `ClerkUserGuideService` helpers; ClerkTour* closed via `ClerkTourServiceTests.cs`).
+**Function inventory (2026-08-01, T025 refresh):** **1042 tracked | 1025 with proof | 17 without proof** — see generated header. Feature 006 council paths are proven; remaining gaps are infra helpers (ChatHistory, FeatureSettings, RuntimeSecrets, ClerkUserGuide, TikrCircuitHandler, DashboardService.GetSummaryAsync, TikrActionLog.Started).
 
 **Done Detector UI question (2026-07-08):** The core Python tracker (`detect_ui_elements` + package list + "Blazor Page / Component" category) historically only sampled Syncfusion control *names*.
 
@@ -117,7 +117,7 @@ All prior items now have scanner-detected proof (string mentions in *Tests.cs ex
 - `IDocumentAgentExtractionBackend.AgentExtractionResult` — covered by agent backend + endpoint tests.
 - `RequirementUrgencyHelper.GetLabel` — covered by RequirementWorkflowHelpersTests (new GetLabel_MapsAllUrgencyLevels + wrapper).
 
-See updated "without proof" section in generated (now empty). Real verification comes from full test suite, Playwright E2E, and clerk workflows. Re-run scanner after future function changes.
+See generated "Functions without proof" header (17 items — infra/UX helpers, not Feature 006 blockers). Real verification comes from full test suite, Playwright E2E, and clerk workflows. Re-run scanner after future function changes.
 
 - [x] GET /health — basic health. Verified: HealthEndpointTests.cs, docker smoke in CI.
 - [x] GET /api/system/local-status — NAS + AI status footer. Used on every page.
@@ -145,7 +145,7 @@ See updated "without proof" section in generated (now empty). Real verification 
 ## Blazor Pages & Major Components — Status
 
 - [x] `/` (Home.razor) — Dashboard: urgency pills, AI card, quick actions, mini grid, activity. Phase 0 + #33.
-- [x] `/requirements` (Requirements.razor) — Grid CRUD, CSV, AI Scan, packet print, confirm delete. 10A/10B/Phase 0.
+- [x] `/requirements` (Requirements.razor) — Grid CRUD, CSV, AI Scan, **council agenda builder**, **minutes close-out** (link + optional mark complete), packet print, confirm delete. Phase 0 + Feature 006 US3/US4.
 - [x] `/documents` (Documents.razor) — Upload, TreeView, semantic search, download, preview split + Convert to PDF (images+Office), Extract to Vault, on-fly non-PDF preview. Phase 9 + this extension.
   New tracked (inventory 542/542 proof): ConvertImageToPdfAsync (gen service), updates to ConvertStored/ client, ExtractTextTablesAsync + extract endpoint, ExtractToVaultAsync + menu/button, preview load changes. All have tests. (See function-inventory.generated.md for exact entries.)
 - [x] `/vault` (Vault.razor) — Tabs, RTE, Copy for New Clerk, voice sim + Generate Complete Handover Package (PDF with TOC/bookmarks via Document SDK). Last feature.
@@ -229,6 +229,57 @@ See generated inventory + interfaces in TIKR.Shared.
 - [x] Documents delete undo parity — single-delete 5s undo re-uploads captured bytes (bulk remains toast-only, same as Vault).
 
 **Cross-cutting verification:** `dotnet test`, trunk, Playwright e2e against `docker compose`, manual NAS run.
+
+---
+
+## Feature 006 — Council Agenda & Minutes (`specs/006-council-agenda-minutes`)
+
+**Branch:** `006-council-agenda-minutes` · **Spec:** [spec.md](../specs/006-council-agenda-minutes/spec.md)
+
+Re-run inventory: `./scripts/update-function-inventory.sh` (use `--root .` from repo if multi-root workspace).
+
+### P1 — Meeting cycle seed
+
+| Function                                                       | Proof                                                                  | Minimal impl signal              |
+| -------------------------------------------------------------- | ---------------------------------------------------------------------- | -------------------------------- |
+| `CouncilMeetingSeeder.SeedAsync`                               | `CouncilMeetingSeederTests` (30 rows Aug–Dec 2026 TOW+WSD, idempotent) | Idempotent marker in description |
+| `CouncilMeetingSchedule.SecondMonday` / `PreviousSecondMonday` | `CouncilMeetingScheduleTests` + seeder tests                           | Pure date helper                 |
+
+### US3 — Agenda builder
+
+| Function                                                                        | Proof                                                                      | Minimal impl signal                    |
+| ------------------------------------------------------------------------------- | -------------------------------------------------------------------------- | -------------------------------------- |
+| `CouncilAgendaScaffold.CreateOrderOfBusiness`                                   | `CouncilAgendaScaffoldTests` (DLG order)                                   | Static scaffold                        |
+| `CouncilAgendaBuilderService.BuildPreviewAsync`                                 | `CouncilAgendaBuilderServiceTests.BuildPreviewAsync_*`                     | DB new business + unfinished merge     |
+| `CouncilAgendaBuilderService.SuggestUnfinishedBusinessAsync`                    | `CouncilAgendaBuilderServiceTests.SuggestUnfinishedBusinessAsync_*`        | Heuristic + optional semantic fallback |
+| `UnfinishedBusinessExtractor.Extract`                                           | `UnfinishedBusinessExtractorTests`                                         | Keyword lines from minutes text        |
+| `GET /api/council/agenda-builder/preview`                                       | `CouncilAgendaBuilderEndpointTests.GetAgendaPreview_*`                     | Thin handler                           |
+| `POST /api/council/agenda-builder/unfinished-business`                          | `CouncilAgendaBuilderEndpointTests.PostUnfinishedBusiness_*`               | Thin handler                           |
+| `TikrApiClient.GetCouncilAgendaPreviewAsync`                                    | `CouncilAgendaBuilderEndpointTests` + `TikrApiClientTests` (generate path) | HTTP client                            |
+| `SyncfusionDocumentGenerationService.GenerateCouncilAgendaPdfAsync` (sectioned) | `SyncfusionDocumentGenerationServiceTests` + licensed API test             | Licensed PDF                           |
+
+### US4 — Minutes from actioned agenda
+
+| Function                                                                                         | Proof                                                                                                                    | Minimal impl signal                                               |
+| ------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------- |
+| `ActionedAgendaLineExtractor.Extract`                                                            | `ActionedAgendaLineExtractorTests`                                                                                       | Parses linked doc `FullTextContent`; scaffold fallback when empty |
+| `CouncilMeetingCycleHelper.Matches`                                                              | `CouncilMeetingCycleHelperTests` (date prose, missing board)                                                             | Parses seeded requirement descriptions                            |
+| `CouncilAgendaBuilderService.BuildMinutesPreviewAsync`                                           | `BuildMinutesPreviewAsync_UsesLinkedAgendaAndDraftRequirement` — asserts lines from **linked** agenda text, not scaffold | Resolves Post Agenda link + Draft Minutes requirement             |
+| `GET /api/council/minutes-builder/preview`                                                       | `CouncilAgendaBuilderEndpointTests.GetMinutesPreview_*`                                                                  | Thin handler                                                      |
+| `SyncfusionDocumentGenerationService.GenerateMeetingMinutesDocxAsync` (`StructuredByAgendaItem`) | `GenerateMeetingMinutesDocx_StructuredByAgendaItem_IncludesMotionBlocks` (licensed; reads `word/document.xml`)           | Discussion/Motion/Vote blocks per line                            |
+| `TikrApiClient.GetCouncilMinutesPreviewAsync` / `UploadDocumentAndReturnAsync`                   | Endpoint + `RequirementsEndpointTests` link path; UI checks link API result before mark-complete toast                   | Client + Requirements dialog                                      |
+
+**Requirements.razor UI (minutes close-out):** `DownloadMeetingMinutesAsync`, `RefreshMinutesPreviewAsync` — **partial proof:** `RequirementsPageTests` (buttons); service/API tests cover data path. Link-failure and missing-requirement paths implemented in UI (2026-08-01 code review fix).
+
+- [x] **590 tests green** (`dotnet test TIKR.sln --configuration Release`) — T025 polish refresh
+- [x] **Docs:** `research.md` R9–R10 (minutes builder + DLG reference), `quickstart.md` US3/US4 validation steps — T023–T024
+- [ ] **Manual NAS validation:** seed → attach posted agenda (with extracted text) → minutes dialog → save/link/complete — see [quickstart](../specs/006-council-agenda-minutes/quickstart.md)
+- [ ] **vNext:** bUnit test for `DownloadMeetingMinutesAsync` link-failure + save-without-requirement paths; trigger text extract when linked agenda lacks `FullTextContent`
+
+### Open from inventory (not Feature 006 — review when touched)
+
+- `DashboardService.GetSummaryAsync` — no dedicated test (dashboard bUnit covers page load indirectly)
+- Chat history / feature settings / runtime secrets / circuit handler / clerk user guide — see generated "without proof" list
 
 ---
 
