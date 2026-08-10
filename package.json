@@ -6,7 +6,7 @@
     "repomix": "repomix --config repomix.config.json"
   },
   "devDependencies": {
-    "repomix": "^1.17.0"
+    "repomix": "^1.18.0"
   },
   "overrides": {
     "fast-uri": "3.1.4"
