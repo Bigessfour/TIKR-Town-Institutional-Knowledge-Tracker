@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Deploy TIKR to Synology NAS (Mr_Storage) over Tailscale SSH.
 # Preserves NAS-specific compose overrides (town-docs mount, API entrypoint).
+# shellcheck disable=SC2029 # Local path expansion in ssh remote commands is intentional.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"

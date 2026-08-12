@@ -3,7 +3,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd "$ROOT"
+cd "${ROOT}"
 
 WEB_PORT="${TIKR_WEB_HOST_PORT:-8080}"
 API_PORT="${TIKR_API_HOST_PORT:-5000}"
@@ -52,10 +52,13 @@ data_path_writable() {
 		sudo "${docker_bin}" "$@"
 	}
 
-	if run_docker ps --format '{{.Names}}' | grep -qx tikr-api; then
-		run_docker exec tikr-api test -w /data
-		return $?
+	local api_names
+	# shellcheck disable=SC2310
+	api_names="$(run_docker ps --format '{{.Names}}' 2>/dev/null || true)"
+	if ! grep -qx tikr-api <<<"${api_names}"; then
+		return 1
 	fi
+	run_docker exec tikr-api test -w /data
 	return 1
 }
 
