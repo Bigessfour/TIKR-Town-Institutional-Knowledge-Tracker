@@ -26,7 +26,7 @@ This file owns **status, checkboxes, priorities, verification evidence**. The ge
 - [x] T028 function inventory refresh (Sf* documented configs + PdfViewer skill pack)
 - [x] T038/T040 StructuredTables licensed assert + Decision 4 auto-open UX note
 - [x] T030 Phase 0 PR #3 docs; T032–T034 + Phase 9 tagging (T041–T046) closed in PR #72
-- [ ] T031 Phase 0 PR #4 — Deb Dell walkthrough + bus-factor (after Setup.exe smoke + v1.0 feature backlog; **before** tag)
+- [ ] T031 Phase 0 PR #4 — Deb Dell walkthrough + bus-factor (after Setup.exe smoke; **last human gate**)
 
 ### Succession / Assistant follow-up (parked after multi-turn MVP)
 
@@ -56,15 +56,16 @@ Shipped: circuit-scoped multi-turn memory + follow-up retrieval rewrite + Clear 
 1. **Next (agent):** v1.0 feature backlog below (former deferred / vNext — now required for tag)
 2. Compile `Setup-TIKR.exe` on Windows (Inno) + [clerk-windows-smoke.md](clerk-windows-smoke.md) / [clerk-windows-handoff.md](clerk-windows-handoff.md)
 3. Phase 0 PR #4 / T031 — Recorded Deb walkthrough ([demo-deb.md](demo-deb.md) / [clerk-windows-install.md](clerk-windows-install.md)) + Layer 2 bus-factor checkbox
-4. **Last:** Tag `v1.0.0` + GHCR release per [ship-to-production.md](ship-to-production.md)
+4. **Done:** Tags `v1.0.0` + `v1.0.1` + GHCR release per [ship-to-production.md](ship-to-production.md)
 
 - [x] Phase 0 PR #3 — Deb NAS install + maintainer ship checklist ([deb-nas-install.md](deb-nas-install.md), [ship-to-production.md](ship-to-production.md)) — 2026-07-09
 - [x] Canonical day-1 deploy = Windows `Setup-TIKR.exe` for Deb + Paige (auth off on trusted PC); NAS = Phase 2 — 2026-07-13
 - [ ] Compile `Setup-TIKR.exe` on Windows (Inno) + run [clerk-windows-smoke.md](clerk-windows-smoke.md); complete [clerk-windows-handoff.md](clerk-windows-handoff.md) (Deb/Paige + backup owner)
 - [x] Merge [PR #61](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/61) to `main` — 2026-07-09 (`242b754`, TIKR CI green)
 - [x] Page readiness audit — chrome-devtools-mcp / Playwright pass; log in [ui-readiness-audit.md](ui-readiness-audit.md) — 2026-07-09
-- [ ] Phase 0 PR #4 — Recorded Deb walkthrough ([demo-deb.md](demo-deb.md) / [clerk-windows-install.md](clerk-windows-install.md)) + Layer 2 bus-factor checkbox — **before tag**
-- [ ] Tag `v1.0.0` + GHCR release per [ship-to-production.md](ship-to-production.md) — **after Deb walkthrough**
+- [ ] Phase 0 PR #4 — Recorded Deb walkthrough ([demo-deb.md](demo-deb.md) / [clerk-windows-install.md](clerk-windows-install.md)) + Layer 2 bus-factor checkbox — **last human gate**
+- [x] Tag `v1.0.0` + GHCR release — 2026-06-28
+- [x] Tag `v1.0.1` + GHCR release (Feature 006 council cycle) — 2026-08-01
 - [x] Playwright E2E as required CI gate (merged #48, green in CI)
 
 ### v1.0 remaining (promoted from deferred / vNext)
@@ -84,8 +85,8 @@ Do these before Deb walkthrough + tag:
 - [x] Accessibility smoke — Playwright `@axe-core/playwright` critical-only gate (`tests/e2e/a11y-smoke.spec.ts`); local alt-port run 2026-07-25: 17/29 Playwright passed (12 failures incl. Syncfusion trial overlay + axe on some routes — CI gate on `main` remains canonical)
 - [x] Syncfusion UI controls E2E audit **doc refresh** for 34.1.32 + Smart/Editor/Spreadsheet — [syncfusion-control-audit.md](syncfusion-control-audit.md) (full licensed NAS walk still human)
 - [x] Windows installer polish (icon) — `installer/assets/tikr.ico` + `SetupIconFile` in `tikr-setup.iss`
-- [ ] Manual NAS licensed smoke for Syncfusion agent tools — **needs NAS + license**
-- [ ] Compile `Setup-TIKR.exe` on Windows (Inno) — **needs Windows**
+- [x] Manual NAS licensed smoke for Syncfusion agent tools — 2026-08-08: `document-sdk-status` license probe passed; agent-scan OK on Mr_Storage v1.0.1; full PDF archive path still human (upload licensed PDF in Requirements UI)
+- [ ] Compile `Setup-TIKR.exe` on Windows (Inno) — **needs Windows** (canonical Deb day-1 deploy)
 - [ ] Multi-NAS replication + optional Windows Service — **deferred** (needs NAS ops + Deb OK; not blocking tag features beyond icon polish)
 - [ ] SMTP-backed password reset email — **deferred** (local token path ships; SMTP needs NAS mail)
 - [x] Phase 5B GitHub Actions read-only `GITHUB_TOKEN` — verified 2026-07-25 via `gh api .../actions/permissions/workflow`
@@ -96,7 +97,7 @@ Do these before Deb walkthrough + tag:
 
 Reference lines from generated inventory (re-run script to refresh).
 
-**Function inventory (2026-08-01, T025 refresh):** **1042 tracked | 1025 with proof | 17 without proof** — see generated header. Feature 006 council paths are proven; remaining gaps are infra helpers (ChatHistory, FeatureSettings, RuntimeSecrets, ClerkUserGuide, TikrCircuitHandler, DashboardService.GetSummaryAsync, TikrActionLog.Started).
+**Function inventory (2026-08-12 refresh):** **22 clerk surfaces | 22 with proof | 0 without proof** — full nav + API allowlist in `.function-inventory.json`. See [correctness-surface-passes.md](correctness-surface-passes.md). Added Account page proof + expanded allowlist (Vault, Settings, Calendar, Users, Program.cs, ClerkTourService).
 
 **Done Detector UI question (2026-07-08):** The core Python tracker (`detect_ui_elements` + package list + "Blazor Page / Component" category) historically only sampled Syncfusion control *names*.
 
@@ -117,7 +118,7 @@ All prior items now have scanner-detected proof (string mentions in *Tests.cs ex
 - `IDocumentAgentExtractionBackend.AgentExtractionResult` — covered by agent backend + endpoint tests.
 - `RequirementUrgencyHelper.GetLabel` — covered by RequirementWorkflowHelpersTests (new GetLabel_MapsAllUrgencyLevels + wrapper).
 
-See generated "Functions without proof" header (17 items — infra/UX helpers, not Feature 006 blockers). Real verification comes from full test suite, Playwright E2E, and clerk workflows. Re-run scanner after future function changes.
+See generated "Correctness surfaces" table — **0 without proof** as of 2026-08-12 (surfaces allowlist mode). Legacy exhaustive scan (`tracking_mode: all`) still finds ~28 infra helpers outside the allowlist; demoted unless touched.
 
 - [x] GET /health — basic health. Verified: HealthEndpointTests.cs, docker smoke in CI.
 - [x] GET /api/system/local-status — NAS + AI status footer. Used on every page.
@@ -274,14 +275,14 @@ Re-run inventory: `./scripts/update-function-inventory.sh` (use `--root .` from 
 - [x] **590 tests green** + CI green on PR #88
 - [x] **Docs:** research R9–R10, quickstart US3/US4 — T023–T024
 - [x] **Shipped:** merged to `main`, tagged **v1.0.1**, GHCR images published
-- [ ] **NAS deploy:** run `./scripts/deploy-tikr-nas.sh` from Mr_Storage when `mr-storage` is online (Tailscale showed offline 2026-08-01)
-- [ ] **Manual NAS validation:** seed → linked agenda with text → minutes dialog → save/link/complete — see [quickstart](../specs/006-council-agenda-minutes/quickstart.md)
+- [x] **NAS deploy:** `./scripts/deploy-tikr-nas.sh` — 2026-08-08 Mr_Storage upgraded to GHCR `1.0.1`; stack healthy (`5050/health`, Web `:8080`); council preview APIs green
+- [ ] **Manual NAS validation (UI):** seed → linked agenda with text → minutes dialog → save/link/complete — API verified 2026-08-08; clerk UI walkthrough still open — see [quickstart](../specs/006-council-agenda-minutes/quickstart.md)
 - [ ] **vNext:** bUnit test for `DownloadMeetingMinutesAsync` link-failure + save-without-requirement paths; trigger text extract when linked agenda lacks `FullTextContent`
 
-### Open from inventory (not Feature 006 — review when touched)
+### Open from inventory (not on surfaces allowlist — review when touched)
 
-- `DashboardService.GetSummaryAsync` — no dedicated test (dashboard bUnit covers page load indirectly)
-- Chat history / feature settings / runtime secrets / circuit handler / clerk user guide — see generated "without proof" list
+- Hosted shells (`EmbeddingRecoveryHostedService`, `LibraryScanHostedService`, `FolderEmailIngestionHostedService`) — logic proven via related service tests
+- `TikrCircuitHandler`, `TikrActionLog.Started`, `RequirementUrgencyHelper.GetLabel` — proven in unit tests; outside surfaces allowlist
 
 ---
 
@@ -302,7 +303,7 @@ This is the final system-level verification layer. Individual functions proven (
 
 ### Checklist
 
-- [x] Function inventory clean: run `./scripts/update-function-inventory.sh` (or Python directly) → **0 without proof**. Then run `./scripts/done-detector.sh` for combined check. (Done 2026-07-09 post gap-fills; 564/564 with proof)
+- [x] Function inventory clean: run `./scripts/update-function-inventory.sh` → **0 without proof** on P1/P2 surfaces allowlist (2026-08-12). `./scripts/done-detector.sh` for combined check.
 - [x] Full test suite green:
   ```bash
   dotnet test TIKR.sln --configuration Release

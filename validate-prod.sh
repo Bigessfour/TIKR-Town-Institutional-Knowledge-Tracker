@@ -17,65 +17,92 @@ pass=0
 fail=0
 
 check() {
-  local label="$1"
-  shift
-  if "$@"; then
-    echo "✅ ${label}"
-    pass=$((pass + 1))
-  else
-    echo "❌ ${label}"
-    fail=$((fail + 1))
-  fi
+	local label="$1"
+	shift
+	if "$@"; then
+		echo "✅ ${label}"
+		pass=$((pass + 1))
+	else
+		echo "❌ ${label}"
+		fail=$((fail + 1))
+	fi
 }
 
 check "Web ${WEB_PORT}" curl -sf "${WEB_URL}/" -o /dev/null
 check "API ${API_PORT} /health" curl -sf "${API_URL}/health" -o /dev/null
 check "Ollama ${OLLAMA_PORT}" curl -sf "http://localhost:${OLLAMA_PORT}/" -o /dev/null
 
-if [[ -d "${DATA_PATH}" ]]; then
-  check "NAS share writable (${DATA_PATH})" test -w "${DATA_PATH}"
+data_path_writable() {
+	if [[ ! -d ${DATA_PATH} ]]; then
+		return 1
+	fi
+	if test -w "${DATA_PATH}"; then
+		return 0
+	fi
+	# Synology SSH admin often cannot write uid 1001-owned data; verify via API container.
+	local docker_bin
+	docker_bin="$(command -v docker 2>/dev/null || true)"
+	[[ -z ${docker_bin} && -x /usr/local/bin/docker ]] && docker_bin=/usr/local/bin/docker
+	[[ -z ${docker_bin} ]] && return 1
+
+	run_docker() {
+		if "${docker_bin}" "$@" 2>/dev/null; then
+			return 0
+		fi
+		sudo "${docker_bin}" "$@"
+	}
+
+	if run_docker ps --format '{{.Names}}' | grep -qx tikr-api; then
+		run_docker exec tikr-api test -w /data
+		return $?
+	fi
+	return 1
+}
+
+if [[ -d ${DATA_PATH} ]]; then
+	check "NAS share writable (${DATA_PATH})" data_path_writable
 else
-  echo "⚠️  Skipping NAS write test — ${DATA_PATH} not present on this host"
+	echo "⚠️  Skipping NAS write test — ${DATA_PATH} not present on this host"
 fi
 
 if curl -sf "${API_URL}/api/system/local-status" -o /dev/null; then
-  check "DB / local-status" true
+	check "DB / local-status" true
 else
-  check "DB / local-status" false
+	check "DB / local-status" false
 fi
 
 if command -v jq >/dev/null 2>&1; then
-  grok_enabled="$(curl -sf "${API_URL}/api/ai/status" | jq -r '.grokEnabled')"
-  if [[ "${grok_enabled}" == "false" ]]; then
-    check "Grok fallback disabled (default)" true
-  else
-    check "Grok fallback disabled (default)" false
-  fi
+	grok_enabled="$(curl -sf "${API_URL}/api/ai/status" | jq -r '.grokEnabled')"
+	if [[ ${grok_enabled} == "false" ]]; then
+		check "Grok fallback disabled (default)" true
+	else
+		check "Grok fallback disabled (default)" false
+	fi
 
-  used_grok="$(curl -sf -X POST "${API_URL}/api/ai/ask-advanced" \
-    -H 'Content-Type: application/json' \
-    -d '{"prompt":"Reply with one word: ok","context":null}' \
-    | jq -r '.usedGrok')"
-  if [[ "${used_grok}" == "false" ]]; then
-    check "Ask-advanced uses Ollama when Grok off" true
-  else
-    check "Ask-advanced uses Ollama when Grok off" false
-  fi
+	used_grok="$(curl -sf -X POST "${API_URL}/api/ai/ask-advanced" \
+		-H 'Content-Type: application/json' \
+		-d '{"prompt":"Reply with one word: ok","context":null}' |
+		jq -r '.usedGrok')"
+	if [[ ${used_grok} == "false" ]]; then
+		check "Ask-advanced uses Ollama when Grok off" true
+	else
+		check "Ask-advanced uses Ollama when Grok off" false
+	fi
 else
-  echo "⚠️  Install jq for Grok/AI JSON checks"
+	echo "⚠️  Install jq for Grok/AI JSON checks"
 fi
 
-if [[ -f "${AGENT_FIXTURE}" ]]; then
-  check "Agent-scan endpoint" curl -sf -X POST "${API_URL}/api/ai/agent-scan" \
-    -F "file=@${AGENT_FIXTURE}" -o /dev/null
+if [[ -f ${AGENT_FIXTURE} ]]; then
+	check "Agent-scan endpoint" curl -sf -X POST "${API_URL}/api/ai/agent-scan" \
+		-F "file=@${AGENT_FIXTURE}" -o /dev/null
 else
-  echo "⚠️  Skipping agent-scan — fixture not found"
+	echo "⚠️  Skipping agent-scan — fixture not found"
 fi
 
 echo ""
 echo "Results: ${pass} passed, ${fail} failed"
-if [[ "${fail}" -gt 0 ]]; then
-  exit 1
+if [[ ${fail} -gt 0 ]]; then
+	exit 1
 fi
 
 echo "All production checks passed."

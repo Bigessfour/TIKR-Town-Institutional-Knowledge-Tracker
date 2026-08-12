@@ -13,6 +13,8 @@ using TIKR.Web.Services;
 
 namespace TIKR.Web.Tests.Components;
 
+// Calendar.razor — clerk deadline calendar surface; proof for function inventory surfaces allowlist.
+
 public class CalendarPageTests : ClerkTestContext
 {
     public CalendarPageTests()

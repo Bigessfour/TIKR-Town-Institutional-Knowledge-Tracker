@@ -1,6 +1,7 @@
 using FluentAssertions;
 using TIKR.Shared.DTOs;
 using TIKR.Shared.Enums;
+using TIKR.Shared.Helpers;
 using TIKR.Shared.TestFixtures;
 using TIKR.Web.Helpers;
 
@@ -180,13 +181,12 @@ public class RequirementWorkflowHelpersTests
     [Fact]
     public void GetLabel_MapsAllUrgencyLevels()
     {
-        // Explicit reference provides proof of function for RequirementUrgencyHelper.GetLabel
-        // (wrapper GetUrgencyLabel is exercised by BuildCsv tests; direct here for inventory)
-        // RequirementUrgencyHelper.GetLabel exercised
-        RequirementWorkflowHelpers.GetUrgencyLabel(RequirementUrgency.Overdue).Should().Be("Overdue");
+        RequirementUrgencyHelper.GetLabel(RequirementUrgency.Overdue).Should().Be("Overdue");
+        RequirementUrgencyHelper.GetLabel(RequirementUrgency.High).Should().Be("High");
+        RequirementUrgencyHelper.GetLabel(RequirementUrgency.Medium).Should().Be("Medium");
+        RequirementUrgencyHelper.GetLabel(RequirementUrgency.Low).Should().Be("Low");
+        RequirementUrgencyHelper.GetLabel(RequirementUrgency.Completed).Should().Be("Done");
+        // Wrapper used by CSV export paths
         RequirementWorkflowHelpers.GetUrgencyLabel(RequirementUrgency.High).Should().Be("High");
-        RequirementWorkflowHelpers.GetUrgencyLabel(RequirementUrgency.Medium).Should().Be("Medium");
-        RequirementWorkflowHelpers.GetUrgencyLabel(RequirementUrgency.Low).Should().Be("Low");
-        RequirementWorkflowHelpers.GetUrgencyLabel(RequirementUrgency.Completed).Should().Be("Done");
     }
 }

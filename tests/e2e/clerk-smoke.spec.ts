@@ -18,7 +18,7 @@ test.describe('TIKR clerk smoke', () => {
 
   test('keyboard shortcut opens help dialog', async ({ page }) => {
     await gotoClerkPage(page, '/');
-    await page.locator('main').click({ force: true });
+    await page.locator('main').click();
     await page.keyboard.press('?');
     await expect(page.getByRole('dialog', { name: 'Keyboard shortcuts' })).toBeVisible();
     await expect(page.getByText('Go to Requirements')).toBeVisible();

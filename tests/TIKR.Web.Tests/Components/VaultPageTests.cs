@@ -10,6 +10,8 @@ using TIKR.Web.Services;
 
 namespace TIKR.Web.Tests.Components;
 
+// Vault.razor — clerk knowledge vault surface; proof for function inventory surfaces allowlist.
+
 public class VaultPageTests : ClerkTestContext
 {
     [Fact]

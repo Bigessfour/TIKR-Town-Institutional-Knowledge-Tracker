@@ -10,6 +10,8 @@ using TIKR.Shared.TestFixtures;
 
 namespace TIKR.Infrastructure.Tests.Services;
 
+// EmbeddingRecoveryHostedService orchestrates background recovery; state + reindex logic proven here.
+
 [Trait("Category", TestCategories.FullyTested)]
 public class EmbeddingRecoveryTests
 {

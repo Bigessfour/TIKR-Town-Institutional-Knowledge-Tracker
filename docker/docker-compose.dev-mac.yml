@@ -1,8 +1,18 @@
-# macOS dev notes (optional override file — prefer TIKR_API_HOST_PORT in docker/.env).
+# macOS dev overrides — use with docker-compose.host-ollama.yml:
+#   docker compose -f docker/docker-compose.yml \
+#     -f docker/docker-compose.host-ollama.yml \
+#     -f docker/docker-compose.dev-mac.yml up --build -d
+#
 # AirPlay Receiver often binds :5000; set TIKR_API_HOST_PORT=5001 in docker/.env.
-# The host-Ollama IDE task exports 5001 automatically when you omit it from .env.
 
 services:
   tikr-api:
     environment:
-      TIKR_PUBLIC_API_URL: http://localhost:${TIKR_API_HOST_PORT:-5000}
+      TIKR_PUBLIC_API_URL: http://localhost:${TIKR_API_HOST_PORT:-5001}
+      TIKR_DATA_PATH: /data
+      OLLAMA_HOST: http://host.docker.internal:11434
+
+  tikr-web:
+    environment:
+      TIKR_DATA_PATH: /data
+      OLLAMA_HOST: http://host.docker.internal:11434

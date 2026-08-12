@@ -9,6 +9,9 @@ using TIKR.Shared.TestFixtures;
 
 namespace TIKR.Api.Tests.Endpoints;
 
+// Program.cs minimal API routes (/api/requirements, /api/documents, /api/knowledge, /api/ai/*, …)
+// are exercised by integration tests in this Endpoints folder via TikrWebApplicationFactory.
+
 [Trait("Category", TestCategories.FullyTested)]
 public class KnowledgeEndpointTests : IClassFixture<TikrWebApplicationFactory>
 {

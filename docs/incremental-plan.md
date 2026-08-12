@@ -228,15 +228,15 @@ Update this section when env changes.
 
 **Goal:** `/requirements` CRUD hub + incremental NAS-local document agent without breaking MVP grid.
 
-| Slice                                                                                                                                                                                                 | Status                                                          | PR                                                                                                                                                                                                             |
-| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **10A** Requirements grid MVP                                                                                                                                                                         | done                                                            | [#30](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/30)                                                                                                                         |
-| **10B** MVP agent stub + AI Scan                                                                                                                                                                      | done                                                            | [#31](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/31)                                                                                                                         |
-| **10C A1+A2** Agent storage, AES, Syncfusion Storage Mode extraction                                                                                                                                  | done on `main`                                                  | [#35](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/35)                                                                                                                         |
-| **10C-D** E2E proof (fixtures, Playwright, licensed workflow)                                                                                                                                         | done on `main`                                                  | [#36](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/36)                                                                                                                         |
-| **10C A3** Ollama + Microsoft.Extensions.AI function loop over Storage Mode tools                                                                                                                     | done                                                            | `SyncfusionDocumentAgentOrchestrator`, `USE_SYNCFUSION_AGENT_ORCHESTRATION`                                                                                                                                    |
-| **10C-F** Clerk document tool coverage (PDF ops, Word, Excel, PPT, Office→PDF registry + deterministic paths)                                                                                         | done                                                            | `SyncfusionDocumentAgentToolRegistry`, `feature/phase10c-document-tool-coverage`                                                                                                                               |
-| **10C-G (Grok Heavy rec)** Agent scan PDF archive: clean tagged PDF copy + visible stamp + dual (orig + processed) NAS storage + structured tables -> Requirement fields | **done** | `CreateAgentArchivePdfAsync`: red header line `AI PROCESSED - TIKR VAULT` + separate date line; metadata in `DocumentInformation.Subject/Keywords`. Proofs: `SyncfusionDocumentGenerationServiceTests`, `DocumentAgentServiceTests`. |
+| Slice                                                                                                                                                                    | Status         | PR                                                                                                                                                                                                                                   |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **10A** Requirements grid MVP                                                                                                                                            | done           | [#30](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/30)                                                                                                                                               |
+| **10B** MVP agent stub + AI Scan                                                                                                                                         | done           | [#31](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/31)                                                                                                                                               |
+| **10C A1+A2** Agent storage, AES, Syncfusion Storage Mode extraction                                                                                                     | done on `main` | [#35](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/35)                                                                                                                                               |
+| **10C-D** E2E proof (fixtures, Playwright, licensed workflow)                                                                                                            | done on `main` | [#36](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/36)                                                                                                                                               |
+| **10C A3** Ollama + Microsoft.Extensions.AI function loop over Storage Mode tools                                                                                        | done           | `SyncfusionDocumentAgentOrchestrator`, `USE_SYNCFUSION_AGENT_ORCHESTRATION`                                                                                                                                                          |
+| **10C-F** Clerk document tool coverage (PDF ops, Word, Excel, PPT, Office→PDF registry + deterministic paths)                                                            | done           | `SyncfusionDocumentAgentToolRegistry`, `feature/phase10c-document-tool-coverage`                                                                                                                                                     |
+| **10C-G (Grok Heavy rec)** Agent scan PDF archive: clean tagged PDF copy + visible stamp + dual (orig + processed) NAS storage + structured tables -> Requirement fields | **done**       | `CreateAgentArchivePdfAsync`: red header line `AI PROCESSED - TIKR VAULT` + separate date line; metadata in `DocumentInformation.Subject/Keywords`. Proofs: `SyncfusionDocumentGenerationServiceTests`, `DocumentAgentServiceTests`. |
 
 **Key paths:** `src/TIKR.Web/Components/Pages/Requirements.razor`, `src/TIKR.Infrastructure/Services/DocumentAgentService.cs`, `src/TIKR.SyncfusionDocuments/*`, `src/TIKR.Shared/DTOs/DocumentAgentDto.cs`
 
@@ -317,16 +317,16 @@ When inventory is clean, use `./scripts/done-detector.sh` + complete the Project
 
 ### Phases 1–9 summary
 
-| Phase              | Status      | Notes                                                          |
-| ------------------ | ----------- | -------------------------------------------------------------- |
-| 1 Scaffold         | done        |                                                                |
-| 2 Tests            | done        | 235+ tests; coverage floors in CI                              |
-| 3 Syncfusion AI    | done        | `/assistant`, HybridAiService                                  |
-| 4 GitHub + Trunk   | done        |                                                                |
-| 5 Hardening        | done        | 5B Actions `GITHUB_TOKEN` manual only                          |
-| 6 Smart Components | done        | Smart Paste/TextArea + Calendar NL                             |
-| 7 Coverage         | done        | Playwright → Phase 0                                           |
-| 8 Auth             | done        | optional multi-user + Viewer/refresh/local reset               |
+| Phase              | Status      | Notes                                                           |
+| ------------------ | ----------- | --------------------------------------------------------------- |
+| 1 Scaffold         | done        |                                                                 |
+| 2 Tests            | done        | 235+ tests; coverage floors in CI                               |
+| 3 Syncfusion AI    | done        | `/assistant`, HybridAiService                                   |
+| 4 GitHub + Trunk   | done        |                                                                 |
+| 5 Hardening        | done        | 5B Actions `GITHUB_TOKEN` manual only                           |
+| 6 Smart Components | done        | Smart Paste/TextArea + Calendar NL                              |
+| 7 Coverage         | done        | Playwright → Phase 0                                            |
+| 8 Auth             | done        | optional multi-user + Viewer/refresh/local reset                |
 | 9 Search/docs      | done (core) | RAG + semantic UI; PDF/Word/Spreadsheet edit+save; folder email |
 
 ### Open acceptance criteria (by phase)
@@ -417,9 +417,10 @@ Update this section with future agent env changes.
 
 - [x] Playwright E2E required CI gate ([#48](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/48) merged)
 - [x] Phase 0 PR #3 docs / handover
-- [ ] **Next:** v1.0 backlog in [action-items.md](action-items.md) (Documents delete undo first)
+- [x] v1.0 backlog in [action-items.md](action-items.md) — complete
+- [x] NAS deploy v1.0.1 on Mr_Storage — 2026-08-08 (`./scripts/deploy-tikr-nas.sh`)
 - [ ] Compile `Setup-TIKR.exe` + clerk Windows smoke/handoff
 - [ ] Phase 0 PR #4 / T031 recorded Deb walkthrough + bus-factor gate
-- [ ] Tag `v1.0.0` + GHCR (**after** Deb walkthrough)
+- [x] Tag `v1.0.0` + `v1.0.1` + GHCR
 
 **Immediate recommendation:** Close v1.0 feature backlog starting with Documents delete undo, then Windows Setup smoke, Deb walkthrough, then tag.

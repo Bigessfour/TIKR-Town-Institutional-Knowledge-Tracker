@@ -154,6 +154,32 @@ public class AuthEndpointTests : IClassFixture<AuthEnabledWebApplicationFactory>
     }
 
     [Fact]
+    public async Task ChangePassword_WithToken_UpdatesPassword()
+    {
+        var token = await LoginAsync();
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        var newPassword = "ClerkPass2!";
+        var change = await _client.PostAsJsonAsync("/api/auth/change-password",
+            new ChangePasswordRequest(AuthEnabledWebApplicationFactory.AdminPassword, newPassword));
+        change.StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        _client.DefaultRequestHeaders.Authorization = null;
+        var loginNew = await _client.PostAsJsonAsync("/api/auth/login", new LoginRequest(
+            AuthEnabledWebApplicationFactory.AdminEmail,
+            newPassword));
+        loginNew.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        // Restore bootstrap password for other tests in this fixture.
+        _client.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", (await loginNew.Content.ReadFromJsonAsync<LoginResponse>())!.AccessToken);
+        var restore = await _client.PostAsJsonAsync("/api/auth/change-password",
+            new ChangePasswordRequest(newPassword, AuthEnabledWebApplicationFactory.AdminPassword));
+        restore.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        _client.DefaultRequestHeaders.Authorization = null;
+    }
+
+    [Fact]
     public async Task Viewer_CanReadButNotWrite()
     {
         var adminToken = await LoginAsync();

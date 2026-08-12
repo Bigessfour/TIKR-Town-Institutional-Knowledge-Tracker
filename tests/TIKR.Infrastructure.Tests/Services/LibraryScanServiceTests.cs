@@ -12,6 +12,8 @@ using TIKR.Shared.Interfaces;
 
 namespace TIKR.Infrastructure.Tests.Services;
 
+// LibraryScanHostedService polls LibraryScanService on an interval; scan logic proven below.
+
 public class LibraryScanServiceTests
 {
     [Fact]

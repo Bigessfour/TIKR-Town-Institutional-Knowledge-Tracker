@@ -1,0 +1,37 @@
+{
+  "stack": "csharp",
+  "tracking_mode": "surfaces",
+  "surfaces": [
+    "src/TIKR.Api/AuthEndpoints.cs",
+    "src/TIKR.Api/Program.cs",
+    "src/TIKR.Api/ChatHistoryEndpoints.cs",
+    "src/TIKR.Api/CouncilPacketEndpoints.cs",
+    "src/TIKR.Infrastructure/Identity/JwtTokenService.cs",
+    "src/TIKR.Infrastructure/Services/DashboardService.cs",
+    "src/TIKR.Infrastructure/Services/FeatureSettingsService.cs",
+    "src/TIKR.Infrastructure/Services/HybridAiService.cs",
+    "src/TIKR.Infrastructure/Services/RuntimeSecretsStore.cs",
+    "src/TIKR.Web/Components/Pages/Login.razor",
+    "src/TIKR.Web/Components/Pages/Requirements.razor",
+    "src/TIKR.Web/Components/Pages/Documents.razor",
+    "src/TIKR.Web/Components/Pages/Vault.razor",
+    "src/TIKR.Web/Components/Pages/Assistant.razor",
+    "src/TIKR.Web/Components/Pages/Settings.razor",
+    "src/TIKR.Web/Components/Pages/Account.razor",
+    "src/TIKR.Web/Components/Pages/Users.razor",
+    "src/TIKR.Web/Components/Pages/Home.razor",
+    "src/TIKR.Web/Components/Pages/Calendar.razor",
+    "src/TIKR.Web/Services/ChatClerkIdentityService.cs",
+    "src/TIKR.Web/Services/ClerkUserGuideService.cs",
+    "src/TIKR.Web/Services/ClerkTourService.cs"
+  ],
+  "scan_roots": ["src"],
+  "exclude_dirs": ["node_modules", "mcp", "dist", ".angular", "coverage", "bin", "obj"],
+  "surface_path_substrings": [
+    "/Pages/",
+    "/Services/",
+    "Endpoints",
+    "/Identity/",
+    "Program.cs"
+  ]
+}

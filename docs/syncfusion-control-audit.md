@@ -4,11 +4,11 @@
 
 **2026-07-25 refresh (code + tests, no NAS licensed smoke):** Package pin **34.1.32**. New/updated surfaces since 62-PASS baseline:
 
-| Area | Controls | Status | Evidence |
-|------|----------|--------|----------|
-| Documents preview + edit/save | `SfPdfViewer2`, `SfDocumentEditorContainer`, `SfSpreadsheet` | PASS (MVP) | `DocumentPreviewHelperTests`, Documents save → `PUT /api/documents/{id}/content`, ReplaceContent tests |
-| Phase 6 Smart Components | `SfSmartPasteButton`, `SfSmartTextArea` (+ Calendar NL via `IChatClient`) | PASS (MVP) | Requirements/Vault/Calendar wiring; `FakeChatClient` in bUnit |
-| Shared / Settings | prior Sf* baseline | PASS | unchanged; audit JSON formatting in Settings |
+| Area                          | Controls                                                                  | Status     | Evidence                                                                                               |
+| ----------------------------- | ------------------------------------------------------------------------- | ---------- | ------------------------------------------------------------------------------------------------------ |
+| Documents preview + edit/save | `SfPdfViewer2`, `SfDocumentEditorContainer`, `SfSpreadsheet`              | PASS (MVP) | `DocumentPreviewHelperTests`, Documents save → `PUT /api/documents/{id}/content`, ReplaceContent tests |
+| Phase 6 Smart Components      | `SfSmartPasteButton`, `SfSmartTextArea` (+ Calendar NL via `IChatClient`) | PASS (MVP) | Requirements/Vault/Calendar wiring; `FakeChatClient` in bUnit                                          |
+| Shared / Settings             | prior Sf* baseline                                                        | PASS       | unchanged; audit JSON formatting in Settings                                                           |
 
 **Still blocked for full licensed E2E:** Manual NAS Syncfusion agent-tools smoke (human + Deb NAS). Quarterly full page walk remains [syncfusion-e2e-audit-plan.md](syncfusion-e2e-audit-plan.md).
 
@@ -40,37 +40,37 @@ This document is the historical baseline. For the **current iterative repo-wide 
 
 ## Execution order (nav top → bottom)
 
-| # | Page | Route | Pass | Fix | Defer |
-|---|------|-------|------|-----|-------|
-| 1 | Dashboard | `/` | 2 | 0 | 0 |
-| 2 | Calendar | `/calendar` | 2 | 0 | 0 |
-| 3 | Requirements | `/requirements` | 12 | 0 | 0 |
-| 4 | Documents | `/documents` | 9 | 0 | 0 |
-| 5 | AI Assistant | `/assistant` | 4 | 0 | 0 |
-| 6 | Knowledge Vault | `/vault` | 13 | 0 | 0 |
-| 7 | Settings | `/settings` | 3 | 0 | 0 |
-| 8 | Login | `/login` | 4 | 0 | 0 |
-| 9 | Account | `/account` | 4 | 0 | 0 |
-| 10 | Users (admin) | `/settings/users` | 5 | 0 | 0 |
-| 11 | Shared | — | 4 | 0 | 0 |
+| #   | Page            | Route             | Pass | Fix | Defer |
+| --- | --------------- | ----------------- | ---- | --- | ----- |
+| 1   | Dashboard       | `/`               | 2    | 0   | 0     |
+| 2   | Calendar        | `/calendar`       | 2    | 0   | 0     |
+| 3   | Requirements    | `/requirements`   | 12   | 0   | 0     |
+| 4   | Documents       | `/documents`      | 9    | 0   | 0     |
+| 5   | AI Assistant    | `/assistant`      | 4    | 0   | 0     |
+| 6   | Knowledge Vault | `/vault`          | 13   | 0   | 0     |
+| 7   | Settings        | `/settings`       | 3    | 0   | 0     |
+| 8   | Login           | `/login`          | 4    | 0   | 0     |
+| 9   | Account         | `/account`        | 4    | 0   | 0     |
+| 10  | Users (admin)   | `/settings/users` | 5    | 0   | 0     |
+| 11  | Shared          | —                 | 4    | 0   | 0     |
 
 **Totals:** 62 PASS · 0 FIX · 0 DEFER
 
 ## Fix backlog
 
-| ID | Page | Issue | Status |
-|----|------|-------|--------|
-| F1 | Documents | Download → `GET /api/documents/{id}/content` + `tikr-download.js` | **Done** |
-| F2 | Vault | Voice notes hydrated from knowledge API on load | **Done** |
+| ID  | Page      | Issue                                                             | Status   |
+| --- | --------- | ----------------------------------------------------------------- | -------- |
+| F1  | Documents | Download → `GET /api/documents/{id}/content` + `tikr-download.js` | **Done** |
+| F2  | Vault     | Voice notes hydrated from knowledge API on load                   | **Done** |
 
 ## Defer backlog
 
-| ID | Page | Issue | Status |
-|----|------|-------|--------|
-| D1 | Calendar | `NavigationManager.LocationChanged` refresh | **Done** |
-| D2 | Requirements | `SfDatePicker` in requirement dialog | **Done** |
-| D3 | Requirements | Agent scan uses `SfUploader` + `ValueChange` | **Done** |
-| D4 | Documents | Removed redundant grid `AllowSelection`; manual checkbox column | **Done** |
+| ID  | Page         | Issue                                                           | Status   |
+| --- | ------------ | --------------------------------------------------------------- | -------- |
+| D1  | Calendar     | `NavigationManager.LocationChanged` refresh                     | **Done** |
+| D2  | Requirements | `SfDatePicker` in requirement dialog                            | **Done** |
+| D3  | Requirements | Agent scan uses `SfUploader` + `ValueChange`                    | **Done** |
+| D4  | Documents    | Removed redundant grid `AllowSelection`; manual checkbox column | **Done** |
 
 ---
 
@@ -190,27 +190,27 @@ All controls **PASS** (see prior audit pass for detail).
 
 ## MCP query log
 
-| Component | Query date | Result used |
-|-----------|------------|-------------|
-| SfCard | 2026-06-28 | CardHeader/CardContent structure |
-| SfSchedule | 2026-06-28 | ScheduleField Id/StartTime/EndTime mandatory |
-| SfUploader | 2026-06-28 | AutoUpload + ValueChange + OpenReadStream |
+| Component      | Query date | Result used                                     |
+| -------------- | ---------- | ----------------------------------------------- |
+| SfCard         | 2026-06-28 | CardHeader/CardContent structure                |
+| SfSchedule     | 2026-06-28 | ScheduleField Id/StartTime/EndTime mandatory    |
+| SfUploader     | 2026-06-28 | AutoUpload + ValueChange + OpenReadStream       |
 | SfAIAssistView | 2026-06-28 | PromptRequested + streaming UpdateResponseAsync |
-| SfDataForm | 2026-06-28 | EditForm + DataAnnotationsValidator integration |
-| SfDatePicker | 2026-06-28 | FormItem template binding |
+| SfDataForm     | 2026-06-28 | EditForm + DataAnnotationsValidator integration |
+| SfDatePicker   | 2026-06-28 | FormItem template binding                       |
 
 ---
 
 ## bUnit coverage (audit completion)
 
-| Area | Test |
-|------|------|
-| Document download URL | `DocumentsPageTests.Documents_WiresDownloadToDocumentContentApi` |
-| Vault page smoke | `VaultPageTests.Vault_ShowsEmergencyBanner` |
-| SfUploader agent scan | `RequirementsPageTests.Requirements_RendersAgentScanUploadControl` |
-| SfDatePicker dialog | `RequirementsPageTests.Requirements_UsesSfDatePickerWhenDialogOpen` (placeholder "Select due date") |
-| Voice note hydration (F2) | `DocumentSelectionStateTests.VaultVoiceNoteMapper_*` |
-| Download API client | `TikrApiClientTests.GetDocumentContentAsync_*` |
+| Area                      | Test                                                                                                |
+| ------------------------- | --------------------------------------------------------------------------------------------------- |
+| Document download URL     | `DocumentsPageTests.Documents_WiresDownloadToDocumentContentApi`                                    |
+| Vault page smoke          | `VaultPageTests.Vault_ShowsEmergencyBanner`                                                         |
+| SfUploader agent scan     | `RequirementsPageTests.Requirements_RendersAgentScanUploadControl`                                  |
+| SfDatePicker dialog       | `RequirementsPageTests.Requirements_UsesSfDatePickerWhenDialogOpen` (placeholder "Select due date") |
+| Voice note hydration (F2) | `DocumentSelectionStateTests.VaultVoiceNoteMapper_*`                                                |
+| Download API client       | `TikrApiClientTests.GetDocumentContentAsync_*`                                                      |
 
 ---
 
@@ -538,3 +538,160 @@ Next full iteration recommended after next feature touching UI or package update
 - Ready for direct use/validation of components (select syncfusion-blazor-ui-builder agent in IDE for future; current validated).
 
 RAG reindexed. All per plan and docs.
+
+---
+
+## 2026-08-12 Per-page MCP validation (iterative restart)
+
+**Method:** One page at a time — inventory `<Sf*>` instances → `sf_blazor_assistant` MCP per unique control type → PASS/FIX/DEFER → evidence (bUnit/E2E).
+
+**Suggested order (clerk-critical first):** Assistant → Requirements → Documents → Vault → Home → Settings → Calendar → Login → Account → Users.
+
+### Pages inventory (Sf* instance counts)
+
+| Page                         | Unique controls                                                                                                                              | Total `<Sf*` tags |
+| ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
+| Assistant.razor              | SfAIAssistView, SfCard, SfButton, SfDropDownList                                                                                             | 8                 |
+| Requirements.razor           | SfButton, SfDropDownList, SfTextBox, SfDialog, SfDatePicker, SfUploader, SfSmartTextArea, SfSmartPasteButton, SfGrid, SfDataForm, SfCheckBox | 45                |
+| Documents.razor              | SfButton, SfUploader, SfTreeView, SfTextBox, SfSplitter, SfSmartPdfViewer, SfGrid, SfFileManager, SfContextMenu, SfCheckBox                  | 28                |
+| Vault.razor                  | SfButton, SfGrid, SfAccordion, SfTab, SfSpeechToText, SfSmartTextArea, SfTextBox, SfRichTextEditor                                           | 27                |
+| Settings.razor               | SfButton, SfCard, SfTextBox, SfCheckBox, SfNumericTextBox, SfDropDownList                                                                    | 61                |
+| Home.razor                   | SfButton, SfGrid, SfDashboardLayout                                                                                                          | 10                |
+| Calendar.razor               | SfSchedule, SfGrid, SfTextBox, SfButton                                                                                                      | 4                 |
+| Login.razor                  | SfCard, SfDataForm, SfTextBox, SfButton                                                                                                      | 4                 |
+| Account.razor                | SfCard, SfDataForm, SfTextBox, SfButton                                                                                                      | 6                 |
+| Users.razor                  | SfButton, SfGrid, SfDropDownList, SfDialog, SfDataForm, SfTextBox                                                                            | 9                 |
+| Error / NotFound / Knowledge | —                                                                                                                                            | 0                 |
+
+---
+
+### Page 1: Assistant.razor (`/assistant`) — MCP 2026-08-12
+
+| Control                             |     Instances | MCP status | Notes                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| ----------------------------------- | ------------: | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **SfAIAssistView**                  |             1 | **PASS**   | `PromptRequested` sets `args.Response` (official non-streaming pattern). `EnableStreaming="false"` intentional — buffers Ollama/Grok then sets full HTML (avoids partial token flash; see comment L88–89). `@ref` + `SafeUpdateResponseAsync` + null guard aligns with Ollama doc streaming sample (uses `UpdateResponseAsync` when streaming). `ResponseStopped` → cancel CTS. `Prompts` list + `_assistViewKey++` remount on clear/chip — valid state reset. `Width/Height="100%"` + flex container per docs. |
+| **SfCard** + CardHeader/CardContent |             3 | **PASS**   | Official child structure (`<CardHeader Title="…" />`, `<CardContent>`). `CssClass="mb-3"` + `data-tour` attrs for clerk tour.                                                                                                                                                                                                                                                                                                                                                                                   |
+| **SfButton**                        | 3 (+ chips N) | **PASS**   | `Content` + `OnClick` (not inside EditForm — no `Type="button"` needed). `CssClass="tikr-action-btn e-outline e-small"` matches Syncfusion `e-outline` style guidance. Suggestion chips use `role="group"` on parent for a11y.                                                                                                                                                                                                                                                                                  |
+| **SfDropDownList**                  |             1 | **PASS**   | `TValue="string" TItem="string"` + `DataSource="@_vaultCategoryOptions"` + `@bind-Value` — correct for primitive list. Width `220px` set.                                                                                                                                                                                                                                                                                                                                                                       |
+
+**API alignment (Syncfusion Blazor Interactive Chat):**
+
+- Required wiring: `PromptRequested` handler + assign `args.Response` — **present**.
+- Optional: `Prompt`, `PromptPlaceholder`, `Prompts`, `EnableStreaming`, `ResponseStopped` — **all used correctly**.
+- Ollama integration doc pattern: stream via `UpdateResponseAsync` in loop OR set final `args.Response`; TIKR uses **hybrid** (preparing HTML via `UpdateResponseAsync`, final via `args.Response`) with streaming disabled at component level — **valid intentional deviation**.
+
+**FIX/DEFER:** None for Assistant page controls.
+
+**Evidence:** `AssistantPageTests.cs`, Playwright `page-readiness.spec.ts` (assistant affordances), prior ui-readiness Chrome matrix (Send OK).
+
+**Next page:** Requirements.razor (45 Sf* tags, highest complexity).
+
+---
+
+### Page 2: Requirements.razor (`/requirements`) — MCP 2026-08-12
+
+| Control                       | Instances | MCP status         | Notes                                                                                                                                                                                                                                                                                                                                                                                                    |
+| ----------------------------- | --------: | ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **SfGrid**                    |         1 | **PASS**           | `DataSource="@VisibleRequirements"`, paging/sorting, `Field="@nameof(...)"`, custom `Template` for urgency badge + row actions, `DisplayAsCheckBox="true"` on bool columns, `EmptyRecordTemplate` — matches [column template](https://blazor.syncfusion.com/documentation/datagrid/columns/) and checkbox column guidance. Parent `.requirements-grid-host` provides height context for `Height="100%"`. |
+| **SfButton**                  |        21 | **PASS** (1 DEFER) | Toolbar uses `Content` + `OnClick`; dialog Save uses `Type="ButtonType.Submit"` inside `EditForm` (correct default submit). Minutes/agenda dialogs use `FooterTemplate` for Cancel/primary actions. **DEFER:** redundant `IsPrimary="true"` alongside `CssClass="… primary"` on some toolbar buttons — cosmetic only.                                                                                    |
+| **SfUploader**                |         1 | **PASS**           | `AutoUpload="true"` + `UploaderEvents ValueChange="OnAgentUploadAsync"` + `OpenReadStream(maxAllowedSize: 52_428_800)` — official [ValueChange + AutoUpload](https://blazor.syncfusion.com/documentation/file-upload/events/) pattern for server-side agent scan (no save URL). `MaxFileCount="1"`, `AllowedExtensions`, `MaxFileSize="52428800"` aligned.                                               |
+| **SfTextBox**                 |         5 | **PASS**           | Filter search: `@bind-Value` + `Input="OnFilterChanged"`. Minutes dialog: `Multiline="true"` for attendees/agenda/notes. Auto-generated fields use SfDataForm `FormItem` without custom template.                                                                                                                                                                                                        |
+| **SfDropDownList**            |         7 | **PASS**           | Filter dropdowns: `TValue/TItem="string"` + `@bind-Value` + `ValueChange`. Form enums: `TValue="RecurrenceType"` / `RequirementCategory` with enum `DataSource`. Attach doc: `TValue="Guid?" TItem="DocumentDto"` + `DropDownListFieldSettings Value="Id" Text="FileName"`. Matches two-way binding + field settings API.                                                                                |
+| **SfDialog**                  |         3 | **PASS** (1 DEFER) | All use `@bind-Visible`, `IsModal="true"`, `ShowCloseIcon="true"`, fixed widths. Minutes + agenda use `FooterTemplate` for actions. **DEFER:** requirement edit dialog places Cancel/Save inside `Content` rather than `FooterTemplate` (works; prior polish plan noted footer standardization).                                                                                                         |
+| **SfDataForm** + **EditForm** |         1 | **PASS**           | Outer `EditForm` + `DataAnnotationsValidator` + `ValidationSummary` + `OnValidSubmit="SaveAsync"` per Syncfusion [form validation](https://blazor.syncfusion.com/documentation/common/input-validation/) guidance. Inner `SfDataForm` uses `FormItems` + custom `Template` for Smart/Date/Dropdown/Checkbox editors bound to `_form` / `_formDueDate`.                                                   |
+| **SfSmartPasteButton**        |         1 | **PASS**           | Placed in dialog above form; relies on Syncfusion Smart Components + registered `IChatInferenceService` (Ollama). Prior Phase 6 audit PASS (MVP).                                                                                                                                                                                                                                                        |
+| **SfSmartTextArea**           |         1 | **PASS**           | `UserRole`, `UserPhrases`, `@bind-Value="_form.Description"`, `RowCount="4"` — matches Smart TextArea API; Ollama-backed inference via app registration.                                                                                                                                                                                                                                                 |
+| **SfDatePicker**              |         3 | **PASS**           | `TValue="DateTime?"`, `@bind-Value`, `Format="d"`, `Placeholder`, `ValueChange` for minutes/agenda preview refresh. Due date bridges to `DateOnly` on save — valid separate-field pattern per MCP two-way binding docs.                                                                                                                                                                                  |
+| **SfCheckBox**                |         1 | **PASS**           | `@bind-Checked="_form.IsCompleted"` inside `FormItem` template with `Label`.                                                                                                                                                                                                                                                                                                                             |
+
+**Non-Sf controls (not in MCP scope):** “Show completed” uses native `<input type="checkbox">` — intentional lightweight filter toggle.
+
+**FIX/DEFER summary:** 0 FIX. 2 DEFER (redundant `IsPrimary`, edit-dialog footer placement).
+
+**Evidence:** `RequirementsPageTests.cs` (grid, uploader, datepicker, doc actions), `RequirementsEndpointTests.cs`, Playwright `requirements-agent-scan.spec.ts` + `clerk-smoke.spec.ts`, `RequirementWorkflowHelpersTests.cs`.
+
+**Next page:** Documents.razor (28 Sf* tags — FileManager, SmartPdfViewer, Splitter, TreeView).
+
+---
+
+### Page 3: Documents.razor (`/documents`) — MCP 2026-08-12
+
+| Control              | Instances | MCP status | Notes                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| -------------------- | --------: | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **SfFileManager**    |         1 | **PASS**   | Browse mode only. `TValue="FileManagerDirectoryContent"`, `View="ViewType.Details"`, `AllowMultiSelection="true"`. **No `AjaxSettings` URL** — all CRUD via `FileManagerEvents`: `OnRead`, `ItemsDeleting`, `ItemRenaming`, `ItemsMoving`, `FolderCreating`, `Searching`, `OnFileOpen`. Matches official [injected-service / event-response](https://blazor.syncfusion.com/documentation/file-manager/file-operations/) pattern (`args.Response = …`). Uploads use page-level `SfUploader`, not FileManager upload events — intentional split. |
+| **SfSplitter**       |         1 | **PASS**   | Three `SplitterPane`s (tree 20%, grid flex, preview 34%) with `Min`/`Max`/`Size`. `Height="100%"` inside `.documents-splitter-host` flex column — aligns with Splitter dimension guidance.                                                                                                                                                                                                                                                                                                                                                     |
+| **SfTreeView**       |         1 | **PASS**   | `TreeViewFieldsSettings` with `Id`, `Text`, `Child`, `Expanded` bound to `FolderNode`. `TreeViewEvents NodeSelected="OnFolderSelectedAsync"`. `AllowMultiSelection="false"`.                                                                                                                                                                                                                                                                                                                                                                   |
+| **SfGrid**           |         1 | **PASS**   | `DataSource="@VisibleDocuments"`, paging/sorting/filtering. `GridSelectionSettings`: `Type="Multiple"`, `Mode="Row"`, **`CheckboxOnly="true"`**, **`PersistSelection="true"`** — official checkbox-only multi-select pattern (see D4). Manual checkbox column + row events sync `_selectedIds` HashSet. `OnRecordDoubleClick` opens full workspace. `EmptyRecordTemplate` present.                                                                                                                                                             |
+| **SfSmartPdfViewer** |         1 | **PASS**   | Inline side preview only. `@ref` + `PdfViewerEvents Created="OnSidePdfViewerCreated"` → `LoadAsync(_pdfBytes, string.Empty)` — official in-memory load path (comment L862). Smart features disabled (`AssistViewSettings`, `SmartRedactSettings`, `SmartFillSettings` all `Enable="false"`); toolbar/download/print off for compact pane. `@key` remount on doc change. Full workspace uses shared `DocumentWorkspaceDialog`.                                                                                                                  |
+| **SfContextMenu**    |         1 | **PASS**   | **Standalone** menu with `Target=".doc-grid .e-gridcontent"` (not grid built-in `ContextMenuItems`). `MenuEvents ItemSelected="OnContextMenuSelected"`. Intentional — avoids Syncfusion grid context-menu + checkbox-only selection quirks; right-click actions mirror toolbar (open, re-tag, delete, download, convert, extract).                                                                                                                                                                                                             |
+| **SfUploader**       |         1 | **PASS**   | `AutoUpload="true"`, `Multiple="true"`, `AllowedExtensions`, `MaxFileSize="52428800"`. `UploaderEvents ValueChange="OnUpload"` — server-side ingest (no save URL).                                                                                                                                                                                                                                                                                                                                                                             |
+| **SfTextBox**        |         1 | **PASS**   | Search filter: `@bind-Value` + debounced filter handler.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| **SfCheckBox**       |         1 | **PASS**   | `@bind-Checked="_keepForAssistantContext"` for upload context flag.                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| **SfButton**         |        17 | **PASS**   | View-mode toggles (library/browse/recycle), bulk actions, preview actions, full-screen CTA. `Content` + `OnClick`; primary/danger via `CssClass`.                                                                                                                                                                                                                                                                                                                                                                                              |
+
+**FIX/DEFER summary:** 0 FIX. 0 DEFER (standalone context menu and FileManager-without-upload are intentional architecture).
+
+**Evidence:** `DocumentsPageTests.cs`, `DocumentPreviewHelperTests`, Documents API content/version tests, Playwright document specs, prior F1 download fix.
+
+**Next page:** Vault.razor (27 Sf* tags — tabs, accordions, speech, RTE).
+
+---
+
+### Page 4: Vault.razor (`/vault`) — MCP 2026-08-12
+
+| Control              | Instances | MCP status | Notes                                                                                                                                                                                                                                                                                                        |
+| -------------------- | --------: | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **SfTab**            |         1 | **PASS**   | Four `TabItem`s (How-To, Contacts, Tribal Knowledge, Voice Notes). Official `TabHeader` + `ContentTemplate` structure.                                                                                                                                                                                       |
+| **SfGrid**           |         4 | **PASS**   | Per-tab grids (`HowToGridRef`, `ContactGridRef`, `TribalGridRef`, `VoiceGridRef`). Paging/sorting, `AllowSelection="true"`, `Type="Multiple"` on checkbox columns (voice + entry tabs). Row action templates with inline `SfButton`. `EmptyRecordTemplate` on each. Voice notes hydrated from API (F2 done). |
+| **SfAccordion**      |         3 | **PASS**   | Mobile/alternate list view per tab. `@foreach` → `AccordionItem` with `HeaderTemplate` / `ContentTemplate`. Click content → `SelectEntry(e)`. Matches accordion navigation sample pattern.                                                                                                                   |
+| **SfSpeechToText**   |         1 | **PASS**   | `@bind-Transcript="PendingTranscription"`, `Language="en-US"`, `AllowInterimResults="true"`, custom `SpeechToTextButtonSettings` labels. Official transcript binding + interim-results API.                                                                                                                  |
+| **SfTextBox**        |         1 | **PASS**   | `Multiline="true"` edit buffer for transcript before save.                                                                                                                                                                                                                                                   |
+| **SfSmartTextArea**  |         1 | **PASS**   | `UserRole`, `UserPhrases`, `@bind-Value="_smartDraft"`, `RowCount="4"`. Ollama-backed sentence assist; insert-to-editor flow.                                                                                                                                                                                |
+| **SfRichTextEditor** |         1 | **PASS**   | `@bind-Value="EditorContent"`, `Height="220px"` for selected entry HTML body.                                                                                                                                                                                                                                |
+| **SfButton**         |        14 | **PASS**   | Copy-all, bulk delete, per-row edit/delete, voice save, smart-draft insert, save/cancel editor.                                                                                                                                                                                                              |
+
+**FIX/DEFER summary:** 0 FIX. 0 DEFER.
+
+**Evidence:** `VaultPageTests.cs`, knowledge/vault API tests, Phase 6 Smart Components baseline, prior F2 voice hydration fix.
+
+**Next page:** Home.razor (10 Sf* tags — dashboard layout + due-out grid).
+
+---
+
+### Page 5: Home.razor (`/`) — MCP 2026-08-12
+
+| Control               | Instances | MCP status | Notes                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| --------------------- | --------: | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **SfDashboardLayout** |         1 | **PASS**   | `Columns="12"`, `CellSpacing`, `AllowDragging="true"`, `AllowResizing="true"`. Dynamic `@foreach` over `_panels` → `DashboardLayoutPanel` with `Id`, `Column`, `Row`, `SizeX`, `SizeY`, `MinSizeX`, `MinSizeY`. **Does not use `EnablePersistence`** — instead `DashboardLayoutEvents Changed="OnLayoutChanged"` maps `args.ChangedPanels` into `_panels` and persists JSON via `tikrDashboardLayout` JS interop (`DashboardLayoutService.StorageKey`). Valid alternative to built-in localStorage persistence (MCP docs: `Serialize()` + custom store). `ResetLayoutAsync` restores defaults + clears storage. |
+| **SfGrid**            |         1 | **PASS**   | Due-outs panel: `DataSource="@_summary.DueOuts"`, paging/sorting, typed columns (`ColumnType.Date` on DueDate). **`DetailTemplate`** expands linked docs + contact info; nested `SfButton` opens `DocumentWorkspaceDialog`.                                                                                                                                                                                                                                                                                                                                                                                     |
+| **SfButton**          |         7 | **PASS**   | Reset layout, user guide, quick-action nav buttons, per-linked-doc Edit in detail row.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+
+**FIX/DEFER summary:** 0 FIX. 0 DEFER (custom layout persistence is intentional — multi-user clerk PCs share app but per-browser layout is desired).
+
+**Evidence:** `HomePageTests.cs`, `DashboardServiceTests.cs`, `DashboardLayoutService` (serialize/deserialize), Playwright home/dashboard specs.
+
+**Next page:** Settings.razor (61 Sf* tags — cards + feature forms).
+
+---
+
+### Page 6: Settings.razor (`/settings`) — MCP 2026-08-12
+
+| Control                             | Instances | MCP status | Notes                                                                                                                                                                                                                          |
+| ----------------------------------- | --------: | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **SfCard** + CardHeader/CardContent |        16 | **PASS**   | Official card structure throughout (clerk identity, tour, secrets, Ollama, storage, town branding, ingest, OCR/features, library scan, diagnostics). `CssClass="mb-3"` spacing.                                                |
+| **SfButton**                        |        25 | **PASS**   | Save/clear override, tour replay, Call Steve help links, toggle detail sections, Save settings / Check status, library scan/reindex/health. `Disabled` bound to busy flags. `e-outline` / `e-small` variants per theme polish. |
+| **SfTextBox**                       |        11 | **PASS**   | All feature/secret fields use `@bind-Value` with stable `ID` attrs (`tikr-grok-key`, `tikr-ollama-host`, etc.) for labels and a11y. `CssClass="e-outline"`. Grok/Syncfusion keys use password-style masking in code-behind.    |
+| **SfCheckBox**                      |         6 | **PASS**   | Feature toggles (`_editOcr`, `_editAgentTools`, …) and `@bind-Checked="_autoTourDisabled"` with **`@bind-Checked:after="PersistAutoTourDisabledAsync"`** — valid Blazor immediate-persist pattern.                             |
+| **SfNumericTextBox**                |         2 | **PASS**   | `TValue="int"`, `@bind-Value`, `Min="30"` / `Min="0"` for library scan interval and max files. Matches range-validation API.                                                                                                   |
+| **SfDropDownList**                  |         1 | **PASS**   | Clerk override: `TValue/TItem="string"`, `DataSource="@_clerkOverrideOptions"`, `@bind-Value="_clerkOverrideSelection"`, `Placeholder`, `Width="220px"`.                                                                       |
+
+**Non-Sf:** `TikrThemeSelector` (custom wrapper around theme dropdown) — out of MCP scope; prior PASS.
+
+**FIX/DEFER summary:** 0 FIX. 0 DEFER.
+
+**Evidence:** `SettingsPageTests.cs`, `FeatureSettingsServiceTests.cs`, `RuntimeSecretsStoreTests.cs`, Settings API endpoints.
+
+**Next page:** Calendar.razor (4 Sf* tags — Schedule + grid).
+
+**High-value batch complete:** Assistant, Requirements, Documents, Vault, Home, Settings — **6/10 clerk pages validated via MCP 2026-08-12.**
+

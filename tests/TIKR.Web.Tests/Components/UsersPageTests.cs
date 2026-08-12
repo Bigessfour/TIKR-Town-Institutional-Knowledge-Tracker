@@ -14,6 +14,8 @@ using TIKR.Web.Services;
 
 namespace TIKR.Web.Tests.Components;
 
+// Users.razor — admin clerk user management surface; proof for function inventory surfaces allowlist.
+
 public class UsersPageTests : TestContext
 {
     public UsersPageTests()

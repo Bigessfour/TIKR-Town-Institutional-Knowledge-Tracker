@@ -9,6 +9,9 @@ using TIKR.Shared.TestFixtures;
 
 namespace TIKR.Api.Tests.Endpoints;
 
+// ChatHistoryEndpoints.MapChatHistoryEndpoints is the startup extension; exercised by all
+// tests in this file hitting /api/assistant/* via AuthEnabledWebApplicationFactory / TikrWebApplicationFactory.
+
 [Trait("Category", TestCategories.FullyTested)]
 public class ChatHistoryEndpointTests : IClassFixture<AuthEnabledWebApplicationFactory>
 {

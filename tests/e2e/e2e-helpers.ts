@@ -49,5 +49,11 @@ export async function gotoClerkPage(page: Page, path: string): Promise<void> {
     () => typeof (window as unknown as { sfBlazor?: unknown }).sfBlazor !== 'undefined',
     { timeout: 45_000 },
   );
+  await page.waitForFunction(
+    () =>
+      typeof (window as unknown as { tikrShortcuts?: { _handler?: unknown } }).tikrShortcuts
+        ?._handler === 'function',
+    { timeout: 15_000 },
+  );
   await dismissClerkTourIfPresent(page);
 }

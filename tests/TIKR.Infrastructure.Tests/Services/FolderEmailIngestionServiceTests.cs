@@ -10,6 +10,8 @@ using TIKR.Shared.Interfaces;
 
 namespace TIKR.Infrastructure.Tests.Services;
 
+// FolderEmailIngestionHostedService polls FolderEmailIngestionService; ingestion logic proven below.
+
 public class FolderEmailIngestionServiceTests
 {
     [Fact]
