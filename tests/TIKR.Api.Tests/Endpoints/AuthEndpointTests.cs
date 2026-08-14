@@ -28,6 +28,13 @@ public class AuthEndpointTests : IClassFixture<AuthEnabledWebApplicationFactory>
     }
 
     [Fact]
+    public async Task Contacts_WithoutToken_ReturnsUnauthorized()
+    {
+        var response = await _client.GetAsync("/api/contacts");
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
     public async Task Login_WithSeededAdmin_ReturnsToken()
     {
         var response = await _client.PostAsJsonAsync("/api/auth/login", new LoginRequest(

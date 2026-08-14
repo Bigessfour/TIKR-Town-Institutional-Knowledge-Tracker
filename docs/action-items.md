@@ -20,15 +20,22 @@ This file owns **status, checkboxes, priorities, verification evidence**. The ge
 - [x] Vault Contacts inventory UI; Requirements + Calendar pickers
 - [x] Seeded Election contacts linked to Election Canvass
 - [x] Proof: `ContactServiceTests`, `ContactsEndpointTests`, Vault/Requirements/Calendar bUnit
+- [x] Auth gate: `Contacts_WithoutToken_ReturnsUnauthorized` (`AuthEndpointTests`)
+- [x] Playwright: Vault Contacts tab in `page-readiness` (`Add contact` + inventory anchor)
 
 | Function | Proof | Minimal impl |
 | --- | --- | --- |
 | `ContactService.CreateAsync` / Update / SoftDelete / Restore | `ContactServiceTests` | Thin EF + audit |
 | `ContactService.LinkToRequirementAsync` | `ContactServiceTests` + `ContactsEndpointTests` | Primary sync denormalized fields |
 | `GET/POST/PUT/DELETE /api/contacts` | `ContactsEndpointTests` | Minimal API → service |
-| Vault Contacts inventory | `Vault_ContactsTab_ShowsInventoryActions` | SfGrid + dialog |
+| `/api/contacts` when auth on | `Contacts_WithoutToken_ReturnsUnauthorized` | Shared `/api` auth gate |
+| Vault Contacts inventory | `Vault_ContactsTab_ShowsInventoryActions` + E2E page-readiness | SfGrid + SfDialog (not SfDataForm) |
 | Requirements contact picker | `Requirements_ShowsContactPickerWhenDialogOpen` | Dropdown + link |
 | Calendar contact apply | `Calendar_ShowsContactPickerPanel` | Link + update denormalized |
+
+**Deferred for a later pass (optional):** dedicated `/contacts` page; `SfDataForm`; migrate legacy Knowledge Vault Contact notes into `Contact` entities.
+
+**Next pass (human):** Phase 0 PR #4 / T031 Deb walkthrough — include Vault Contacts → link County Clerk to Election Canvass ([quickstart](../specs/007-contacts-inventory/quickstart.md)).
 
 ---
 

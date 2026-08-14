@@ -55,3 +55,11 @@
 - [x] T028 `dotnet test` Release + trunk on feature files
 - [x] T029 RAG refresh after merge recommended
 - [x] T030 PR https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/96
+- [x] T031 Auth 401 proof for `/api/contacts` (`Contacts_WithoutToken_ReturnsUnauthorized`)
+- [x] T032 Playwright Vault Contacts tab smoke in `page-readiness.spec.ts`
+- [x] T033 Document deferred polish: no dedicated `/contacts` page, no SfDataForm, no legacy Knowledge→Contact migrate
+
+## Next pass (not Spec Kit 007)
+
+- [ ] Phase 0 PR #4 / action-items T031 Deb walkthrough + bus-factor (include Contacts quickstart path)
+- [ ] Windows `Setup-TIKR.exe` smoke / handoff
