@@ -255,6 +255,17 @@ public static class TikrConfiguration
     }
 
     /// <summary>
+    /// When true (default), folder email ingest runs deterministic structured extract (contacts / knowledge / suggestions).
+    /// Disable with <c>TIKR_EMAIL_STRUCTURED_EXTRACT=false</c>.
+    /// </summary>
+    public static bool GetEmailStructuredExtractEnabled(IConfiguration configuration)
+    {
+        if (bool.TryParse(configuration["TIKR_EMAIL_STRUCTURED_EXTRACT"], out var enabled))
+            return enabled;
+        return true;
+    }
+
+    /// <summary>
     /// Root folder of an existing NAS document library to scan (copy into TIKR + tag/embed).
     /// Bind-mount this path into the API container. Source files are never moved or deleted.
     /// </summary>

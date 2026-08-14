@@ -26,6 +26,23 @@ public class TikrApiClient(HttpClient http)
         response.EnsureSuccessStatusCode();
     }
 
+    public async Task<EmailIngestionResult?> IngestEmailFolderAsync()
+    {
+        var response = await http.PostAsync("/api/email/ingest", content: null);
+        if (!response.IsSuccessStatusCode)
+            return null;
+        return await response.Content.ReadFromJsonAsync<EmailIngestionResult>();
+    }
+
+    public async Task<List<EmailExtractionNoticeDto>> GetEmailNoticesAsync(int take = 10) =>
+        await http.GetFromJsonAsync<List<EmailExtractionNoticeDto>>($"/api/email/notices?take={take}") ?? [];
+
+    public async Task ClearEmailNoticesAsync()
+    {
+        var response = await http.DeleteAsync("/api/email/notices");
+        response.EnsureSuccessStatusCode();
+    }
+
     public async Task<List<DocumentDto>> GetDocumentsAsync(string? query = null, bool deleted = false)
     {
         var qs = new List<string>();

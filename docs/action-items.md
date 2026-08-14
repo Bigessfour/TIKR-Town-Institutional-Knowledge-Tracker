@@ -37,6 +37,22 @@ This file owns **status, checkboxes, priorities, verification evidence**. The ge
 
 **Next pass (human):** Phase 0 PR #4 / T031 Deb walkthrough — include Vault Contacts → link County Clerk to Election Canvass ([quickstart](../specs/007-contacts-inventory/quickstart.md)).
 
+## Spec Kit `008-email-structured-extract` (Phase 12)
+
+- [x] `EmailStructuredExtractor` (.eml + Election heuristics)
+- [x] `TIKR_EMAIL_STRUCTURED_EXTRACT` (default true)
+- [x] Apply service upserts Contact + Knowledge Contact; notices + requirement suggestion
+- [x] Wire `FolderEmailIngestionService`; Documents banner/toast
+- [x] Proof: extractor fixtures, `FolderEmailIngestionServiceTests`, `EmailIngestEndpointTests`, `ContactService.UpsertAsync`
+
+| Function | Proof | Minimal impl |
+| --- | --- | --- |
+| `EmailStructuredExtractor.Parse` | `EmailStructuredExtractorTests` | Deterministic regex/heuristics |
+| `EmailStructuredApplyService.ApplyAsync` | Infra ingest election .eml | Upsert + knowledge + notice |
+| `FolderEmailIngestionService.IngestPendingAsync` | `FolderEmailIngestionServiceTests` | Extract gated; never throws |
+| `POST /api/email/ingest` + `GET /api/email/notices` | `EmailIngestEndpointTests` | Side-effects asserted |
+| `ContactService.UpsertAsync` | `ContactServiceTests` | Email / name+org merge |
+
 ---
 
 ## Spec Kit `001-requirements-document-agent` (2026-07-21)

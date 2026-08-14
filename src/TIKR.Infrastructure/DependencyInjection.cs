@@ -89,6 +89,8 @@ public static class DependencyInjection
         services.AddScoped<ICouncilPacketService, CouncilPacketService>();
         services.AddScoped<ICouncilAgendaBuilderService, CouncilAgendaBuilderService>();
         services.AddHttpClient<GrokService>();
+        services.AddSingleton<IEmailIngestionNoticeStore, EmailIngestionNoticeStore>();
+        services.AddScoped<IEmailStructuredApplyService, EmailStructuredApplyService>();
         services.AddSingleton<IEmailIngestionService, FolderEmailIngestionService>();
         services.AddHostedService<FolderEmailIngestionHostedService>();
         services.AddSingleton<ILibraryScanService, LibraryScanService>();

@@ -268,6 +268,26 @@ Update this section when env changes.
 
 ---
 
+## Phase 12 — Email Structured Extract
+
+**Status:** in progress on `feature/email-structured-extract` — Spec Kit `008-email-structured-extract`
+
+**Goal:** After folder email ingest, deterministic extract of contacts/dates/Election signals → upsert Contacts + Knowledge Contact notes + clerk notices/suggestions.
+
+**Acceptance criteria:**
+
+- [x] `EmailStructuredExtractor` parses .eml (+ best-effort .msg); Election keyword tagging
+- [x] `TIKR_EMAIL_STRUCTURED_EXTRACT` flag (default true); ingest still works when off/fails
+- [x] Upsert Contact + KnowledgeEntry; optional Requirement suggestion; TikrActionLog/Audit
+- [x] Documents banner/toast + Create Requirement action; `GET /api/email/notices`
+- [x] Shared/Infra/Api tests with election .eml fixture; poller never throws on bad files
+
+**Spec:** [specs/008-email-structured-extract/](../specs/008-email-structured-extract/)
+
+**Key paths:** `EmailStructuredExtractor.cs`, `EmailStructuredApplyService.cs`, `FolderEmailIngestionService.cs`, `Documents.razor`
+
+---
+
 ## Phase 0 adjunct — Clerk guided tour
 
 **Status:** done (MVP)
@@ -439,9 +459,9 @@ Update this section with future agent env changes.
 
 ## Current Next Task for Development (from todos + plan)
 
-**Contacts inventory (Phase 11) is closed.** Next pass is human/ship gates, not a new product phase.
+**Active product slice:** Phase 12 Email Structured Extract (`feature/email-structured-extract` / Spec Kit `008`).
 
-**Ship order:**
+**Ship gates (parallel / after Phase 12):**
 
 - [x] Playwright E2E required CI gate ([#48](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/48) merged)
 - [x] Phase 0 PR #3 docs / handover
@@ -449,7 +469,8 @@ Update this section with future agent env changes.
 - [x] Phase 11 Contacts Inventory ([#96](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/96))
 - [x] NAS deploy v1.0.1 on Mr_Storage — 2026-08-08 (`./scripts/deploy-tikr-nas.sh`)
 - [x] Tag `v1.0.0` + `v1.0.1` + GHCR
+- [ ] Phase 12 email → Contacts extract (CI green + merge)
 - [ ] Compile `Setup-TIKR.exe` + clerk Windows smoke/handoff
-- [ ] Phase 0 PR #4 / T031 recorded Deb walkthrough + bus-factor gate (include Vault Contacts → Election Canvass link)
+- [ ] Phase 0 PR #4 / T031 recorded Deb walkthrough + bus-factor gate (include Vault Contacts + email drop path)
 
-**Immediate recommendation:** Windows Setup smoke → Deb walkthrough (Contacts POC path in [specs/007-contacts-inventory/quickstart.md](../specs/007-contacts-inventory/quickstart.md)) → Layer 2 Done Detector sign-off.
+**Immediate recommendation:** Finish Phase 12 PR → Windows Setup smoke → Deb walkthrough (Contacts + email quickstart).

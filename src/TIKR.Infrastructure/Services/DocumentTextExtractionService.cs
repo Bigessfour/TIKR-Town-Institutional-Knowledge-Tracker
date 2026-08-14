@@ -11,7 +11,7 @@ public static class DocumentTextExtractionService
 
     private static readonly HashSet<string> TextExtensions = new(StringComparer.OrdinalIgnoreCase)
     {
-        ".txt", ".md", ".csv", ".log", ".json", ".xml", ".html", ".htm"
+        ".txt", ".md", ".csv", ".log", ".json", ".xml", ".html", ".htm", ".eml"
     };
 
     public static bool CanExtract(string fileName) =>

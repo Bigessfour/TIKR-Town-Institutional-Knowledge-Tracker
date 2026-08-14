@@ -119,6 +119,14 @@ public class DocumentsPageTests : ClerkTestContext
                 };
             }
 
+            if (path.Contains("/email/notices", StringComparison.OrdinalIgnoreCase))
+            {
+                return new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent("[]", Encoding.UTF8, "application/json")
+                };
+            }
+
             var json = path.Contains("semantic-search", StringComparison.Ordinal) ? searchJson : docsJson;
             return new HttpResponseMessage(HttpStatusCode.OK)
             {

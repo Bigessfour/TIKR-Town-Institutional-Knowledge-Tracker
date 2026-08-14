@@ -161,4 +161,34 @@ public class ContactServiceTests
         reloaded.ContactEmail.Should().BeNull();
         reloaded.ContactPhone.Should().BeNull();
     }
+
+    [Fact]
+    public async Task UpsertAsync_ByEmail_UpdatesExistingAndUnionsElectionCategory()
+    {
+        await using var db = await TestDbContextFactory.CreateMigratedAsync();
+        var sut = new ContactService(db);
+        var audit = new Mock<IAuditService>();
+        var user = Mock.Of<ICurrentUserService>(u => u.UserId == "email-ingest");
+
+        var first = await sut.UpsertAsync(
+            new CreateContactRequest("Jordan Lee", Email: "jordan.lee@county.example.gov", Categories: ContactCategory.Custom),
+            audit.Object,
+            user);
+        first.Created.Should().BeTrue();
+
+        var second = await sut.UpsertAsync(
+            new CreateContactRequest(
+                "Jordan Lee",
+                Organization: "County Clerk",
+                Email: "jordan.lee@county.example.gov",
+                Phone: "970-555-0142",
+                Categories: ContactCategory.Election),
+            audit.Object,
+            user);
+
+        second.Created.Should().BeFalse();
+        second.Contact.Categories.HasFlag(ContactCategory.Election).Should().BeTrue();
+        second.Contact.Phone.Should().Be("970-555-0142");
+        (await db.Contacts.CountAsync(c => c.Email == "jordan.lee@county.example.gov")).Should().Be(1);
+    }
 }

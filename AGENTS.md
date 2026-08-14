@@ -191,6 +191,7 @@ For new features: read the active [incremental-plan](docs/incremental-plan.md) p
 | [.specify/memory/constitution.md](.specify/memory/constitution.md)           | SDD constitution                                         |
 | [docs/incremental-plan.md](docs/incremental-plan.md)                         | Phased roadmap                                           |
 | [specs/007-contacts-inventory/](specs/007-contacts-inventory/)               | Phase 11 Contacts Inventory (Vault CRUD + Requirement links) |
+| [specs/008-email-structured-extract/](specs/008-email-structured-extract/)   | Phase 12 Email folder → Contacts / Knowledge extract         |
 | [docs/ai-tooling.md](docs/ai-tooling.md)                                     | MCP, skills, runtime AI                                  |
 | [docs/architecture.md](docs/architecture.md)                                 | System design                                            |
 | [docs/action-items.md](docs/action-items.md)                                 | Human+agent overlay (status, verification, checkboxes)   |

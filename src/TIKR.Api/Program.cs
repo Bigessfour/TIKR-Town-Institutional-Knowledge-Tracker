@@ -237,6 +237,15 @@ api.MapPost("/email/ingest", async (IEmailIngestionService ingestion) =>
     return Results.Ok(result);
 });
 
+api.MapGet("/email/notices", (IEmailIngestionNoticeStore notices, int take = 10) =>
+    Results.Ok(notices.GetRecent(take)));
+
+api.MapDelete("/email/notices", (IEmailIngestionNoticeStore notices) =>
+{
+    notices.Clear();
+    return Results.NoContent();
+});
+
 api.MapGet("/library/scan-status", (ILibraryScanService scanner) =>
     Results.Ok(scanner.GetStatus()));
 
