@@ -205,6 +205,49 @@ public class RequirementsEndpointTests : IClassFixture<TikrWebApplicationFactory
     }
 
     [Fact]
+    public async Task GetDocumentRequirements_ReturnsLinksOrderedByDueDate()
+    {
+        // Proof: GET /api/documents/{id}/requirements (EF OrderBy on entity DueDate, not DTO)
+        var earlier = await (await _client.PostAsJsonAsync("/api/requirements", new CreateRequirementRequest(
+            "Earlier linked due-out",
+            null,
+            DateOnly.FromDateTime(DateTime.UtcNow.AddDays(2)),
+            RecurrenceType.None,
+            RequirementCategory.Custom))).Content.ReadFromJsonAsync<RequirementDto>();
+        var later = await (await _client.PostAsJsonAsync("/api/requirements", new CreateRequirementRequest(
+            "Later linked due-out",
+            null,
+            DateOnly.FromDateTime(DateTime.UtcNow.AddDays(20)),
+            RecurrenceType.None,
+            RequirementCategory.Custom))).Content.ReadFromJsonAsync<RequirementDto>();
+
+        using var content = new MultipartFormDataContent();
+        var fileContent = new ByteArrayContent("doc-req-links"u8.ToArray());
+        fileContent.Headers.ContentType = new MediaTypeHeaderValue("text/plain");
+        content.Add(fileContent, "file", "doc-req-links.txt");
+        var doc = await (await _client.PostAsync("/api/documents", content)).Content.ReadFromJsonAsync<DocumentDto>();
+
+        (await _client.PostAsJsonAsync($"/api/requirements/{later!.Id}/documents", new LinkRequirementDocumentRequest(doc!.Id)))
+            .StatusCode.Should().Be(HttpStatusCode.OK);
+        (await _client.PostAsJsonAsync($"/api/requirements/{earlier!.Id}/documents", new LinkRequirementDocumentRequest(doc.Id)))
+            .StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var response = await _client.GetAsync($"/api/documents/{doc.Id}/requirements");
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var links = await response.Content.ReadFromJsonAsync<List<DocumentRequirementLinkDto>>();
+        links.Should().NotBeNull();
+        links!.Select(l => l.RequirementId).Should().ContainInOrder(earlier.Id, later.Id);
+        links.Select(l => l.Title).Should().ContainInOrder("Earlier linked due-out", "Later linked due-out");
+    }
+
+    [Fact]
+    public async Task GetDocumentRequirements_ReturnsNotFoundForMissingDocument()
+    {
+        var response = await _client.GetAsync($"/api/documents/{Guid.NewGuid()}/requirements");
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
     public async Task DeleteLinkDocumentFromRequirement_RemovesLinkAndAuditsUnlink()
     {
         // Covers RequirementService.UnlinkDocumentAsync via thin DELETE /api/requirements/{id}/documents/{docId} + audit "Unlink"

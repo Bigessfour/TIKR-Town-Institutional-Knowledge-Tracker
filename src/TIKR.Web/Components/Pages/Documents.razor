@@ -474,6 +474,8 @@ else
     private bool _pendingPurge;
 
     private SfSmartPdfViewer? _sidePdfViewer;
+    private bool _sidePdfLoadPending;
+    private bool _sidePdfLoading;
 
     private static readonly string[] _smartPdfSuggestedPrompts =
     [
@@ -493,7 +495,7 @@ else
         "Credit Card Numbers",
         "Dates"
     ];
-    private bool _sidePdfLoadPending;
+
     private List<DocumentVersionDto> _documentVersions = [];
     private List<DocumentRequirementLinkDto> _linkedRequirements = [];
     private byte[]? _pdfBytes;
@@ -569,11 +571,22 @@ else
 
     private async Task LoadDocumentsAsync(string? query = null)
     {
-        _documents = await Api.GetDocumentsAsync(query, deleted: _showRecycleBin);
-        RebuildFolderTree();
-        RebuildFileManagerData();
-        await ClearSelection();
-        _statusMessage = null;
+        TikrActionLog.Started(Logger, "UI.Documents.Load",
+            $"Query={query ?? "(none)"} RecycleBin={_showRecycleBin}");
+        try
+        {
+            _documents = await Api.GetDocumentsAsync(query, deleted: _showRecycleBin);
+            RebuildFolderTree();
+            RebuildFileManagerData();
+            await ClearSelection();
+            _statusMessage = null;
+            TikrActionLog.Completed(Logger, "UI.Documents.Load", $"Count={_documents.Count}");
+        }
+        catch (Exception ex)
+        {
+            _documents = [];
+            TikrActionLog.Failed(Logger, "UI.Documents.Load", ex);
+        }
     }
 
     private async Task ToggleRecycleBinAsync()
@@ -902,24 +915,59 @@ else
 
     private async Task OnSidePdfViewerCreated()
     {
-        if (_sidePdfLoadPending && _sidePdfViewer is not null && _pdfBytes is { Length: > 0 })
+        if (!_sidePdfLoadPending || _sidePdfLoading || _sidePdfViewer is null || _pdfBytes is not { Length: > 0 })
+            return;
+
+        _sidePdfLoadPending = false;
+        _sidePdfLoading = true;
+        var viewer = _sidePdfViewer;
+        var bytes = _pdfBytes;
+        var generation = _pdfViewerKey;
+        try
         {
-            _sidePdfLoadPending = false;
-            try
+            // SfSmartPdfViewer.LoadAsync can NRE inside InternalDocumentUnLoaded on a fresh viewer —
+            // retry once after a short delay once Created has fully settled.
+            const int maxAttempts = 2;
+            for (var attempt = 1; attempt <= maxAttempts; attempt++)
             {
-                await _sidePdfViewer.LoadAsync(_pdfBytes, string.Empty);
-                await _sidePdfViewer.UpdateViewerContainerAsync();
+                if (generation != _pdfViewerKey || !ReferenceEquals(viewer, _sidePdfViewer))
+                {
+                    TikrActionLog.Info(Logger, "UI.Documents.SidePdfPreview",
+                        $"Aborted load — viewer remounted (key {generation}→{_pdfViewerKey})");
+                    return;
+                }
+
+                try
+                {
+                    await viewer.LoadAsync(bytes, string.Empty);
+                    if (generation == _pdfViewerKey && ReferenceEquals(viewer, _sidePdfViewer))
+                        await viewer.UpdateViewerContainerAsync();
+                    TikrActionLog.Completed(Logger, "UI.Documents.SidePdfPreview",
+                        $"Bytes={bytes.Length} Attempt={attempt} ViewerKey={generation}");
+                    return;
+                }
+                catch (NullReferenceException) when (attempt < maxAttempts)
+                {
+                    TikrActionLog.Info(Logger, "UI.Documents.SidePdfPreview",
+                        $"LoadAsync NRE on attempt {attempt} (viewer init race); retrying");
+                    await Task.Delay(120);
+                }
             }
-            catch (Exception ex)
-            {
-                TikrActionLog.Failed(Logger, "UI.Documents.SidePdfPreview", ex);
-            }
+        }
+        catch (Exception ex)
+        {
+            TikrActionLog.Failed(Logger, "UI.Documents.SidePdfPreview", ex,
+                $"ViewerKey={generation} Bytes={bytes.Length}");
+        }
+        finally
+        {
+            _sidePdfLoading = false;
         }
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (_sidePdfLoadPending && _sidePdfViewer is not null && _pdfBytes is { Length: > 0 } && !_fullScreenOpen)
+        if (_sidePdfLoadPending && !_sidePdfLoading && _sidePdfViewer is not null && _pdfBytes is { Length: > 0 } && !_fullScreenOpen)
             await OnSidePdfViewerCreated();
     }
 
@@ -1287,6 +1335,7 @@ else
         _sidePdfViewer = null;
         _pdfBytes = null;
         _sidePdfLoadPending = false;
+        _sidePdfLoading = false;
         _previewDocId = null;
         _previewError = null;
         _previewKind = DocumentPreviewHelper.PreviewKind.None;

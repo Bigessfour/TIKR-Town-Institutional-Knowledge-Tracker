@@ -3,7 +3,9 @@
 @inject TikrApiClient Api
 @inject IJSRuntime JS
 @inject ClerkToastService Toast
+@inject ILogger<Requirements> Logger
 
+@using TIKR.Shared.Diagnostics
 @using TIKR.Shared.DTOs
 @using TIKR.Shared.Helpers
 @using TIKR.Web.Components.Shared
@@ -547,6 +549,7 @@ else
     {
         _loading = true;
         _error = null;
+        TikrActionLog.Started(Logger, "UI.Requirements.Load");
         try
         {
             var localStatus = await Api.GetLocalStorageStatusAsync();
@@ -554,11 +557,13 @@ else
                 _townName = localStatus.TownName;
 
             _requirements = await Api.GetRequirementsAsync();
+            TikrActionLog.Completed(Logger, "UI.Requirements.Load", $"Count={_requirements.Count}");
         }
-        catch
+        catch (Exception ex)
         {
             _requirements = [];
             _error = "Could not load requirements. Is the API running?";
+            TikrActionLog.Failed(Logger, "UI.Requirements.Load", ex);
         }
         finally
         {
@@ -767,6 +772,8 @@ else
     {
         _error = null;
         var dueDate = DateOnly.FromDateTime(_formDueDate ?? DateTime.Today);
+        var action = _editingId is null ? "UI.Requirements.Create" : "UI.Requirements.Update";
+        TikrActionLog.Started(Logger, action, $"Title={_form.Title} Due={dueDate:yyyy-MM-dd}");
 
         try
         {
@@ -803,11 +810,13 @@ else
 
             _pendingPrimaryContactId = null;
             _showDialog = false;
+            TikrActionLog.Completed(Logger, action, $"Title={_form.Title}");
             await LoadAsync();
         }
-        catch
+        catch (Exception ex)
         {
             _error = "Could not save requirement. Check your entries and try again.";
+            TikrActionLog.Failed(Logger, action, ex, $"Title={_form.Title}");
         }
     }
 
@@ -838,29 +847,38 @@ else
         try
         {
             var recreate = RequirementWorkflowHelpers.ToCreateRequest(item);
+            TikrActionLog.Started(Logger, "UI.Requirements.Delete", $"RequirementId={item.Id} Title={item.Title}");
             await Api.DeleteRequirementAsync(item.Id);
             Toast.Show($"Deleted \"{item.Title}\"", async () =>
             {
                 await Api.CreateRequirementAsync(recreate);
                 await LoadAsync();
             });
+            TikrActionLog.Completed(Logger, "UI.Requirements.Delete", $"RequirementId={item.Id}");
             await LoadAsync();
         }
-        catch
+        catch (Exception ex)
         {
             _error = "Could not delete requirement. System-seeded Colorado defaults cannot be removed.";
+            TikrActionLog.Failed(Logger, "UI.Requirements.Delete", ex, $"RequirementId={item.Id}");
         }
     }
 
-    private async Task PrintPacketAsync() => await JS.InvokeVoidAsync("print");
+    private async Task PrintPacketAsync()
+    {
+        TikrActionLog.Info(Logger, "UI.Requirements.Print", "Browser print invoked");
+        await JS.InvokeVoidAsync("print");
+    }
 
     private async Task ExportCsvAsync()
     {
+        TikrActionLog.Started(Logger, "UI.Requirements.ExportCsv", $"Rows={VisibleRequirements.Count()}");
         var csv = RequirementWorkflowHelpers.BuildCsv(VisibleRequirements);
         var fileName = $"tikr-requirements-{DateTime.UtcNow:yyyy-MM-dd}.csv";
         await JS.InvokeVoidAsync(
             "eval",
             $"(() => {{ const a = document.createElement('a'); a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent({System.Text.Json.JsonSerializer.Serialize(csv)}); a.download = {System.Text.Json.JsonSerializer.Serialize(fileName)}; a.click(); }})()");
+        TikrActionLog.Completed(Logger, "UI.Requirements.ExportCsv", $"FileName={fileName}");
     }
 
     private async Task GenerateCouncilPacketAsync()
@@ -868,6 +886,7 @@ else
         _error = null;
         _packetStatus = DocumentUiMessages.CouncilPacketBuilding();
         _generating = "packet";
+        TikrActionLog.Started(Logger, "UI.Requirements.GeneratePacket", $"Town={_townName}");
         try
         {
             var result = await Api.GenerateCouncilPacketAsync(
@@ -877,6 +896,8 @@ else
             {
                 _error = DocumentUiMessages.GenerationFailed(result.ErrorMessage);
                 _packetStatus = null;
+                TikrActionLog.Failed(Logger, "UI.Requirements.GeneratePacket",
+                    result.ErrorMessage ?? "Missing Pdf/Docx payloads");
                 return;
             }
 
@@ -904,6 +925,14 @@ else
 
             Toast.Show(DocumentUiMessages.CouncilPacketSuccess(result.Pdf.FileName, result.Docx.FileName));
             _packetStatus = null;
+            TikrActionLog.Completed(Logger, "UI.Requirements.GeneratePacket",
+                $"Pdf={result.Pdf.FileName} Docx={result.Docx.FileName}");
+        }
+        catch (Exception ex)
+        {
+            _error = "Could not generate council packet.";
+            _packetStatus = null;
+            TikrActionLog.Failed(Logger, "UI.Requirements.GeneratePacket", ex);
         }
         finally
         {
@@ -1216,6 +1245,7 @@ else
             return;
 
         _agentScanning = true;
+        TikrActionLog.Started(Logger, "UI.Requirements.AgentScan", $"FileName={file.Name}");
         try
         {
             await using var stream = file.OpenReadStream(maxAllowedSize: 52_428_800);
@@ -1227,6 +1257,7 @@ else
             if (result is null)
             {
                 _error = BuildAgentScanFailureMessage(file.Name);
+                TikrActionLog.Failed(Logger, "UI.Requirements.AgentScan", "Null scan result", file.Name);
                 return;
             }
 
@@ -1242,18 +1273,23 @@ else
             }
 
             OpenCreateDialogFromDraft(RequirementWorkflowHelpers.ApplyAgentExtraction(result));
+            TikrActionLog.Completed(Logger, "UI.Requirements.AgentScan",
+                $"FileName={file.Name} TitleHint={result.SuggestedTitle ?? "(none)"}");
         }
-        catch (HttpRequestException)
+        catch (HttpRequestException ex)
         {
             _error = "Could not reach TIKR.Api. Confirm the API is running (port 5000) and try again.";
+            TikrActionLog.Failed(Logger, "UI.Requirements.AgentScan", ex, file.Name);
         }
-        catch (TaskCanceledException)
+        catch (TaskCanceledException ex)
         {
             _error = "AI scan timed out. Try a smaller file or confirm TIKR.Api is responding.";
+            TikrActionLog.Failed(Logger, "UI.Requirements.AgentScan", ex, file.Name);
         }
-        catch
+        catch (Exception ex)
         {
             _error = BuildAgentScanFailureMessage(file.Name);
+            TikrActionLog.Failed(Logger, "UI.Requirements.AgentScan", ex, file.Name);
         }
         finally
         {

@@ -77,6 +77,64 @@ public class SettingsPageTests : ClerkTestContext
     }
 
     [Fact]
+    public async Task Settings_ScanLibraryButton_InvokesScanEndpoint()
+    {
+        var scanCalls = 0;
+        var handler = new StubHandler((req, _) =>
+        {
+            var path = req.RequestUri!.AbsolutePath;
+            if (path.Contains("/library/scan", StringComparison.OrdinalIgnoreCase) &&
+                req.Method == HttpMethod.Post)
+            {
+                Interlocked.Increment(ref scanCalls);
+                return new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent(
+                        """{"scanned":1,"imported":0,"skipped":1,"failed":0,"errors":[]}""",
+                        System.Text.Encoding.UTF8,
+                        "application/json")
+                };
+            }
+
+            var json = path switch
+            {
+                "/api/ai/status" =>
+                    """{"ollamaAvailable":true,"ollamaModel":"llama3.2:3b","grokEnabled":false,"ollamaHost":"http://127.0.0.1:11434","grokApiKeyConfigured":false}""",
+                "/api/ai/feature-settings" =>
+                    """{"ollamaHost":"http://127.0.0.1:11434","ollamaChatModel":"llama3.2:3b","useGrok":false,"grokApiKeyConfigured":false,"ollamaAvailable":true,"statusMessage":null,"grokModel":"grok-4.5","syncfusionLicenseKeyConfigured":true,"syncfusionLicenseHint":"…abcd","grokApiKeyHint":null,"fileStoragePath":"/data/documents","townName":"Wiley","storageLabel":"Synology NAS","townLogoPath":null,"ocrEnabled":true,"useSyncfusionAgentTools":true,"useSyncfusionAgentOrchestration":false,"libraryScanPath":null,"libraryScanIntervalSeconds":300,"libraryScanMaxImports":500,"emailInboxPath":null}""",
+                "/api/system/local-status" =>
+                    """{"townName":"Wiley","storageLabel":"Synology NAS","dataLastModifiedUtc":"2026-06-28T11:48:00Z","ollamaAvailable":true}""",
+                "/api/system/document-sdk-status" =>
+                    """{"licenseKeyConfigured":true,"licenseProbePassed":true,"licenseProbeDetail":null,"agentToolsEnabled":true,"orchestrationEnabled":false}""",
+                "/api/library/scan-status" =>
+                    """{"configured":true,"libraryPath":"/data/inbox","intervalSeconds":300,"pollerActive":false,"lastResult":null,"lastScanUtc":null,"scanInProgress":false}""",
+                "/api/ai/corpus-health" =>
+                    """{"documentsTotal":0,"documentsWithChunks":0,"documentsTransient":0,"documentsSparseText":0,"knowledgeTotal":0,"knowledgeWithChunks":0,"documentsChunkCoveragePercent":100,"knowledgeChunkCoveragePercent":100,"needsAttention":[]}""",
+                "/api/ai/embedding-recovery-status" =>
+                    """{"ollamaAvailable":true,"recoveryNeeded":false,"lastOllamaHealthyUtc":null,"lastAutoReindexUtc":null,"lastTrigger":null,"lastResultSummary":null,"lastError":null,"documentsChunkCoveragePercent":100,"knowledgeChunkCoveragePercent":100}""",
+                "/api/audit" => "[]",
+                "/api/auth/me/tour" => """{"completedVersion":null,"autoTourDisabled":false}""",
+                _ => "[]"
+            };
+            return new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(json, System.Text.Encoding.UTF8, "application/json")
+            };
+        });
+
+        Services.AddSingleton(new TikrApiClient(new HttpClient(handler) { BaseAddress = new Uri("http://localhost/") }));
+
+        var cut = RenderComponent<Settings>();
+        cut.WaitForAssertion(() => cut.Markup.Should().Contain("Scan shared folder now"));
+
+        var scanBtn = cut.FindAll("button")
+            .First(b => b.TextContent.Contains("Scan shared folder now", StringComparison.Ordinal));
+        await cut.InvokeAsync(() => scanBtn.Click());
+
+        cut.WaitForAssertion(() => scanCalls.Should().BeGreaterThan(0), TimeSpan.FromSeconds(10));
+    }
+
+    [Fact]
     public void Settings_ShowsUnavailableMessageWhenApiFails()
     {
         var handler = new StubHandler((_, _) => new HttpResponseMessage(HttpStatusCode.ServiceUnavailable));

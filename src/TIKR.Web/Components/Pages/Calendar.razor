@@ -5,9 +5,11 @@
 @inject NavigationManager Navigation
 @inject SyncfusionBlazorLicenseStatus BlazorLicense
 @inject Microsoft.Extensions.AI.IChatClient Chat
+@inject ILogger<Calendar> Logger
 
 @using System.Text.Json
 @using System.Text.RegularExpressions
+@using TIKR.Shared.Diagnostics
 @using TIKR.Shared.DTOs
 @using TIKR.Shared.Enums
 @using TIKR.Web.Components.Shared
@@ -166,17 +168,32 @@ else
 
     private async Task LoadAsync()
     {
-        _requirements = await Api.GetRequirementsAsync();
-        _events = _requirements.Select(ToCalendarEvent).ToList();
+        TikrActionLog.Started(Logger, "UI.Calendar.Load");
         try
         {
-            _calContacts = await Api.GetContactsAsync();
+            _requirements = await Api.GetRequirementsAsync();
+            _events = _requirements.Select(ToCalendarEvent).ToList();
+            try
+            {
+                _calContacts = await Api.GetContactsAsync();
+            }
+            catch
+            {
+                _calContacts = [];
+            }
+            _loaded = true;
+            TikrActionLog.Completed(Logger, "UI.Calendar.Load",
+                $"Requirements={_requirements.Count} Events={_events.Count}");
         }
-        catch
+        catch (Exception ex)
         {
+            _requirements = [];
+            _events = [];
             _calContacts = [];
+            _loaded = true;
+            _error = "Could not load calendar. Is the API running?";
+            TikrActionLog.Failed(Logger, "UI.Calendar.Load", ex);
         }
-        _loaded = true;
     }
 
     private async Task ApplyCalendarContactAsync()
@@ -304,8 +321,9 @@ else
 
             await LoadAsync();
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            TikrActionLog.Failed(Logger, "UI.Calendar.Save", ex, $"ActionType={args.ActionType}");
             _error = "Could not save calendar change. Reloading from the database.";
             await LoadAsync();
         }
@@ -314,6 +332,7 @@ else
     private async Task CreateFromEventAsync(CalendarEvent evt)
     {
         var title = string.IsNullOrWhiteSpace(evt.Subject) ? "Untitled deadline" : evt.Subject.Trim();
+        TikrActionLog.Started(Logger, "UI.Calendar.Create", $"Title={title}");
         await Api.CreateRequirementAsync(new CreateRequirementRequest(
             title,
             evt.Description,
@@ -324,6 +343,7 @@ else
             evt.ContactName,
             evt.ContactEmail,
             evt.ContactPhone));
+        TikrActionLog.Completed(Logger, "UI.Calendar.Create", $"Title={title} Due={DateOnly.FromDateTime(evt.StartTime):yyyy-MM-dd}");
     }
 
     private async Task UpdateFromEventAsync(CalendarEvent evt)
@@ -336,6 +356,7 @@ else
             ?? throw new InvalidOperationException($"Requirement {id} was not found.");
 
         var title = string.IsNullOrWhiteSpace(evt.Subject) ? existing.Title : evt.Subject.Trim();
+        TikrActionLog.Started(Logger, "UI.Calendar.Update", $"RequirementId={id} Title={title}");
         await Api.UpdateRequirementAsync(id, new UpdateRequirementRequest(
             title,
             evt.Description,
@@ -347,6 +368,7 @@ else
             evt.ContactName ?? existing.ContactName,
             evt.ContactEmail ?? existing.ContactEmail,
             evt.ContactPhone ?? existing.ContactPhone));
+        TikrActionLog.Completed(Logger, "UI.Calendar.Update", $"RequirementId={id}");
     }
 
     private async Task DeleteFromEventAsync(CalendarEvent evt)
@@ -357,7 +379,9 @@ else
         if (!Guid.TryParse(evt.Id, out var id))
             throw new InvalidOperationException("Calendar event is missing a requirement id.");
 
+        TikrActionLog.Started(Logger, "UI.Calendar.Delete", $"RequirementId={id} Subject={evt.Subject}");
         await Api.DeleteRequirementAsync(id);
+        TikrActionLog.Completed(Logger, "UI.Calendar.Delete", $"RequirementId={id}");
     }
 
     private bool IsSystemSeeded(CalendarEvent evt)
@@ -376,6 +400,7 @@ else
 
         _nlBusy = true;
         _nlStatus = "Asking local AI…";
+        TikrActionLog.Started(Logger, "UI.Calendar.NaturalLanguageCreate", $"PromptLen={_nlPrompt.Trim().Length}");
         StateHasChanged();
 
         try
@@ -393,6 +418,7 @@ else
             if (!jsonMatch.Success)
             {
                 _nlStatus = "Could not parse AI response. Try a clearer date (e.g. March 15 every year).";
+                TikrActionLog.Failed(Logger, "UI.Calendar.NaturalLanguageCreate", "Could not parse AI JSON");
                 return;
             }
 
@@ -406,6 +432,7 @@ else
             if (string.IsNullOrWhiteSpace(title) || !DateOnly.TryParse(dueRaw, out var dueDate))
             {
                 _nlStatus = "AI JSON missing title or dueDate.";
+                TikrActionLog.Failed(Logger, "UI.Calendar.NaturalLanguageCreate", "Missing title or dueDate");
                 return;
             }
 
@@ -422,11 +449,14 @@ else
 
             _nlStatus = $"Created \"{title.Trim()}\" due {dueDate:d}.";
             _nlPrompt = "";
+            TikrActionLog.Completed(Logger, "UI.Calendar.NaturalLanguageCreate",
+                $"Title={title.Trim()} Due={dueDate:yyyy-MM-dd}");
             await LoadAsync();
         }
         catch (Exception ex)
         {
             _nlStatus = $"Could not create from plain English: {ex.Message}";
+            TikrActionLog.Failed(Logger, "UI.Calendar.NaturalLanguageCreate", ex);
         }
         finally
         {

@@ -67,7 +67,13 @@ public class AssistantPageTests : ClerkTestContext
         Services.AddSingleton(new TikrApiClient(new HttpClient(handler) { BaseAddress = new Uri("http://localhost/") }));
 
         var cut = RenderComponent<Assistant>();
-        cut.WaitForAssertion(() => cut.Markup.Should().Contain("Unable to load deadline context from API"));
+        cut.WaitForAssertion(() =>
+        {
+            var summary = cut.Instance.GetType()
+                .GetField("_contextSummary", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!
+                .GetValue(cut.Instance) as string;
+            summary.Should().Contain("Unable to load deadline context from API");
+        });
     }
 
     [Fact]
@@ -80,7 +86,13 @@ public class AssistantPageTests : ClerkTestContext
         RegisterApi(prioritiesJson);
 
         var cut = RenderComponent<Assistant>();
-        cut.WaitForAssertion(() => cut.Markup.Should().Contain("Budget due"));
+        cut.WaitForAssertion(() =>
+        {
+            var summary = cut.Instance.GetType()
+                .GetField("_contextSummary", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!
+                .GetValue(cut.Instance) as string;
+            summary.Should().Contain("Budget due");
+        });
     }
 
     [Fact]

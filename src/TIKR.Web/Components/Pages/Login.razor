@@ -4,6 +4,9 @@
 @inject AuthSettings Auth
 @inject IAuthSessionService AuthSession
 @inject NavigationManager Navigation
+@inject ILogger<Login> Logger
+
+@using TIKR.Shared.Diagnostics
 
 <div class="login-page">
     <SfCard CssClass="login-card">
@@ -54,6 +57,7 @@
     {
         if (!Auth.IsEnabled)
         {
+            TikrActionLog.Info(Logger, "UI.Login.AuthDisabled", "Auth off — redirect home");
             Navigation.NavigateTo("/");
             return;
         }
@@ -61,22 +65,32 @@
         var uri = Navigation.ToAbsoluteUri(Navigation.Uri);
         if (Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(uri.Query).TryGetValue("returnUrl", out var value))
             _returnUrl = value.FirstOrDefault() ?? "/";
+
+        TikrActionLog.Info(Logger, "UI.Login.View", $"ReturnUrl={_returnUrl}");
     }
 
     private async Task HandleLoginAsync()
     {
         _busy = true;
         _error = null;
+        TikrActionLog.Started(Logger, "UI.Login.Submit", $"Email={_model.Email}");
         try
         {
             var result = await AuthSession.LoginAsync(new TIKR.Shared.DTOs.LoginRequest(_model.Email, _model.Password));
             if (result is null)
             {
                 _error = "Invalid email or password.";
+                TikrActionLog.Failed(Logger, "UI.Login.Submit", "Invalid credentials", $"Email={_model.Email}");
                 return;
             }
 
+            TikrActionLog.Completed(Logger, "UI.Login.Submit", $"Email={_model.Email}");
             Navigation.NavigateTo(_returnUrl, forceLoad: true);
+        }
+        catch (Exception ex)
+        {
+            _error = "Sign-in failed. Try again.";
+            TikrActionLog.Failed(Logger, "UI.Login.Submit", ex, $"Email={_model.Email}");
         }
         finally
         {

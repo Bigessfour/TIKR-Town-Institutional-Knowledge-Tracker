@@ -4,6 +4,7 @@ TIKR uses AI in two layers: **developer-time** tools in Cursor (skills + MCP) an
 
 ## Secrets matrix
 
+
 | Secret                   | Used by                                              | Storage                                                 |
 | ------------------------ | ---------------------------------------------------- | ------------------------------------------------------- |
 | `SYNCFUSION_LICENSE_KEY` | Runtime Blazor components (removes trial banner)     | `docker/.env`, Web user-secrets                         |
@@ -11,17 +12,22 @@ TIKR uses AI in two layers: **developer-time** tools in Cursor (skills + MCP) an
 | `GROK_API_KEY`           | API advanced AI (`/api/ai/ask-advanced`)             | `docker/.env`, Api user-secrets                         |
 | `OLLAMA_HOST`            | API, Web `IChatClient`, Ollama MCP                   | `docker/.env` (default `http://ollama:11434` in Docker) |
 
+
 **Important:** `SYNCFUSION_LICENSE_KEY` (Community License for running components) is different from `SYNCFUSION_API_KEY` (MCP developer tools from your [Syncfusion account](https://www.syncfusion.com/account)).
 
 **macOS:** store keys in the Passwords app, then run `./scripts/setup-local-secrets.sh` to merge them into gitignored `docker/.env` and dotnet user-secrets. The scripts never log secret values.
 
 ---
 
+
+
 ## Part A — Developer-time (Cursor IDE)
+
+
 
 ### 1. Syncfusion Agent Skills
 
-Component-aware skill guides come from [syncfusion/blazor-ui-components-skills](https://github.com/syncfusion/blazor-ui-components-skills). They are **not** committed to this repo (`.agents/` is gitignored — ~15MB). Versions are pinned in [`skills-lock.json`](../skills-lock.json) at the repo root.
+Component-aware skill guides come from [syncfusion/blazor-ui-components-skills](https://github.com/syncfusion/blazor-ui-components-skills). They are **not** committed to this repo (`.agents/` is gitignored — ~15MB). Versions are pinned in `[skills-lock.json](../skills-lock.json)` at the repo root.
 
 Install locally:
 
@@ -56,12 +62,14 @@ export SYNCFUSION_API_KEY="your-syncfusion-account-api-key"
 
 Configured servers:
 
+
 | Server            | Purpose                                                                                                   |
 | ----------------- | --------------------------------------------------------------------------------------------------------- |
 | `sf-blazor-mcp`   | Syncfusion Blazor Assistant — UI builder, component API, layouts, theming                                 |
 | `microsoft-learn` | Authoritative .NET 10, Blazor, EF Core, `IChatClient`, Docker docs                                        |
 | `ollama`          | Test prompts against local Ollama (`llama3.2:3b`, etc.)                                                   |
 | `tikr-rag-mcp`    | **Mandatory before code** — semantic search over repo (`search_knowledge`); `refresh_index` after changes |
+
 
 **Setup tikr-rag-mcp:**
 
@@ -98,14 +106,20 @@ Record findings in [ui-readiness-audit.md](ui-readiness-audit.md). Complement wi
 
 ### 4. Other optional MCP
 
+
 | MCP                  | TIKR use                                                       |
 | -------------------- | -------------------------------------------------------------- |
 | `cursor-ide-browser` | Built-in Cursor browser tools (alternative to chrome-devtools) |
 | `MCP_DOCKER`         | Container ops + bundled browser tools (optional)               |
 
+
 ---
 
+
+
 ## Part B — Runtime (Blazor app for clerks)
+
+
 
 ### How Ollama relates to RAG (important)
 
@@ -122,6 +136,8 @@ TIKR owns retrieval: chunk → embed → hybrid search → grounded prompt → c
 - Search blends vector similarity + keyword overlap; weak hits below `minScore` (default ~0.38) are dropped
 - `/assistant` packs passages into the prompt, requires Sources, and soft-fails when embedding is offline
 - After model/schema changes or bulk imports: `POST /api/ai/reindex-embeddings` (also `TikrApiClient.ReindexEmbeddingsAsync`)
+
+
 
 ### NAS library scan (existing documents → Assistant RAG)
 
@@ -148,10 +164,12 @@ API: `GET /api/library/scan-status`, `POST /api/library/scan`.
 - Wired into `SyncfusionDocumentAgentExtractor` (requires `USE_SYNCFUSION_AGENT_TOOLS=true` on the API)
 - Optional: `TIKR_TESSADATA_PATH` for custom language data; `TIKR_OCR_ENABLED=false` to disable
 
+
+
 ### AI Assistant page (`/assistant`)
 
 - **Local chat (default):** `SfAIAssistView` streams responses via `IChatClient` → Ollama on NAS
-- **Clerk context:** Upcoming deadlines from `/api/ai/dashboard-priorities` prepended to prompts
+- **Clerk context:** Upcoming deadlines from `/api/ai/dashboard-priorities` prepended to prompts (not shown as a raw card on `/assistant`; Dashboard owns the due-out UI)
 - **RAG context:** Town docs (`/api/ai/semantic-search`) + vault (`semantic-search-knowledge`) + **TIKR product help** (`ProductHelpCatalog`: how-to + Syncfusion workspace coaching) packed into each turn
 - **Interactive UX:** Suggestion chips, proactive due-out brief, energetic system prompt with next-step guidance; chat history + machine-locked Deb/Paige memory
 - **Smart Ollama/Grok router:** `AssistantAgentRouter` decision matrix (LangChain-style) picks local Ollama for routine asks and auto-escalates to Grok when enabled for complex/drafting/long multi-question prompts, empty local answers, or Ollama offline — no manual “Ask Grok” button
@@ -169,14 +187,16 @@ Business AI logic (tagging, audit, Grok gating, indexing) stays in `TIKR.Api` / 
 - `Microsoft.Extensions.AI` + `OllamaSharp` — local Ollama via `IChatClient`
 
 **Note on Syncfusion Ollama integration (reviewed from official docs):**
-Syncfusion provides `Syncfusion.Blazor.AI` + `IChatInferenceService` / `SyncfusionAIService` wrapper for Smart AI features (Smart Paste, Smart TextArea, data restructuring in TreeGrid/Grid, etc.). See https://blazor.syncfusion.com/documentation/smart-ai-solutions/ai/ollama.
+Syncfusion provides `Syncfusion.Blazor.AI` + `IChatInferenceService` / `SyncfusionAIService` wrapper for Smart AI features (Smart Paste, Smart TextArea, data restructuring in TreeGrid/Grid, etc.). See [https://blazor.syncfusion.com/documentation/smart-ai-solutions/ai/ollama](https://blazor.syncfusion.com/documentation/smart-ai-solutions/ai/ollama).
 TIKR currently uses lower-level direct `IChatClient` injection for the custom RAG-aware assistant (sufficient for `SfAIAssistView` + streaming + context prepending).
 
 **Syncfusion.Blazor.AI implemented (2026-07-08)**: Package added to TIKR.Web.csproj. In Program.cs (after AddChatClient for Ollama):
+
 ```csharp
 // Register for Smart AI-powered controls, connected to project (shared Ollama; use IChatInferenceService with TIKR context like RAG hits/_contextSummary for Smart components).
 builder.Services.AddSingleton<IChatInferenceService, SyncfusionAIService>();
 ```
+
 This enables Smart features (e.g. SmartTextArea in forms/Vault) with project awareness. Current custom RAG remains for streaming control. See Ollama docs for GenerateResponseAsync usage with context.
 
 ### Configuration
@@ -185,6 +205,8 @@ Web reads Ollama settings from the same env/appsettings keys as the API:
 
 - `OLLAMA_HOST` / `AI:OllamaHost`
 - `OLLAMA_CHAT_MODEL` / `AI:ChatModel`
+
+
 
 #### Optional: `tikr-clerk` model (clerk-tuned tagging)
 
@@ -200,9 +222,39 @@ docker exec -i tikr-ollama ollama create tikr-clerk -f - < docker/ollama/Modelfi
 
 Then set `OLLAMA_CHAT_MODEL=tikr-clerk` in `docker/.env` (or host env) and restart `tikr-api` / Web so they pick up the model name. Default remains `llama3.2:3b` if you skip this step.
 
+### Clerk surface action logs (`TikrActionLog`)
+
+Every clerk-facing page logs major load/write flows as `Action UI.{Surface}.{Verb}` (Started / Completed / Failed). Grep:
+
+```bash
+rg "Action UI\." .local-data/logs/tikr-web-*.log
+```
+
+
+| Surface      | Action prefix       | Typical events                                                   |
+| ------------ | ------------------- | ---------------------------------------------------------------- |
+| Dashboard    | `UI.Dashboard.*`    | Load, ResetLayout, OpenWorkspace                                 |
+| Calendar     | `UI.Calendar.*`     | Load, Create/Update/Delete, NaturalLanguageCreate                |
+| Requirements | `UI.Requirements.*` | Load, Create/Update/Delete, AgentScan, ExportCsv, GeneratePacket |
+| Documents    | `UI.Documents.*`    | Load, Upload, Preview, Download, Convert, Retag                  |
+| Assistant    | `UI.Assistant.*`    | Prompt, Session, RAG, ClearConversation                          |
+| Vault        | `UI.Vault.*`        | Load, SaveEntry, VoiceNote, Delete, HandoverPackage              |
+| Settings     | `UI.Settings.*`     | Load, SaveFeatures, ScanLibrary, ReindexEmbeddings               |
+| Login        | `UI.Login.*`        | View, Submit, AuthDisabled                                       |
+| Users        | `UI.Users.*`        | Load, Create, ToggleActive                                       |
+| Account      | `UI.Account.*`      | ChangePassword                                                   |
+
+
+Files land under `.local-data/logs/` on Mac (`tikr-web-YYYYMMDD.log`) or `/data/logs` on NAS.
+
+**Runtime evaluation (Layer 3):** walk every clerk surface with chrome-devtools and verify matching `Action UI.`* lines — see [clerk-surface-test-drive.md](clerk-surface-test-drive.md).
+
 ---
 
+
+
 ## Part C — Smart Components (shipped)
+
 
 | Component          | Target page                               | Value                                       |
 | ------------------ | ----------------------------------------- | ------------------------------------------- |
@@ -210,11 +262,15 @@ Then set `OLLAMA_CHAT_MODEL=tikr-clerk` in `docker/.env` (or host env) and resta
 | **Smart TextArea** | Requirements description + Vault AI draft | Sentence completion for clerk notes         |
 | **Calendar NL**    | Calendar                                  | Plain English → create Requirement deadline |
 
+
 Requires `Syncfusion.Blazor.SmartComponents` + `AddSyncfusionSmartComponents().InjectOpenAIInference()` with shared Ollama `IChatClient`. See [Syncfusion Smart AI + Ollama](https://blazor.syncfusion.com/documentation/smart-ai-solutions/ai/ollama).
 
 ---
 
+
+
 ## Troubleshooting
+
 
 | Issue                                 | Fix                                                                                                                                                       |
 | ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -224,7 +280,10 @@ Requires `Syncfusion.Blazor.SmartComponents` + `AddSyncfusionSmartComponents().I
 | Advanced AI unavailable               | API: `USE_GROK=true` and valid `GROK_API_KEY`                                                                                                             |
 | Duplicate Syncfusion component errors | Do not mix `Syncfusion.Blazor` meta-package with individual packages (e.g. `InteractiveChat`). TIKR uses individual packages only — see `TIKR.Web.csproj` |
 
+
 ---
+
+
 
 ## Verification checklist
 

@@ -3,11 +3,13 @@
 @inject TikrApiClient Api
 @inject IJSRuntime JS
 @inject ClerkToastService Toast
+@inject ILogger<Vault> Logger
 
 @using Syncfusion.Blazor.RichTextEditor
 @using Syncfusion.Blazor.Navigations
 @using TIKR.Shared.DTOs
 @using TIKR.Shared.Enums
+@using TIKR.Shared.Diagnostics
 @using TIKR.Web.Components.Shared
 
 <!-- Big red emotional banner -->
@@ -440,10 +442,17 @@
     protected override async Task OnInitializedAsync()
     {
         _loading = true;
+        TikrActionLog.Started(Logger, "UI.Vault.Load");
         try
         {
             await LoadEntriesAsync();
             await LoadContactsAsync();
+            TikrActionLog.Completed(Logger, "UI.Vault.Load",
+                $"Entries={_allEntries.Count} VoiceNotes={VoiceNotes.Count} Contacts={_inventoryContacts.Count}");
+        }
+        catch (Exception ex)
+        {
+            TikrActionLog.Failed(Logger, "UI.Vault.Load", ex);
         }
         finally
         {
@@ -579,11 +588,23 @@
     {
         if (SelectedEntry is null) return;
 
-        await Api.UpdateKnowledgeEntryAsync(SelectedEntry.Id, new UpdateKnowledgeEntryRequest(
-            SelectedEntry.Title, EditorContent, SelectedEntry.Category, SelectedEntry.SortOrder));
+        var entryId = SelectedEntry.Id;
+        var title = SelectedEntry.Title;
+        TikrActionLog.Started(Logger, "UI.Vault.SaveEntry", $"EntryId={entryId} Title={title}");
+        try
+        {
+            await Api.UpdateKnowledgeEntryAsync(entryId, new UpdateKnowledgeEntryRequest(
+                title, EditorContent, SelectedEntry.Category, SelectedEntry.SortOrder));
 
-        await LoadEntriesAsync();
-        CancelEdit();
+            await LoadEntriesAsync();
+            CancelEdit();
+            TikrActionLog.Completed(Logger, "UI.Vault.SaveEntry", $"EntryId={entryId}");
+        }
+        catch (Exception ex)
+        {
+            TikrActionLog.Failed(Logger, "UI.Vault.SaveEntry", ex, $"EntryId={entryId}");
+            Toast.Show("Could not save vault entry.");
+        }
     }
 
     private void CancelEdit()
@@ -690,6 +711,7 @@
         {
             var ids = _selectedVaultIds.ToList();
             var count = ids.Count;
+            TikrActionLog.Started(Logger, "UI.Vault.BulkDelete", $"Count={count}");
 
             foreach (var id in ids)
             {
@@ -703,6 +725,7 @@
             // Load clears the _selectedVaultIds hash; also ensure editor cleaned if affected
             if (SelectedEntry is not null && ids.Contains(SelectedEntry.Id))
                 CancelEdit();
+            TikrActionLog.Completed(Logger, "UI.Vault.BulkDelete", $"RequestedCount={count}");
             return;
         }
 
@@ -711,6 +734,7 @@
             var entry = _pendingEntryDelete;
             _pendingEntryDelete = null;
             var recreate = KnowledgeWorkflowHelpers.ToCreateRequest(entry);
+            TikrActionLog.Started(Logger, "UI.Vault.DeleteEntry", $"EntryId={entry.Id} Title={entry.Title}");
             await Api.DeleteKnowledgeEntryAsync(entry.Id);
             Toast.Show($"Deleted \"{entry.Title}\"", async () =>
             {
@@ -720,6 +744,7 @@
             await LoadEntriesAsync();
             if (SelectedEntry?.Id == entry.Id)
                 CancelEdit();
+            TikrActionLog.Completed(Logger, "UI.Vault.DeleteEntry", $"EntryId={entry.Id}");
             return;
         }
 
@@ -730,6 +755,7 @@
         _pendingVoiceDelete = null;
         var voiceRecreate = new CreateKnowledgeEntryRequest(
             note.Title, note.Transcription, KnowledgeCategory.TribalKnowledge, _allEntries.Count);
+        TikrActionLog.Started(Logger, "UI.Vault.DeleteVoiceNote", $"EntryId={note.Id} Title={note.Title}");
 
         if (note.Id != Guid.Empty)
         {
@@ -750,6 +776,7 @@
             await LoadEntriesAsync();
         });
         await LoadEntriesAsync();
+        TikrActionLog.Completed(Logger, "UI.Vault.DeleteVoiceNote", $"EntryId={note.Id}");
     }
 
     private async Task SaveVoiceNoteAsync()
@@ -757,6 +784,7 @@
         if (string.IsNullOrWhiteSpace(PendingTranscription)) return;
 
         var title = VaultVoiceNoteSimulator.BuildDefaultTitle(DateTime.Now);
+        TikrActionLog.Started(Logger, "UI.Vault.SaveVoiceNote", $"Title={title}");
         // Persist as Tribal Knowledge entry so it's durable. Capture the created
         // entry's Id so DeleteVoiceNote can remove the row from the database too.
         await Api.CreateKnowledgeEntryAsync(new CreateKnowledgeEntryRequest(
@@ -764,6 +792,7 @@
 
         PendingTranscription = "";
         await LoadEntriesAsync();
+        TikrActionLog.Completed(Logger, "UI.Vault.SaveVoiceNote", $"Title={title}");
     }
 
     private Task DeleteVoiceNote(VaultVoiceNote note)
@@ -775,6 +804,7 @@
     // Copy everything
     private async Task CopyAllForNewClerkAsync()
     {
+        TikrActionLog.Started(Logger, "UI.Vault.CopyForNewClerk");
         var inventoryBlock = string.Join("\n\n", _inventoryContacts.Select(c =>
             $"{c.Name}\n  Role: {c.Role}\n  Org: {c.Organization}\n  Office: {c.Office}\n  Email: {c.Email}\n  Phone: {c.Phone}\n  Address: {c.Address}\n  Notes: {c.Notes}"));
 
@@ -796,16 +826,19 @@
             VoiceNotes.Select(v => (v.Title, v.Timestamp, v.Transcription)));
 
         await JS.InvokeVoidAsync("navigator.clipboard.writeText", text);
+        TikrActionLog.Completed(Logger, "UI.Vault.CopyForNewClerk", $"Chars={text.Length}");
     }
 
     private async Task GenerateHandoverPackageAsync()
     {
+        TikrActionLog.Started(Logger, "UI.Vault.HandoverPackage");
         try
         {
             var bytes = await Api.GenerateHandoverPackageAsync();
             if (bytes == null || bytes.Length == 0)
             {
                 Toast.Show("Failed to generate handover package (check Syncfusion license).");
+                TikrActionLog.Failed(Logger, "UI.Vault.HandoverPackage", "Empty PDF bytes");
                 return;
             }
 
@@ -816,10 +849,12 @@
                 bytes);
 
             Toast.Show("Complete Handover Package downloaded. Use bookmarks/TOC for navigation.");
+            TikrActionLog.Completed(Logger, "UI.Vault.HandoverPackage", $"Bytes={bytes.Length}");
         }
         catch (Exception ex)
         {
             Toast.Show($"Handover generation failed: {ex.Message}");
+            TikrActionLog.Failed(Logger, "UI.Vault.HandoverPackage", ex);
         }
     }
 
