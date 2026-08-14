@@ -223,6 +223,39 @@ else
                             </Template>
                         </FormItem>
                         <FormItem Field="@nameof(RequirementFormModel.SubmitTo)" LabelText="Submit to" />
+                        <div class="mb-3 border rounded p-2">
+                            <label class="form-label fw-semibold">Pick inventory contact</label>
+                            <div class="d-flex flex-wrap gap-2 align-items-center">
+                                <SfDropDownList TValue="Guid?" TItem="ContactDto"
+                                                DataSource="@_contactPickerOptions"
+                                                @bind-Value="_pickedContactId"
+                                                Placeholder="Select contact"
+                                                AllowFiltering="true"
+                                                Width="280px">
+                                    <DropDownListFieldSettings Value="Id" Text="Name" />
+                                </SfDropDownList>
+                                <SfButton CssClass="tikr-action-btn" Content="Apply as primary"
+                                          Disabled="@(_pickedContactId is null || _contactPickBusy)"
+                                          OnClick="ApplyPickedContactAsync" />
+                            </div>
+                            @if (_linkedContacts.Count > 0)
+                            {
+                                <ul class="mb-0 mt-2 small">
+                                    @foreach (var linked in _linkedContacts)
+                                    {
+                                        <li>
+                                            @linked.Name
+                                            @if (linked.IsPrimary == true) { <span class="text-muted">(primary)</span> }
+                                            @if (_editingId is not null)
+                                            {
+                                                <SfButton CssClass="tikr-action-btn e-small ms-1" Content="Unlink"
+                                                          OnClick="() => UnlinkContactAsync(linked.Id)" />
+                                            }
+                                        </li>
+                                    }
+                                </ul>
+                            }
+                        </div>
                         <FormItem Field="@nameof(RequirementFormModel.ContactName)" LabelText="Contact name" />
                         <FormItem Field="@nameof(RequirementFormModel.ContactEmail)" LabelText="Contact email" />
                         <FormItem Field="@nameof(RequirementFormModel.ContactPhone)" LabelText="Contact phone" />
@@ -453,6 +486,11 @@ else
     private Guid? _attachDocumentId;
     private bool _attachBusy;
     private string? _attachMessage;
+    private List<ContactDto> _contactPickerOptions = [];
+    private List<ContactDto> _linkedContacts = [];
+    private Guid? _pickedContactId;
+    private bool _contactPickBusy;
+    private Guid? _pendingPrimaryContactId;
     private const string _smartReqRole =
         "Colorado municipal town clerk filling statutory deadline forms for a small town board";
     private static readonly string[] _smartReqPhrases =
@@ -564,7 +602,11 @@ else
         _attachCandidates = [];
         _attachDocumentId = null;
         _attachMessage = null;
+        _linkedContacts = [];
+        _pickedContactId = null;
+        _pendingPrimaryContactId = null;
         _showDialog = true;
+        _ = LoadContactPickerOptionsAsync();
     }
 
     private async Task OpenEditDialog(RequirementDto item)
@@ -584,6 +626,8 @@ else
         _formDueDate = item.DueDate.ToDateTime(TimeOnly.MinValue);
         _linkedDocuments = item.LinkedDocuments.ToList();
         _attachDocumentId = null;
+        _pickedContactId = null;
+        _pendingPrimaryContactId = null;
         _showDialog = true;
         try
         {
@@ -593,6 +637,76 @@ else
         {
             _attachCandidates = [];
         }
+
+        await LoadContactPickerOptionsAsync();
+        try
+        {
+            _linkedContacts = await Api.GetRequirementContactsAsync(item.Id);
+        }
+        catch
+        {
+            _linkedContacts = [];
+        }
+    }
+
+    private async Task LoadContactPickerOptionsAsync()
+    {
+        try
+        {
+            _contactPickerOptions = await Api.GetContactsAsync();
+        }
+        catch
+        {
+            _contactPickerOptions = [];
+        }
+    }
+
+    private async Task ApplyPickedContactAsync()
+    {
+        if (_pickedContactId is null)
+            return;
+
+        var contact = _contactPickerOptions.FirstOrDefault(c => c.Id == _pickedContactId)
+                      ?? await Api.GetContactAsync(_pickedContactId.Value);
+        if (contact is null)
+            return;
+
+        _contactPickBusy = true;
+        try
+        {
+            _form.ContactName = contact.Name;
+            _form.ContactEmail = contact.Email;
+            _form.ContactPhone = contact.Phone;
+            if (string.IsNullOrWhiteSpace(_form.SubmitTo) && !string.IsNullOrWhiteSpace(contact.Organization))
+                _form.SubmitTo = contact.Organization;
+
+            if (_editingId is not null)
+            {
+                await Api.LinkRequirementContactAsync(_editingId.Value, contact.Id, primary: true);
+                _linkedContacts = await Api.GetRequirementContactsAsync(_editingId.Value);
+                await LoadAsync();
+            }
+            else
+            {
+                _pendingPrimaryContactId = contact.Id;
+                _linkedContacts = [contact with { IsPrimary = true }];
+            }
+        }
+        finally
+        {
+            _contactPickBusy = false;
+        }
+    }
+
+    private async Task UnlinkContactAsync(Guid contactId)
+    {
+        if (_editingId is null)
+            return;
+
+        await Api.UnlinkRequirementContactAsync(_editingId.Value, contactId);
+        _linkedContacts = await Api.GetRequirementContactsAsync(_editingId.Value);
+        if (_pendingPrimaryContactId == contactId)
+            _pendingPrimaryContactId = null;
     }
 
     private async Task AttachDocumentAsync()
@@ -658,7 +772,7 @@ else
         {
             if (_editingId is null)
             {
-                await Api.CreateRequirementAsync(new CreateRequirementRequest(
+                var created = await Api.CreateRequirementAsync(new CreateRequirementRequest(
                     _form.Title,
                     _form.Description,
                     dueDate,
@@ -668,6 +782,9 @@ else
                     _form.ContactName,
                     _form.ContactEmail,
                     _form.ContactPhone));
+
+                if (created is not null && _pendingPrimaryContactId is Guid contactId)
+                    await Api.LinkRequirementContactAsync(created.Id, contactId, primary: true);
             }
             else
             {
@@ -684,6 +801,7 @@ else
                     _form.ContactPhone));
             }
 
+            _pendingPrimaryContactId = null;
             _showDialog = false;
             await LoadAsync();
         }

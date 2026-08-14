@@ -17,6 +17,8 @@ public class TikrDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<KnowledgeEntry> KnowledgeEntries => Set<KnowledgeEntry>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
     public DbSet<RequirementDocument> RequirementDocuments => Set<RequirementDocument>();
+    public DbSet<Contact> Contacts => Set<Contact>();
+    public DbSet<RequirementContact> RequirementContacts => Set<RequirementContact>();
     public DbSet<EmbeddingChunk> EmbeddingChunks => Set<EmbeddingChunk>();
     public DbSet<LibraryImportRecord> LibraryImportRecords => Set<LibraryImportRecord>();
     public DbSet<AppSetting> AppSettings => Set<AppSetting>();
@@ -79,6 +81,35 @@ public class TikrDbContext : IdentityDbContext<ApplicationUser>
             entity.HasOne(e => e.Document)
                 .WithMany()
                 .HasForeignKey(e => e.DocumentId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<Contact>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Name).HasMaxLength(200).IsRequired();
+            entity.Property(e => e.Role).HasMaxLength(200);
+            entity.Property(e => e.Organization).HasMaxLength(300);
+            entity.Property(e => e.Address).HasMaxLength(500);
+            entity.Property(e => e.Office).HasMaxLength(200);
+            entity.Property(e => e.Email).HasMaxLength(200);
+            entity.Property(e => e.Phone).HasMaxLength(50);
+            entity.Property(e => e.Notes).HasMaxLength(2000);
+            entity.Property(e => e.CreatedBy).HasMaxLength(450);
+            entity.HasIndex(e => e.DeletedAt);
+            entity.HasIndex(e => e.Name);
+        });
+
+        modelBuilder.Entity<RequirementContact>(entity =>
+        {
+            entity.HasKey(e => new { e.RequirementId, e.ContactId });
+            entity.HasOne(e => e.Requirement)
+                .WithMany()
+                .HasForeignKey(e => e.RequirementId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.Contact)
+                .WithMany()
+                .HasForeignKey(e => e.ContactId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
 

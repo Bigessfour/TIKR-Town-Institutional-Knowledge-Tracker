@@ -88,6 +88,21 @@ public class RequirementsPageTests : ClerkTestContext
         cut.WaitForAssertion(() => cut.Markup.Should().Contain("Delete"));
     }
 
+    [Fact]
+    public async Task Requirements_ShowsContactPickerWhenDialogOpen()
+    {
+        RegisterApi("[]");
+        SetRendererInfo(new RendererInfo("Server", true));
+
+        var cut = RenderComponent<Requirements>();
+        var addButton = cut.FindAll("button")
+            .First(b => b.TextContent?.Contains("Add requirement", StringComparison.Ordinal) == true);
+        await cut.InvokeAsync(() => addButton.Click());
+        cut.WaitForAssertion(() => cut.Markup.Should().Contain("Pick inventory contact"));
+        cut.Markup.Should().Contain("Apply as primary");
+        cut.Markup.Should().Contain("Submit to");
+    }
+
     private void RegisterApi(string json)
     {
         var handler = new StubHandler((req, _) =>
@@ -99,6 +114,8 @@ public class RequirementsPageTests : ClerkTestContext
                     """
                     {"townName":"Wiley","storageLabel":"Synology NAS","dataLastModifiedUtc":null,"ollamaAvailable":true}
                     """,
+                "/api/contacts" => "[]",
+                _ when path.Contains("/contacts", StringComparison.Ordinal) => "[]",
                 _ => json
             };
             return new HttpResponseMessage(HttpStatusCode.OK)

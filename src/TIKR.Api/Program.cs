@@ -8,6 +8,7 @@ using TIKR.Shared.Configuration;
 using TIKR.Shared.Constants;
 using TIKR.Shared.DTOs;
 using TIKR.Shared.Entities;
+using TIKR.Shared.Enums;
 using TIKR.Shared.Interfaces;
 using Serilog;
 using Serilog.Events;
@@ -342,6 +343,136 @@ api.MapDelete("/requirements/{id:guid}", async (Guid id, TikrDbContext db, IAudi
     catch (InvalidOperationException ex)
     {
         return Results.BadRequest(ex.Message);
+    }
+});
+
+api.MapGet("/requirements/{id:guid}/contacts", async (Guid id, TikrDbContext db, IContactService contactService) =>
+{
+    if (await db.Requirements.FindAsync(id) is null)
+        return Results.NotFound();
+
+    var linked = await contactService.ListForRequirementAsync(id);
+    return Results.Ok(linked.Select(x => MapContact(x.Contact, x.IsPrimary)).ToList());
+});
+
+api.MapPost("/requirements/{id:guid}/contacts/{contactId:guid}", async (
+    Guid id,
+    Guid contactId,
+    bool primary,
+    IAuditService audit,
+    ICurrentUserService currentUser,
+    IContactService contactService) =>
+{
+    try
+    {
+        await contactService.LinkToRequirementAsync(id, contactId, primary, audit, currentUser);
+        return Results.NoContent();
+    }
+    catch (KeyNotFoundException)
+    {
+        return Results.NotFound();
+    }
+    catch (InvalidOperationException ex)
+    {
+        return Results.BadRequest(ex.Message);
+    }
+});
+
+api.MapDelete("/requirements/{id:guid}/contacts/{contactId:guid}", async (
+    Guid id,
+    Guid contactId,
+    IAuditService audit,
+    ICurrentUserService currentUser,
+    IContactService contactService) =>
+{
+    try
+    {
+        await contactService.UnlinkFromRequirementAsync(id, contactId, audit, currentUser);
+        return Results.NoContent();
+    }
+    catch (KeyNotFoundException)
+    {
+        return Results.NotFound();
+    }
+});
+
+// Contacts
+api.MapGet("/contacts", async (IContactService contactService, string? q = null, int? category = null, bool deleted = false) =>
+{
+    ContactCategory? cat = category is int c ? (ContactCategory)c : null;
+    var items = await contactService.ListAsync(q, cat, deleted);
+    return Results.Ok(items.Select(c => MapContact(c)).ToList());
+});
+
+api.MapGet("/contacts/{id:guid}", async (Guid id, IContactService contactService) =>
+{
+    var item = await contactService.GetAsync(id);
+    return item is null ? Results.NotFound() : Results.Ok(MapContact(item));
+});
+
+api.MapPost("/contacts", async (
+    CreateContactRequest request,
+    IAuditService audit,
+    ICurrentUserService currentUser,
+    IContactService contactService) =>
+{
+    var entity = await contactService.CreateAsync(request, audit, currentUser);
+    return Results.Created($"/api/contacts/{entity.Id}", MapContact(entity));
+});
+
+api.MapPut("/contacts/{id:guid}", async (
+    Guid id,
+    UpdateContactRequest request,
+    IAuditService audit,
+    ICurrentUserService currentUser,
+    IContactService contactService) =>
+{
+    try
+    {
+        var entity = await contactService.UpdateAsync(id, request, audit, currentUser);
+        return Results.Ok(MapContact(entity));
+    }
+    catch (KeyNotFoundException)
+    {
+        return Results.NotFound();
+    }
+    catch (InvalidOperationException ex)
+    {
+        return Results.BadRequest(ex.Message);
+    }
+});
+
+api.MapDelete("/contacts/{id:guid}", async (
+    Guid id,
+    IAuditService audit,
+    ICurrentUserService currentUser,
+    IContactService contactService) =>
+{
+    try
+    {
+        await contactService.SoftDeleteAsync(id, audit, currentUser);
+        return Results.NoContent();
+    }
+    catch (KeyNotFoundException)
+    {
+        return Results.NotFound();
+    }
+});
+
+api.MapPost("/contacts/{id:guid}/restore", async (
+    Guid id,
+    IAuditService audit,
+    ICurrentUserService currentUser,
+    IContactService contactService) =>
+{
+    try
+    {
+        var entity = await contactService.RestoreAsync(id, audit, currentUser);
+        return Results.Ok(MapContact(entity));
+    }
+    catch (KeyNotFoundException)
+    {
+        return Results.NotFound();
     }
 });
 
@@ -1154,6 +1285,24 @@ static string RootCause(Exception ex)
 
 static KnowledgeEntryDto MapKnowledge(KnowledgeEntry k) =>
     new(k.Id, k.Title, k.Content, k.Category, k.SortOrder);
+
+static ContactDto MapContact(Contact c, bool? isPrimary = null) =>
+    new(
+        c.Id,
+        c.Name,
+        c.Role,
+        c.Organization,
+        c.Address,
+        c.Office,
+        c.Email,
+        c.Phone,
+        c.Notes,
+        c.Categories,
+        c.CreatedAt,
+        c.UpdatedAt,
+        c.CreatedBy,
+        c.DeletedAt,
+        isPrimary);
 
 static async Task<IReadOnlyList<CouncilAgendaItem>> BuildCouncilAgendaItemsAsync(TikrDbContext db)
 {

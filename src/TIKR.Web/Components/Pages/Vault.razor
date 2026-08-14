@@ -6,6 +6,8 @@
 
 @using Syncfusion.Blazor.RichTextEditor
 @using Syncfusion.Blazor.Navigations
+@using TIKR.Shared.DTOs
+@using TIKR.Shared.Enums
 @using TIKR.Web.Components.Shared
 
 <!-- Big red emotional banner -->
@@ -128,47 +130,67 @@
                 <TabHeader Text="Contacts"></TabHeader>
             </ChildContent>
             <ContentTemplate>
-                <div class="vault-section">
+                <div class="vault-section" data-tour="vault-contacts-inventory">
+                    <div class="d-flex flex-wrap gap-2 mb-2">
+                        <SfButton CssClass="tikr-action-btn primary" Content="Add contact" OnClick="OpenCreateContactDialog" />
+                        <SfButton CssClass="tikr-action-btn" Content="@(_showDeletedContacts ? "Show active" : "Show deleted")"
+                                  OnClick="ToggleDeletedContactsAsync" />
+                    </div>
                     <div class="vault-grid-host">
-                    <SfGrid @ref="ContactGridRef" DataSource="@ContactEntries" AllowPaging="true" PageSize="8" Height="100%" AllowSorting="true" AllowSelection="true" CssClass="vault-grid">
-                        <GridSelectionSettings Type="Syncfusion.Blazor.Grids.SelectionType.Multiple" />
-                        <GridEvents RowSelected="@((RowSelectEventArgs<KnowledgeEntryDto> e) => OnVaultEntryRowSelected(e))" RowDeselected="@((RowDeselectEventArgs<KnowledgeEntryDto> e) => OnVaultEntryRowDeselected(e))" />
+                    <SfGrid @ref="InventoryContactGridRef" DataSource="@_inventoryContacts" AllowPaging="true" PageSize="8" Height="100%" AllowSorting="true" CssClass="vault-grid">
                         <GridTemplates>
                             <EmptyRecordTemplate>
-                                <div class="tikr-empty-state">No contacts recorded yet. Add key roles and phone numbers for the new clerk.</div>
+                                <div class="tikr-empty-state">No contacts yet. Add election and agency POCs with address, office, email, and phone.</div>
                             </EmptyRecordTemplate>
                         </GridTemplates>
                         <GridColumns>
-                            <GridColumn Type="ColumnType.CheckBox" Width="50" />
-                            <GridColumn Field="@nameof(KnowledgeEntryDto.Title)" HeaderText="Contact / Role" Width="220" />
-                            <GridColumn Width="100">
+                            <GridColumn Field="@nameof(ContactDto.Name)" HeaderText="Name" Width="180" />
+                            <GridColumn Field="@nameof(ContactDto.Role)" HeaderText="Role / Title" Width="140" />
+                            <GridColumn Field="@nameof(ContactDto.Organization)" HeaderText="Organization" Width="160" />
+                            <GridColumn Field="@nameof(ContactDto.Phone)" HeaderText="Phone" Width="110" />
+                            <GridColumn Field="@nameof(ContactDto.Email)" HeaderText="Email" Width="160" />
+                            <GridColumn Field="@nameof(ContactDto.Categories)" HeaderText="Categories" Width="120" />
+                            <GridColumn Width="160">
                                 <Template>
                                     @{
-                                        var entry = (context as KnowledgeEntryDto)!;
+                                        var contact = (context as ContactDto)!;
                                     }
-                                    <SfButton CssClass="tikr-action-btn small" Content="Edit" OnClick="@(() => SelectEntry(entry))" />
-                                    <SfButton CssClass="tikr-action-btn small danger" Content="Delete" OnClick="@(() => RequestDeleteEntry(entry))" />
+                                    @if (_showDeletedContacts)
+                                    {
+                                        <SfButton CssClass="tikr-action-btn small" Content="Restore" OnClick="@(() => RestoreContactAsync(contact))" />
+                                    }
+                                    else
+                                    {
+                                        <SfButton CssClass="tikr-action-btn small" Content="Edit" OnClick="@(() => OpenEditContactDialog(contact))" />
+                                        <SfButton CssClass="tikr-action-btn small danger" Content="Delete" OnClick="@(() => RequestDeleteContact(contact))" />
+                                    }
                                 </Template>
                             </GridColumn>
                         </GridColumns>
                     </SfGrid>
                     </div>
 
-                    <SfAccordion>
-                        <AccordionItems>
-                        @foreach (var e in ContactEntries)
-                        {
-                            <AccordionItem>
-                                <HeaderTemplate><div class="acc-header">@e.Title</div></HeaderTemplate>
-                                <ContentTemplate>
-                                    <div class="acc-content" @onclick="() => SelectEntry(e)">
-                                        @(new MarkupString(DisplayFormat.TruncateForDisplay(e.Content)))
-                                    </div>
-                                </ContentTemplate>
-                            </AccordionItem>
-                        }
-                        </AccordionItems>
-                    </SfAccordion>
+                    @if (LegacyContactEntries.Count > 0)
+                    {
+                        <details class="mt-3">
+                            <summary class="fw-semibold">Legacy vault notes (@LegacyContactEntries.Count)</summary>
+                            <SfAccordion>
+                                <AccordionItems>
+                                @foreach (var e in LegacyContactEntries)
+                                {
+                                    <AccordionItem>
+                                        <HeaderTemplate><div class="acc-header">@e.Title</div></HeaderTemplate>
+                                        <ContentTemplate>
+                                            <div class="acc-content" @onclick="() => SelectEntry(e)">
+                                                @(new MarkupString(DisplayFormat.TruncateForDisplay(e.Content)))
+                                            </div>
+                                        </ContentTemplate>
+                                    </AccordionItem>
+                                }
+                                </AccordionItems>
+                            </SfAccordion>
+                        </details>
+                    }
                 </div>
             </ContentTemplate>
         </TabItem>
@@ -306,14 +328,80 @@
                      ItemName="@_confirmDeleteLabel"
                      OnConfirm="ConfirmDeleteAsync" />
 
+<SfDialog @bind-Visible="_contactDialogVisible" Width="560px" IsModal="true" ShowCloseIcon="true"
+          Header="@(_editingContactId is null ? "Add contact" : "Edit contact")">
+    <DialogTemplates>
+        <Content>
+            <EditForm Model="_contactForm" OnValidSubmit="SaveContactAsync">
+                <DataAnnotationsValidator />
+                <div class="mb-2">
+                    <label class="form-label">Name</label>
+                    <SfTextBox @bind-Value="_contactForm.Name" Placeholder="Election – County Clerk" />
+                </div>
+                <div class="mb-2">
+                    <label class="form-label">Role / Title</label>
+                    <SfTextBox @bind-Value="_contactForm.Role" />
+                </div>
+                <div class="mb-2">
+                    <label class="form-label">Organization</label>
+                    <SfTextBox @bind-Value="_contactForm.Organization" />
+                </div>
+                <div class="mb-2">
+                    <label class="form-label">Address</label>
+                    <SfTextBox @bind-Value="_contactForm.Address" Multiline="true" />
+                </div>
+                <div class="mb-2">
+                    <label class="form-label">Office</label>
+                    <SfTextBox @bind-Value="_contactForm.Office" />
+                </div>
+                <div class="row g-2 mb-2">
+                    <div class="col-md-6">
+                        <label class="form-label">Email</label>
+                        <SfTextBox @bind-Value="_contactForm.Email" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Phone</label>
+                        <SfTextBox @bind-Value="_contactForm.Phone" />
+                    </div>
+                </div>
+                <div class="mb-2">
+                    <label class="form-label">Notes</label>
+                    <SfTextBox @bind-Value="_contactForm.Notes" Multiline="true" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Categories</label>
+                    <div class="d-flex flex-wrap gap-3">
+                        <SfCheckBox @bind-Checked="_contactForm.Election" Label="Election" />
+                        <SfCheckBox @bind-Checked="_contactForm.Budget" Label="Budget" />
+                        <SfCheckBox @bind-Checked="_contactForm.Audit" Label="Audit" />
+                        <SfCheckBox @bind-Checked="_contactForm.MillLevy" Label="Mill levy" />
+                        <SfCheckBox @bind-Checked="_contactForm.Compliance" Label="Compliance" />
+                        <SfCheckBox @bind-Checked="_contactForm.Custom" Label="Custom" />
+                    </div>
+                </div>
+                <div class="d-flex flex-wrap gap-2">
+                    <SfButton CssClass="tikr-action-btn" OnClick="CloseContactDialog">Cancel</SfButton>
+                    <SfButton Type="ButtonType.Submit" CssClass="tikr-action-btn primary">Save</SfButton>
+                </div>
+            </EditForm>
+        </Content>
+    </DialogTemplates>
+</SfDialog>
+
 @code {
     private bool _confirmDeleteVisible;
     private string _confirmDeleteLabel = string.Empty;
     private KnowledgeEntryDto? _pendingEntryDelete;
     private VaultVoiceNote? _pendingVoiceDelete;
     private bool _pendingBulkVaultDelete;
+    private ContactDto? _pendingContactDelete;
 
     private List<KnowledgeEntryDto> _allEntries = [];
+    private List<ContactDto> _inventoryContacts = [];
+    private bool _showDeletedContacts;
+    private bool _contactDialogVisible;
+    private Guid? _editingContactId;
+    private readonly ContactFormModel _contactForm = new();
     private List<VaultVoiceNote> VoiceNotes { get; set; } = new();
     private bool _loading = true;
 
@@ -332,7 +420,7 @@
 
     // Selection refs and state (pattern consistent with Documents.razor)
     private SfGrid<KnowledgeEntryDto>? HowToGridRef;
-    private SfGrid<KnowledgeEntryDto>? ContactGridRef;
+    private SfGrid<ContactDto>? InventoryContactGridRef;
     private SfGrid<KnowledgeEntryDto>? TribalGridRef;
     private SfGrid<VaultVoiceNote>? VoiceGridRef;
 
@@ -342,7 +430,8 @@
     private string PendingTranscription = "";
 
     private List<KnowledgeEntryDto> HowToEntries => VaultCopyBuilder.FilterCategory(_allEntries, KnowledgeCategory.HowTo).ToList();
-    private List<KnowledgeEntryDto> ContactEntries => VaultCopyBuilder.FilterCategory(_allEntries, KnowledgeCategory.Contact).ToList();
+    private List<KnowledgeEntryDto> LegacyContactEntries => VaultCopyBuilder.FilterCategory(_allEntries, KnowledgeCategory.Contact).ToList();
+    private List<KnowledgeEntryDto> ContactEntries => LegacyContactEntries;
     private List<KnowledgeEntryDto> TribalEntries =>
         VaultCopyBuilder.FilterCategory(_allEntries, KnowledgeCategory.TribalKnowledge)
             .Where(e => !VaultVoiceNoteMapper.IsVoiceNote(e))
@@ -354,6 +443,7 @@
         try
         {
             await LoadEntriesAsync();
+            await LoadContactsAsync();
         }
         finally
         {
@@ -372,6 +462,98 @@
 
         // Clear any prior multi-selection when data reloads (keeps state consistent)
         _selectedVaultIds.Clear();
+    }
+
+    private async Task LoadContactsAsync()
+    {
+        try
+        {
+            _inventoryContacts = await Api.GetContactsAsync(deleted: _showDeletedContacts);
+        }
+        catch
+        {
+            _inventoryContacts = [];
+        }
+    }
+
+    private async Task ToggleDeletedContactsAsync()
+    {
+        _showDeletedContacts = !_showDeletedContacts;
+        await LoadContactsAsync();
+    }
+
+    private void OpenCreateContactDialog()
+    {
+        _editingContactId = null;
+        _contactForm.Reset();
+        _contactDialogVisible = true;
+    }
+
+    private void OpenEditContactDialog(ContactDto contact)
+    {
+        _editingContactId = contact.Id;
+        _contactForm.Load(contact);
+        _contactDialogVisible = true;
+    }
+
+    private void CloseContactDialog()
+    {
+        _contactDialogVisible = false;
+        _editingContactId = null;
+    }
+
+    private async Task SaveContactAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_contactForm.Name))
+            return;
+
+        var categories = _contactForm.ToCategories();
+        if (_editingContactId is null)
+        {
+            await Api.CreateContactAsync(new CreateContactRequest(
+                _contactForm.Name.Trim(),
+                _contactForm.Role,
+                _contactForm.Organization,
+                _contactForm.Address,
+                _contactForm.Office,
+                _contactForm.Email,
+                _contactForm.Phone,
+                _contactForm.Notes,
+                categories));
+        }
+        else
+        {
+            await Api.UpdateContactAsync(_editingContactId.Value, new UpdateContactRequest(
+                _contactForm.Name.Trim(),
+                _contactForm.Role,
+                _contactForm.Organization,
+                _contactForm.Address,
+                _contactForm.Office,
+                _contactForm.Email,
+                _contactForm.Phone,
+                _contactForm.Notes,
+                categories));
+        }
+
+        CloseContactDialog();
+        await LoadContactsAsync();
+    }
+
+    private void RequestDeleteContact(ContactDto contact)
+    {
+        _pendingContactDelete = contact;
+        _pendingEntryDelete = null;
+        _pendingVoiceDelete = null;
+        _pendingBulkVaultDelete = false;
+        _confirmDeleteLabel = contact.Name;
+        _confirmDeleteVisible = true;
+    }
+
+    private async Task RestoreContactAsync(ContactDto contact)
+    {
+        await Api.RestoreContactAsync(contact.Id);
+        Toast.Show($"Restored \"{contact.Name}\".");
+        await LoadContactsAsync();
     }
 
     private void SelectEntry(KnowledgeEntryDto entry)
@@ -452,7 +634,6 @@
     {
         _selectedVaultIds.Clear();
         try { if (HowToGridRef is not null) await HowToGridRef.ClearSelectionAsync(); } catch { /* grid not ready */ }
-        try { if (ContactGridRef is not null) await ContactGridRef.ClearSelectionAsync(); } catch { /* grid not ready */ }
         try { if (TribalGridRef is not null) await TribalGridRef.ClearSelectionAsync(); } catch { /* grid not ready */ }
         try { if (VoiceGridRef is not null) await VoiceGridRef.ClearSelectionAsync(); } catch { /* grid not ready */ }
         StateHasChanged();
@@ -465,6 +646,7 @@
         _pendingBulkVaultDelete = true;
         _pendingEntryDelete = null;
         _pendingVoiceDelete = null;
+        _pendingContactDelete = null;
         _confirmDeleteLabel = $"{VaultSelectedCount} selected vault item{(VaultSelectedCount == 1 ? "" : "s")}";
         _confirmDeleteVisible = true;
     }
@@ -472,6 +654,7 @@
     private void RequestDeleteEntry(KnowledgeEntryDto entry)
     {
         _pendingVoiceDelete = null;
+        _pendingContactDelete = null;
         _pendingEntryDelete = entry;
         _confirmDeleteLabel = entry.Title;
         _confirmDeleteVisible = true;
@@ -480,6 +663,7 @@
     private void RequestDeleteVoiceNote(VaultVoiceNote note)
     {
         _pendingEntryDelete = null;
+        _pendingContactDelete = null;
         _pendingVoiceDelete = note;
         _confirmDeleteLabel = note.Title;
         _confirmDeleteVisible = true;
@@ -487,6 +671,21 @@
 
     private async Task ConfirmDeleteAsync()
     {
+        if (_pendingContactDelete is not null)
+        {
+            var contact = _pendingContactDelete;
+            _pendingContactDelete = null;
+            await Api.DeleteContactAsync(contact.Id);
+            Toast.Show($"Moved \"{contact.Name}\" to deleted contacts.", async () =>
+            {
+                await Api.RestoreContactAsync(contact.Id);
+                await LoadContactsAsync();
+                StateHasChanged();
+            });
+            await LoadContactsAsync();
+            return;
+        }
+
         if (_pendingBulkVaultDelete)
         {
             var ids = _selectedVaultIds.ToList();
@@ -576,17 +775,27 @@
     // Copy everything
     private async Task CopyAllForNewClerkAsync()
     {
+        var inventoryBlock = string.Join("\n\n", _inventoryContacts.Select(c =>
+            $"{c.Name}\n  Role: {c.Role}\n  Org: {c.Organization}\n  Office: {c.Office}\n  Email: {c.Email}\n  Phone: {c.Phone}\n  Address: {c.Address}\n  Notes: {c.Notes}"));
+
+        var legacyContacts = ContactEntries.ToList();
+        if (!string.IsNullOrWhiteSpace(inventoryBlock))
+        {
+            legacyContacts.Insert(0, new KnowledgeEntryDto(
+                Guid.Empty,
+                "Contact inventory",
+                inventoryBlock.Replace("\n", "<br/>"),
+                KnowledgeCategory.Contact,
+                0));
+        }
+
         var text = VaultCopyBuilder.BuildCopyAllText(
             HowToEntries,
-            ContactEntries,
+            legacyContacts,
             TribalEntries,
             VoiceNotes.Select(v => (v.Title, v.Timestamp, v.Transcription)));
 
         await JS.InvokeVoidAsync("navigator.clipboard.writeText", text);
-
-        // Show warm confirmation (simple status for now)
-        // In real app could use SfToast, here we can navigate or set temp message via existing patterns.
-        // For visibility we'll just let the user see it worked via browser.
     }
 
     private async Task GenerateHandoverPackageAsync()
@@ -611,6 +820,62 @@
         catch (Exception ex)
         {
             Toast.Show($"Handover generation failed: {ex.Message}");
+        }
+    }
+
+    private sealed class ContactFormModel
+    {
+        public string Name { get; set; } = string.Empty;
+        public string? Role { get; set; }
+        public string? Organization { get; set; }
+        public string? Address { get; set; }
+        public string? Office { get; set; }
+        public string? Email { get; set; }
+        public string? Phone { get; set; }
+        public string? Notes { get; set; }
+        public bool Election { get; set; }
+        public bool Budget { get; set; }
+        public bool Audit { get; set; }
+        public bool MillLevy { get; set; }
+        public bool Compliance { get; set; }
+        public bool Custom { get; set; } = true;
+
+        public void Reset()
+        {
+            Name = string.Empty;
+            Role = Organization = Address = Office = Email = Phone = Notes = null;
+            Election = Budget = Audit = MillLevy = Compliance = false;
+            Custom = true;
+        }
+
+        public void Load(ContactDto c)
+        {
+            Name = c.Name;
+            Role = c.Role;
+            Organization = c.Organization;
+            Address = c.Address;
+            Office = c.Office;
+            Email = c.Email;
+            Phone = c.Phone;
+            Notes = c.Notes;
+            Election = c.Categories.HasFlag(ContactCategory.Election);
+            Budget = c.Categories.HasFlag(ContactCategory.Budget);
+            Audit = c.Categories.HasFlag(ContactCategory.Audit);
+            MillLevy = c.Categories.HasFlag(ContactCategory.MillLevy);
+            Compliance = c.Categories.HasFlag(ContactCategory.Compliance);
+            Custom = c.Categories.HasFlag(ContactCategory.Custom);
+        }
+
+        public ContactCategory ToCategories()
+        {
+            var flags = ContactCategory.None;
+            if (Election) flags |= ContactCategory.Election;
+            if (Budget) flags |= ContactCategory.Budget;
+            if (Audit) flags |= ContactCategory.Audit;
+            if (MillLevy) flags |= ContactCategory.MillLevy;
+            if (Compliance) flags |= ContactCategory.Compliance;
+            if (Custom) flags |= ContactCategory.Custom;
+            return flags == ContactCategory.None ? ContactCategory.Custom : flags;
         }
     }
 

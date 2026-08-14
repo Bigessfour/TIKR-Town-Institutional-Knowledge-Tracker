@@ -18,7 +18,7 @@ flowchart TB
         Requirements["/requirements\nGrid CRUD • CSV • AI Scan • Council agenda builder • Minutes close-out • Packet export • Print"]
         Documents["/documents\nUpload • Folders/Tree • Semantic search • Download/Preview • Convert"]
         Assistant["/assistant\nSfAIAssistView + per-user DB history\n+ memory facts + RAG"]
-        Vault["/vault\nHow-To • Contacts • Tribal • RTE • Copy for new clerk • Voice"]
+        Vault["/vault\nHow-To • Contacts inventory • Tribal • RTE • Copy for new clerk • Voice"]
         Calendar["/calendar\nSfSchedule timeline"]
         Settings["/settings + /users\nAudit • Health (NAS/Ollama/SDK) • Theme • Users (admin)"]
         Account["/account • /login\nPassword • JWT auth (optional)"]
