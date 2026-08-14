@@ -106,11 +106,15 @@ test.describe('TIKR page readiness (nav + primary controls)', () => {
   test('election canvass requirement opens playbook checklist', async ({ page }) => {
     await gotoClerkPage(page, '/requirements');
     await expect(page.getByRole('heading', { name: 'Requirements Manager' })).toBeVisible();
-    // Seeded Election Canvass row — open Edit and assert playbook checklist panel.
-    const canvassCell = page.getByRole('gridcell', { name: /Election Canvass/i }).first();
-    await expect(canvassCell).toBeVisible({ timeout: 20_000 });
-    // Prefer row Edit for the canvass requirement; fall back to first Edit if grid chrome differs.
+
+    // Many seeded + council-cycle rows; PageSize=12 — search so Canvass is on the first page.
+    const search = page.locator('.requirements-search input, .requirements-search textarea').first();
+    await expect(search).toBeVisible({ timeout: 15_000 });
+    await search.fill('Election Canvass');
+
     const canvassRow = page.locator('.e-row').filter({ hasText: /Election Canvass/i }).first();
+    await expect(canvassRow).toBeVisible({ timeout: 20_000 });
+
     const editInRow = canvassRow.getByRole('button', { name: /^Edit$/i });
     if (await editInRow.count()) {
       await editInRow.click();

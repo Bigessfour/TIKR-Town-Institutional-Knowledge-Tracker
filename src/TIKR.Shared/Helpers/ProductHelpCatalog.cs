@@ -93,6 +93,13 @@ public static class ProductHelpCatalog
     private static List<ProductHelpEntry> BuildEntries() =>
     [
         new(
+            "clerk-tools-tour",
+            "Clerk tools tour",
+            "Open /demo/clerk-tools (Tools tour in the sidebar or Settings) for a guided walkthrough of every clerk screen and the Syncfusion packages behind it: File Manager, Smart PDF AssistView, Word, Spreadsheet, Smart Paste/TextArea, AI AssistView, Schedule, and themes. Follow docs/demo-clerk-tools-showcase.md for the presenter script.",
+            "/demo/clerk-tools",
+            ["demo", "tour", "showcase", "syncfusion", "tools", "walkthrough", "clerk"]),
+
+        new(
             "chat-memory",
             "Chat memory for Deb Dillon and Paige Lindo",
             "Chat history and remembered facts follow this computer. DESKTOP-KN6INHL is Deb Dillon; DESKTOP-O9TCKP1 is Paige Lindo (from NAS computer backups). Windows login is not used. See the Chat memory banner on Dashboard, Settings, and Assistant. Rare override is under Settings.",

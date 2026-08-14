@@ -27,8 +27,10 @@ Settings shows **Ollama** and **Grok** status (env-configured on the API) — th
 | Sample PDF      | Small town doc in Downloads for agent scan                             |
 | Browser zoom    | 100%; high-contrast theme optional (Settings footer toggle if enabled) |
 
-**Open tabs:** Dashboard · Requirements · Documents · Vault · Assistant · Settings
+**Open tabs:** Dashboard · Requirements · Documents · Vault · Assistant · Settings · **Tools tour** (`/demo/clerk-tools`)
 **Second screen (optional):** Terminal with `$API` curl script from [demo-code-platoon.md](demo-code-platoon.md#7-live-demo--full-api-matrix-curl)
+
+**Full Syncfusion / clerk-tools walkthrough:** [demo-clerk-tools-showcase.md](demo-clerk-tools-showcase.md) — maps Syncfusion’s Sample Browser / document lifecycle guidance onto Deb’s screens.
 
 ---
 

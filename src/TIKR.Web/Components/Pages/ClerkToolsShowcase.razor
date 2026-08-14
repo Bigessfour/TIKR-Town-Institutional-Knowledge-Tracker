@@ -1,0 +1,194 @@
+@page "/demo/clerk-tools"
+@rendermode InteractiveServer
+@inject NavigationManager Navigation
+@inject ClerkTourService Tour
+@inject IJSRuntime JS
+
+@using Syncfusion.Blazor.Buttons
+@using Syncfusion.Blazor.Cards
+@using TIKR.Shared.Helpers
+@using TIKR.Web.Components.Shared
+@using TIKR.Web.Services
+
+<div class="page-header">
+    <div class="page-header-main">
+        <h2>Clerk tools tour</h2>
+        <p>How Deb uses each TIKR screen — and which Syncfusion tools power it</p>
+    </div>
+    <div class="page-header-actions">
+        <PageHelp HelpText="Use Start clerk tools demo for a guided act-by-act walkthrough. That is not the sidebar menu spotlight. Presenter script: docs/demo-clerk-tools-showcase.md." />
+    </div>
+</div>
+
+@if (_demoActive)
+{
+    <div class="clerk-tools-demo-coach mb-3" role="status" aria-live="polite">
+        <p class="mb-1">
+            <strong>Clerk tools demo — Act @_currentAct.Order of @ClerkToolsShowcaseCatalog.Acts.Count:</strong>
+            @_currentAct.Title
+        </p>
+        <p class="text-muted mb-2">@_currentAct.ClerkJob</p>
+        <p class="mb-2 small"><strong>On the live screen:</strong> @string.Join(" · ", _currentAct.TrySteps.Take(2))@( _currentAct.TrySteps.Count > 2 ? "…" : "")</p>
+        <div class="tikr-settings-help-actions">
+            <SfButton CssClass="tikr-action-btn" Content="@($"Open { _currentAct.Title }")" OnClick="OpenCurrentActAsync" />
+            <SfButton CssClass="tikr-action-btn e-outline" Content="@(_isLastAct ? "Finish demo" : "Next act")" OnClick="AdvanceActAsync" />
+            <SfButton CssClass="tikr-action-btn e-outline" Content="End demo" OnClick="EndDemoAsync" />
+        </div>
+    </div>
+}
+
+<SfCard CssClass="mb-3">
+    <CardHeader Title="How Syncfusion suggests demoing their tools" />
+    <CardContent>
+        <p class="text-muted mb-2">
+            Syncfusion does not ship a single municipal clerk demo. Their docs point presenters at the
+            Sample Browser, getting-started GitHub samples, the Blazor Playground, and a fixed document lifecycle.
+            TIKR maps that lifecycle into real clerk work (acts below).
+        </p>
+        <ol class="mb-0">
+            @foreach (var step in ClerkToolsShowcaseCatalog.SyncfusionSuggestedProcess)
+            {
+                <li class="mb-1">@step</li>
+            }
+        </ol>
+    </CardContent>
+</SfCard>
+
+<SfCard CssClass="mb-3">
+    <CardHeader Title="Before you start" />
+    <CardContent>
+        <ul class="mb-2">
+            <li>Settings → Ollama <strong>Connected</strong> (Smart Paste, Smart TextArea, PDF AssistView, Assistant).</li>
+            <li>Upload or keep <code>tests/fixtures/agent-scan/minimal-clerk-report.pdf</code> in the Document Library.</li>
+            <li>Optional: a small <code>.docx</code> and <code>.xlsx</code> for Word / Spreadsheet acts.</li>
+            <li>This demo walks <strong>clerk screens and Syncfusion tools</strong> — it does not run the sidebar menu spotlight.</li>
+        </ul>
+        @if (!_demoActive)
+        {
+            <SfButton CssClass="tikr-action-btn" Content="Start clerk tools demo" OnClick="StartDemoAsync" />
+        }
+        else
+        {
+            <SfButton CssClass="tikr-action-btn e-outline" Content="Jump to current act card" OnClick="ScrollToCurrentActAsync" />
+        }
+    </CardContent>
+</SfCard>
+
+<div class="clerk-tools-acts" role="list">
+    @foreach (var act in ClerkToolsShowcaseCatalog.Acts)
+    {
+        var isCurrent = _demoActive && act.Order == _currentAct.Order;
+        <SfCard @key="act.Id"
+                id="@($"clerk-tools-act-{act.Order}")"
+                CssClass="@(isCurrent ? "mb-3 clerk-tools-act-current" : "mb-3")"
+                role="listitem">
+            <CardHeader Title="@($"Act {act.Order} — {act.Title}")" />
+            <CardContent>
+                <p class="mb-2"><strong>Clerk job:</strong> @act.ClerkJob</p>
+                <p class="mb-2 text-muted"><strong>Syncfusion:</strong> @act.SyncfusionPackages</p>
+                <p class="mb-2"><strong>Syncfusion process:</strong> @act.SyncfusionProcess</p>
+                <p class="mb-1"><strong>Try this:</strong></p>
+                <ol class="mb-2">
+                    @foreach (var step in act.TrySteps)
+                    {
+                        <li>@step</li>
+                    }
+                </ol>
+                @if (!string.IsNullOrWhiteSpace(act.FixtureHint))
+                {
+                    <p class="text-muted small mb-2"><strong>Fixture:</strong> @act.FixtureHint</p>
+                }
+                <SfButton CssClass="tikr-action-btn"
+                          Content="@($"Open {act.Title}")"
+                          OnClick="@(() => Go(act.Route))" />
+            </CardContent>
+        </SfCard>
+    }
+</div>
+
+@code {
+    private bool _demoActive;
+    private int _actIndex;
+
+    private ClerkToolsShowcaseAct _currentAct =>
+        ClerkToolsShowcaseCatalog.Acts[Math.Clamp(_actIndex, 0, ClerkToolsShowcaseCatalog.Acts.Count - 1)];
+
+    private bool _isLastAct => _actIndex >= ClerkToolsShowcaseCatalog.Acts.Count - 1;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+            return;
+
+        try
+        {
+            _demoActive = await JS.InvokeAsync<bool>("tikrTour.getLocalFlag", ClerkTourService.ToolsDemoActiveKey);
+            if (_demoActive)
+            {
+                var raw = await JS.InvokeAsync<string?>("tikrTour.getLocalValue", ClerkTourService.ToolsDemoActKey);
+                if (int.TryParse(raw, out var idx) && idx >= 0 && idx < ClerkToolsShowcaseCatalog.Acts.Count)
+                    _actIndex = idx;
+                StateHasChanged();
+                await ScrollToCurrentActAsync();
+            }
+        }
+        catch
+        {
+            // JS not ready / first paint
+        }
+    }
+
+    private async Task StartDemoAsync()
+    {
+        // Suppress sidebar menu auto-tour while walking clerk tool acts.
+        await Tour.SetAutoTourDisabledAsync(true);
+        await JS.InvokeVoidAsync("tikrTour.setLocalFlag", ClerkTourService.ToolsDemoActiveKey, true);
+        _demoActive = true;
+        _actIndex = 0;
+        await PersistActAsync();
+        await ScrollToCurrentActAsync();
+    }
+
+    private async Task EndDemoAsync()
+    {
+        _demoActive = false;
+        await JS.InvokeVoidAsync("tikrTour.setLocalFlag", ClerkTourService.ToolsDemoActiveKey, false);
+        await JS.InvokeVoidAsync("tikrTour.setLocalValue", ClerkTourService.ToolsDemoActKey, "0");
+    }
+
+    private async Task AdvanceActAsync()
+    {
+        if (_isLastAct)
+        {
+            await EndDemoAsync();
+            return;
+        }
+
+        _actIndex++;
+        await PersistActAsync();
+        await ScrollToCurrentActAsync();
+    }
+
+    private async Task OpenCurrentActAsync()
+    {
+        await PersistActAsync();
+        Go(_currentAct.Route);
+    }
+
+    private async Task PersistActAsync() =>
+        await JS.InvokeVoidAsync("tikrTour.setLocalValue", ClerkTourService.ToolsDemoActKey, _actIndex.ToString());
+
+    private async Task ScrollToCurrentActAsync()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("tikrTour.scrollIntoViewId", $"clerk-tools-act-{_currentAct.Order}");
+        }
+        catch
+        {
+            // ignore
+        }
+    }
+
+    private void Go(string route) => Navigation.NavigateTo(route);
+}

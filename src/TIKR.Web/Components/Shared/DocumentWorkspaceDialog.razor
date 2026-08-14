@@ -116,11 +116,14 @@
                                              EnableBookmarkPanel="true"
                                              EnableFormDesigner="true"
                                              EnableFormFields="true">
-                                <AssistViewSettings Enable="false"
+                                <AssistViewSettings Enable="true"
                                                     StreamResponse="true"
                                                     Placeholder="Ask about this PDF…">
                                     <InitialPromptSettings Prompt="Summarize this municipal document for a town clerk." />
                                 </AssistViewSettings>
+                                @* Redact/Fill stay off until clerk workflow needs them; AssistView uses IChatInferenceService (Ollama). *@
+                                <SmartRedactSettings Enable="false" />
+                                <SmartFillSettings Enable="false" />
                                 <PdfViewerEvents Created="OnPdfViewerCreated"
                                                  DocumentEdited="OnPdfDocumentEdited" />
                             </SfSmartPdfViewer>

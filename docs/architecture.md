@@ -400,7 +400,7 @@ Diagnosability on the NAS without breaking UX. Prefer structured properties over
 | Clerk UI        | `UI.{Surface}.{Verb}`          | Load, create/update/delete, upload, tag, semantic search, agent scan, email notice, handover — see [ai-tooling.md](ai-tooling.md).                                   |
 | Hosted jobs     | `Host.{Job}` / service actions | Email ingest, library scan, embedding recovery: start/stop + cycle counts/errors.                                                                                    |
 
-Grep NAS/dev logs: `Action ` or `rg "Action "` under `/data/logs` or `.local-data/logs`.
+Grep NAS/dev logs: `Action` or `rg "Action "` under `/data/logs` or `.local-data/logs`.
 
 ## Authentication (optional multi-user)
 

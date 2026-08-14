@@ -98,7 +98,9 @@ public sealed class FeatureSettingsService(
             "Updated",
             "FeatureSettings",
             null,
-            $"UseGrok={snapshot.UseGrok}; OllamaHost={snapshot.OllamaHost}; Storage={snapshot.FileStoragePath}; SyncfusionConfigured={snapshot.SyncfusionLicenseKeyConfigured}",
+            snapshot.UseGrok
+                ? "Town helper settings saved (Advanced AI on)"
+                : "Town helper settings saved",
             currentUser.UserId);
 
         logger.LogInformation(

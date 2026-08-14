@@ -8,6 +8,7 @@
 @inject ChatClerkIdentityService ClerkIdentity
 @inject IJSRuntime JS
 @inject ILogger<Settings> Logger
+@inject NavigationManager Navigation
 
 @using Syncfusion.Licensing
 @using TIKR.Shared.Diagnostics
@@ -282,13 +283,25 @@ else
 }
 
 <div data-tour="@ClerkTourIds.SettingsDeployment">
-<SfCard CssClass="mb-3">
-    <CardHeader Title="Something else?" />
-    <CardContent>
-        <p class="mb-2">Networking, passwords for multi-user login, and first-time install are handled by Steve — not from this screen.</p>
-        <SfButton CssClass="tikr-action-btn e-outline" OnClick="CallSteve">Call Steve for help</SfButton>
-    </CardContent>
-</SfCard>
+    <SfCard CssClass="mb-3">
+        <CardHeader Title="Clerk tools tour" />
+        <CardContent>
+            <p class="text-muted mb-2">
+                Guided walkthrough of every clerk-facing screen and the Syncfusion tools behind it
+                (Dashboard through Settings). This is not the sidebar menu spotlight.
+            </p>
+            <SfButton CssClass="tikr-action-btn" Content="Open tools tour" OnClick="@(() => Navigation.NavigateTo(ClerkToolsShowcaseCatalog.PageRoute))" />
+            <SfButton CssClass="tikr-action-btn e-outline ms-2" OnClick="ReplayTourAsync">Replay sidebar menu tour</SfButton>
+        </CardContent>
+    </SfCard>
+
+    <SfCard CssClass="mb-3">
+        <CardHeader Title="Something else?" />
+        <CardContent>
+            <p class="mb-2">Networking, passwords for multi-user login, and first-time install are handled by Steve — not from this screen.</p>
+            <SfButton CssClass="tikr-action-btn e-outline" OnClick="CallSteve">Call Steve for help</SfButton>
+        </CardContent>
+    </SfCard>
 </div>
 
 <SfCard CssClass="mb-3">

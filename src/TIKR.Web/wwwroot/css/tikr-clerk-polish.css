@@ -1679,3 +1679,15 @@ html[data-theme="high-contrast"] .tikr-doc-fullscreen-surface {
     align-items: center;
     font-size: 0.9rem;
 }
+
+.clerk-tools-demo-coach {
+    padding: 1rem 1.1rem;
+    border: 2px solid var(--tikr-accent, #0d6efd);
+    border-radius: 8px;
+    background: var(--tikr-surface-elevated, #f8f9fa);
+}
+
+.clerk-tools-act-current {
+    outline: 2px solid var(--tikr-accent, #0d6efd);
+    outline-offset: 2px;
+}
