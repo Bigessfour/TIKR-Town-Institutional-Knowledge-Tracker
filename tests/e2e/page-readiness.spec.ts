@@ -107,13 +107,24 @@ test.describe('TIKR page readiness (nav + primary controls)', () => {
     await gotoClerkPage(page, '/requirements');
     await expect(page.getByRole('heading', { name: 'Requirements Manager' })).toBeVisible();
 
-    // Many seeded + council-cycle rows; PageSize=12 — search so Canvass is on the first page.
-    const search = page.locator('.requirements-search input, .requirements-search textarea').first();
+    // Reset filters then find Canvass (PageSize=12; many council-cycle rows sort before Nov).
+    await page.getByRole('button', { name: /Reset Wiley view/i }).click();
+    const search = page.locator('.requirements-search input').first();
     await expect(search).toBeVisible({ timeout: 15_000 });
-    await search.fill('Election Canvass');
+    await search.click();
+    await search.fill('');
+    await search.pressSequentially('Election Canvass', { delay: 20 });
+    await search.press('Tab');
 
     const canvassRow = page.locator('.e-row').filter({ hasText: /Election Canvass/i }).first();
-    await expect(canvassRow).toBeVisible({ timeout: 20_000 });
+    // If Syncfusion search bind lags, walk pager until the seeded row appears.
+    for (let i = 0; i < 20 && !(await canvassRow.isVisible().catch(() => false)); i++) {
+      const next = page.locator('.e-pager .e-next:not(.e-disable):not(.e-disabled)').first();
+      if (!(await next.count())) break;
+      await next.click();
+      await expect(page.locator('.e-gridcontent .e-row').first()).toBeVisible({ timeout: 10_000 });
+    }
+    await expect(canvassRow).toBeVisible({ timeout: 10_000 });
 
     const editInRow = canvassRow.getByRole('button', { name: /^Edit$/i });
     if (await editInRow.count()) {
