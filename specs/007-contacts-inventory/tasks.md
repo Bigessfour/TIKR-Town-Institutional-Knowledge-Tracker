@@ -54,4 +54,4 @@
 - [x] T027 README + Phase 11 acceptance
 - [x] T028 `dotnet test` Release + trunk on feature files
 - [x] T029 RAG refresh after merge recommended
-- [ ] T030 PR when CI green
+- [x] T030 PR https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/96
