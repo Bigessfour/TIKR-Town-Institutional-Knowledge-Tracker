@@ -90,7 +90,41 @@ else
     </SfSchedule>
     }
     </div>
-}
+    }
+
+    @if (_loaded)
+    {
+        <div class="calendar-contact-picker border rounded p-3 mt-3 mb-2" data-tour="calendar-contact-picker">
+            <label class="form-label fw-semibold">Apply inventory contact to a requirement</label>
+            <p class="text-muted small mb-2">Fills contact name/email/phone and links as primary. Submit-to stays editable on Requirements.</p>
+            <div class="d-flex flex-wrap gap-2 align-items-center">
+                <SfDropDownList TValue="Guid?" TItem="RequirementDto"
+                                DataSource="@_requirements"
+                                @bind-Value="_calRequirementId"
+                                Placeholder="Requirement"
+                                AllowFiltering="true"
+                                Width="260px">
+                    <DropDownListFieldSettings Value="Id" Text="Title" />
+                </SfDropDownList>
+                <SfDropDownList TValue="Guid?" TItem="ContactDto"
+                                DataSource="@_calContacts"
+                                @bind-Value="_calContactId"
+                                Placeholder="Contact"
+                                AllowFiltering="true"
+                                Width="240px">
+                    <DropDownListFieldSettings Value="Id" Text="Name" />
+                </SfDropDownList>
+                <SfButton CssClass="tikr-action-btn primary"
+                          Content="@(_calContactBusy ? "Applying…" : "Apply contact")"
+                          Disabled="@(_calContactBusy || _calRequirementId is null || _calContactId is null)"
+                          OnClick="ApplyCalendarContactAsync" />
+            </div>
+            @if (!string.IsNullOrEmpty(_calContactStatus))
+            {
+                <div class="status-msg mt-1" role="status">@_calContactStatus</div>
+            }
+        </div>
+    }
 
 @if (_loaded)
 {
@@ -118,11 +152,73 @@ else
     private string _nlPrompt = "";
     private string? _nlStatus;
     private bool _nlBusy;
+    private List<ContactDto> _calContacts = [];
+    private Guid? _calRequirementId;
+    private Guid? _calContactId;
+    private bool _calContactBusy;
+    private string? _calContactStatus;
 
     protected override async Task OnInitializedAsync()
     {
         Navigation.LocationChanged += OnLocationChanged;
         await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _requirements = await Api.GetRequirementsAsync();
+        _events = _requirements.Select(ToCalendarEvent).ToList();
+        try
+        {
+            _calContacts = await Api.GetContactsAsync();
+        }
+        catch
+        {
+            _calContacts = [];
+        }
+        _loaded = true;
+    }
+
+    private async Task ApplyCalendarContactAsync()
+    {
+        if (_calRequirementId is null || _calContactId is null)
+            return;
+
+        _calContactBusy = true;
+        _calContactStatus = null;
+        try
+        {
+            await Api.LinkRequirementContactAsync(_calRequirementId.Value, _calContactId.Value, primary: true);
+            var contact = _calContacts.FirstOrDefault(c => c.Id == _calContactId)
+                          ?? await Api.GetContactAsync(_calContactId.Value);
+            var requirement = _requirements.FirstOrDefault(r => r.Id == _calRequirementId)
+                              ?? await Api.GetRequirementAsync(_calRequirementId.Value);
+            if (contact is not null && requirement is not null)
+            {
+                await Api.UpdateRequirementAsync(requirement.Id, new UpdateRequirementRequest(
+                    requirement.Title,
+                    requirement.Description,
+                    requirement.DueDate,
+                    requirement.Recurrence,
+                    requirement.Category,
+                    requirement.IsCompleted,
+                    requirement.SubmitTo,
+                    contact.Name,
+                    contact.Email,
+                    contact.Phone));
+            }
+
+            _calContactStatus = $"Linked {contact?.Name ?? "contact"} as primary.";
+            await LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            _calContactStatus = $"Could not apply contact: {ex.Message}";
+        }
+        finally
+        {
+            _calContactBusy = false;
+        }
     }
 
     private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
@@ -148,13 +244,6 @@ else
 
     private static bool IsCalendarRoute(string location) =>
         location.Contains("/calendar", StringComparison.OrdinalIgnoreCase);
-
-    private async Task LoadAsync()
-    {
-        _requirements = await Api.GetRequirementsAsync();
-        _events = _requirements.Select(ToCalendarEvent).ToList();
-        _loaded = true;
-    }
 
     private static CalendarEvent ToCalendarEvent(RequirementDto r)
     {

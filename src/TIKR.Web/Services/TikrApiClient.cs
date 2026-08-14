@@ -2,6 +2,7 @@ using System.Net;
 using System.Text.Json;
 using TIKR.Shared.DTOs;
 using TIKR.Shared.Entities;
+using TIKR.Shared.Enums;
 
 namespace TIKR.Web.Services;
 
@@ -90,10 +91,23 @@ public class TikrApiClient(HttpClient http)
             : null;
     }
 
-    public async Task CreateRequirementAsync(CreateRequirementRequest request)
+    public async Task<RequirementDto?> CreateRequirementAsync(CreateRequirementRequest request)
     {
         var response = await http.PostAsJsonAsync("/api/requirements", request);
         response.EnsureSuccessStatusCode();
+        if (response.Content.Headers.ContentLength is 0)
+            return null;
+        var mediaType = response.Content.Headers.ContentType?.MediaType;
+        if (mediaType is not null && !mediaType.Contains("json", StringComparison.OrdinalIgnoreCase))
+            return null;
+        try
+        {
+            return await response.Content.ReadFromJsonAsync<RequirementDto>();
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
     }
 
     public async Task DeleteRequirementAsync(Guid id)
@@ -116,6 +130,71 @@ public class TikrApiClient(HttpClient http)
     public async Task DeleteKnowledgeEntryAsync(Guid id)
     {
         var response = await http.DeleteAsync($"/api/knowledge/{id}");
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task<List<ContactDto>> GetContactsAsync(
+        string? query = null,
+        ContactCategory? category = null,
+        bool deleted = false)
+    {
+        var qs = new List<string>();
+        if (!string.IsNullOrWhiteSpace(query))
+            qs.Add($"q={Uri.EscapeDataString(query)}");
+        if (category is { } cat && cat != ContactCategory.None)
+            qs.Add($"category={(int)cat}");
+        if (deleted)
+            qs.Add("deleted=true");
+        var url = qs.Count == 0 ? "/api/contacts" : "/api/contacts?" + string.Join("&", qs);
+        return await http.GetFromJsonAsync<List<ContactDto>>(url) ?? [];
+    }
+
+    public async Task<ContactDto?> GetContactAsync(Guid id) =>
+        await http.GetFromJsonAsync<ContactDto>($"/api/contacts/{id}");
+
+    public async Task<ContactDto?> CreateContactAsync(CreateContactRequest request)
+    {
+        var response = await http.PostAsJsonAsync("/api/contacts", request);
+        return response.IsSuccessStatusCode
+            ? await response.Content.ReadFromJsonAsync<ContactDto>()
+            : null;
+    }
+
+    public async Task<ContactDto?> UpdateContactAsync(Guid id, UpdateContactRequest request)
+    {
+        var response = await http.PutAsJsonAsync($"/api/contacts/{id}", request);
+        return response.IsSuccessStatusCode
+            ? await response.Content.ReadFromJsonAsync<ContactDto>()
+            : null;
+    }
+
+    public async Task DeleteContactAsync(Guid id)
+    {
+        var response = await http.DeleteAsync($"/api/contacts/{id}");
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task<ContactDto?> RestoreContactAsync(Guid id)
+    {
+        var response = await http.PostAsync($"/api/contacts/{id}/restore", content: null);
+        return response.IsSuccessStatusCode
+            ? await response.Content.ReadFromJsonAsync<ContactDto>()
+            : null;
+    }
+
+    public async Task<List<ContactDto>> GetRequirementContactsAsync(Guid requirementId) =>
+        await http.GetFromJsonAsync<List<ContactDto>>($"/api/requirements/{requirementId}/contacts") ?? [];
+
+    public async Task LinkRequirementContactAsync(Guid requirementId, Guid contactId, bool primary = true)
+    {
+        var url = $"/api/requirements/{requirementId}/contacts/{contactId}?primary={primary.ToString().ToLowerInvariant()}";
+        var response = await http.PostAsync(url, content: null);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task UnlinkRequirementContactAsync(Guid requirementId, Guid contactId)
+    {
+        var response = await http.DeleteAsync($"/api/requirements/{requirementId}/contacts/{contactId}");
         response.EnsureSuccessStatusCode();
     }
 

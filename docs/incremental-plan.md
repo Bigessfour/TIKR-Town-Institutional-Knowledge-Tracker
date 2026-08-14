@@ -242,6 +242,28 @@ Update this section when env changes.
 
 ---
 
+## Phase 11 — Contacts Inventory
+
+**Status:** done on branch `feature/contacts-inventory` — Spec Kit `007-contacts-inventory`
+
+**Goal:** First-class Contact POCs (Election and other categories) with Vault CRUD, soft-delete, Requirement/Calendar link picker, audit/logging, and seeded Election contacts.
+
+**Acceptance criteria:**
+
+- [x] Contact entity + EF migration + soft-delete (`DeletedAt`)
+- [x] `/api/contacts` CRUD + restore; Requirement link/unlink endpoints
+- [x] `IContactService` / `ContactService` with AuditService + TikrActionLog
+- [x] Vault Contacts tab uses Contact inventory (legacy Knowledge Contact notes retained)
+- [x] Requirements + Calendar contact picker; SubmitTo remains free-text; denormalized fields sync from primary
+- [x] ≥3 Election contacts seeded; County Clerk linked to Election Canvass
+- [x] Infra / Api / Web proof-of-function tests green
+
+**Spec:** [specs/007-contacts-inventory/](../specs/007-contacts-inventory/)
+
+**Key paths:** `src/TIKR.Shared/Entities/Contact.cs`, `src/TIKR.Infrastructure/Services/ContactService.cs`, `src/TIKR.Web/Components/Pages/Vault.razor`, `Requirements.razor`, `Calendar.razor`
+
+---
+
 ## Phase 0 adjunct — Clerk guided tour
 
 **Status:** done (MVP)

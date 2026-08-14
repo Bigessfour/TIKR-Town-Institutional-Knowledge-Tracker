@@ -12,6 +12,26 @@
 
 This file owns **status, checkboxes, priorities, verification evidence**. The generated file is the raw auto-detected list only (never edit by hand). Focus on the ~30 without proof so no small detail breaks the whole system.
 
+## Spec Kit `007-contacts-inventory` (Phase 11)
+
+- [x] Contact entity + flags categories + RequirementContact junction + soft-delete
+- [x] `/api/contacts` CRUD + restore; requirement link/unlink
+- [x] `ContactService` + AuditService + TikrActionLog
+- [x] Vault Contacts inventory UI; Requirements + Calendar pickers
+- [x] Seeded Election contacts linked to Election Canvass
+- [x] Proof: `ContactServiceTests`, `ContactsEndpointTests`, Vault/Requirements/Calendar bUnit
+
+| Function | Proof | Minimal impl |
+| --- | --- | --- |
+| `ContactService.CreateAsync` / Update / SoftDelete / Restore | `ContactServiceTests` | Thin EF + audit |
+| `ContactService.LinkToRequirementAsync` | `ContactServiceTests` + `ContactsEndpointTests` | Primary sync denormalized fields |
+| `GET/POST/PUT/DELETE /api/contacts` | `ContactsEndpointTests` | Minimal API → service |
+| Vault Contacts inventory | `Vault_ContactsTab_ShowsInventoryActions` | SfGrid + dialog |
+| Requirements contact picker | `Requirements_ShowsContactPickerWhenDialogOpen` | Dropdown + link |
+| Calendar contact apply | `Calendar_ShowsContactPickerPanel` | Link + update denormalized |
+
+---
+
 ## Spec Kit `001-requirements-document-agent` (2026-07-21)
 
 - [x] **Baseline:** `dotnet test TIKR.sln --configuration Release` — **415 passed**, 0 failed (2026-07-25 post v1.0 doc/code closure)

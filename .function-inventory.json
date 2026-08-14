@@ -10,6 +10,7 @@
     "src/TIKR.Infrastructure/Services/DashboardService.cs",
     "src/TIKR.Infrastructure/Services/FeatureSettingsService.cs",
     "src/TIKR.Infrastructure/Services/HybridAiService.cs",
+    "src/TIKR.Infrastructure/Services/ContactService.cs",
     "src/TIKR.Infrastructure/Services/RuntimeSecretsStore.cs",
     "src/TIKR.Web/Components/Pages/Login.razor",
     "src/TIKR.Web/Components/Pages/Requirements.razor",

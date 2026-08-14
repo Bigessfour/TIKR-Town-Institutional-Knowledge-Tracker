@@ -319,6 +319,7 @@ Flow: Blazor login → `POST /api/auth/login` → JWT in HttpOnly cookie → pro
 
 - **Deadline Calendar** — Pre-seeded Colorado municipal deadlines + custom requirements
 - **Requirements Manager** — CRUD grid at `/requirements` with urgency filters, CSV export, and bus-factor banner
+- **Contacts inventory** — Vault Contacts POCs (Election and more) with soft-delete; link from Requirements/Calendar
 - **Document Management** — Upload, AI auto-tagging, search
 - **Knowledge Vault** — "If I'm Gone" institutional knowledge entries
 - **Hybrid AI** — Local Ollama chat on `/assistant`; Grok for "Ask Advanced AI" (API-gated)
@@ -326,17 +327,19 @@ Flow: Blazor login → `POST /api/auth/login` → JWT in HttpOnly cookie → pro
 
 ## API Endpoints
 
-| Method              | Route                          | Description             |
-| ------------------- | ------------------------------ | ----------------------- |
-| GET                 | `/health`                      | Health check            |
-| GET/POST/PUT/DELETE | `/api/requirements`            | Deadline CRUD           |
-| GET/POST/DELETE     | `/api/documents`               | Document upload & list  |
-| GET/POST/PUT/DELETE | `/api/knowledge`               | Knowledge vault CRUD    |
-| GET                 | `/api/audit`                   | Audit log (read-only)   |
-| GET                 | `/api/ai/status`               | AI service status       |
-| GET                 | `/api/ai/dashboard-priorities` | Dashboard priorities    |
-| POST                | `/api/ai/tag-document`         | Ollama auto-tagging     |
-| POST                | `/api/ai/ask-advanced`         | Grok escalation (gated) |
+| Method              | Route                             | Description                        |
+| ------------------- | --------------------------------- | ---------------------------------- |
+| GET                 | `/health`                         | Health check                       |
+| GET/POST/PUT/DELETE | `/api/requirements`               | Deadline CRUD                      |
+| GET/POST/DELETE     | `/api/requirements/{id}/contacts` | Link inventory contacts            |
+| GET/POST/PUT/DELETE | `/api/contacts`                   | Contact inventory CRUD (+ restore) |
+| GET/POST/DELETE     | `/api/documents`                  | Document upload & list             |
+| GET/POST/PUT/DELETE | `/api/knowledge`                  | Knowledge vault CRUD               |
+| GET                 | `/api/audit`                      | Audit log (read-only)              |
+| GET                 | `/api/ai/status`                  | AI service status                  |
+| GET                 | `/api/ai/dashboard-priorities`    | Dashboard priorities               |
+| POST                | `/api/ai/tag-document`            | Ollama auto-tagging                |
+| POST                | `/api/ai/ask-advanced`            | Grok escalation (gated)            |
 
 ## Switching to PostgreSQL
 

@@ -25,11 +25,40 @@ public class VaultPageTests : ClerkTestContext
         cut.Markup.Should().Contain("Copy Everything for New Clerk");
     }
 
+    [Fact]
+    public async Task Vault_ContactsTab_ShowsInventoryActions()
+    {
+        RegisterApi("[]");
+        SetRendererInfo(new RendererInfo("Server", true));
+
+        var cut = RenderComponent<Vault>();
+        cut.WaitForAssertion(() => cut.Markup.Should().Contain("Contacts"));
+
+        var contactsTab = cut.FindAll(".e-tab-text")
+            .First(e => e.TextContent?.Contains("Contacts", StringComparison.Ordinal) == true);
+        await cut.InvokeAsync(() => contactsTab.Click());
+
+        cut.WaitForAssertion(() =>
+        {
+            cut.Markup.Should().Contain("Add contact");
+            cut.Markup.Should().Contain("vault-contacts-inventory");
+        });
+    }
+
     private void RegisterApi(string json)
     {
-        var handler = new StubHandler((_, _) => new HttpResponseMessage(HttpStatusCode.OK)
+        var handler = new StubHandler((req, _) =>
         {
-            Content = new StringContent(json, Encoding.UTF8, "application/json")
+            var path = req.RequestUri!.AbsolutePath;
+            var body = path switch
+            {
+                "/api/contacts" => "[]",
+                _ => json
+            };
+            return new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(body, Encoding.UTF8, "application/json")
+            };
         });
         Services.AddSingleton(new TikrApiClient(new HttpClient(handler) { BaseAddress = new Uri("http://localhost/") }));
     }

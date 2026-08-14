@@ -78,6 +78,7 @@ public static class DependencyInjection
         services.AddScoped<IDocumentAgentService, DocumentAgentService>();
         services.AddScoped<IDocumentService, DocumentService>();
         services.AddScoped<IRequirementService, RequirementService>();
+        services.AddScoped<IContactService, ContactService>();
         services.AddScoped<IDashboardService, DashboardService>();
         services.AddScoped<IKnowledgeService, KnowledgeService>();
         services.AddScoped<IChatHistoryService, ChatHistoryService>();
@@ -105,6 +106,7 @@ public static class DependencyInjection
         var db = scope.ServiceProvider.GetRequiredService<TikrDbContext>();
         await db.Database.MigrateAsync();
         await DbSeeder.SeedAsync(db);
+        await ContactSeeder.SeedAsync(db);
         await CouncilMeetingSeeder.SeedAsync(db);
 
         var featureSettings = scope.ServiceProvider.GetRequiredService<IFeatureSettingsService>();
