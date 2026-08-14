@@ -263,7 +263,36 @@ public class ContactService(TikrDbContext db, ILogger<ContactService>? logger = 
                    ?? throw new KeyNotFoundException($"Link not found for requirement {requirementId} and contact {contactId}.");
 
         using var tx = await db.Database.BeginTransactionAsync(ct);
+        var wasPrimary = link.IsPrimary;
         db.RequirementContacts.Remove(link);
+
+        if (wasPrimary)
+        {
+            var requirement = await db.Requirements.FindAsync([requirementId], ct);
+            if (requirement is not null)
+            {
+                var next = await db.RequirementContacts
+                    .Include(rc => rc.Contact)
+                    .Where(rc => rc.RequirementId == requirementId && rc.ContactId != contactId && rc.Contact.DeletedAt == null)
+                    .OrderBy(rc => rc.LinkedAt)
+                    .FirstOrDefaultAsync(ct);
+                if (next is not null)
+                {
+                    next.IsPrimary = true;
+                    requirement.ContactName = next.Contact.Name;
+                    requirement.ContactEmail = next.Contact.Email;
+                    requirement.ContactPhone = next.Contact.Phone;
+                }
+                else
+                {
+                    requirement.ContactName = null;
+                    requirement.ContactEmail = null;
+                    requirement.ContactPhone = null;
+                }
+                requirement.UpdatedAt = DateTime.UtcNow;
+            }
+        }
+
         await audit.LogAsync(
             "Unlink",
             nameof(Requirement),

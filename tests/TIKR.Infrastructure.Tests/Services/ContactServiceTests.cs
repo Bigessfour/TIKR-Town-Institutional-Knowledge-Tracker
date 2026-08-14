@@ -130,4 +130,35 @@ public class ContactServiceTests
 
         (await sut.ListForRequirementAsync(requirement.Id)).Should().BeEmpty();
     }
+
+    [Fact]
+    public async Task UnlinkPrimary_ClearsDenormalizedFieldsWhenNoOtherLinks()
+    {
+        await using var db = await TestDbContextFactory.CreateMigratedAsync();
+        var sut = new ContactService(db);
+        var audit = Mock.Of<IAuditService>();
+        var user = Mock.Of<ICurrentUserService>(u => u.UserId == "deb");
+
+        var requirement = new Requirement
+        {
+            Id = Guid.NewGuid(),
+            Title = "Test",
+            DueDate = DateOnly.FromDateTime(DateTime.UtcNow),
+            Category = RequirementCategory.Custom
+        };
+        db.Requirements.Add(requirement);
+        await db.SaveChangesAsync();
+
+        var contact = await sut.CreateAsync(
+            new CreateContactRequest("POC", Email: "a@b.c", Phone: "1", Categories: ContactCategory.Custom),
+            audit,
+            user);
+        await sut.LinkToRequirementAsync(requirement.Id, contact.Id, isPrimary: true, audit, user);
+        await sut.UnlinkFromRequirementAsync(requirement.Id, contact.Id, audit, user);
+
+        var reloaded = await db.Requirements.SingleAsync(r => r.Id == requirement.Id);
+        reloaded.ContactName.Should().BeNull();
+        reloaded.ContactEmail.Should().BeNull();
+        reloaded.ContactPhone.Should().BeNull();
+    }
 }

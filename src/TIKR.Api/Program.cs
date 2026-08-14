@@ -358,10 +358,10 @@ api.MapGet("/requirements/{id:guid}/contacts", async (Guid id, TikrDbContext db,
 api.MapPost("/requirements/{id:guid}/contacts/{contactId:guid}", async (
     Guid id,
     Guid contactId,
-    bool primary,
     IAuditService audit,
     ICurrentUserService currentUser,
-    IContactService contactService) =>
+    IContactService contactService,
+    bool primary = true) =>
 {
     try
     {
