@@ -141,5 +141,10 @@ window.tikrTour = {
             tikrTour._activeCleanup = null;
         }
         document.querySelectorAll('.tikr-tour-overlay, .tikr-tour-spotlight, .tikr-tour-popover').forEach((n) => n.remove());
+    },
+
+    scrollIntoViewId(id) {
+        const el = document.getElementById(id);
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
 };

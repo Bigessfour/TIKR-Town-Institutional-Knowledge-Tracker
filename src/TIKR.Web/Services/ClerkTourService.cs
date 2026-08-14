@@ -13,6 +13,8 @@ public sealed class ClerkTourService(
 {
     public const string LocalCompletedKey = "tikr-tour-completed-version";
     public const string LocalAutoDisabledKey = "tikr-tour-auto-disabled";
+    public const string ToolsDemoActiveKey = "tikr-tools-demo-active";
+    public const string ToolsDemoActKey = "tikr-tools-demo-act";
 
     private DotNetObjectReference<ClerkTourJsCallbacks>? _bridgeRef;
     private bool _running;
@@ -79,8 +81,23 @@ public sealed class ClerkTourService(
 
     private async Task RunTourAsync(IReadOnlyList<ClerkTourStep> steps)
     {
+        // Allow "Start tour" from Tools tour / Settings to replace an in-progress auto-tour.
         if (_running)
-            return;
+        {
+            try
+            {
+                await js.InvokeVoidAsync("tikrTour._destroy");
+            }
+            catch
+            {
+                // ignore JS interop failures mid-circuit
+            }
+
+            _running = false;
+            _bridgeRef?.Dispose();
+            _bridgeRef = null;
+            StateChanged?.Invoke();
+        }
 
         _running = true;
         StateChanged?.Invoke();

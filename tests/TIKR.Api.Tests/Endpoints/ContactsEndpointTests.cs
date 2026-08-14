@@ -15,6 +15,16 @@ public class ContactsEndpointTests : IClassFixture<TikrWebApplicationFactory>
         _client = factory.CreateClient();
 
     [Fact]
+    public async Task GetContacts_FiltersByElectionCategory()
+    {
+        var election = (int)ContactCategory.Election;
+        var items = await _client.GetFromJsonAsync<List<ContactDto>>($"/api/contacts?category={election}");
+        items.Should().NotBeNull();
+        items!.Should().NotBeEmpty();
+        items.Should().OnlyContain(c => c.Categories.HasFlag(ContactCategory.Election));
+    }
+
+    [Fact]
     public async Task GetContacts_ReturnsSeededElectionContacts()
     {
         var items = await _client.GetFromJsonAsync<List<ContactDto>>("/api/contacts");

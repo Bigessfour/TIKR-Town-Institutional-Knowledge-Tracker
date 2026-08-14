@@ -18,7 +18,9 @@ public record RequirementDto(
     string? SubmitTo = null,
     string? ContactName = null,
     string? ContactEmail = null,
-    string? ContactPhone = null);
+    string? ContactPhone = null,
+    int ChecklistCompleted = 0,
+    int ChecklistTotal = 0);
 
 public record LinkRequirementDocumentRequest(Guid DocumentId);
 

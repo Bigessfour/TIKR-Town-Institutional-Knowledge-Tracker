@@ -13,6 +13,72 @@ namespace TIKR.Infrastructure.Tests.Services;
 public class ContactServiceTests
 {
     [Fact]
+    public async Task UpdateAsync_PersistsFieldsAndAudits()
+    {
+        await using var db = await TestDbContextFactory.CreateMigratedAsync();
+        var sut = new ContactService(db);
+        var audit = new Mock<IAuditService>();
+        var user = Mock.Of<ICurrentUserService>(u => u.UserId == "deb");
+
+        var created = await sut.CreateAsync(
+            new CreateContactRequest("POC", Email: "old@example.gov", Categories: ContactCategory.Custom),
+            audit.Object,
+            user);
+
+        var updated = await sut.UpdateAsync(
+            created.Id,
+            new UpdateContactRequest(
+                "Election – Updated POC",
+                Role: "Deputy",
+                Organization: "County",
+                Address: "1 Main",
+                Office: "Elections",
+                Email: "new@county.example.gov",
+                Phone: "970-555-0111",
+                Notes: "Updated",
+                Categories: ContactCategory.Election),
+            audit.Object,
+            user);
+
+        updated.Name.Should().Be("Election – Updated POC");
+        updated.Email.Should().Be("new@county.example.gov");
+        updated.Categories.Should().Be(ContactCategory.Election);
+        audit.Verify(a => a.LogAsync(
+            "Update", nameof(Contact), created.Id, It.IsAny<string?>(), "deb", It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task ListAsync_FiltersByCategoryAndQuery()
+    {
+        await using var db = await TestDbContextFactory.CreateMigratedAsync();
+        var sut = new ContactService(db);
+        var audit = Mock.Of<IAuditService>();
+        var user = Mock.Of<ICurrentUserService>(u => u.UserId == "deb");
+
+        await sut.CreateAsync(
+            new CreateContactRequest(
+                "Election – County Clerk",
+                Email: "elections@county.example.gov",
+                Categories: ContactCategory.Election),
+            audit,
+            user);
+        await sut.CreateAsync(
+            new CreateContactRequest(
+                "Budget Analyst",
+                Email: "budget@town.example.gov",
+                Categories: ContactCategory.Budget),
+            audit,
+            user);
+
+        var electionOnly = await sut.ListAsync(category: ContactCategory.Election);
+        electionOnly.Should().ContainSingle(c => c.Name.Contains("County Clerk"));
+        electionOnly.Should().NotContain(c => c.Name.Contains("Budget"));
+
+        var byQuery = await sut.ListAsync(query: "budget");
+        byQuery.Should().ContainSingle(c => c.Name.Contains("Budget"));
+    }
+
+    [Fact]
     public async Task CreateAsync_PersistsContactAndAudits()
     {
         await using var db = await TestDbContextFactory.CreateMigratedAsync();

@@ -1,0 +1,5 @@
+This is not a valid MIME message.
+%PDF-1.4 binary-looking garbage \x00\x01\xff
+Content-Type: application/octet-stream
+
+@@@@ not headers not body @@@@

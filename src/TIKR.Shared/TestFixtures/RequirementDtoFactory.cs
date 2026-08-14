@@ -18,7 +18,9 @@ public static class RequirementDtoFactory
         string? submitTo = null,
         string? contactName = null,
         string? contactEmail = null,
-        string? contactPhone = null) =>
+        string? contactPhone = null,
+        int checklistCompleted = 0,
+        int checklistTotal = 0) =>
         new(
             id ?? Guid.NewGuid(),
             title,
@@ -32,5 +34,7 @@ public static class RequirementDtoFactory
             submitTo,
             contactName,
             contactEmail,
-            contactPhone);
+            contactPhone,
+            checklistCompleted,
+            checklistTotal);
 }

@@ -121,6 +121,7 @@ public class ChatHistoryService(TikrDbContext db, ILogger<ChatHistoryService>? l
     public async Task<AssistantSessionDto> StartNewConversationAsync(string userId, CancellationToken ct = default)
     {
         userId = RequireUserId(userId);
+        TikrActionLog.Started(_log, "Chat.StartNew", $"User={userId}");
         var actives = await db.ChatConversations
             .Where(c => c.UserId == userId && !c.IsArchived)
             .ToListAsync(ct);
@@ -138,6 +139,8 @@ public class ChatHistoryService(TikrDbContext db, ILogger<ChatHistoryService>? l
 
         var created = await CreateConversationAsync(userId, ct);
         var facts = await ListMemoryFactsAsync(userId, ct);
+        TikrActionLog.Completed(_log, "Chat.StartNew",
+            $"User={userId} Conversation={created.Id} ArchivedPrior={actives.Count}");
         return new AssistantSessionDto(ToDetail(created), facts);
     }
 

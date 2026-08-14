@@ -112,6 +112,7 @@ public static class DependencyInjection
         await db.Database.MigrateAsync();
         await DbSeeder.SeedAsync(db);
         await ContactSeeder.SeedAsync(db);
+        await RequirementChecklistSeeder.SeedAsync(db);
         await CouncilMeetingSeeder.SeedAsync(db);
 
         var featureSettings = scope.ServiceProvider.GetRequiredService<IFeatureSettingsService>();

@@ -1,7 +1,7 @@
 # TIKR Demo — Code Platoon Brief
 
-**Audience:** Engineers, architects, reviewers  
-**Duration:** 25–35 minutes (15 min walk + 10–20 min live validation)  
+**Audience:** Engineers, architects, reviewers
+**Duration:** 25–35 minutes (15 min walk + 10–20 min live validation)
 **Stack:** .NET 10 · Blazor Interactive Server · Minimal API · EF Core · Ollama · optional Grok
 
 ---
@@ -10,12 +10,12 @@
 
 TIKR (**T**own **I**nstitutional **K**nowledge **R**ecorder) is a **local-first** clerk workstation for one-person Colorado municipalities. Data lives on the Synology NAS — SQLite, document files, audit trail — not in a SaaS vault.
 
-| Principle | How TIKR delivers |
-|-----------|-------------------|
-| Local-first | Docker Compose on NAS; Ollama on-box; optional Grok only when clerk opts in |
-| Institutional memory | Requirements (statutory deadlines), Documents (folders + AI tags), Vault (tribal knowledge + voice notes) |
-| Hybrid AI | Ollama for everyday chat, tagging, embeddings; Grok gated by `USE_GROK` for “Ask Advanced AI” |
-| Clerk UX | Syncfusion grids, scheduler, PDF preview, speech-to-text — tuned for 44px touch targets |
+| Principle            | How TIKR delivers                                                                             |
+| -------------------- | --------------------------------------------------------------------------------------------- |
+| Local-first          | Docker Compose on NAS; Ollama on-box; optional Grok only when clerk opts in                   |
+| Institutional memory | Requirements (deadlines + Election playbooks), Documents, Vault Contacts + tribal knowledge   |
+| Hybrid AI            | Ollama for everyday chat, tagging, embeddings; Grok gated by `USE_GROK` for “Ask Advanced AI” |
+| Clerk UX             | Syncfusion grids, scheduler, PDF preview, speech-to-text — tuned for 44px touch targets       |
 
 ### Architecture (30-second version)
 
@@ -32,12 +32,12 @@ Browser → TIKR.Web (:8080) → TIKR.Api (:5000 or :5001 on macOS) → SQLite +
 
 ### Solution layout
 
-| Project | Role | Key entry |
-|---------|------|-----------|
-| `TIKR.Web` | Blazor Interactive Server UI | `Program.cs`, `Components/Pages/*.razor` |
-| `TIKR.Api` | Minimal Web API | `Program.cs`, `AuthEndpoints.cs` |
-| `TIKR.Infrastructure` | EF Core, AI, storage, auth | `Services/HybridAiService.cs`, `Data/TikrDbContext.cs` |
-| `TIKR.Shared` | DTOs, entities, interfaces | `DTOs/`, `Interfaces/` |
+| Project               | Role                         | Key entry                                              |
+| --------------------- | ---------------------------- | ------------------------------------------------------ |
+| `TIKR.Web`            | Blazor Interactive Server UI | `Program.cs`, `Components/Pages/*.razor`               |
+| `TIKR.Api`            | Minimal Web API              | `Program.cs`, `AuthEndpoints.cs`                       |
+| `TIKR.Infrastructure` | EF Core, AI, storage, auth   | `Services/HybridAiService.cs`, `Data/TikrDbContext.cs` |
+| `TIKR.Shared`         | DTOs, entities, interfaces   | `DTOs/`, `Interfaces/`                                 |
 
 ### Request path (example: document upload)
 
@@ -52,14 +52,27 @@ Browser → TIKR.Web (:8080) → TIKR.Api (:5000 or :5001 on macOS) → SQLite +
 
 ### Feature hotspots (show in IDE)
 
-| Feature | UI | API / service |
-|---------|-----|---------------|
-| Dashboard priorities | `Home.razor` | `GET /api/ai/dashboard-priorities` |
-| Requirements + agent scan | `Requirements.razor` | `POST /api/ai/agent-scan` |
-| Document grid + PDF preview | `Documents.razor` | `GET /api/documents/{id}/content` |
-| Vault voice notes | `Vault.razor` | `POST /api/knowledge` (category `VoiceNotes`) |
-| Local chat | `Assistant.razor` | Web `IChatClient` → Ollama; advanced → `POST /api/ai/ask-advanced` |
-| Grok gate display | `Settings.razor` | `GET /api/ai/status`, `GET /api/system/local-status` |
+| Feature                     | UI                          | API / service                                                      |
+| --------------------------- | --------------------------- | ------------------------------------------------------------------ |
+| Dashboard priorities        | `Home.razor`                | `GET /api/ai/dashboard-priorities`                                 |
+| Requirements + agent scan   | `Requirements.razor`        | `POST /api/ai/agent-scan`                                          |
+| Election playbook checklist | `Requirements.razor` dialog | `/api/requirements/{id}/checklist`                                 |
+| Contacts inventory          | `Vault.razor` Contacts tab  | `/api/contacts` (+ Requirement link routes)                        |
+| Email → Contacts extract    | `Documents.razor` banner    | `POST /api/email/ingest`, `GET /api/email/notices`                 |
+| Document grid + PDF preview | `Documents.razor`           | `GET /api/documents/{id}/content`                                  |
+| Semantic search             | `Documents.razor`           | `POST /api/ai/semantic-search`                                     |
+| Vault voice notes           | `Vault.razor`               | `POST /api/knowledge` (category `VoiceNotes`)                      |
+| Local chat                  | `Assistant.razor`           | Web `IChatClient` → Ollama; advanced → `POST /api/ai/ask-advanced` |
+| Grok gate display           | `Settings.razor`            | `GET /api/ai/status`, `GET /api/system/local-status`               |
+
+### Clerk walkthrough beats (Election + Contacts)
+
+Mirror [demo-deb.md](demo-deb.md) for engineers sitting with Deb:
+
+1. **Vault → Contacts → Add contact** — Election category, fill Address + Office → Save.
+2. **Email drop** — place election `.eml` in `TIKR_EMAIL_INBOX_PATH` (or `POST /api/email/ingest`) → Documents toast → Vault Contacts shows upserted Election POC.
+3. **Requirements → Election Canvass & Certification → Edit** — Playbook checklist; complete one step; note `n/m` on grid.
+4. **Documents → Semantic search** — query `previous election canvass` → ranked hits.
 
 ---
 
@@ -89,14 +102,14 @@ flowchart LR
 
 ### `HybridAiService` (`src/TIKR.Infrastructure/Services/HybridAiService.cs`)
 
-| Method | Model | Notes |
-|--------|-------|-------|
-| `TagDocumentAsync` | Ollama chat | Parses JSON `{ tags, suggestedFolder }`; best-effort embedding refresh |
-| `EmbedDocumentAsync` / `EmbedKnowledgeEntryAsync` | Ollama `nomic-embed-text` | Vectors stored as packed floats on entity |
-| `SemanticSearch*Async` | Embeddings + cosine similarity | In-memory rank over DB rows with embeddings |
-| `GetDashboardPrioritiesAsync` | Rule-based | Due-date urgency bands (Overdue / High / Medium / Low) |
-| `AskAdvancedAsync` | **Grok first, Ollama fallback** | Returns `UsedGrok` true or false — key demo signal |
-| `GetStatusAsync` | Probe | `OllamaAvailable`, chat model name, `GrokEnabled` |
+| Method                                            | Model                           | Notes                                                                  |
+| ------------------------------------------------- | ------------------------------- | ---------------------------------------------------------------------- |
+| `TagDocumentAsync`                                | Ollama chat                     | Parses JSON `{ tags, suggestedFolder }`; best-effort embedding refresh |
+| `EmbedDocumentAsync` / `EmbedKnowledgeEntryAsync` | Ollama `nomic-embed-text`       | Vectors stored as packed floats on entity                              |
+| `SemanticSearch*Async`                            | Embeddings + cosine similarity  | In-memory rank over DB rows with embeddings                            |
+| `GetDashboardPrioritiesAsync`                     | Rule-based                      | Due-date urgency bands (Overdue / High / Medium / Low)                 |
+| `AskAdvancedAsync`                                | **Grok first, Ollama fallback** | Returns `UsedGrok` true or false — key demo signal                     |
+| `GetStatusAsync`                                  | Probe                           | `OllamaAvailable`, chat model name, `GrokEnabled`                      |
 
 **Ask Advanced flow (show this method live):**
 
@@ -114,13 +127,13 @@ return new AskAdvancedResponse(localAnswer, UsedGrok: false);
 
 ### Grok configuration
 
-| Variable | Where | Effect |
-|----------|-------|--------|
-| `USE_GROK` | `docker/.env` → **tikr-api** | `GrokService.IsEnabled` |
-| `GROK_API_KEY` | same | Required when enabled |
-| `GROK_MODEL` | same | Default `grok-4.5` |
-| `OLLAMA_HOST` | same | `http://ollama:11434` (Docker) or `http://host.docker.internal:11434` (Mac host Ollama) |
-| `OLLAMA_CHAT_MODEL` | same | Default `llama3.2:3b` |
+| Variable            | Where                        | Effect                                                                                  |
+| ------------------- | ---------------------------- | --------------------------------------------------------------------------------------- |
+| `USE_GROK`          | `docker/.env` → **tikr-api** | `GrokService.IsEnabled`                                                                 |
+| `GROK_API_KEY`      | same                         | Required when enabled                                                                   |
+| `GROK_MODEL`        | same                         | Default `grok-4.5`                                                                      |
+| `OLLAMA_HOST`       | same                         | `http://ollama:11434` (Docker) or `http://host.docker.internal:11434` (Mac host Ollama) |
+| `OLLAMA_CHAT_MODEL` | same                         | Default `llama3.2:3b`                                                                   |
 
 **Important:** Grok is **not** a runtime UI toggle — it is an **ops/env toggle** on the API container. The UI reflects state via Settings → AI Status and `UsedGrok` on ask-advanced responses.
 
@@ -138,34 +151,34 @@ Cursor MCP: `tikr-rag-mcp`, `sf-blazor-mcp`, Microsoft Learn, Ollama. See [ai-to
 
 ### TIKR.Web
 
-| Package | Version | Use |
-|---------|---------|-----|
-| `Microsoft.Extensions.AI` | 10.7.0 | Abstractions for chat client |
-| `OllamaSharp` | 5.4.25 | Ollama chat in Assistant |
-| `Syncfusion.Blazor.*` | 34.1.32 | Grid, Schedule, InteractiveChat, SfPdfViewer, WordProcessor, Spreadsheet, Speech (Vault), etc. |
-| `Syncfusion.DocumentSDK.AI.AgentTools` | 34.1.32 | Agent scan extraction |
-| `Syncfusion.Licensing` | 34.1.32 | Runtime license registration |
-| `Markdig` | 1.3.2 | Markdown rendering in Assistant |
-| `System.IdentityModel.Tokens.Jwt` | 8.14.0 | Optional auth token handling |
+| Package                                | Version | Use                                                                                            |
+| -------------------------------------- | ------- | ---------------------------------------------------------------------------------------------- |
+| `Microsoft.Extensions.AI`              | 10.7.0  | Abstractions for chat client                                                                   |
+| `OllamaSharp`                          | 5.4.25  | Ollama chat in Assistant                                                                       |
+| `Syncfusion.Blazor.*`                  | 34.1.32 | Grid, Schedule, InteractiveChat, SfPdfViewer, WordProcessor, Spreadsheet, Speech (Vault), etc. |
+| `Syncfusion.DocumentSDK.AI.AgentTools` | 34.1.32 | Agent scan extraction                                                                          |
+| `Syncfusion.Licensing`                 | 34.1.32 | Runtime license registration                                                                   |
+| `Markdig`                              | 1.3.2   | Markdown rendering in Assistant                                                                |
+| `System.IdentityModel.Tokens.Jwt`      | 8.14.0  | Optional auth token handling                                                                   |
 
 **Rule:** Individual Syncfusion packages only — never add meta `Syncfusion.Blazor` alongside granular packages.
 
 ### TIKR.Infrastructure
 
-| Package | Version | Use |
-|---------|---------|-----|
-| `Microsoft.EntityFrameworkCore.Sqlite` | 10.0.9 | Default NAS database |
-| `Npgsql.EntityFrameworkCore.PostgreSQL` | 10.0.2 | Optional PostgreSQL |
-| `Microsoft.AspNetCore.Identity.EntityFrameworkCore` | 10.0.9 | Optional multi-user auth |
-| `Microsoft.Extensions.AI` + `OllamaSharp` | 10.7.0 / 5.4.25 | Hybrid AI + embeddings |
-| `Syncfusion.DocumentSDK.AI.AgentTools` | 34.1.32 | Agent scan extraction |
-| `Syncfusion.Licensing` | 34.1.32 | Runtime license registration |
+| Package                                             | Version         | Use                          |
+| --------------------------------------------------- | --------------- | ---------------------------- |
+| `Microsoft.EntityFrameworkCore.Sqlite`              | 10.0.9          | Default NAS database         |
+| `Npgsql.EntityFrameworkCore.PostgreSQL`             | 10.0.2          | Optional PostgreSQL          |
+| `Microsoft.AspNetCore.Identity.EntityFrameworkCore` | 10.0.9          | Optional multi-user auth     |
+| `Microsoft.Extensions.AI` + `OllamaSharp`           | 10.7.0 / 5.4.25 | Hybrid AI + embeddings       |
+| `Syncfusion.DocumentSDK.AI.AgentTools`              | 34.1.32         | Agent scan extraction        |
+| `Syncfusion.Licensing`                              | 34.1.32         | Runtime license registration |
 
 ### TIKR.Api
 
-| Package | Version | Use |
-|---------|---------|-----|
-| `Microsoft.AspNetCore.OpenApi` | 10.0.9 | Dev OpenAPI map |
+| Package                        | Version | Use             |
+| ------------------------------ | ------- | --------------- |
+| `Microsoft.AspNetCore.OpenApi` | 10.0.9  | Dev OpenAPI map |
 
 ---
 
@@ -278,6 +291,14 @@ echo "=== AI status ==="
 curl -sf "$API/api/ai/status" | jq
 curl -sf "$API/api/ai/dashboard-priorities" | jq
 
+echo "=== Contacts inventory ==="
+CONTACT=$(curl -sf -X POST "$API/api/contacts" \
+  -H 'Content-Type: application/json' \
+  -d '{"name":"Election – Demo County Clerk","organization":"County Clerk","address":"Courthouse","office":"Elections","email":"demo-elections@county.example.gov","phone":"970-555-0199","categories":16}')
+echo "$CONTACT" | jq
+CID=$(echo "$CONTACT" | jq -r '.id')
+curl -sf "$API/api/contacts?category=16" | jq 'length'
+
 echo "=== Requirements CRUD ==="
 REQ=$(curl -sf -X POST "$API/api/requirements" \
   -H 'Content-Type: application/json' \
@@ -286,6 +307,20 @@ echo "$REQ" | jq
 RID=$(echo "$REQ" | jq -r '.id')
 curl -sf "$API/api/requirements" | jq 'length'
 curl -sf "$API/api/requirements/$RID" | jq
+
+echo "=== Election Canvass seeded checklist ==="
+CANVASS=$(curl -sf "$API/api/requirements" | jq -r '.[] | select(.title|test("Election Canvass")) | .id' | head -1)
+curl -sf "$API/api/requirements/$CANVASS/checklist" | jq '.[].title'
+
+echo "=== Checklist CRUD on demo requirement ==="
+ITEM=$(curl -sf -X POST "$API/api/requirements/$RID/checklist" \
+  -H 'Content-Type: application/json' \
+  -d '{"title":"Demo playbook step","dueOffsetDays":7}')
+echo "$ITEM" | jq
+IID=$(echo "$ITEM" | jq -r '.id')
+curl -sf -X POST "$API/api/requirements/$RID/checklist/$IID/complete" \
+  -H 'Content-Type: application/json' \
+  -d '{"isCompleted":true}'
 
 echo "=== Knowledge CRUD ==="
 KNOW=$(curl -sf -X POST "$API/api/knowledge" \
@@ -311,11 +346,15 @@ curl -sf -X POST "$API/api/ai/tag-document" \
 curl -sf -X POST "$API/api/ai/embed-document/$DID" | jq
 curl -sf -X POST "$API/api/ai/semantic-search" \
   -H 'Content-Type: application/json' \
-  -d '{"query":"municipal memo","topK":3}' | jq
+  -d '{"query":"previous election canvass","topK":3}' | jq
 curl -sf -X POST "$API/api/ai/embed-knowledge/$KID" | jq
 curl -sf -X POST "$API/api/ai/semantic-search-knowledge" \
   -H 'Content-Type: application/json' \
   -d '{"query":"county clerk phone","topK":3}' | jq
+
+echo "=== Email ingest (optional if TIKR_EMAIL_INBOX_PATH set) ==="
+# curl -sf -X POST "$API/api/email/ingest" | jq
+# curl -sf "$API/api/email/notices?take=5" | jq
 
 echo "=== Agent scan ==="
 curl -sf -X POST "$API/api/ai/agent-scan" \
@@ -327,6 +366,8 @@ curl -sf "$API/api/audit?limit=5" | jq
 echo "=== Cleanup (optional) ==="
 curl -sf -X DELETE "$API/api/documents/$DID"
 curl -sf -X DELETE "$API/api/knowledge/$KID"
+curl -sf -X DELETE "$API/api/contacts/$CID"
+curl -sf -X DELETE "$API/api/requirements/$RID"
 curl -sf -X DELETE "$API/api/requirements/$RID"
 
 echo "ALL API CHECKS PASSED"

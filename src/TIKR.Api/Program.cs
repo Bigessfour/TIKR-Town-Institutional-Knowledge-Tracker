@@ -180,6 +180,7 @@ app.UseSerilogRequestLogging(options =>
                     : LogEventLevel.Information;
     options.EnrichDiagnosticContext = (diagnosticContext, httpContext) =>
     {
+        diagnosticContext.Set("RequestId", httpContext.TraceIdentifier);
         diagnosticContext.Set("RequestHost", httpContext.Request.Host.Value);
         diagnosticContext.Set("RequestScheme", httpContext.Request.Scheme);
         diagnosticContext.Set("QueryString", httpContext.Request.QueryString.HasValue
@@ -188,6 +189,10 @@ app.UseSerilogRequestLogging(options =>
         diagnosticContext.Set("UserAgent", httpContext.Request.Headers.UserAgent.ToString());
         diagnosticContext.Set("StatusCode", httpContext.Response.StatusCode);
         diagnosticContext.Set("ContentType", httpContext.Request.ContentType ?? string.Empty);
+        var userId = httpContext.User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+                     ?? httpContext.User?.Identity?.Name;
+        if (!string.IsNullOrWhiteSpace(userId))
+            diagnosticContext.Set("UserId", userId);
     };
 });
 
@@ -228,13 +233,24 @@ api.MapGet("/system/document-sdk-status", (IConfiguration config, FeatureSetting
     });
 });
 
-api.MapPost("/email/ingest", async (IEmailIngestionService ingestion) =>
+api.MapPost("/email/ingest", async (IEmailIngestionService ingestion, ILogger<Program> endpointLog) =>
 {
     if (!ingestion.IsConfigured)
         return Results.BadRequest(new { error = "Set TIKR_EMAIL_INBOX_PATH to enable forward-to-folder ingestion." });
 
-    var result = await ingestion.IngestPendingAsync();
-    return Results.Ok(result);
+    TikrActionLog.Started(endpointLog, "API.EmailIngest");
+    try
+    {
+        var result = await ingestion.IngestPendingAsync();
+        TikrActionLog.Completed(endpointLog, "API.EmailIngest",
+            $"Ingested={result.Ingested} Skipped={result.Skipped} Errors={result.Errors.Count}");
+        return Results.Ok(result);
+    }
+    catch (Exception ex)
+    {
+        TikrActionLog.Failed(endpointLog, "API.EmailIngest", ex);
+        throw;
+    }
 });
 
 api.MapGet("/email/notices", (IEmailIngestionNoticeStore notices, int take = 10) =>
@@ -249,13 +265,24 @@ api.MapDelete("/email/notices", (IEmailIngestionNoticeStore notices) =>
 api.MapGet("/library/scan-status", (ILibraryScanService scanner) =>
     Results.Ok(scanner.GetStatus()));
 
-api.MapPost("/library/scan", async (ILibraryScanService scanner) =>
+api.MapPost("/library/scan", async (ILibraryScanService scanner, ILogger<Program> endpointLog) =>
 {
     if (!scanner.IsConfigured)
         return Results.BadRequest(new { error = "Set TIKR_LIBRARY_SCAN_PATH to enable NAS library scan." });
 
-    var result = await scanner.ScanAsync();
-    return Results.Ok(result);
+    TikrActionLog.Started(endpointLog, "API.LibraryScan");
+    try
+    {
+        var result = await scanner.ScanAsync();
+        TikrActionLog.Completed(endpointLog, "API.LibraryScan",
+            $"Scanned={result.Scanned} Imported={result.Imported} Failed={result.Failed}");
+        return Results.Ok(result);
+    }
+    catch (Exception ex)
+    {
+        TikrActionLog.Failed(endpointLog, "API.LibraryScan", ex);
+        throw;
+    }
 });
 
 // Requirements
@@ -263,7 +290,16 @@ api.MapGet("/requirements", async (TikrDbContext db) =>
 {
     var items = await db.Requirements.OrderBy(r => r.DueDate).ToListAsync();
     var links = await CouncilPacketEndpoints.LoadRequirementLinksAsync(db);
-    return items.Select(r => CouncilPacketEndpoints.MapRequirement(r, links.GetValueOrDefault(r.Id, []))).ToList();
+    var checklist = await CouncilPacketEndpoints.LoadChecklistCountsAsync(db);
+    return items.Select(r =>
+    {
+        var counts = checklist.GetValueOrDefault(r.Id);
+        return CouncilPacketEndpoints.MapRequirement(
+            r,
+            links.GetValueOrDefault(r.Id, []),
+            counts.Completed,
+            counts.Total);
+    }).ToList();
 });
 
 api.MapGet("/requirements/{id:guid}", async (Guid id, TikrDbContext db) =>
@@ -273,7 +309,13 @@ api.MapGet("/requirements/{id:guid}", async (Guid id, TikrDbContext db) =>
         return Results.NotFound();
 
     var links = await CouncilPacketEndpoints.LoadRequirementLinksAsync(db);
-    return Results.Ok(CouncilPacketEndpoints.MapRequirement(item, links.GetValueOrDefault(item.Id, [])));
+    var checklist = await CouncilPacketEndpoints.LoadChecklistCountsAsync(db);
+    var counts = checklist.GetValueOrDefault(id);
+    return Results.Ok(CouncilPacketEndpoints.MapRequirement(
+        item,
+        links.GetValueOrDefault(item.Id, []),
+        counts.Completed,
+        counts.Total));
 });
 
 api.MapPost("/requirements", async (CreateRequirementRequest request, TikrDbContext db, IAuditService audit, ICurrentUserService currentUser, IRequirementService requirementService) =>
@@ -344,6 +386,118 @@ api.MapDelete("/requirements/{id:guid}", async (Guid id, TikrDbContext db, IAudi
     try
     {
         await requirementService.DeleteAsync(id, audit, currentUser);
+        return Results.NoContent();
+    }
+    catch (KeyNotFoundException)
+    {
+        return Results.NotFound();
+    }
+    catch (InvalidOperationException ex)
+    {
+        return Results.BadRequest(ex.Message);
+    }
+});
+
+api.MapGet("/requirements/{id:guid}/checklist", async (Guid id, TikrDbContext db, IRequirementService requirementService) =>
+{
+    var requirement = await db.Requirements.AsNoTracking().FirstOrDefaultAsync(r => r.Id == id);
+    if (requirement is null)
+        return Results.NotFound();
+
+    var items = await requirementService.ListChecklistAsync(id);
+    return Results.Ok(items.Select(i => CouncilPacketEndpoints.MapChecklistItem(i, requirement.DueDate)).ToList());
+});
+
+api.MapPost("/requirements/{id:guid}/checklist", async (
+    Guid id,
+    CreateRequirementChecklistItemRequest request,
+    IAuditService audit,
+    ICurrentUserService currentUser,
+    IRequirementService requirementService,
+    TikrDbContext db) =>
+{
+    try
+    {
+        var entity = await requirementService.AddChecklistItemAsync(id, request, audit, currentUser);
+        var requirement = await db.Requirements.AsNoTracking().FirstAsync(r => r.Id == id);
+        return Results.Created(
+            $"/api/requirements/{id}/checklist/{entity.Id}",
+            CouncilPacketEndpoints.MapChecklistItem(entity, requirement.DueDate));
+    }
+    catch (KeyNotFoundException)
+    {
+        return Results.NotFound();
+    }
+});
+
+api.MapPut("/requirements/{id:guid}/checklist/{itemId:guid}", async (
+    Guid id,
+    Guid itemId,
+    UpdateRequirementChecklistItemRequest request,
+    IAuditService audit,
+    ICurrentUserService currentUser,
+    IRequirementService requirementService,
+    TikrDbContext db) =>
+{
+    try
+    {
+        var entity = await requirementService.UpdateChecklistItemAsync(id, itemId, request, audit, currentUser);
+        var requirement = await db.Requirements.AsNoTracking().FirstAsync(r => r.Id == id);
+        return Results.Ok(CouncilPacketEndpoints.MapChecklistItem(entity, requirement.DueDate));
+    }
+    catch (KeyNotFoundException)
+    {
+        return Results.NotFound();
+    }
+});
+
+api.MapPost("/requirements/{id:guid}/checklist/{itemId:guid}/complete", async (
+    Guid id,
+    Guid itemId,
+    CompleteRequirementChecklistItemRequest? request,
+    IAuditService audit,
+    ICurrentUserService currentUser,
+    IRequirementService requirementService) =>
+{
+    try
+    {
+        await requirementService.CompleteChecklistItemAsync(id, itemId, request?.IsCompleted ?? true, audit, currentUser);
+        return Results.NoContent();
+    }
+    catch (KeyNotFoundException)
+    {
+        return Results.NotFound();
+    }
+});
+
+api.MapDelete("/requirements/{id:guid}/checklist/{itemId:guid}", async (
+    Guid id,
+    Guid itemId,
+    IAuditService audit,
+    ICurrentUserService currentUser,
+    IRequirementService requirementService) =>
+{
+    try
+    {
+        await requirementService.DeleteChecklistItemAsync(id, itemId, audit, currentUser);
+        return Results.NoContent();
+    }
+    catch (KeyNotFoundException)
+    {
+        return Results.NotFound();
+    }
+});
+
+api.MapPut("/requirements/{id:guid}/checklist/reorder", async (
+    Guid id,
+    ReorderRequirementChecklistRequest request,
+    IAuditService audit,
+    ICurrentUserService currentUser,
+    IRequirementService requirementService) =>
+{
+    try
+    {
+        await requirementService.ReorderChecklistAsync(id, request.OrderedIds, audit, currentUser);
         return Results.NoContent();
     }
     catch (KeyNotFoundException)

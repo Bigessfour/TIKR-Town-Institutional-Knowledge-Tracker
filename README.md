@@ -264,27 +264,27 @@ In Development, the app also loads `.env` and `docker/.env` from the repo root i
 
 ## Environment Variables
 
-| Variable                             | Service         | Default                  | Description                                                                              |
-| ------------------------------------ | --------------- | ------------------------ | ---------------------------------------------------------------------------------------- |
-| `SYNCFUSION_LICENSE_KEY`             | Web             | —                        | Syncfusion Community License key (runtime components)                                    |
-| `SYNCFUSION_API_KEY`                 | Cursor MCP only | —                        | Syncfusion account API key for Blazor MCP — see [docs/ai-tooling.md](docs/ai-tooling.md) |
-| `TIKR_API_URL`                       | Web             | `http://localhost:5000`  | API base URL                                                                             |
-| `DATABASE_PROVIDER`                  | API             | `Sqlite`                 | `Sqlite` or `Postgres`                                                                   |
-| `ConnectionStrings__Default`         | API             | `Data Source=tikr.db`    | Database connection                                                                      |
-| `FILE_STORAGE_PATH`                  | API             | `data/documents`         | Document storage path                                                                    |
-| `OLLAMA_HOST`                        | API             | `http://localhost:11434` | Ollama server URL                                                                        |
-| `OLLAMA_CHAT_MODEL`                  | API             | `llama3.2:3b`            | Chat model name (optional: `tikr-clerk` — see [docs/ai-tooling.md](docs/ai-tooling.md))  |
-| `USE_GROK`                           | API             | `false`                  | Enable xAI Grok for advanced AI                                                          |
-| `GROK_API_KEY`                       | API             | —                        | xAI API key (required if USE_GROK=true)                                                  |
+| Variable                             | Service         | Default                  | Description                                                                                             |
+| ------------------------------------ | --------------- | ------------------------ | ------------------------------------------------------------------------------------------------------- |
+| `SYNCFUSION_LICENSE_KEY`             | Web             | —                        | Syncfusion Community License key (runtime components)                                                   |
+| `SYNCFUSION_API_KEY`                 | Cursor MCP only | —                        | Syncfusion account API key for Blazor MCP — see [docs/ai-tooling.md](docs/ai-tooling.md)                |
+| `TIKR_API_URL`                       | Web             | `http://localhost:5000`  | API base URL                                                                                            |
+| `DATABASE_PROVIDER`                  | API             | `Sqlite`                 | `Sqlite` or `Postgres`                                                                                  |
+| `ConnectionStrings__Default`         | API             | `Data Source=tikr.db`    | Database connection                                                                                     |
+| `FILE_STORAGE_PATH`                  | API             | `data/documents`         | Document storage path                                                                                   |
+| `OLLAMA_HOST`                        | API             | `http://localhost:11434` | Ollama server URL                                                                                       |
+| `OLLAMA_CHAT_MODEL`                  | API             | `llama3.2:3b`            | Chat model name (optional: `tikr-clerk` — see [docs/ai-tooling.md](docs/ai-tooling.md))                 |
+| `USE_GROK`                           | API             | `false`                  | Enable xAI Grok for advanced AI                                                                         |
+| `GROK_API_KEY`                       | API             | —                        | xAI API key (required if USE_GROK=true)                                                                 |
 | `GROK_MODEL`                         | API             | `grok-4.5`               | xAI chat model ([docs](https://docs.x.ai/docs/models); recommended `grok-4.5`, alias `grok-4.5-latest`) |
-| `USE_SYNCFUSION_AGENT_TOOLS`         | API             | `false`                  | Enable Syncfusion Document SDK agent-scan (PDF/Word/Excel/PPT)                           |
-| `USE_SYNCFUSION_AGENT_ORCHESTRATION` | API             | `false`                  | Ollama tool loop over Syncfusion tools (requires agent tools + Ollama)                   |
-| `TIKR_AGENT_STORAGE_KEY`             | API             | —                        | Optional AES-256-GCM for agent-scan blobs on NAS                                         |
-| `TIKR_LIBRARY_SCAN_PATH`             | API             | —                        | Existing NAS document library root (recursive scan → copy → tag/embed for Assistant)     |
-| `TIKR_LIBRARY_SCAN_INTERVAL_SECONDS` | API             | `300`                    | Background library scan poll interval                                                    |
-| `TIKR_OCR_ENABLED`                   | API             | `true`                   | OCR scanned PDF/Word when native text is sparse (Syncfusion Tesseract)                   |
-| `TIKR_TESSADATA_PATH`                | API             | —                        | Optional Tesseract language data folder override                                         |
-| `TIKR_EMAIL_INBOX_PATH`              | API             | —                        | Forward-to-folder email drop inbox                                                       |
+| `USE_SYNCFUSION_AGENT_TOOLS`         | API             | `false`                  | Enable Syncfusion Document SDK agent-scan (PDF/Word/Excel/PPT)                                          |
+| `USE_SYNCFUSION_AGENT_ORCHESTRATION` | API             | `false`                  | Ollama tool loop over Syncfusion tools (requires agent tools + Ollama)                                  |
+| `TIKR_AGENT_STORAGE_KEY`             | API             | —                        | Optional AES-256-GCM for agent-scan blobs on NAS                                                        |
+| `TIKR_LIBRARY_SCAN_PATH`             | API             | —                        | Existing NAS document library root (recursive scan → copy → tag/embed for Assistant)                    |
+| `TIKR_LIBRARY_SCAN_INTERVAL_SECONDS` | API             | `300`                    | Background library scan poll interval                                                                   |
+| `TIKR_OCR_ENABLED`                   | API             | `true`                   | OCR scanned PDF/Word when native text is sparse (Syncfusion Tesseract)                                  |
+| `TIKR_TESSADATA_PATH`                | API             | —                        | Optional Tesseract language data folder override                                                        |
+| `TIKR_EMAIL_INBOX_PATH`              | API             | —                        | Forward-to-folder email drop inbox                                                                      |
 
 Document SDK setup: [docs/sf-document-agent-tools.md](docs/sf-document-agent-tools.md) · NAS smoke tracker: [docs/nas-agent-tools-setup.md](docs/nas-agent-tools-setup.md)
 
@@ -318,28 +318,33 @@ Flow: Blazor login → `POST /api/auth/login` → JWT in HttpOnly cookie → pro
 ## Features (v1 Scaffold)
 
 - **Deadline Calendar** — Pre-seeded Colorado municipal deadlines + custom requirements
-- **Requirements Manager** — CRUD grid at `/requirements` with urgency filters, CSV export, and bus-factor banner
-- **Contacts inventory** — Vault Contacts POCs (Election and more) with soft-delete; link from Requirements/Calendar
-- **Document Management** — Upload, AI auto-tagging, search
-- **Knowledge Vault** — "If I'm Gone" institutional knowledge entries
+- **Requirements Manager** — CRUD grid at `/requirements` with urgency filters, CSV export, bus-factor banner, and **Election playbook checklists**
+- **Contacts inventory** — Vault Contacts POCs (Election and more) with address/office, soft-delete; link from Requirements/Calendar
+- **Structured email extract** — Folder ingest (`.eml`) → upsert Contacts + notices; Election keywords tag Election
+- **Document Management** — Upload, AI auto-tagging, semantic search, download/preview
+- **Knowledge Vault** — "If I'm Gone" institutional knowledge entries + handover package
 - **Hybrid AI** — Local Ollama chat on `/assistant`; Grok for "Ask Advanced AI" (API-gated)
-- **Audit Trail** — All mutations logged for compliance
+- **Audit Trail** — All mutations logged for compliance (`AuditLog` + `TikrActionLog`)
 
 ## API Endpoints
 
-| Method              | Route                             | Description                        |
-| ------------------- | --------------------------------- | ---------------------------------- |
-| GET                 | `/health`                         | Health check                       |
-| GET/POST/PUT/DELETE | `/api/requirements`               | Deadline CRUD                      |
-| GET/POST/DELETE     | `/api/requirements/{id}/contacts` | Link inventory contacts            |
-| GET/POST/PUT/DELETE | `/api/contacts`                   | Contact inventory CRUD (+ restore) |
-| GET/POST/DELETE     | `/api/documents`                  | Document upload & list             |
-| GET/POST/PUT/DELETE | `/api/knowledge`                  | Knowledge vault CRUD               |
-| GET                 | `/api/audit`                      | Audit log (read-only)              |
-| GET                 | `/api/ai/status`                  | AI service status                  |
-| GET                 | `/api/ai/dashboard-priorities`    | Dashboard priorities               |
-| POST                | `/api/ai/tag-document`            | Ollama auto-tagging                |
-| POST                | `/api/ai/ask-advanced`            | Grok escalation (gated)            |
+| Method              | Route                              | Description                             |
+| ------------------- | ---------------------------------- | --------------------------------------- |
+| GET                 | `/health`                          | Health check                            |
+| GET/POST/PUT/DELETE | `/api/requirements`                | Deadline CRUD                           |
+| GET/POST/PUT/DELETE | `/api/requirements/{id}/checklist` | Playbook checklist (+ complete/reorder) |
+| GET/POST/DELETE     | `/api/requirements/{id}/contacts`  | Link inventory contacts                 |
+| GET/POST/PUT/DELETE | `/api/contacts`                    | Contact inventory CRUD (+ restore)      |
+| GET/POST/DELETE     | `/api/documents`                   | Document upload & list                  |
+| POST                | `/api/email/ingest`                | Forward-to-folder email ingest          |
+| GET/DELETE          | `/api/email/notices`               | Structured-extract clerk notices        |
+| GET/POST/PUT/DELETE | `/api/knowledge`                   | Knowledge vault CRUD                    |
+| GET                 | `/api/audit`                       | Audit log (read-only)                   |
+| GET                 | `/api/ai/status`                   | AI service status                       |
+| GET                 | `/api/ai/dashboard-priorities`     | Dashboard priorities                    |
+| POST                | `/api/ai/tag-document`             | Ollama auto-tagging                     |
+| POST                | `/api/ai/semantic-search`          | Document semantic search                |
+| POST                | `/api/ai/ask-advanced`             | Grok escalation (gated)                 |
 
 ## Switching to PostgreSQL
 

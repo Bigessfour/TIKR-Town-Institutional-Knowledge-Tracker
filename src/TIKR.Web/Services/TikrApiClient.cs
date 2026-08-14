@@ -215,6 +215,45 @@ public class TikrApiClient(HttpClient http)
         response.EnsureSuccessStatusCode();
     }
 
+    public async Task<List<RequirementChecklistItemDto>> GetRequirementChecklistAsync(Guid requirementId) =>
+        await http.GetFromJsonAsync<List<RequirementChecklistItemDto>>($"/api/requirements/{requirementId}/checklist")
+        ?? [];
+
+    public async Task<RequirementChecklistItemDto?> AddRequirementChecklistItemAsync(
+        Guid requirementId,
+        CreateRequirementChecklistItemRequest request)
+    {
+        var response = await http.PostAsJsonAsync($"/api/requirements/{requirementId}/checklist", request);
+        return response.IsSuccessStatusCode
+            ? await response.Content.ReadFromJsonAsync<RequirementChecklistItemDto>()
+            : null;
+    }
+
+    public async Task<RequirementChecklistItemDto?> UpdateRequirementChecklistItemAsync(
+        Guid requirementId,
+        Guid itemId,
+        UpdateRequirementChecklistItemRequest request)
+    {
+        var response = await http.PutAsJsonAsync($"/api/requirements/{requirementId}/checklist/{itemId}", request);
+        return response.IsSuccessStatusCode
+            ? await response.Content.ReadFromJsonAsync<RequirementChecklistItemDto>()
+            : null;
+    }
+
+    public async Task CompleteRequirementChecklistItemAsync(Guid requirementId, Guid itemId, bool isCompleted = true)
+    {
+        var response = await http.PostAsJsonAsync(
+            $"/api/requirements/{requirementId}/checklist/{itemId}/complete",
+            new CompleteRequirementChecklistItemRequest(isCompleted));
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task DeleteRequirementChecklistItemAsync(Guid requirementId, Guid itemId)
+    {
+        var response = await http.DeleteAsync($"/api/requirements/{requirementId}/checklist/{itemId}");
+        response.EnsureSuccessStatusCode();
+    }
+
     public async Task<List<AuditLog>> GetRecentAuditAsync(int limit = 10) =>
         await http.GetFromJsonAsync<List<AuditLog>>($"/api/audit?limit={limit}") ?? [];
 

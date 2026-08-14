@@ -83,10 +83,10 @@ flowchart TB
     subgraph pages["Clerk pages (MainLayout nav)"]
         dash["/ Dashboard<br/>Urgency, AI summary, quick actions"]
         cal["/calendar<br/>SfSchedule timeline"]
-        req["/requirements<br/>Grid CRUD, CSV, print packet, AI Scan"]
-        docs["/documents<br/>Upload, TreeView, Grid, semantic search, download, preview"]
+        req["/requirements<br/>Grid CRUD, CSV, playbook checklist, AI Scan"]
+        docs["/documents<br/>Upload, TreeView, Grid, semantic search, email notices"]
         asst["/assistant<br/>SfAIAssistView + RAG context"]
-        vault["/vault<br/>Tabs, RTE, Copy for New Clerk, SpeechToText"]
+        vault["/vault<br/>Contacts inventory, How-To, voice notes, handover"]
         sett["/settings<br/>Audit list, NAS + Ollama health"]
         users["/settings/users<br/>Admin user grid"]
         acct["/account<br/>Change password"]
@@ -101,11 +101,12 @@ flowchart TB
         help["PageHelp on main pages"]
         del["Confirm delete + undo toast"]
         a11y["Skip link, focus-visible"]
+        logs["TikrActionLog + Audit trail"]
     end
 
     subgraph defer["Deferred vNext"]
         smart["Phase 6 Smart Paste / TextArea / Scheduler NL"]
-        pdf["Phase 9 IMAP ingestion; Word/Excel edit+save"]
+        pdf["Phase 9 IMAP UI polish; Word/Excel edit+save"]
         req2["Requirements TreeGrid, Stepper, bulk import"]
         authv["Auth SMTP reset, Viewer role"]
     end
@@ -113,7 +114,7 @@ flowchart TB
     clerk((Town Clerk)) --> pages
     clerk --> cross
 
-    class dash,cal,req,docs,asst,vault,sett,users,acct,login,offline,footer,theme,keys,help,del,a11y done
+    class dash,cal,req,docs,asst,vault,sett,users,acct,login,offline,footer,theme,keys,help,del,a11y,logs done
     class smart,pdf,req2,authv defer
 
     classDef done fill:#d4edda,stroke:#28a745,color:#155724
@@ -143,10 +144,14 @@ flowchart LR
 
     subgraph api_crud["Domain CRUD"]
         A_Req["/api/requirements"]
+        A_Check["/api/requirements/id/checklist"]
+        A_Contacts["/api/contacts"]
+        A_ReqContacts["/api/requirements/id/contacts"]
         A_Doc["/api/documents"]
         A_DlContent["GET /api/documents/id/content"]
         A_Know["/api/knowledge"]
         A_Audit["GET /api/audit"]
+        A_Email["/api/email/ingest + notices"]
     end
 
     subgraph api_ai["AI"]
@@ -171,12 +176,16 @@ flowchart LR
     W_Dash --> A_Prior
     W_Dash --> A_Status
     W_Req --> A_Req
+    W_Req --> A_Check
+    W_Req --> A_ReqContacts
     W_Req --> A_Agent
     W_Doc --> A_Doc
     W_Doc --> A_Tag
     W_Doc --> A_SSem
     W_Doc --> A_DlContent
+    W_Doc --> A_Email
     W_Vault --> A_Know
+    W_Vault --> A_Contacts
     W_Asst --> A_SSem
     W_Asst --> A_KSem
     W_Set --> A_Audit
@@ -188,6 +197,7 @@ flowchart LR
     W_Auth --> A_Users
 ```
 
+Clerk Contacts inventory, Election playbook checklists, and folder email extract are first-class: see Phase 11–13 in [incremental-plan.md](incremental-plan.md).
 ### E2E flows (sequence)
 
 **Clerk smoke** — `tests/e2e/clerk-smoke.spec.ts`
@@ -346,12 +356,12 @@ Rel(ollama_c, ollama_vol, "Model cache")
 
 ## Projects
 
-| Project | Purpose |
-|---------|---------|
-| `TIKR.Shared` | Domain entities, DTOs, enums, service interfaces |
-| `TIKR.Infrastructure` | EF Core DbContext, file storage, AI services |
-| `TIKR.Api` | HTTP endpoints, DI wiring, database migration on startup |
-| `TIKR.Web` | Blazor UI with Syncfusion components |
+| Project               | Purpose                                                  |
+| --------------------- | -------------------------------------------------------- |
+| `TIKR.Shared`         | Domain entities, DTOs, enums, service interfaces         |
+| `TIKR.Infrastructure` | EF Core DbContext, file storage, AI services             |
+| `TIKR.Api`            | HTTP endpoints, DI wiring, database migration on startup |
+| `TIKR.Web`            | Blazor UI with Syncfusion components                     |
 
 ## Hybrid AI Strategy
 
@@ -378,16 +388,30 @@ User action → HybridAiService
 
 All create/update/delete operations on Requirements, Documents, and Knowledge entries are logged to `AuditLog` for CORA/public records compliance. When multi-user auth is enabled, `UserId` is set to the clerk's email from the JWT.
 
+## Surface logging conventions
+
+Diagnosability on the NAS without breaking UX. Prefer structured properties over Debug spam; logging must be fail-soft.
+
+| Layer           | Mechanism                      | What to log                                                                                                                                                          |
+| --------------- | ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| HTTP            | Serilog request logging        | Method, path, status, elapsed; enrich `RequestId` + `UserId` when auth is on. GET health/status stays Debug.                                                         |
+| Mutations       | `AuditService` → `AuditLog`    | Create/Update/Delete/Link (and checklist variants) with entity id + clerk `UserId`.                                                                                  |
+| Operations / AI | `TikrActionLog` via `ILogger`  | `Action {Name} {Phase}` with Started / Completed / Failed. Include entity ids, counts, `DurationMs` for AI. Never log secrets, JWTs, passwords, or raw email bodies. |
+| Clerk UI        | `UI.{Surface}.{Verb}`          | Load, create/update/delete, upload, tag, semantic search, agent scan, email notice, handover — see [ai-tooling.md](ai-tooling.md).                                   |
+| Hosted jobs     | `Host.{Job}` / service actions | Email ingest, library scan, embedding recovery: start/stop + cycle counts/errors.                                                                                    |
+
+Grep NAS/dev logs: `Action` or `rg "Action "` under `/data/logs` or `.local-data/logs`.
+
 ## Authentication (optional multi-user)
 
 Auth is **off by default** (single-clerk open access). Set bootstrap credentials in `docker/.env` to enable:
 
-| Variable | Purpose |
-|----------|---------|
-| `TIKR_ADMIN_EMAIL` | First admin account (with password below, auto-enables auth) |
-| `TIKR_ADMIN_PASSWORD` | Initial admin password (change after first login) |
-| `TIKR_JWT_SIGNING_KEY` | HMAC secret for API JWTs (required when auth enabled) |
-| `TIKR_AUTH_ENABLED` | Optional explicit override (`true` / `false`) |
+| Variable               | Purpose                                                      |
+| ---------------------- | ------------------------------------------------------------ |
+| `TIKR_ADMIN_EMAIL`     | First admin account (with password below, auto-enables auth) |
+| `TIKR_ADMIN_PASSWORD`  | Initial admin password (change after first login)            |
+| `TIKR_JWT_SIGNING_KEY` | HMAC secret for API JWTs (required when auth enabled)        |
+| `TIKR_AUTH_ENABLED`    | Optional explicit override (`true` / `false`)                |
 
 **Flow:** Blazor Web login → `POST /api/auth/login` → JWT stored in HttpOnly cookie → `TikrApiClient` sends `Authorization: Bearer` to API. Roles: `Admin` (user management), `Clerk` (full clerk workflows).
 

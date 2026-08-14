@@ -270,7 +270,7 @@ Update this section when env changes.
 
 ## Phase 12 — Email Structured Extract
 
-**Status:** in progress on `feature/email-structured-extract` — Spec Kit `008-email-structured-extract`
+**Status:** done on `main` (merged [#98](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/98); Spec Kit `008-email-structured-extract`)
 
 **Goal:** After folder email ingest, deterministic extract of contacts/dates/Election signals → upsert Contacts + Knowledge Contact notes + clerk notices/suggestions.
 
@@ -285,6 +285,47 @@ Update this section when env changes.
 **Spec:** [specs/008-email-structured-extract/](../specs/008-email-structured-extract/)
 
 **Key paths:** `EmailStructuredExtractor.cs`, `EmailStructuredApplyService.cs`, `FolderEmailIngestionService.cs`, `Documents.razor`
+
+---
+
+## Phase 13 — Requirement Checklists / Election Playbooks
+
+**Status:** implemented on `feature/requirement-checklists` (Spec Kit `009-requirement-checklists`) — awaiting PR merge to `main`
+
+**Goal:** Lightweight checklists under a Requirement so Deb can capture multi-step election (and other) playbooks — what documents are due, when, and where they go — beyond a single Description + linked docs.
+
+**Acceptance criteria:**
+
+- [x] `RequirementChecklistItem` entity + EF migration (cascade delete with Requirement)
+- [x] DTOs + `IRequirementService` checklist CRUD / complete / reorder
+- [x] Nested API `/api/requirements/{id}/checklist` (+ complete + reorder)
+- [x] Requirements UI: editable playbook list, progress `n/m` on grid; Calendar subject shows progress when present
+- [x] Seed Election Canvass, Campaign Finance, Board Organizational Meeting checklists (editable)
+- [x] TikrActionLog + AuditService on checklist mutations
+- [x] Infra / Api / Web tests + seeder proof + Playwright Election Canvass checklist smoke
+- [x] Docs: this phase + demo-deb / demo-code-platoon Election playbook walkthrough
+
+**Spec:** [specs/009-requirement-checklists/](../specs/009-requirement-checklists/)
+
+**Key paths:** `RequirementChecklistItem.cs`, `RequirementService.cs`, `RequirementChecklistSeeder.cs`, `Requirements.razor`, `Program.cs` checklist routes
+
+---
+
+## Phase 13 adjunct — Surface logging (cross-cutting)
+
+**Status:** done on `feature/requirement-checklists` (same ship slice as Phase 13 docs/tests)
+
+**Goal:** Structured, fail-soft logging so Deb/Paige sessions and AI/agent actions are diagnosable on the NAS (`TikrActionLog`, `AuditService`, Serilog request logs).
+
+**Acceptance criteria:**
+
+- [x] Clerk UI major actions use `UI.{Surface}.{Verb}` (`TikrActionLog`)
+- [x] Domain mutations audited; AI/tag/search/embed timed via `AI.*`
+- [x] Hosted email ingest / library scan / embedding recovery log cycle counts/errors
+- [x] Auth login logs email only (never password/JWT); email extract logs counts/filenames not bodies
+- [x] Conventions documented: [architecture.md — Surface logging](architecture.md#surface-logging-conventions), [ai-tooling.md](ai-tooling.md)
+
+**Key paths:** `TikrActionLog.cs`, services under `TIKR.Infrastructure/Services/`, Blazor pages, hosted services
 
 ---
 
@@ -459,9 +500,9 @@ Update this section with future agent env changes.
 
 ## Current Next Task for Development (from todos + plan)
 
-**Active product slice:** Phase 12 Email Structured Extract (`feature/email-structured-extract` / Spec Kit `008`).
+**Active product slice:** Phase 13 Requirement Checklists + surface logging — **code/docs/tests complete** on `feature/requirement-checklists`; merge PR next.
 
-**Ship gates (parallel / after Phase 12):**
+**Ship gates (parallel / after Phase 13 merge):**
 
 - [x] Playwright E2E required CI gate ([#48](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/48) merged)
 - [x] Phase 0 PR #3 docs / handover
@@ -469,8 +510,9 @@ Update this section with future agent env changes.
 - [x] Phase 11 Contacts Inventory ([#96](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/96))
 - [x] NAS deploy v1.0.1 on Mr_Storage — 2026-08-08 (`./scripts/deploy-tikr-nas.sh`)
 - [x] Tag `v1.0.0` + `v1.0.1` + GHCR
-- [ ] Phase 12 email → Contacts extract (CI green + merge)
+- [x] Phase 12 email → Contacts extract ([#98](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/98))
+- [x] Phase 13 Election playbook checklists + logging + proof tests (branch ready; merge when CI green)
 - [ ] Compile `Setup-TIKR.exe` + clerk Windows smoke/handoff
-- [ ] Phase 0 PR #4 / T031 recorded Deb walkthrough + bus-factor gate (include Vault Contacts + email drop path)
+- [ ] Phase 0 PR #4 / T031 recorded Deb walkthrough + bus-factor gate (include Vault Contacts + Election playbook + email drop)
 
-**Immediate recommendation:** Finish Phase 12 PR → Windows Setup smoke → Deb walkthrough (Contacts + email quickstart).
+**Immediate recommendation:** Open/merge Phase 13 PR → Windows Setup smoke → Deb walkthrough ([demo-deb.md](demo-deb.md) Election flow).

@@ -103,6 +103,44 @@ test.describe('TIKR page readiness (nav + primary controls)', () => {
     await page.getByRole('tab', { name: 'How-To' }).click();
   });
 
+  test('election canvass requirement opens playbook checklist', async ({ page }) => {
+    await gotoClerkPage(page, '/requirements');
+    await expect(page.getByRole('heading', { name: 'Requirements Manager' })).toBeVisible();
+
+    // Reset filters then find Canvass (PageSize=12; many council-cycle rows sort before Nov).
+    await page.getByRole('button', { name: /Reset Wiley view/i }).click();
+    const search = page.locator('.requirements-search input').first();
+    await expect(search).toBeVisible({ timeout: 15_000 });
+    await search.click();
+    await search.fill('');
+    await search.pressSequentially('Election Canvass', { delay: 20 });
+    await search.press('Tab');
+
+    const canvassRow = page.locator('.e-row').filter({ hasText: /Election Canvass/i }).first();
+    // If Syncfusion search bind lags, walk pager until the seeded row appears.
+    for (let i = 0; i < 20 && !(await canvassRow.isVisible().catch(() => false)); i++) {
+      const next = page.locator('.e-pager .e-next:not(.e-disable):not(.e-disabled)').first();
+      if (!(await next.count())) break;
+      await next.click();
+      await expect(page.locator('.e-gridcontent .e-row').first()).toBeVisible({ timeout: 10_000 });
+    }
+    await expect(canvassRow).toBeVisible({ timeout: 10_000 });
+
+    const editInRow = canvassRow.getByRole('button', { name: /^Edit$/i });
+    if (await editInRow.count()) {
+      await editInRow.click();
+    } else {
+      await page.getByRole('button', { name: /^Edit$/i }).first().click();
+    }
+    await expect(page.getByRole('dialog')).toBeVisible({ timeout: 15_000 });
+    await expect(page.locator('[data-tour="requirements-checklist"]')).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByText(/Playbook checklist/i)).toBeVisible();
+    await expect(page.getByText(/canvass packet|certification|notice/i).first()).toBeVisible({
+      timeout: 10_000,
+    });
+    await page.getByRole('button', { name: 'Cancel' }).first().click();
+  });
+
   test('assistant clear button and prompt area', async ({ page }) => {
     await gotoClerkPage(page, '/assistant');
     await expect(page.getByRole('button', { name: /Clear conversation/i })).toBeVisible();

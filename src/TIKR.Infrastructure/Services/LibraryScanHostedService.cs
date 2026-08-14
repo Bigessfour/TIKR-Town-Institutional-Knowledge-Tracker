@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using TIKR.Shared.Diagnostics;
 using TIKR.Shared.Interfaces;
 
 namespace TIKR.Infrastructure.Services;
@@ -12,6 +13,7 @@ public sealed class LibraryScanHostedService(
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        TikrActionLog.Info(logger, "Host.LibraryScan", "Poller started");
         try
         {
             await Task.Delay(TimeSpan.FromSeconds(10), stoppingToken);
@@ -40,9 +42,8 @@ public sealed class LibraryScanHostedService(
                 var result = await scanner.ScanAsync(stoppingToken);
                 if (result.Imported > 0 || result.Failed > 0 || result.Errors.Count > 0)
                 {
-                    logger.LogInformation(
-                        "Library scan: scanned={Scanned}, imported={Imported}, skipped={Skipped}, failed={Failed}, errors={ErrorCount}",
-                        result.Scanned, result.Imported, result.Skipped, result.Failed, result.Errors.Count);
+                    TikrActionLog.Completed(logger, "Host.LibraryScan.Cycle",
+                        $"Scanned={result.Scanned} Imported={result.Imported} Skipped={result.Skipped} Failed={result.Failed} Errors={result.Errors.Count}");
                 }
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
@@ -51,7 +52,7 @@ public sealed class LibraryScanHostedService(
             }
             catch (Exception ex)
             {
-                logger.LogWarning(ex, "Library scan poll failed");
+                TikrActionLog.Failed(logger, "Host.LibraryScan.Cycle", ex);
             }
 
             try
@@ -63,5 +64,7 @@ public sealed class LibraryScanHostedService(
                 break;
             }
         }
+
+        TikrActionLog.Info(logger, "Host.LibraryScan", "Poller stopped");
     }
 }

@@ -10,6 +10,7 @@
 @using TIKR.Shared.Diagnostics
 @using TIKR.Shared.DTOs
 @using TIKR.Shared.Entities
+@using TIKR.Shared.Helpers
 @using TIKR.Web.Components.Shared
 @using TIKR.Web.Services
 
@@ -187,7 +188,15 @@ else
                                         <ul class="dashboard-activity-list">
                                             @foreach (var entry in _audit)
                                             {
-                                                <li><strong>@entry.Action</strong> @entry.EntityType — @entry.Details <span class="text-muted">@entry.Timestamp.ToLocalTime().ToString("g")</span></li>
+                                                var detail = AuditDetailsFormatter.Format(entry.Details);
+                                                <li>
+                                                    <strong>@entry.Action</strong> @entry.EntityType
+                                                    @if (!string.IsNullOrWhiteSpace(detail))
+                                                    {
+                                                        <span> — @detail</span>
+                                                    }
+                                                    <span class="text-muted"> @entry.Timestamp.ToLocalTime().ToString("g")</span>
+                                                </li>
                                             }
                                         </ul>
                                     }
@@ -197,7 +206,7 @@ else
                                 <div class="dashboard-panel dashboard-corpus-banner">
                                     @if (_corpusAttention is { Count: > 0 })
                                     {
-                                        <span>@string.Join(" · ", _corpusAttention)</span>
+                                        <span>@AuditDetailsFormatter.FormatCorpusAttention(_corpusAttention)</span>
                                         <a href="/settings">Settings → reindex</a>
                                     }
                                     else if (_localStatus is not null)

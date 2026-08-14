@@ -224,25 +224,29 @@ Then set `OLLAMA_CHAT_MODEL=tikr-clerk` in `docker/.env` (or host env) and resta
 
 ### Clerk surface action logs (`TikrActionLog`)
 
-Every clerk-facing page logs major load/write flows as `Action UI.{Surface}.{Verb}` (Started / Completed / Failed). Grep:
+Every clerk-facing page logs major load/write flows as `Action UI.{Surface}.{Verb}` (Started / Completed / Failed). Domain services and API use the same helper with non-UI prefixes (`Requirement.*`, `Document.*`, `AI.*`, `Email.*`, `Auth.*`, `Host.*`, `API.*`). Conventions: [architecture.md — Surface logging conventions](architecture.md#surface-logging-conventions).
+
+Grep:
 
 ```bash
-rg "Action UI\." .local-data/logs/tikr-web-*.log
+rg "Action " .local-data/logs/
+# or on NAS:
+rg "Action " /data/logs/
 ```
 
 
-| Surface      | Action prefix       | Typical events                                                   |
-| ------------ | ------------------- | ---------------------------------------------------------------- |
-| Dashboard    | `UI.Dashboard.*`    | Load, ResetLayout, OpenWorkspace                                 |
-| Calendar     | `UI.Calendar.*`     | Load, Create/Update/Delete, NaturalLanguageCreate                |
-| Requirements | `UI.Requirements.*` | Load, Create/Update/Delete, AgentScan, ExportCsv, GeneratePacket |
-| Documents    | `UI.Documents.*`    | Load, Upload, Preview, Download, Convert, Retag                  |
-| Assistant    | `UI.Assistant.*`    | Prompt, Session, RAG, ClearConversation                          |
-| Vault        | `UI.Vault.*`        | Load, SaveEntry, VoiceNote, Delete, HandoverPackage              |
-| Settings     | `UI.Settings.*`     | Load, SaveFeatures, ScanLibrary, ReindexEmbeddings               |
-| Login        | `UI.Login.*`        | View, Submit, AuthDisabled                                       |
-| Users        | `UI.Users.*`        | Load, Create, ToggleActive                                       |
-| Account      | `UI.Account.*`      | ChangePassword                                                   |
+| Surface      | Action prefix       | Typical events                                                                        |
+| ------------ | ------------------- | ------------------------------------------------------------------------------------- |
+| Dashboard    | `UI.Dashboard.*`    | Load, ResetLayout, OpenWorkspace                                                      |
+| Calendar     | `UI.Calendar.*`     | Load, Create/Update/Delete, NaturalLanguageCreate                                     |
+| Requirements | `UI.Requirements.*` | Load, Create/Update/Delete, Checklist*, AgentScan, ExportCsv, GeneratePacket          |
+| Documents    | `UI.Documents.*`    | Load, Upload, SemanticSearch, Preview, Download, Convert, Retag, EmailNotice, Extract |
+| Assistant    | `UI.Assistant.*`    | Prompt, Session, RAG, ClearConversation                                               |
+| Vault        | `UI.Vault.*`        | Load, SaveEntry, VoiceNote, Delete, CopyForNewClerk, HandoverPackage                  |
+| Settings     | `UI.Settings.*`     | Load, SaveFeatures, ScanLibrary, ReindexEmbeddings                                    |
+| Login        | `UI.Login.*`        | View, Submit, AuthDisabled                                                            |
+| Users        | `UI.Users.*`        | Load, Create, ToggleActive                                                            |
+| Account      | `UI.Account.*`      | ChangePassword                                                                        |
 
 
 Files land under `.local-data/logs/` on Mac (`tikr-web-YYYYMMDD.log`) or `/data/logs` on NAS.

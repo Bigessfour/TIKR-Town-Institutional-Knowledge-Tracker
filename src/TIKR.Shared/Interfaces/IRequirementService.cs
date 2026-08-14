@@ -22,4 +22,43 @@ public interface IRequirementService
     /// Unlink document from requirement inside transaction + audit log.
     /// </summary>
     Task UnlinkDocumentAsync(Guid requirementId, Guid documentId, IAuditService audit, ICurrentUserService currentUser, CancellationToken ct = default);
+
+    Task<IReadOnlyList<RequirementChecklistItem>> ListChecklistAsync(Guid requirementId, CancellationToken ct = default);
+
+    Task<RequirementChecklistItem> AddChecklistItemAsync(
+        Guid requirementId,
+        CreateRequirementChecklistItemRequest request,
+        IAuditService audit,
+        ICurrentUserService currentUser,
+        CancellationToken ct = default);
+
+    Task<RequirementChecklistItem> UpdateChecklistItemAsync(
+        Guid requirementId,
+        Guid itemId,
+        UpdateRequirementChecklistItemRequest request,
+        IAuditService audit,
+        ICurrentUserService currentUser,
+        CancellationToken ct = default);
+
+    Task CompleteChecklistItemAsync(
+        Guid requirementId,
+        Guid itemId,
+        bool isCompleted,
+        IAuditService audit,
+        ICurrentUserService currentUser,
+        CancellationToken ct = default);
+
+    Task DeleteChecklistItemAsync(
+        Guid requirementId,
+        Guid itemId,
+        IAuditService audit,
+        ICurrentUserService currentUser,
+        CancellationToken ct = default);
+
+    Task ReorderChecklistAsync(
+        Guid requirementId,
+        IReadOnlyList<Guid> orderedIds,
+        IAuditService audit,
+        ICurrentUserService currentUser,
+        CancellationToken ct = default);
 }

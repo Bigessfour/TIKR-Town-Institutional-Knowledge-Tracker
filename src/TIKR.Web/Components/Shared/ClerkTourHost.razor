@@ -1,4 +1,6 @@
 @inject ClerkTourService Tour
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
 @implements IDisposable
 
 @code {
@@ -6,6 +8,21 @@
     {
         if (!firstRender)
             return;
+
+        var path = new Uri(Navigation.Uri).AbsolutePath;
+        if (path.StartsWith("/demo", StringComparison.OrdinalIgnoreCase))
+            return;
+
+        // Clerk tools demo suppresses the sidebar menu spotlight so Open Act N doesn't hijack.
+        try
+        {
+            if (await JS.InvokeAsync<bool>("tikrTour.getLocalFlag", ClerkTourService.ToolsDemoActiveKey))
+                return;
+        }
+        catch
+        {
+            // JS interop not ready
+        }
 
         if (await Tour.ShouldAutoStartAsync())
             await Tour.StartGlobalTourAsync();

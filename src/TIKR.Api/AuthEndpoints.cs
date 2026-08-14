@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Identity;
 using TIKR.Infrastructure.Identity;
 using TIKR.Shared.Configuration;
 using TIKR.Shared.Constants;
+using TIKR.Shared.Diagnostics;
 using TIKR.Shared.DTOs;
 
 namespace TIKR.Api;
@@ -16,21 +17,31 @@ public static class AuthEndpoints
         auth.MapPost("/login", async (
             LoginRequest request,
             UserManager<ApplicationUser> userManager,
-            JwtTokenService jwt) =>
+            JwtTokenService jwt,
+            ILoggerFactory loggerFactory) =>
         {
+            var logger = loggerFactory.CreateLogger("AuthEndpoints");
+            // Never log password / token material.
+            TikrActionLog.Started(logger, "Auth.Login", $"Email={request.Email}");
             var user = await userManager.FindByEmailAsync(request.Email);
             if (user is null || !user.IsActive)
+            {
+                TikrActionLog.Failed(logger, "Auth.Login", "Invalid credentials", $"Email={request.Email}");
                 return Results.Unauthorized();
+            }
 
             if (!await userManager.CheckPasswordAsync(user, request.Password))
             {
                 await userManager.AccessFailedAsync(user);
+                TikrActionLog.Failed(logger, "Auth.Login", "Invalid credentials", $"Email={request.Email}");
                 return Results.Unauthorized();
             }
 
             await userManager.ResetAccessFailedCountAsync(user);
             var roles = await userManager.GetRolesAsync(user);
             var (access, expiresAt, refresh, refreshExpires) = jwt.CreateTokenPair(user, roles);
+            TikrActionLog.Completed(logger, "Auth.Login",
+                $"UserId={user.Id} Email={user.Email ?? request.Email} Roles={string.Join(',', roles)}");
             return Results.Ok(new LoginResponse(
                 access, expiresAt, user.Email ?? request.Email, roles.ToList(), refresh, refreshExpires));
         });
