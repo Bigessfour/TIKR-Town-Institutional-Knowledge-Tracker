@@ -700,19 +700,26 @@ else
             return;
         }
 
+        var query = _searchQuery.Trim();
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        TikrActionLog.Started(Logger, "UI.Documents.SemanticSearch",
+            $"QueryLen={query.Length} Folder={_currentFolderFilter}");
         try
         {
             var result = await Api.SemanticSearchDocumentsAsync(
-                _searchQuery.Trim(),
+                query,
                 topK: 10,
                 folder: DocumentLibraryLogic.MapFolderFilterForApi(_currentFolderFilter));
             _semanticHitIds = result is null || result.Hits.Count == 0
                 ? new HashSet<Guid>()
                 : result.Hits.Select(h => h.DocumentId).ToHashSet();
             _statusMessage = DocumentLibraryLogic.DescribeSemanticResults(result);
+            TikrActionLog.Completed(Logger, "UI.Documents.SemanticSearch",
+                $"Hits={_semanticHitIds.Count}", sw.ElapsedMilliseconds);
         }
         catch (Exception ex)
         {
+            TikrActionLog.Failed(Logger, "UI.Documents.SemanticSearch", ex, $"QueryLen={query.Length}");
             _statusMessage = DocumentUiMessages.SemanticSearchFailed(ex.Message);
             _semanticHitIds = new HashSet<Guid>();
         }
@@ -774,8 +781,14 @@ else
                 n.ContactsCreated + n.ContactsUpdated > 0 ||
                 n.RequirementSuggestion is not null ||
                 n.KnowledgeEntryId is not null);
-            if (_emailExtractNotice?.Message is { Length: > 0 } msg)
-                Toast.Show(msg);
+            if (_emailExtractNotice is { } notice)
+            {
+                // No email body — only counts + file name for NAS diagnosis.
+                TikrActionLog.Info(Logger, "UI.Documents.EmailNotice",
+                    $"FileName={notice.FileName} ContactsCreated={notice.ContactsCreated} ContactsUpdated={notice.ContactsUpdated} Knowledge={notice.KnowledgeEntryId is not null} RequirementSuggestion={notice.RequirementSuggestion is not null}");
+                if (notice.Message is { Length: > 0 } msg)
+                    Toast.Show(msg);
+            }
         }
         catch (Exception ex)
         {
@@ -1578,9 +1591,12 @@ else
 
             _statusMessage = DocumentUiMessages.ExtractToVaultSuccess(doc.FileName);
             Toast.Show("Text/tables added to Knowledge Vault");
+            TikrActionLog.Completed(Logger, "UI.Documents.ExtractToVault",
+                $"DocumentId={doc.Id} TextLen={extract?.ExtractedText?.Length ?? 0} Tables={extract?.TablesExtractedCount ?? 0}");
         }
         catch (Exception ex)
         {
+            TikrActionLog.Failed(Logger, "UI.Documents.ExtractToVault", ex, $"DocumentId={doc.Id}");
             _statusMessage = $"Extract failed: {ex.Message}";
         }
         finally
@@ -1700,28 +1716,39 @@ else
         var purge = _pendingPurge;
         _pendingPurge = false;
 
-        TikrActionLog.Started(Logger, purge ? "UI.Documents.Purge" : "UI.Documents.Delete",
-            $"DocumentId={doc.Id} FileName={doc.FileName}");
+        var action = purge ? "UI.Documents.Purge" : "UI.Documents.Delete";
+        TikrActionLog.Started(Logger, action, $"DocumentId={doc.Id} FileName={doc.FileName}");
 
-        if (purge)
+        try
         {
-            await Api.PurgeDocumentAsync(doc.Id);
-            Toast.Show(DocumentUiMessages.Purged(doc.FileName));
+            if (purge)
+            {
+                await Api.PurgeDocumentAsync(doc.Id);
+                Toast.Show(DocumentUiMessages.Purged(doc.FileName));
+                await LoadDocumentsAsync();
+                TikrActionLog.Completed(Logger, action, $"DocumentId={doc.Id}");
+                return;
+            }
+
+            // Soft-delete; Undo restores via restore API (keeps same document id).
+            await Api.DeleteDocumentAsync(doc.Id);
+            Toast.Show(DocumentUiMessages.SoftDeleted(doc.FileName), async () =>
+            {
+                await Api.RestoreDocumentAsync(doc.Id);
+                TikrActionLog.Info(Logger, "UI.Documents.Restore", $"DocumentId={doc.Id}");
+                await LoadDocumentsAsync();
+            });
             await LoadDocumentsAsync();
-            return;
+            _selectedIds.Remove(doc.Id);
+            if (_selectedPreview?.Id == doc.Id)
+                _selectedPreview = null;
+            TikrActionLog.Completed(Logger, action, $"DocumentId={doc.Id}");
         }
-
-        // Soft-delete; Undo restores via restore API (keeps same document id).
-        await Api.DeleteDocumentAsync(doc.Id);
-        Toast.Show(DocumentUiMessages.SoftDeleted(doc.FileName), async () =>
+        catch (Exception ex)
         {
-            await Api.RestoreDocumentAsync(doc.Id);
-            await LoadDocumentsAsync();
-        });
-        await LoadDocumentsAsync();
-        _selectedIds.Remove(doc.Id);
-        if (_selectedPreview?.Id == doc.Id)
-            _selectedPreview = null;
+            TikrActionLog.Failed(Logger, action, ex, $"DocumentId={doc.Id}");
+            Toast.Show($"Could not {(purge ? "purge" : "delete")} {doc.FileName}.");
+        }
     }
 
     private async Task BulkRetagAsync()

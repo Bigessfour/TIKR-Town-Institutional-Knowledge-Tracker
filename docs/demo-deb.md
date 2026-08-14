@@ -1,16 +1,16 @@
 # TIKR Demo — Clerk Script & Cheat Sheet
 
-**Presenter:** Deb (or stand-in town clerk)  
-**Audience:** Council, CML peers, municipal IT, grant reviewers  
-**Duration:** 15–20 minutes  
+**Presenter:** Deb (or stand-in town clerk)
+**Audience:** Council, CML peers, municipal IT, grant reviewers
+**Duration:** 15–20 minutes
 **Tone:** Practical, calm, “this survives if I’m out sick”
 
 ## How Deb uses TIKR (delivery)
 
-| Mode | How to start | Who |
-|------|--------------|-----|
-| **Production (primary)** | Browser → `http://<nas-hostname>:8080` after IT follows [deb-nas-install.md](deb-nas-install.md) on Synology | Wiley clerk daily |
-| **Optional Windows laptop / USB** | `./scripts/package-thumb-drive.sh` → `Start-TIKR.bat` on the PC | IT smoke test; see [windows-thumb-drive-deploy.md](windows-thumb-drive-deploy.md) |
+| Mode                              | How to start                                                                                                 | Who                                                                               |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------- |
+| **Production (primary)**          | Browser → `http://<nas-hostname>:8080` after IT follows [deb-nas-install.md](deb-nas-install.md) on Synology | Wiley clerk daily                                                                 |
+| **Optional Windows laptop / USB** | `./scripts/package-thumb-drive.sh` → `Start-TIKR.bat` on the PC                                              | IT smoke test; see [windows-thumb-drive-deploy.md](windows-thumb-drive-deploy.md) |
 
 Settings shows **Ollama** and **Grok** status (env-configured on the API) — there is no “Local PC / Full Synology” UI toggle.
 
@@ -18,16 +18,16 @@ Settings shows **Ollama** and **Grok** status (env-configured on the API) — th
 
 ## Before you walk on stage
 
-| Check | How |
-|-------|-----|
-| Web loads | http://localhost:8080 (or NAS hostname) |
-| API healthy | http://localhost:5001/health (Mac) or :5000 (NAS) |
-| Ollama ready | Settings → Ollama **Connected** |
-| Grok demo ready | `USE_GROK=false` in Act 1; real key staged for Act 2 |
-| Sample PDF | Small town doc in Downloads for agent scan |
-| Browser zoom | 100%; high-contrast theme optional (Settings footer toggle if enabled) |
+| Check           | How                                                                    |
+| --------------- | ---------------------------------------------------------------------- |
+| Web loads       | http://localhost:8080 (or NAS hostname)                                |
+| API healthy     | http://localhost:5001/health (Mac) or :5000 (NAS)                      |
+| Ollama ready    | Settings → Ollama **Connected**                                        |
+| Grok demo ready | `USE_GROK=false` in Act 1; real key staged for Act 2                   |
+| Sample PDF      | Small town doc in Downloads for agent scan                             |
+| Browser zoom    | 100%; high-contrast theme optional (Settings footer toggle if enabled) |
 
-**Open tabs:** Dashboard · Requirements · Documents · Vault · Assistant · Settings  
+**Open tabs:** Dashboard · Requirements · Documents · Vault · Assistant · Settings
 **Second screen (optional):** Terminal with `$API` curl script from [demo-code-platoon.md](demo-code-platoon.md#7-live-demo--full-api-matrix-curl)
 
 ---
@@ -52,6 +52,14 @@ Settings shows **Ollama** and **Grok** status (env-configured on the API) — th
 
 **Do:** Click **AI Scan uploaded doc** → pick sample PDF/txt → wait for banner → point at extraction badge (“Plain-text extraction” or “Syncfusion tools”) → review pre-filled dialog → **Save**.
 
+**Election playbook checklist (Phase 13):**
+
+1. Open **Election Canvass & Certification → Edit**.
+2. Show the **Playbook checklist** (notice → filings → canvass packet → certification) with due guidance.
+3. Mark one step complete; note grid **Playbook** column (`n/m`) and Calendar subject progress.
+
+Same pattern works for Campaign Finance and Board Organizational Meeting — and any custom Requirement.
+
 **Say:** “I still approve every row — AI suggests, I decide.”
 
 ---
@@ -64,12 +72,19 @@ Settings shows **Ollama** and **Grok** status (env-configured on the API) — th
 
 1. Upload a small file (or show existing).
 2. Select row → open preview pane (PDF viewer or text fallback).
-3. Right-click → **Download** (streams from NAS storage).
-4. Mention AI tag suggestion if visible.
+3. Toggle **Semantic search** → query `previous election canvass` (or similar) → show ranked hits.
+4. Right-click → **Download** (streams from NAS storage).
+5. Mention AI tag suggestion if visible.
 
-**Say:** “Files never leave the NAS unless I export them.”
+**Say:** “Files never leave the NAS unless I export them. Semantic search finds related packets even when filenames differ.”
 
-**Email → Contacts (Phase 12):** When IMAP/forward-to-folder drops land in `TIKR_EMAIL_INBOX_PATH`, TIKR uploads the file as a Document and (when `TIKR_EMAIL_STRUCTURED_EXTRACT=true`) upserts Vault **Contacts** / Knowledge Contact notes — Election keywords tag Election. Documents shows a banner: review in Vault Contacts; optional Create Requirement from the suggestion.
+**Email → Contacts (Phase 12):**
+
+1. Co-presenter drops an election `.eml` into `TIKR_EMAIL_INBOX_PATH` (or `POST /api/email/ingest`).
+2. Documents shows a banner/toast — review in Vault Contacts; optional Create Requirement from the suggestion.
+3. Jump to Vault (next beat) to confirm the Contact.
+
+When `TIKR_EMAIL_STRUCTURED_EXTRACT=true` (default), ingest upserts Vault **Contacts** / Knowledge Contact notes — Election keywords tag Election.
 
 ---
 
@@ -77,9 +92,14 @@ Settings shows **Ollama** and **Grok** status (env-configured on the API) — th
 
 > “Institutional memory that isn’t a formal document — who to call, how we run council night, voice notes from walking the hall.”
 
-**Do:** Show a **Contacts** or **HowTo** entry; optionally record a short voice note (Speech-to-Text) → save.
+**Do:**
 
-**Say:** “This is what the next clerk needs on day one.”
+1. Open **Contacts** tab → **Add contact**.
+2. Create an **Election** contact with Name, Address, Office, Email/Phone → **Save**.
+3. Point at seeded County Clerk (or the email-extracted contact from the previous beat).
+4. Optionally show a How-To entry or record a short voice note.
+
+**Say:** “This is what the next clerk needs on day one — and Election contacts link straight into Requirements.”
 
 ---
 
@@ -136,52 +156,52 @@ Settings shows **Ollama** and **Grok** status (env-configured on the API) — th
 
 ### URLs (local Docker)
 
-| What | URL |
-|------|-----|
-| TIKR app | http://localhost:8080 |
-| API health (Mac dev) | http://localhost:5001/health |
+| What                   | URL                          |
+| ---------------------- | ---------------------------- |
+| TIKR app               | http://localhost:8080        |
+| API health (Mac dev)   | http://localhost:5001/health |
 | API health (NAS/Linux) | http://localhost:5000/health |
 
 ### Keyboard shortcuts
 
 Press **`?`** anytime (when not typing in a field):
 
-| Keys | Go to |
-|------|-------|
-| `g` then `d` | Dashboard (`/`) |
-| `g` then `r` | Requirements |
-| `g` then `o` | Documents |
-| `g` then `v` | Vault |
-| `g` then `a` | Assistant |
-| `g` then `s` | Settings |
-| `?` | This shortcut list |
+| Keys         | Go to              |
+| ------------ | ------------------ |
+| `g` then `d` | Dashboard (`/`)    |
+| `g` then `r` | Requirements       |
+| `g` then `o` | Documents          |
+| `g` then `v` | Vault              |
+| `g` then `a` | Assistant          |
+| `g` then `s` | Settings           |
+| `?`          | This shortcut list |
 
 ---
 
 ### Page quick reference
 
-| Route | Clerk name | One-liner |
-|-------|------------|-----------|
-| `/` | Dashboard | “What’s urgent this week?” |
-| `/requirements` | Requirements | “Statutory deadlines + custom filings” |
-| `/calendar` | Calendar | “Month view of due dates” |
-| `/documents` | Documents | “Upload, preview, download, AI tags” |
-| `/vault` | Vault | “Contacts, how-tos, voice notes” |
-| `/knowledge` | Knowledge (legacy nav) | Redirects conceptually to Vault |
-| `/assistant` | AI Assistant | “Local chat + optional Grok” |
-| `/settings` | Settings | “NAS health, AI status, audit log” |
+| Route           | Clerk name             | One-liner                              |
+| --------------- | ---------------------- | -------------------------------------- |
+| `/`             | Dashboard              | “What’s urgent this week?”             |
+| `/requirements` | Requirements           | “Statutory deadlines + custom filings” |
+| `/calendar`     | Calendar               | “Month view of due dates”              |
+| `/documents`    | Documents              | “Upload, preview, download, AI tags”   |
+| `/vault`        | Vault                  | “Contacts, how-tos, voice notes”       |
+| `/knowledge`    | Knowledge (legacy nav) | Redirects conceptually to Vault        |
+| `/assistant`    | AI Assistant           | “Local chat + optional Grok”           |
+| `/settings`     | Settings               | “NAS health, AI status, audit log”     |
 
 ---
 
 ### Demo phrases (if something breaks)
 
-| Situation | Say |
-|-----------|-----|
-| Ollama offline | “Local AI pauses — my data is still safe on the NAS. I can keep filing manually.” |
-| Grok disabled | “That’s intentional — we’re in local-only mode today.” |
-| Agent scan slow | “First scan warms up models; typical on a small NAS.” |
-| PDF preview blank | “Fallback shows extracted text — file is still stored correctly.” |
-| API curl fails | “Web UI is the clerk path; API checks are for IT in the back row.” |
+| Situation         | Say                                                                               |
+| ----------------- | --------------------------------------------------------------------------------- |
+| Ollama offline    | “Local AI pauses — my data is still safe on the NAS. I can keep filing manually.” |
+| Grok disabled     | “That’s intentional — we’re in local-only mode today.”                            |
+| Agent scan slow   | “First scan warms up models; typical on a small NAS.”                             |
+| PDF preview blank | “Fallback shows extracted text — file is still stored correctly.”                 |
+| API curl fails    | “Web UI is the clerk path; API checks are for IT in the back row.”                |
 
 ---
 
@@ -193,8 +213,11 @@ Use this with a co-presenter on terminal, or rehearse solo the night before.
 
 - [ ] Dashboard loads priorities
 - [ ] Requirements: agent scan → save one row
+- [ ] Requirements: Election Canvass → Edit → playbook checklist → mark one step complete
 - [ ] Documents: upload → preview → download
-- [ ] Vault: show or add one knowledge entry
+- [ ] Documents: semantic search `previous election canvass`
+- [ ] Email drop (or ingest): banner → Vault Contacts shows Election contact
+- [ ] Vault: Add Election contact with address/office
 - [ ] Assistant: Ollama chat streams
 - [ ] Grok OFF: Settings shows Disabled; Advanced AI uses fallback
 - [ ] Grok ON: Settings shows Enabled; Advanced AI shows Grok note
@@ -219,13 +242,13 @@ Full script: [demo-code-platoon.md §7](demo-code-platoon.md#7-live-demo--full-a
 
 ## Grok toggle quick reference (IT)
 
-| Step | Action |
-|------|--------|
-| 1 | Edit `docker/.env` on NAS or dev machine |
-| 2 | Set `USE_GROK=false` (Act 1) or `USE_GROK=true` + `GROK_API_KEY=…` (Act 2) |
-| 3 | `docker compose -f docker/docker-compose.yml --env-file docker/.env restart tikr-api` |
-| 4 | Confirm `GET /api/ai/status` → `grokEnabled` matches |
-| 5 | Confirm `POST /api/ai/ask-advanced` → `usedGrok` matches |
+| Step | Action                                                                                |
+| ---- | ------------------------------------------------------------------------------------- |
+| 1    | Edit `docker/.env` on NAS or dev machine                                              |
+| 2    | Set `USE_GROK=false` (Act 1) or `USE_GROK=true` + `GROK_API_KEY=…` (Act 2)            |
+| 3    | `docker compose -f docker/docker-compose.yml --env-file docker/.env restart tikr-api` |
+| 4    | Confirm `GET /api/ai/status` → `grokEnabled` matches                                  |
+| 5    | Confirm `POST /api/ai/ask-advanced` → `usedGrok` matches                              |
 
 **Never** paste real API keys on screen — pre-stage in `.env` before demo.
 

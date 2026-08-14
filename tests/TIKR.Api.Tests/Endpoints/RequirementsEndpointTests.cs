@@ -275,6 +275,132 @@ public class RequirementsEndpointTests : IClassFixture<TikrWebApplicationFactory
         audit.Should().Contain(a => a.Action == "Unlink" && a.EntityType == "Requirement");
     }
 
+    [Fact]
+    public async Task Checklist_CrudCompleteAndReportsProgress()
+    {
+        var create = await _client.PostAsJsonAsync("/api/requirements", new CreateRequirementRequest(
+            "Checklist host",
+            "Playbook test",
+            DateOnly.FromDateTime(DateTime.UtcNow.AddDays(30)),
+            RecurrenceType.None,
+            RequirementCategory.Custom));
+        var req = await create.Content.ReadFromJsonAsync<RequirementDto>();
+
+        var add = await _client.PostAsJsonAsync(
+            $"/api/requirements/{req!.Id}/checklist",
+            new CreateRequirementChecklistItemRequest("Post notice", DueOffsetDays: 10));
+        add.StatusCode.Should().Be(HttpStatusCode.Created);
+        var item = await add.Content.ReadFromJsonAsync<RequirementChecklistItemDto>();
+        item!.Title.Should().Be("Post notice");
+        item.EffectiveDueDate.Should().Be(req.DueDate.AddDays(-10));
+
+        var list = await _client.GetFromJsonAsync<List<RequirementChecklistItemDto>>(
+            $"/api/requirements/{req.Id}/checklist");
+        list.Should().ContainSingle(i => i.Id == item.Id);
+
+        var complete = await _client.PostAsJsonAsync(
+            $"/api/requirements/{req.Id}/checklist/{item.Id}/complete",
+            new CompleteRequirementChecklistItemRequest(true));
+        complete.StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        var fetched = await _client.GetFromJsonAsync<RequirementDto>($"/api/requirements/{req.Id}");
+        fetched!.ChecklistTotal.Should().Be(1);
+        fetched.ChecklistCompleted.Should().Be(1);
+
+        var audit = await _client.GetFromJsonAsync<List<AuditLogDto>>("/api/audit?limit=15");
+        audit.Should().Contain(a => a.Action == "ChecklistCreate" && a.EntityType == "Requirement");
+        audit.Should().Contain(a => a.Action == "ChecklistComplete" && a.EntityType == "Requirement");
+
+        var del = await _client.DeleteAsync($"/api/requirements/{req.Id}/checklist/{item.Id}");
+        del.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await _client.GetFromJsonAsync<List<RequirementChecklistItemDto>>(
+            $"/api/requirements/{req.Id}/checklist")).Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task PutChecklistItem_UpdatesFieldsAndAudits()
+    {
+        var create = await _client.PostAsJsonAsync("/api/requirements", new CreateRequirementRequest(
+            "Checklist update host",
+            null,
+            DateOnly.FromDateTime(DateTime.UtcNow.AddDays(45)),
+            RecurrenceType.None,
+            RequirementCategory.Custom));
+        var req = await create.Content.ReadFromJsonAsync<RequirementDto>();
+
+        var add = await _client.PostAsJsonAsync(
+            $"/api/requirements/{req!.Id}/checklist",
+            new CreateRequirementChecklistItemRequest("Draft step", DueOffsetDays: 14));
+        var item = await add.Content.ReadFromJsonAsync<RequirementChecklistItemDto>();
+
+        var put = await _client.PutAsJsonAsync(
+            $"/api/requirements/{req.Id}/checklist/{item!.Id}",
+            new UpdateRequirementChecklistItemRequest(
+                "Revised step",
+                Description: "Updated playbook note",
+                IsRequired: true,
+                IsCompleted: false,
+                DueOffsetDays: 7,
+                SortOrder: item.SortOrder,
+                SubmitTo: "County Clerk"));
+        put.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var updated = await put.Content.ReadFromJsonAsync<RequirementChecklistItemDto>();
+        updated!.Title.Should().Be("Revised step");
+        updated.Description.Should().Be("Updated playbook note");
+        updated.DueOffsetDays.Should().Be(7);
+        updated.SubmitTo.Should().Be("County Clerk");
+        updated.EffectiveDueDate.Should().Be(req.DueDate.AddDays(-7));
+
+        var audit = await _client.GetFromJsonAsync<List<AuditLogDto>>("/api/audit?limit=15");
+        audit.Should().Contain(a => a.Action == "ChecklistUpdate" && a.EntityType == "Requirement");
+    }
+
+    [Fact]
+    public async Task PutChecklistReorder_ReordersItems()
+    {
+        var create = await _client.PostAsJsonAsync("/api/requirements", new CreateRequirementRequest(
+            "Checklist reorder host",
+            null,
+            DateOnly.FromDateTime(DateTime.UtcNow.AddDays(20)),
+            RecurrenceType.None,
+            RequirementCategory.Election));
+        var req = await create.Content.ReadFromJsonAsync<RequirementDto>();
+
+        var a = await (await _client.PostAsJsonAsync(
+            $"/api/requirements/{req!.Id}/checklist",
+            new CreateRequirementChecklistItemRequest("First", DueOffsetDays: 5)))
+            .Content.ReadFromJsonAsync<RequirementChecklistItemDto>();
+        var b = await (await _client.PostAsJsonAsync(
+            $"/api/requirements/{req.Id}/checklist",
+            new CreateRequirementChecklistItemRequest("Second", DueOffsetDays: 1)))
+            .Content.ReadFromJsonAsync<RequirementChecklistItemDto>();
+
+        var reorder = await _client.PutAsJsonAsync(
+            $"/api/requirements/{req.Id}/checklist/reorder",
+            new ReorderRequirementChecklistRequest([b!.Id, a!.Id]));
+        reorder.StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        var list = await _client.GetFromJsonAsync<List<RequirementChecklistItemDto>>(
+            $"/api/requirements/{req.Id}/checklist");
+        list!.Select(i => i.Id).Should().ContainInOrder(b.Id, a.Id);
+
+        var audit = await _client.GetFromJsonAsync<List<AuditLogDto>>("/api/audit?limit=20");
+        audit.Should().Contain(row => row.Action == "ChecklistReorder" && row.EntityType == "Requirement");
+    }
+
+    [Fact]
+    public async Task GetRequirements_ElectionCanvass_IncludesSeededChecklistProgress()
+    {
+        var items = await _client.GetFromJsonAsync<List<RequirementDto>>("/api/requirements");
+        var canvass = items!.First(r => r.Title.Contains("Election Canvass"));
+        canvass.ChecklistTotal.Should().BeGreaterThanOrEqualTo(5);
+
+        var checklist = await _client.GetFromJsonAsync<List<RequirementChecklistItemDto>>(
+            $"/api/requirements/{canvass.Id}/checklist");
+        checklist.Should().Contain(i => i.Title.Contains("canvass packet", StringComparison.OrdinalIgnoreCase));
+    }
+
     private sealed record AuditLogDto(
         Guid Id,
         string Action,

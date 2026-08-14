@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using TIKR.Shared.Diagnostics;
 using TIKR.Shared.Interfaces;
 
 namespace TIKR.Infrastructure.Services;
@@ -12,6 +13,7 @@ public sealed class FolderEmailIngestionHostedService(
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        TikrActionLog.Info(logger, "Host.EmailIngest", "Poller started");
         try
         {
             await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
@@ -37,9 +39,8 @@ public sealed class FolderEmailIngestionHostedService(
                 var result = await ingestion.IngestPendingAsync(stoppingToken);
                 if (result.Ingested > 0 || result.Errors.Count > 0)
                 {
-                    logger.LogInformation(
-                        "Email folder ingest: ingested={Ingested}, skipped={Skipped}, errors={ErrorCount}",
-                        result.Ingested, result.Skipped, result.Errors.Count);
+                    TikrActionLog.Completed(logger, "Host.EmailIngest.Cycle",
+                        $"Ingested={result.Ingested} Skipped={result.Skipped} Errors={result.Errors.Count}");
                 }
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
@@ -48,7 +49,7 @@ public sealed class FolderEmailIngestionHostedService(
             }
             catch (Exception ex)
             {
-                logger.LogWarning(ex, "Email folder ingest poll failed");
+                TikrActionLog.Failed(logger, "Host.EmailIngest.Cycle", ex);
             }
 
             try
@@ -60,5 +61,7 @@ public sealed class FolderEmailIngestionHostedService(
                 break;
             }
         }
+
+        TikrActionLog.Info(logger, "Host.EmailIngest", "Poller stopped");
     }
 }

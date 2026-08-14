@@ -4,7 +4,7 @@
 
 **Created**: 2026-08-14
 
-**Status**: Done (implementation on `feature/email-structured-extract`)
+**Status**: Done (merged [#98](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/98))
 
 **Input**: Turn email folder drops into structured institutional knowledge — contacts, dates, Election awareness — after Document ingest.
 

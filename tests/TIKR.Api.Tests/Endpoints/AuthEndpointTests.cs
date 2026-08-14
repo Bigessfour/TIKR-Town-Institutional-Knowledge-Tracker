@@ -35,6 +35,19 @@ public class AuthEndpointTests : IClassFixture<AuthEnabledWebApplicationFactory>
     }
 
     [Fact]
+    public async Task Contacts_WithToken_ReturnsSeededElectionContacts()
+    {
+        var token = await LoginAsync();
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        var items = await _client.GetFromJsonAsync<List<ContactDto>>("/api/contacts");
+        items.Should().NotBeNull();
+        items!.Should().Contain(c =>
+            c.Categories.HasFlag(TIKR.Shared.Enums.ContactCategory.Election) &&
+            c.Name.Contains("County Clerk", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
     public async Task Login_WithSeededAdmin_ReturnsToken()
     {
         var response = await _client.PostAsJsonAsync("/api/auth/login", new LoginRequest(

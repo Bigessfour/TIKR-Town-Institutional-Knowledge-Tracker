@@ -265,11 +265,22 @@ else
     private static CalendarEvent ToCalendarEvent(RequirementDto r)
     {
         var start = r.DueDate.ToDateTime(TimeOnly.MinValue);
+        var subject = r.ChecklistTotal > 0
+            ? $"{r.Title} ({r.ChecklistCompleted}/{r.ChecklistTotal})"
+            : r.Title;
+        var playbookHint = r.ChecklistTotal > 0
+            ? $"Playbook {r.ChecklistCompleted}/{r.ChecklistTotal} complete."
+            : null;
+        var description = string.IsNullOrWhiteSpace(r.Description)
+            ? playbookHint
+            : playbookHint is null
+                ? r.Description
+                : $"{r.Description}\n{playbookHint}";
         return new CalendarEvent
         {
             Id = r.Id.ToString(),
-            Subject = r.Title,
-            Description = r.Description,
+            Subject = subject,
+            Description = description,
             StartTime = start,
             EndTime = start.AddHours(1),
             IsSystemSeeded = r.IsSystemSeeded,

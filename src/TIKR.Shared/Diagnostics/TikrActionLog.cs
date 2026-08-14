@@ -7,8 +7,10 @@ namespace TIKR.Shared.Diagnostics;
 /// Grep logs with: <c>Action </c> or filter property <c>Action</c>.
 /// Clerk UI surfaces use <c>UI.{Surface}.{Verb}</c> names, e.g.:
 /// <c>UI.Dashboard.Load</c>, <c>UI.Calendar.Create</c>, <c>UI.Requirements.AgentScan</c>,
-/// <c>UI.Documents.Upload</c>, <c>UI.Assistant.Prompt</c>, <c>UI.Vault.SaveEntry</c>,
-/// <c>UI.Settings.SaveFeatures</c>.
+/// <c>UI.Documents.Upload</c>, <c>UI.Documents.SemanticSearch</c>, <c>UI.Assistant.Prompt</c>,
+/// <c>UI.Vault.SaveEntry</c>, <c>UI.Settings.SaveFeatures</c>.
+/// Services / API / hosts use <c>Requirement.*</c>, <c>Document.*</c>, <c>AI.*</c>, <c>Email.*</c>,
+/// <c>Auth.*</c>, <c>API.*</c>, <c>Host.*</c>. Never pass secrets or raw email bodies in <c>detail</c>.
 /// </summary>
 public static class TikrActionLog
 {

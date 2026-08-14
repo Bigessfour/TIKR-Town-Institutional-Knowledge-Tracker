@@ -50,6 +50,51 @@ public class VaultPageTests : ClerkTestContext
     }
 
     [Fact]
+    public async Task Vault_AddContactDialog_ShowsFormFieldsAndElectionCategory()
+    {
+        var contactsJson = JsonSerializer.Serialize(new List<ContactDto>
+        {
+            new(
+                Guid.NewGuid(),
+                "Election – County Clerk",
+                "County Clerk",
+                "County Clerk's Office",
+                null,
+                "Elections",
+                "clerk@county.example.gov",
+                "970-555-0100",
+                null,
+                ContactCategory.Election,
+                DateTime.UtcNow,
+                DateTime.UtcNow,
+                null,
+                null)
+        });
+        RegisterApi("[]", contactsJson);
+        SetRendererInfo(new RendererInfo("Server", true));
+
+        var cut = RenderComponent<Vault>();
+        cut.WaitForAssertion(() => cut.Markup.Should().Contain("Contacts"));
+
+        var contactsTab = cut.FindAll(".e-tab-text")
+            .First(e => e.TextContent?.Contains("Contacts", StringComparison.Ordinal) == true);
+        await cut.InvokeAsync(() => contactsTab.Click());
+
+        cut.WaitForAssertion(() => cut.Markup.Should().Contain("Add contact"), TimeSpan.FromSeconds(10));
+        var addBtn = cut.FindAll("button")
+            .First(b => b.TextContent?.Contains("Add contact", StringComparison.Ordinal) == true);
+        await cut.InvokeAsync(() => addBtn.Click());
+
+        cut.WaitForAssertion(() =>
+        {
+            cut.Markup.Should().Contain("Organization");
+            cut.Markup.Should().Contain("Categories");
+            cut.Markup.Should().Contain("Election");
+            cut.Markup.Should().Contain(">Save<");
+        }, TimeSpan.FromSeconds(10));
+    }
+
+    [Fact]
     public void Vault_LoadsHowToEntriesFromApi()
     {
         var id = Guid.NewGuid();
@@ -96,14 +141,15 @@ public class VaultPageTests : ClerkTestContext
         JSInterop.VerifyInvoke("navigator.clipboard.writeText");
     }
 
-    private void RegisterApi(string json)
+    private void RegisterApi(string json, string? contactsJson = null)
     {
+        var contacts = contactsJson ?? "[]";
         var handler = new StubHandler((req, _) =>
         {
             var path = req.RequestUri!.AbsolutePath;
             var body = path switch
             {
-                "/api/contacts" => "[]",
+                "/api/contacts" => contacts,
                 _ => json
             };
             return new HttpResponseMessage(HttpStatusCode.OK)

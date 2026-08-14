@@ -16,10 +16,14 @@ flowchart LR
 
     subgraph api_crud["Domain CRUD"]
         A_Req["/api/requirements"]
+        A_Check["/api/requirements/id/checklist"]
+        A_Contacts["/api/contacts"]
+        A_ReqContacts["/api/requirements/id/contacts"]
         A_Doc["/api/documents"]
         A_DlContent["GET /api/documents/id/content"]
         A_Know["/api/knowledge"]
         A_Audit["GET /api/audit"]
+        A_Email["/api/email/ingest + notices"]
     end
 
     subgraph api_ai["AI"]
@@ -44,12 +48,16 @@ flowchart LR
     W_Dash --> A_Prior
     W_Dash --> A_Status
     W_Req --> A_Req
+    W_Req --> A_Check
+    W_Req --> A_ReqContacts
     W_Req --> A_Agent
     W_Doc --> A_Doc
     W_Doc --> A_Tag
     W_Doc --> A_SSem
     W_Doc --> A_DlContent
+    W_Doc --> A_Email
     W_Vault --> A_Know
+    W_Vault --> A_Contacts
     W_Asst --> A_SSem
     W_Asst --> A_KSem
     W_Set --> A_Audit

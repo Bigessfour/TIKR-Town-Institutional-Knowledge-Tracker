@@ -34,6 +34,50 @@ internal static class CouncilPacketEndpoints
                     TruncateSummary(row.Document.FullTextContent))).ToList());
     }
 
+    public static async Task<Dictionary<Guid, (int Completed, int Total)>> LoadChecklistCountsAsync(TikrDbContext db)
+    {
+        var rows = await db.RequirementChecklistItems
+            .AsNoTracking()
+            .GroupBy(i => i.RequirementId)
+            .Select(g => new
+            {
+                RequirementId = g.Key,
+                Total = g.Count(),
+                Completed = g.Count(i => i.IsCompleted)
+            })
+            .ToListAsync();
+
+        return rows.ToDictionary(r => r.RequirementId, r => (r.Completed, r.Total));
+    }
+
+    public static RequirementChecklistItemDto MapChecklistItem(
+        RequirementChecklistItem item,
+        DateOnly parentDueDate) =>
+        new(
+            item.Id,
+            item.RequirementId,
+            item.Title,
+            item.Description,
+            item.IsRequired,
+            item.IsCompleted,
+            item.DueOffsetDays,
+            item.DueDate,
+            EffectiveChecklistDue(item, parentDueDate),
+            item.SortOrder,
+            item.LinkedDocumentId,
+            item.DocumentTemplateHint,
+            item.SubmitTo,
+            item.ContactId);
+
+    public static DateOnly? EffectiveChecklistDue(RequirementChecklistItem item, DateOnly parentDueDate)
+    {
+        if (item.DueDate is { } absolute)
+            return absolute;
+        if (item.DueOffsetDays is { } offset)
+            return parentDueDate.AddDays(-offset);
+        return null;
+    }
+
     public static async Task<IReadOnlyList<CouncilPacketRequirementItem>> BuildCouncilPacketRequirementsAsync(TikrDbContext db)
     {
         var requirements = await db.Requirements
@@ -65,7 +109,11 @@ internal static class CouncilPacketEndpoints
         }).ToList();
     }
 
-    public static RequirementDto MapRequirement(Requirement requirement, IReadOnlyList<RequirementLinkedDocumentDto> linkedDocuments) =>
+    public static RequirementDto MapRequirement(
+        Requirement requirement,
+        IReadOnlyList<RequirementLinkedDocumentDto> linkedDocuments,
+        int checklistCompleted = 0,
+        int checklistTotal = 0) =>
         new(
             requirement.Id,
             requirement.Title,
@@ -79,7 +127,9 @@ internal static class CouncilPacketEndpoints
             requirement.SubmitTo,
             requirement.ContactName,
             requirement.ContactEmail,
-            requirement.ContactPhone);
+            requirement.ContactPhone,
+            checklistCompleted,
+            checklistTotal);
 
     private static string? TruncateSummary(string? text)
     {

@@ -17,6 +17,7 @@ public class TikrDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<KnowledgeEntry> KnowledgeEntries => Set<KnowledgeEntry>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
     public DbSet<RequirementDocument> RequirementDocuments => Set<RequirementDocument>();
+    public DbSet<RequirementChecklistItem> RequirementChecklistItems => Set<RequirementChecklistItem>();
     public DbSet<Contact> Contacts => Set<Contact>();
     public DbSet<RequirementContact> RequirementContacts => Set<RequirementContact>();
     public DbSet<EmbeddingChunk> EmbeddingChunks => Set<EmbeddingChunk>();
@@ -82,6 +83,28 @@ public class TikrDbContext : IdentityDbContext<ApplicationUser>
                 .WithMany()
                 .HasForeignKey(e => e.DocumentId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<RequirementChecklistItem>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Title).HasMaxLength(300).IsRequired();
+            entity.Property(e => e.Description).HasMaxLength(2000);
+            entity.Property(e => e.DocumentTemplateHint).HasMaxLength(200);
+            entity.Property(e => e.SubmitTo).HasMaxLength(300);
+            entity.HasIndex(e => new { e.RequirementId, e.SortOrder });
+            entity.HasOne(e => e.Requirement)
+                .WithMany()
+                .HasForeignKey(e => e.RequirementId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.LinkedDocument)
+                .WithMany()
+                .HasForeignKey(e => e.LinkedDocumentId)
+                .OnDelete(DeleteBehavior.SetNull);
+            entity.HasOne(e => e.Contact)
+                .WithMany()
+                .HasForeignKey(e => e.ContactId)
+                .OnDelete(DeleteBehavior.SetNull);
         });
 
         modelBuilder.Entity<Contact>(entity =>

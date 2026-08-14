@@ -20,18 +20,18 @@ This file owns **status, checkboxes, priorities, verification evidence**. The ge
 - [x] Vault Contacts inventory UI; Requirements + Calendar pickers
 - [x] Seeded Election contacts linked to Election Canvass
 - [x] Proof: `ContactServiceTests`, `ContactsEndpointTests`, Vault/Requirements/Calendar bUnit
-- [x] Auth gate: `Contacts_WithoutToken_ReturnsUnauthorized` (`AuthEndpointTests`)
+- [x] Auth gate: `Contacts_WithoutToken_ReturnsUnauthorized` + `Contacts_WithToken_ReturnsSeededElectionContacts`
 - [x] Playwright: Vault Contacts tab in `page-readiness` (`Add contact` + inventory anchor)
 
-| Function | Proof | Minimal impl |
-| --- | --- | --- |
-| `ContactService.CreateAsync` / Update / SoftDelete / Restore | `ContactServiceTests` | Thin EF + audit |
-| `ContactService.LinkToRequirementAsync` | `ContactServiceTests` + `ContactsEndpointTests` | Primary sync denormalized fields |
-| `GET/POST/PUT/DELETE /api/contacts` | `ContactsEndpointTests` | Minimal API → service |
-| `/api/contacts` when auth on | `Contacts_WithoutToken_ReturnsUnauthorized` | Shared `/api` auth gate |
-| Vault Contacts inventory | `Vault_ContactsTab_ShowsInventoryActions` + E2E page-readiness | SfGrid + SfDialog (not SfDataForm) |
-| Requirements contact picker | `Requirements_ShowsContactPickerWhenDialogOpen` | Dropdown + link |
-| Calendar contact apply | `Calendar_ShowsContactPickerPanel` | Link + update denormalized |
+| Function                                                     | Proof                                                        | Minimal impl                       |
+| ------------------------------------------------------------ | ------------------------------------------------------------ | ---------------------------------- |
+| `ContactService.CreateAsync` / Update / SoftDelete / Restore | `ContactServiceTests` (incl. Update + category/query filter) | Thin EF + audit                    |
+| `ContactService.LinkToRequirementAsync`                      | `ContactServiceTests` + `ContactsEndpointTests`              | Primary sync denormalized fields   |
+| `GET/POST/PUT/DELETE /api/contacts`                          | `ContactsEndpointTests` (+ category filter)                  | Minimal API → service              |
+| `/api/contacts` when auth on                                 | `Contacts_WithoutToken_*` / `Contacts_WithToken_*`           | Shared `/api` auth gate            |
+| Vault Contacts inventory                                     | `Vault_ContactsTab_*` + `Vault_AddContactDialog_*` + E2E     | SfGrid + SfDialog (not SfDataForm) |
+| Requirements contact picker                                  | `Requirements_ShowsContactPickerWhenDialogOpen`              | Dropdown + link                    |
+| Calendar contact apply                                       | `Calendar_ShowsContactPickerPanel`                           | Link + update denormalized         |
 
 **Deferred for a later pass (optional):** dedicated `/contacts` page; `SfDataForm`; migrate legacy Knowledge Vault Contact notes into `Contact` entities.
 
@@ -43,15 +43,40 @@ This file owns **status, checkboxes, priorities, verification evidence**. The ge
 - [x] `TIKR_EMAIL_STRUCTURED_EXTRACT` (default true)
 - [x] Apply service upserts Contact + Knowledge Contact; notices + requirement suggestion
 - [x] Wire `FolderEmailIngestionService`; Documents banner/toast
-- [x] Proof: extractor fixtures, `FolderEmailIngestionServiceTests`, `EmailIngestEndpointTests`, `ContactService.UpsertAsync`
+- [x] Proof: extractor fixtures (election / contact / generic / malformed), `FolderEmailIngestionServiceTests`, `EmailIngestEndpointTests`, `ContactService.UpsertAsync`
 
-| Function | Proof | Minimal impl |
-| --- | --- | --- |
-| `EmailStructuredExtractor.Parse` | `EmailStructuredExtractorTests` | Deterministic regex/heuristics |
-| `EmailStructuredApplyService.ApplyAsync` | Infra ingest election .eml | Upsert + knowledge + notice |
-| `FolderEmailIngestionService.IngestPendingAsync` | `FolderEmailIngestionServiceTests` | Extract gated; never throws |
-| `POST /api/email/ingest` + `GET /api/email/notices` | `EmailIngestEndpointTests` | Side-effects asserted |
-| `ContactService.UpsertAsync` | `ContactServiceTests` | Email / name+org merge |
+| Function                                            | Proof                              | Minimal impl                   |
+| --------------------------------------------------- | ---------------------------------- | ------------------------------ |
+| `EmailStructuredExtractor.Parse`                    | `EmailStructuredExtractorTests`    | Deterministic regex/heuristics |
+| `EmailStructuredApplyService.ApplyAsync`            | Infra ingest election .eml         | Upsert + knowledge + notice    |
+| `FolderEmailIngestionService.IngestPendingAsync`    | `FolderEmailIngestionServiceTests` | Extract gated; never throws    |
+| `POST /api/email/ingest` + `GET /api/email/notices` | `EmailIngestEndpointTests`         | Side-effects asserted          |
+| `ContactService.UpsertAsync`                        | `ContactServiceTests`              | Email / name+org merge         |
+
+---
+
+## Spec Kit `009-requirement-checklists` (Phase 13)
+
+- [x] `RequirementChecklistItem` + migration + cascade delete
+- [x] `/api/requirements/{id}/checklist` CRUD + complete + reorder
+- [x] `RequirementService` checklist methods + AuditService + TikrActionLog
+- [x] Requirements playbook UI + grid progress; Calendar subject progress hint
+- [x] Seed Election Canvass / Campaign Finance / Board Organizational Meeting checklists
+- [x] Proof: `RequirementChecklistServiceTests`, `RequirementChecklistSeederTests`, `RequirementsEndpointTests` checklist cases (CRUD/complete/reorder/seeded Election), `RequirementsPageTests` playbook UI
+- [x] Playwright: `election canvass requirement opens playbook checklist` in `page-readiness`
+
+| Function                                                                          | Proof                                         | Minimal impl               |
+| --------------------------------------------------------------------------------- | --------------------------------------------- | -------------------------- |
+| `RequirementService.AddChecklistItemAsync` / Update / Complete / Delete / Reorder | `RequirementChecklistServiceTests`            | Thin EF + audit            |
+| `GET/POST/PUT/DELETE …/checklist` + complete + reorder                            | `RequirementsEndpointTests`                   | Nested under requirements  |
+| `RequirementChecklistSeeder.SeedAsync`                                            | `RequirementChecklistSeederTests`             | Idempotent per requirement |
+| Requirements playbook panel + Edit step                                           | `Requirements_ShowsChecklistPanelWhenEditing` | Edit dialog list           |
+| Grid playbook progress                                                            | `Requirements_ShowsPlaybookProgressOnGrid`    | ChecklistCompleted/Total   |
+| Election Canvass E2E                                                              | `page-readiness` Election checklist smoke     | Docker-friendly            |
+
+**Next pass (human):** Deb opens **Requirements → Election Canvass & Certification → Edit** and walks the seeded playbook checklist.
+
+**Verification (2026-08-14):** `dotnet test TIKR.sln --configuration Release` green (655 passed). Function inventory surfaces **23/23 with proof**. Coverlet floor unchanged. Docs ship-readiness: incremental-plan Phases 11–13 + logging adjunct; demo-deb / demo-code-platoon Election walkthrough; architecture + README API surface; Spec Kit `007`/`008`/`009` tasks closed.
 
 ---
 

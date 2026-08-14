@@ -103,6 +103,29 @@ test.describe('TIKR page readiness (nav + primary controls)', () => {
     await page.getByRole('tab', { name: 'How-To' }).click();
   });
 
+  test('election canvass requirement opens playbook checklist', async ({ page }) => {
+    await gotoClerkPage(page, '/requirements');
+    await expect(page.getByRole('heading', { name: 'Requirements Manager' })).toBeVisible();
+    // Seeded Election Canvass row — open Edit and assert playbook checklist panel.
+    const canvassCell = page.getByRole('gridcell', { name: /Election Canvass/i }).first();
+    await expect(canvassCell).toBeVisible({ timeout: 20_000 });
+    // Prefer row Edit for the canvass requirement; fall back to first Edit if grid chrome differs.
+    const canvassRow = page.locator('.e-row').filter({ hasText: /Election Canvass/i }).first();
+    const editInRow = canvassRow.getByRole('button', { name: /^Edit$/i });
+    if (await editInRow.count()) {
+      await editInRow.click();
+    } else {
+      await page.getByRole('button', { name: /^Edit$/i }).first().click();
+    }
+    await expect(page.getByRole('dialog')).toBeVisible({ timeout: 15_000 });
+    await expect(page.locator('[data-tour="requirements-checklist"]')).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByText(/Playbook checklist/i)).toBeVisible();
+    await expect(page.getByText(/canvass packet|certification|notice/i).first()).toBeVisible({
+      timeout: 10_000,
+    });
+    await page.getByRole('button', { name: 'Cancel' }).first().click();
+  });
+
   test('assistant clear button and prompt area', async ({ page }) => {
     await gotoClerkPage(page, '/assistant');
     await expect(page.getByRole('button', { name: /Clear conversation/i })).toBeVisible();

@@ -184,23 +184,24 @@ For new features: read the active [incremental-plan](docs/incremental-plan.md) p
 
 ## Related Files
 
-| Path                                                                         | Purpose                                                  |
-| ---------------------------------------------------------------------------- | -------------------------------------------------------- |
-| [AGENTS.md](AGENTS.md)                                                       | This file — agent rules                                  |
-| [docs/spec-kit.md](docs/spec-kit.md)                                         | Spec-Driven Development workflow                         |
-| [.specify/memory/constitution.md](.specify/memory/constitution.md)           | SDD constitution                                         |
-| [docs/incremental-plan.md](docs/incremental-plan.md)                         | Phased roadmap                                           |
+| Path                                                                         | Purpose                                                      |
+| ---------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| [AGENTS.md](AGENTS.md)                                                       | This file — agent rules                                      |
+| [docs/spec-kit.md](docs/spec-kit.md)                                         | Spec-Driven Development workflow                             |
+| [.specify/memory/constitution.md](.specify/memory/constitution.md)           | SDD constitution                                             |
+| [docs/incremental-plan.md](docs/incremental-plan.md)                         | Phased roadmap                                               |
 | [specs/007-contacts-inventory/](specs/007-contacts-inventory/)               | Phase 11 Contacts Inventory (Vault CRUD + Requirement links) |
 | [specs/008-email-structured-extract/](specs/008-email-structured-extract/)   | Phase 12 Email folder → Contacts / Knowledge extract         |
-| [docs/ai-tooling.md](docs/ai-tooling.md)                                     | MCP, skills, runtime AI                                  |
-| [docs/architecture.md](docs/architecture.md)                                 | System design                                            |
-| [docs/action-items.md](docs/action-items.md)                                 | Human+agent overlay (status, verification, checkboxes)   |
-| [docs/function-inventory.generated.md](docs/function-inventory.generated.md) | Auto-generated inventory (run script to refresh)         |
-| [docs/function-tree.md](docs/function-tree.md)                               | Maintained visual Mermaid function tree                  |
-| [scripts/update-function-inventory.sh](scripts/update-function-inventory.sh) | Legacy bash scanner (project specific)                   |
-| `~/.cursor/skills/function-inventory/scripts/update-function-inventory.py`   | Personal Python lightweight function tracker (preferred) |
-| [.github/workflows/ci.yml](.github/workflows/ci.yml)                         | Build, test, Docker smoke                                |
-| [.github/workflows/ci.yml](.github/workflows/ci.yml)                         | Build, test, Trunk lint, Ollama failure triage           |
-| [docs/dependabot-policy.md](docs/dependabot-policy.md)                       | Dependabot PR handling                                   |
-| [.github/SECURITY.md](.github/SECURITY.md)                                   | Vulnerability reporting                                  |
-| [.cursor/rules/tikr.mdc](.cursor/rules/tikr.mdc)                             | Always-on Cursor rule                                    |
+| [specs/009-requirement-checklists/](specs/009-requirement-checklists/)       | Phase 13 Election playbook checklists under Requirements     |
+| [docs/ai-tooling.md](docs/ai-tooling.md)                                     | MCP, skills, runtime AI                                      |
+| [docs/architecture.md](docs/architecture.md)                                 | System design                                                |
+| [docs/action-items.md](docs/action-items.md)                                 | Human+agent overlay (status, verification, checkboxes)       |
+| [docs/function-inventory.generated.md](docs/function-inventory.generated.md) | Auto-generated inventory (run script to refresh)             |
+| [docs/function-tree.md](docs/function-tree.md)                               | Maintained visual Mermaid function tree                      |
+| [scripts/update-function-inventory.sh](scripts/update-function-inventory.sh) | Legacy bash scanner (project specific)                       |
+| `~/.cursor/skills/function-inventory/scripts/update-function-inventory.py`   | Personal Python lightweight function tracker (preferred)     |
+| [.github/workflows/ci.yml](.github/workflows/ci.yml)                         | Build, test, Docker smoke                                    |
+| [.github/workflows/ci.yml](.github/workflows/ci.yml)                         | Build, test, Trunk lint, Ollama failure triage               |
+| [docs/dependabot-policy.md](docs/dependabot-policy.md)                       | Dependabot PR handling                                       |
+| [.github/SECURITY.md](.github/SECURITY.md)                                   | Vulnerability reporting                                      |
+| [.cursor/rules/tikr.mdc](.cursor/rules/tikr.mdc)                             | Always-on Cursor rule                                        |

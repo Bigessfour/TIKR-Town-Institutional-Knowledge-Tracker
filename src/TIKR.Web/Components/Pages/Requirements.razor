@@ -162,6 +162,21 @@ else
         <GridColumn Field="@nameof(RequirementDto.Recurrence)" HeaderText="Recurrence" Width="110" />
         <GridColumn Field="@nameof(RequirementDto.IsSystemSeeded)" HeaderText="CO Default" DisplayAsCheckBox="true" Width="100" />
         <GridColumn Field="@nameof(RequirementDto.IsCompleted)" HeaderText="Done" DisplayAsCheckBox="true" Width="80" />
+        <GridColumn HeaderText="Playbook" Width="100">
+            <Template>
+                @{
+                    var row = (RequirementDto)context;
+                }
+                @if (row.ChecklistTotal > 0)
+                {
+                    <span class="text-muted">@row.ChecklistCompleted/@row.ChecklistTotal</span>
+                }
+                else
+                {
+                    <span class="text-muted">—</span>
+                }
+            </Template>
+        </GridColumn>
         <GridColumn HeaderText="Actions" Width="180">
             <Template>
                 @{
@@ -179,7 +194,7 @@ else
     </div>
 }
 
-<SfDialog @bind-Visible="_showDialog" Width="520px" IsModal="true" ShowCloseIcon="true" Header="@(_editingId is null ? "Add requirement" : "Edit requirement")">
+<SfDialog @bind-Visible="_showDialog" Width="640px" IsModal="true" ShowCloseIcon="true" Header="@(_editingId is null ? "Add requirement" : "Edit requirement")">
     <DialogTemplates>
         <Content>
             <p class="text-muted" style="margin-top:0;">Copy notes from email or clipboard, then use <strong>Smart Paste</strong> to fill fields (needs Ollama).</p>
@@ -307,6 +322,99 @@ else
                         @if (!string.IsNullOrWhiteSpace(_attachMessage))
                         {
                             <p class="mt-2 text-muted">@_attachMessage</p>
+                        }
+                    </div>
+                    <div class="mt-3 border-top pt-3" data-tour="requirements-checklist">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h5 class="mb-0">Playbook checklist</h5>
+                            <span class="text-muted small">@_checklist.Count(i => i.IsCompleted)/@_checklist.Count complete</span>
+                        </div>
+                        <p class="text-muted small">Steps and documents for this due-out (editable). Seeded Election playbooks start here.</p>
+                        @if (_checklist.Count == 0)
+                        {
+                            <p class="text-muted">No checklist items yet.</p>
+                        }
+                        else
+                        {
+                            <ul class="list-unstyled mb-2">
+                                @foreach (var step in _checklist.OrderBy(i => i.SortOrder))
+                                {
+                                    <li class="border rounded p-2 mb-2">
+                                        @if (_editingChecklistItemId == step.Id)
+                                        {
+                                            <div class="d-flex flex-column gap-2" data-tour="requirements-checklist-edit">
+                                                <SfTextBox @bind-Value="_editChecklistTitle" Placeholder="Step title" Width="100%" />
+                                                <SfTextBox @bind-Value="_editChecklistDescription" Placeholder="Description (optional)" Width="100%" Multiline="true" />
+                                                <div class="d-flex flex-wrap gap-2 align-items-center">
+                                                    <SfNumericTextBox TValue="int?" @bind-Value="_editChecklistOffset" Placeholder="Days before due" Width="140px" />
+                                                    <SfTextBox @bind-Value="_editChecklistSubmitTo" Placeholder="Submit to" Width="200px" />
+                                                </div>
+                                                <div class="d-flex flex-wrap gap-2">
+                                                    <SfButton CssClass="tikr-action-btn primary e-small" Content="Save step"
+                                                              Disabled="@(string.IsNullOrWhiteSpace(_editChecklistTitle) || _checklistBusy)"
+                                                              OnClick="SaveChecklistItemEditAsync" />
+                                                    <SfButton CssClass="tikr-action-btn e-small" Content="Cancel"
+                                                              Disabled="@_checklistBusy"
+                                                              OnClick="CancelChecklistItemEdit" />
+                                                </div>
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <div class="d-flex flex-wrap gap-2 align-items-start justify-content-between">
+                                                <div class="flex-grow-1">
+                                                    <label class="d-flex align-items-start gap-2 mb-0">
+                                                        <input type="checkbox"
+                                                               class="form-check-input mt-1"
+                                                               checked="@step.IsCompleted"
+                                                               disabled="@_checklistBusy"
+                                                               @onchange="async ev => await ToggleChecklistCompleteAsync(step, ev.Value is bool b && b)" />
+                                                        <span>
+                                                            <strong>@(step.IsRequired ? step.Title : $"{step.Title} (optional)")</strong>
+                                                            @if (!string.IsNullOrWhiteSpace(step.Description))
+                                                            {
+                                                                <div class="text-muted small">@step.Description</div>
+                                                            }
+                                                            <div class="text-muted small">
+                                                                @if (step.EffectiveDueDate is { } due)
+                                                                {
+                                                                    <span>Due @due.ToString("d")</span>
+                                                                }
+                                                                @if (!string.IsNullOrWhiteSpace(step.SubmitTo))
+                                                                {
+                                                                    <span> · Submit to @step.SubmitTo</span>
+                                                                }
+                                                                @if (!string.IsNullOrWhiteSpace(step.DocumentTemplateHint))
+                                                                {
+                                                                    <span> · Doc: @step.DocumentTemplateHint</span>
+                                                                }
+                                                            </div>
+                                                        </span>
+                                                    </label>
+                                                </div>
+                                                <div class="d-flex flex-wrap gap-1">
+                                                    <SfButton CssClass="tikr-action-btn e-small" Content="Edit step"
+                                                              Disabled="@_checklistBusy"
+                                                              OnClick="() => BeginChecklistItemEdit(step)" />
+                                                    <SfButton CssClass="tikr-action-btn e-small danger" Content="Remove"
+                                                              OnClick="() => DeleteChecklistItemAsync(step.Id)" />
+                                                </div>
+                                            </div>
+                                        }
+                                    </li>
+                                }
+                            </ul>
+                        }
+                        <div class="d-flex flex-wrap gap-2 align-items-center">
+                            <SfTextBox @bind-Value="_newChecklistTitle" Placeholder="New step title" Width="220px" />
+                            <SfNumericTextBox TValue="int?" @bind-Value="_newChecklistOffset" Placeholder="Days before due" Width="140px" />
+                            <SfButton CssClass="tikr-action-btn" Content="Add step"
+                                      Disabled="@(string.IsNullOrWhiteSpace(_newChecklistTitle) || _checklistBusy)"
+                                      OnClick="AddChecklistItemAsync" />
+                        </div>
+                        @if (!string.IsNullOrWhiteSpace(_checklistMessage))
+                        {
+                            <p class="mt-2 text-muted">@_checklistMessage</p>
                         }
                     </div>
                 }
@@ -493,6 +601,17 @@ else
     private Guid? _pickedContactId;
     private bool _contactPickBusy;
     private Guid? _pendingPrimaryContactId;
+    private List<RequirementChecklistItemDto> _checklist = [];
+    private string _newChecklistTitle = "";
+    private int? _newChecklistOffset;
+    private bool _checklistBusy;
+    private string? _checklistMessage;
+    private Guid? _editingChecklistItemId;
+    private string _editChecklistTitle = "";
+    private string _editChecklistDescription = "";
+    private int? _editChecklistOffset;
+    private string _editChecklistSubmitTo = "";
+    private RequirementChecklistItemDto? _editingChecklistSource;
     private const string _smartReqRole =
         "Colorado municipal town clerk filling statutory deadline forms for a small town board";
     private static readonly string[] _smartReqPhrases =
@@ -610,6 +729,11 @@ else
         _linkedContacts = [];
         _pickedContactId = null;
         _pendingPrimaryContactId = null;
+        _checklist = [];
+        _newChecklistTitle = "";
+        _newChecklistOffset = null;
+        _checklistMessage = null;
+        CancelChecklistItemEdit();
         _showDialog = true;
         _ = LoadContactPickerOptionsAsync();
     }
@@ -619,6 +743,8 @@ else
         _editingId = item.Id;
         _error = null;
         _attachMessage = null;
+        _checklistMessage = null;
+        CancelChecklistItemEdit();
         _form.Title = item.Title;
         _form.Description = item.Description;
         _form.Recurrence = item.Recurrence;
@@ -633,6 +759,8 @@ else
         _attachDocumentId = null;
         _pickedContactId = null;
         _pendingPrimaryContactId = null;
+        _newChecklistTitle = "";
+        _newChecklistOffset = null;
         _showDialog = true;
         try
         {
@@ -651,6 +779,15 @@ else
         catch
         {
             _linkedContacts = [];
+        }
+
+        try
+        {
+            _checklist = await Api.GetRequirementChecklistAsync(item.Id);
+        }
+        catch
+        {
+            _checklist = [];
         }
     }
 
@@ -763,6 +900,173 @@ else
         finally
         {
             _attachBusy = false;
+        }
+    }
+
+    private async Task AddChecklistItemAsync()
+    {
+        if (_editingId is null || string.IsNullOrWhiteSpace(_newChecklistTitle))
+            return;
+
+        _checklistBusy = true;
+        _checklistMessage = null;
+        try
+        {
+            TikrActionLog.Started(Logger, "UI.Requirements.ChecklistAdd", $"RequirementId={_editingId}");
+            var created = await Api.AddRequirementChecklistItemAsync(
+                _editingId.Value,
+                new CreateRequirementChecklistItemRequest(
+                    _newChecklistTitle.Trim(),
+                    DueOffsetDays: _newChecklistOffset));
+            if (created is null)
+            {
+                _checklistMessage = "Could not add checklist step.";
+                return;
+            }
+
+            _checklist = await Api.GetRequirementChecklistAsync(_editingId.Value);
+            _newChecklistTitle = "";
+            _newChecklistOffset = null;
+            await LoadAsync();
+            TikrActionLog.Completed(Logger, "UI.Requirements.ChecklistAdd", $"ChecklistItemId={created.Id}");
+        }
+        catch (Exception ex)
+        {
+            TikrActionLog.Failed(Logger, "UI.Requirements.ChecklistAdd", ex);
+            _checklistMessage = ex.Message;
+        }
+        finally
+        {
+            _checklistBusy = false;
+        }
+    }
+
+    private void BeginChecklistItemEdit(RequirementChecklistItemDto step)
+    {
+        _editingChecklistItemId = step.Id;
+        _editingChecklistSource = step;
+        _editChecklistTitle = step.Title;
+        _editChecklistDescription = step.Description ?? "";
+        _editChecklistOffset = step.DueOffsetDays;
+        _editChecklistSubmitTo = step.SubmitTo ?? "";
+        _checklistMessage = null;
+    }
+
+    private void CancelChecklistItemEdit()
+    {
+        _editingChecklistItemId = null;
+        _editingChecklistSource = null;
+        _editChecklistTitle = "";
+        _editChecklistDescription = "";
+        _editChecklistOffset = null;
+        _editChecklistSubmitTo = "";
+    }
+
+    private async Task SaveChecklistItemEditAsync()
+    {
+        if (_editingId is null || _editingChecklistItemId is null || _editingChecklistSource is null)
+            return;
+        if (string.IsNullOrWhiteSpace(_editChecklistTitle))
+            return;
+
+        _checklistBusy = true;
+        _checklistMessage = null;
+        try
+        {
+            var source = _editingChecklistSource;
+            TikrActionLog.Started(Logger, "UI.Requirements.ChecklistUpdate",
+                $"ChecklistItemId={source.Id}");
+            var updated = await Api.UpdateRequirementChecklistItemAsync(
+                _editingId.Value,
+                source.Id,
+                new UpdateRequirementChecklistItemRequest(
+                    _editChecklistTitle.Trim(),
+                    Description: string.IsNullOrWhiteSpace(_editChecklistDescription)
+                        ? null
+                        : _editChecklistDescription.Trim(),
+                    IsRequired: source.IsRequired,
+                    IsCompleted: source.IsCompleted,
+                    DueOffsetDays: _editChecklistOffset,
+                    DueDate: source.DueDate,
+                    SortOrder: source.SortOrder,
+                    LinkedDocumentId: source.LinkedDocumentId,
+                    DocumentTemplateHint: source.DocumentTemplateHint,
+                    SubmitTo: string.IsNullOrWhiteSpace(_editChecklistSubmitTo)
+                        ? null
+                        : _editChecklistSubmitTo.Trim(),
+                    ContactId: source.ContactId));
+            if (updated is null)
+            {
+                _checklistMessage = "Could not update checklist step.";
+                return;
+            }
+
+            _checklist = await Api.GetRequirementChecklistAsync(_editingId.Value);
+            CancelChecklistItemEdit();
+            await LoadAsync();
+            TikrActionLog.Completed(Logger, "UI.Requirements.ChecklistUpdate",
+                $"ChecklistItemId={source.Id}");
+        }
+        catch (Exception ex)
+        {
+            TikrActionLog.Failed(Logger, "UI.Requirements.ChecklistUpdate", ex);
+            _checklistMessage = ex.Message;
+        }
+        finally
+        {
+            _checklistBusy = false;
+        }
+    }
+
+    private async Task ToggleChecklistCompleteAsync(RequirementChecklistItemDto step, bool isCompleted)
+    {
+        if (_editingId is null)
+            return;
+
+        _checklistBusy = true;
+        try
+        {
+            TikrActionLog.Started(Logger, "UI.Requirements.ChecklistComplete",
+                $"ChecklistItemId={step.Id} IsCompleted={isCompleted}");
+            await Api.CompleteRequirementChecklistItemAsync(_editingId.Value, step.Id, isCompleted);
+            _checklist = await Api.GetRequirementChecklistAsync(_editingId.Value);
+            await LoadAsync();
+            TikrActionLog.Completed(Logger, "UI.Requirements.ChecklistComplete",
+                $"ChecklistItemId={step.Id}");
+        }
+        catch (Exception ex)
+        {
+            TikrActionLog.Failed(Logger, "UI.Requirements.ChecklistComplete", ex);
+            _checklistMessage = ex.Message;
+        }
+        finally
+        {
+            _checklistBusy = false;
+        }
+    }
+
+    private async Task DeleteChecklistItemAsync(Guid itemId)
+    {
+        if (_editingId is null)
+            return;
+
+        if (_editingChecklistItemId == itemId)
+            CancelChecklistItemEdit();
+
+        _checklistBusy = true;
+        try
+        {
+            await Api.DeleteRequirementChecklistItemAsync(_editingId.Value, itemId);
+            _checklist = await Api.GetRequirementChecklistAsync(_editingId.Value);
+            await LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            _checklistMessage = ex.Message;
+        }
+        finally
+        {
+            _checklistBusy = false;
         }
     }
 

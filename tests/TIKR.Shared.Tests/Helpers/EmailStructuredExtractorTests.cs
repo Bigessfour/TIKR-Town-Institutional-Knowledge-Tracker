@@ -61,4 +61,18 @@ public class EmailStructuredExtractorTests
         result.Succeeded.Should().BeFalse();
         result.Error.Should().NotBeNullOrWhiteSpace();
     }
+
+    [Fact]
+    public void Parse_MalformedBinary_FailsGracefullyWithoutThrowing()
+    {
+        var raw = ReadFixture("malformed-binary.eml");
+        var act = () => EmailStructuredExtractor.Parse(raw, "malformed-binary.eml");
+        act.Should().NotThrow();
+        var result = act();
+        // Either soft-fail or best-effort parse — must not throw and must not invent Election.
+        if (result.Succeeded)
+            result.IsElectionRelated.Should().BeFalse();
+        else
+            result.Error.Should().NotBeNullOrWhiteSpace();
+    }
 }
