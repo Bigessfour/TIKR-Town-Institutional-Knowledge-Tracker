@@ -190,6 +190,7 @@ For new features: read the active [incremental-plan](docs/incremental-plan.md) p
 | [docs/spec-kit.md](docs/spec-kit.md)                                         | Spec-Driven Development workflow                         |
 | [.specify/memory/constitution.md](.specify/memory/constitution.md)           | SDD constitution                                         |
 | [docs/incremental-plan.md](docs/incremental-plan.md)                         | Phased roadmap                                           |
+| [specs/007-contacts-inventory/](specs/007-contacts-inventory/)               | Phase 11 Contacts Inventory (Vault CRUD + Requirement links) |
 | [docs/ai-tooling.md](docs/ai-tooling.md)                                     | MCP, skills, runtime AI                                  |
 | [docs/architecture.md](docs/architecture.md)                                 | System design                                            |
 | [docs/action-items.md](docs/action-items.md)                                 | Human+agent overlay (status, verification, checkboxes)   |

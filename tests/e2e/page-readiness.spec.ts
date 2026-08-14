@@ -96,6 +96,9 @@ test.describe('TIKR page readiness (nav + primary controls)', () => {
     await gotoClerkPage(page, '/vault');
     await expect(page.getByRole('button', { name: /Copy Everything for New Clerk/i })).toBeVisible();
     await expect(page.getByRole('tab', { name: 'How-To' })).toBeVisible();
+    await page.getByRole('tab', { name: 'Contacts' }).click();
+    await expect(page.getByRole('button', { name: /Add contact/i })).toBeVisible({ timeout: 15_000 });
+    await expect(page.locator('[data-tour="vault-contacts-inventory"]')).toBeVisible();
     await page.getByRole('tab', { name: 'Voice Notes' }).click();
     await page.getByRole('tab', { name: 'How-To' }).click();
   });

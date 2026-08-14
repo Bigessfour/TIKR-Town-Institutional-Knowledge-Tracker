@@ -4,7 +4,7 @@
 
 **Created**: 2026-08-14
 
-**Status**: In progress
+**Status**: Done (merged to `main` via PR #96; auth/E2E closure on `fix/contacts-inventory-closure`)
 
 **Input**: Reusable Contacts inventory so Deb/Paige can store POCs (including Election contacts) with full details and link them from Requirements. Closes the gap where contacts are only free-text on Requirement and free-text Knowledge Vault Contact entries.
 

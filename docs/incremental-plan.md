@@ -244,7 +244,7 @@ Update this section when env changes.
 
 ## Phase 11 — Contacts Inventory
 
-**Status:** done on branch `feature/contacts-inventory` — Spec Kit `007-contacts-inventory`
+**Status:** done on `main` (merged [#96](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/96); Spec Kit `007-contacts-inventory`; auth/E2E closure on `fix/contacts-inventory-closure`)
 
 **Goal:** First-class Contact POCs (Election and other categories) with Vault CRUD, soft-delete, Requirement/Calendar link picker, audit/logging, and seeded Election contacts.
 
@@ -257,6 +257,10 @@ Update this section when env changes.
 - [x] Requirements + Calendar contact picker; SubmitTo remains free-text; denormalized fields sync from primary
 - [x] ≥3 Election contacts seeded; County Clerk linked to Election Canvass
 - [x] Infra / Api / Web proof-of-function tests green
+- [x] Auth gate proof: unauthenticated `GET /api/contacts` → 401 when `TIKR_AUTH_ENABLED`
+- [x] Playwright Vault Contacts tab smoke (`page-readiness` Add contact + inventory anchor)
+
+**Deferred (not required for Deb acceptance):** dedicated `/contacts` route; Syncfusion `SfDataForm` (Vault uses `SfDialog` + `SfTextBox`); auto-migrate legacy Knowledge Vault Contact notes into inventory entities.
 
 **Spec:** [specs/007-contacts-inventory/](../specs/007-contacts-inventory/)
 
@@ -435,14 +439,17 @@ Update this section with future agent env changes.
 
 ## Current Next Task for Development (from todos + plan)
 
-**Ship order (2026-07-25):** v1.0 feature backlog (former deferred/vNext) → Setup.exe smoke → Deb walkthrough → **tag `v1.0.0` last**.
+**Contacts inventory (Phase 11) is closed.** Next pass is human/ship gates, not a new product phase.
+
+**Ship order:**
 
 - [x] Playwright E2E required CI gate ([#48](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/48) merged)
 - [x] Phase 0 PR #3 docs / handover
 - [x] v1.0 backlog in [action-items.md](action-items.md) — complete
+- [x] Phase 11 Contacts Inventory ([#96](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/96))
 - [x] NAS deploy v1.0.1 on Mr_Storage — 2026-08-08 (`./scripts/deploy-tikr-nas.sh`)
-- [ ] Compile `Setup-TIKR.exe` + clerk Windows smoke/handoff
-- [ ] Phase 0 PR #4 / T031 recorded Deb walkthrough + bus-factor gate
 - [x] Tag `v1.0.0` + `v1.0.1` + GHCR
+- [ ] Compile `Setup-TIKR.exe` + clerk Windows smoke/handoff
+- [ ] Phase 0 PR #4 / T031 recorded Deb walkthrough + bus-factor gate (include Vault Contacts → Election Canvass link)
 
-**Immediate recommendation:** Close v1.0 feature backlog starting with Documents delete undo, then Windows Setup smoke, Deb walkthrough, then tag.
+**Immediate recommendation:** Windows Setup smoke → Deb walkthrough (Contacts POC path in [specs/007-contacts-inventory/quickstart.md](../specs/007-contacts-inventory/quickstart.md)) → Layer 2 Done Detector sign-off.
