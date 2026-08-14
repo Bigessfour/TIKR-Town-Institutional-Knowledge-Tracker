@@ -322,6 +322,68 @@ public class ContactService(TikrDbContext db, ILogger<ContactService>? logger = 
         return rows.Select(rc => (rc.Contact, rc.IsPrimary)).ToList();
     }
 
+    public async Task<(Contact Contact, bool Created)> UpsertAsync(
+        CreateContactRequest request,
+        IAuditService audit,
+        ICurrentUserService currentUser,
+        CancellationToken ct = default)
+    {
+        var email = NormalizeOptional(request.Email);
+        var name = request.Name.Trim();
+        var org = NormalizeOptional(request.Organization);
+
+        Contact? existing = null;
+        if (email is not null)
+        {
+            existing = await db.Contacts
+                .Where(c => c.DeletedAt == null && c.Email != null && c.Email.ToLower() == email.ToLower())
+                .FirstOrDefaultAsync(ct);
+        }
+
+        if (existing is null)
+        {
+            existing = await db.Contacts
+                .Where(c => c.DeletedAt == null &&
+                            c.Name.ToLower() == name.ToLower() &&
+                            ((org == null && c.Organization == null) ||
+                             (org != null && c.Organization != null && c.Organization.ToLower() == org.ToLower())))
+                .FirstOrDefaultAsync(ct);
+        }
+
+        if (existing is null)
+            return (await CreateAsync(request, audit, currentUser, ct), true);
+
+        var mergedCategories = existing.Categories | (request.Categories == ContactCategory.None
+            ? ContactCategory.Custom
+            : request.Categories);
+
+        var update = new UpdateContactRequest(
+            Name: string.IsNullOrWhiteSpace(request.Name) ? existing.Name : request.Name.Trim(),
+            Role: NormalizeOptional(request.Role) ?? existing.Role,
+            Organization: org ?? existing.Organization,
+            Address: NormalizeOptional(request.Address) ?? existing.Address,
+            Office: NormalizeOptional(request.Office) ?? existing.Office,
+            Email: email ?? existing.Email,
+            Phone: NormalizeOptional(request.Phone) ?? existing.Phone,
+            Notes: MergeNotes(existing.Notes, NormalizeOptional(request.Notes)),
+            Categories: mergedCategories);
+
+        var updated = await UpdateAsync(existing.Id, update, audit, currentUser, ct);
+        return (updated, false);
+    }
+
+    private static string? MergeNotes(string? existing, string? incoming)
+    {
+        if (string.IsNullOrWhiteSpace(incoming))
+            return existing;
+        if (string.IsNullOrWhiteSpace(existing))
+            return incoming;
+        if (existing.Contains(incoming, StringComparison.OrdinalIgnoreCase))
+            return existing;
+        var merged = existing.TrimEnd() + "\n" + incoming.Trim();
+        return merged.Length <= 2000 ? merged : merged[..2000];
+    }
+
     private static string? NormalizeOptional(string? value) =>
         string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 }

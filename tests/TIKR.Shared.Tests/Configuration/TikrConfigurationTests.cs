@@ -346,6 +346,16 @@ public class TikrConfigurationTests
     }
 
     [Fact]
+    public void GetEmailStructuredExtractEnabled_DefaultsTrue_CanDisable()
+    {
+        TikrConfiguration.GetEmailStructuredExtractEnabled(BuildConfig([])).Should().BeTrue();
+        TikrConfiguration.GetEmailStructuredExtractEnabled(BuildConfig(new Dictionary<string, string?>
+        {
+            ["TIKR_EMAIL_STRUCTURED_EXTRACT"] = "false"
+        })).Should().BeFalse();
+    }
+
+    [Fact]
     public void GetTessDataPath_ReadsOptionalOverride()
     {
         TikrConfiguration.GetTessDataPath(BuildConfig([])).Should().BeNull();

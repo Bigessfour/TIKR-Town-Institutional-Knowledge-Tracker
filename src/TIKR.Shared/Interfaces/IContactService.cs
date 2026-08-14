@@ -57,4 +57,13 @@ public interface IContactService
     Task<IReadOnlyList<(Contact Contact, bool IsPrimary)>> ListForRequirementAsync(
         Guid requirementId,
         CancellationToken ct = default);
+
+    /// <summary>
+    /// Upsert by email (preferred) or name+organization. Merges missing fields and unions categories.
+    /// </summary>
+    Task<(Contact Contact, bool Created)> UpsertAsync(
+        CreateContactRequest request,
+        IAuditService audit,
+        ICurrentUserService currentUser,
+        CancellationToken ct = default);
 }

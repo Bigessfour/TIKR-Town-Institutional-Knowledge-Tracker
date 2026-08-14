@@ -69,6 +69,8 @@ Settings shows **Ollama** and **Grok** status (env-configured on the API) — th
 
 **Say:** “Files never leave the NAS unless I export them.”
 
+**Email → Contacts (Phase 12):** When IMAP/forward-to-folder drops land in `TIKR_EMAIL_INBOX_PATH`, TIKR uploads the file as a Document and (when `TIKR_EMAIL_STRUCTURED_EXTRACT=true`) upserts Vault **Contacts** / Knowledge Contact notes — Election keywords tag Election. Documents shows a banner: review in Vault Contacts; optional Create Requirement from the suggestion.
+
 ---
 
 ### 8:00 — Vault (`g v`)

@@ -91,6 +91,35 @@
     </AiSuggestionBanner>
 }
 
+@if (_emailExtractNotice is not null)
+{
+    <AiSuggestionBanner>
+        <ChildContent>
+            <strong>Email folder extract</strong>
+            <div class="banner-body">
+                @(_emailExtractNotice.Message ?? $"Extracted contact(s) from email {_emailExtractNotice.FileName}; review in Vault Contacts")
+                @if (_emailExtractNotice.ContactNames.Count > 0)
+                {
+                    <div class="mt-1">Contacts: @string.Join(", ", _emailExtractNotice.ContactNames)</div>
+                }
+            </div>
+        </ChildContent>
+        <ActionsContent>
+            <div class="banner-actions">
+                <a class="tikr-action-btn e-btn" href="/vault">Open Vault Contacts</a>
+                @if (_emailExtractNotice.RequirementSuggestion is not null)
+                {
+                    <SfButton CssClass="tikr-action-btn primary"
+                              Content="Create Requirement from this email"
+                              Disabled="@_emailRequirementBusy"
+                              OnClick="CreateRequirementFromEmailNoticeAsync" />
+                }
+                <SfButton CssClass="tikr-action-btn" Content="Dismiss" OnClick="DismissEmailNoticeAsync" />
+            </div>
+        </ActionsContent>
+    </AiSuggestionBanner>
+}
+
 <!-- Search mode toggle + input (large, obvious) -->
 <div class="search-controls" data-tour="@ClerkTourIds.DocSearch">
     <div class="mode-toggle" role="group" aria-label="Search mode">
@@ -464,6 +493,8 @@ else
     private string? _statusMessage;
     private bool _showUploadBanner;
     private TagDocumentResponse? _lastTagSuggestion;
+    private EmailExtractionNoticeDto? _emailExtractNotice;
+    private bool _emailRequirementBusy;
     private bool _keepForAssistantContext = true;
     private HashSet<Guid>? _semanticHitIds; // when non-null, VisibleDocuments is restricted + ordered by these
 
@@ -557,6 +588,7 @@ else
         try
         {
             await LoadDocumentsAsync();
+            await LoadEmailNoticesAsync();
         }
         finally
         {
@@ -731,6 +763,76 @@ else
         // Just clear the transient banner.
         _lastTagSuggestion = null;
         _statusMessage = DocumentUiMessages.SuggestionAccepted();
+    }
+
+    private async Task LoadEmailNoticesAsync()
+    {
+        try
+        {
+            var notices = await Api.GetEmailNoticesAsync(5);
+            _emailExtractNotice = notices.FirstOrDefault(n =>
+                n.ContactsCreated + n.ContactsUpdated > 0 ||
+                n.RequirementSuggestion is not null ||
+                n.KnowledgeEntryId is not null);
+            if (_emailExtractNotice?.Message is { Length: > 0 } msg)
+                Toast.Show(msg);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogDebug(ex, "Email notices unavailable");
+            _emailExtractNotice = null;
+        }
+    }
+
+    private async Task DismissEmailNoticeAsync()
+    {
+        _emailExtractNotice = null;
+        try { await Api.ClearEmailNoticesAsync(); }
+        catch (Exception ex) { Logger.LogDebug(ex, "Clear email notices failed"); }
+    }
+
+    private async Task CreateRequirementFromEmailNoticeAsync()
+    {
+        if (_emailExtractNotice?.RequirementSuggestion is not { } s)
+            return;
+
+        _emailRequirementBusy = true;
+        try
+        {
+            TikrActionLog.Started(Logger, "UI.Documents.EmailRequirement",
+                $"FileName={s.SourceFileName}");
+            var due = s.DueDate ?? DateOnly.FromDateTime(DateTime.UtcNow.AddDays(14));
+            var category = s.Title.Contains("election", StringComparison.OrdinalIgnoreCase) ||
+                           s.Title.Contains("canvass", StringComparison.OrdinalIgnoreCase) ||
+                           s.Title.Contains("ballot", StringComparison.OrdinalIgnoreCase)
+                ? RequirementCategory.Election
+                : RequirementCategory.Custom;
+            var created = await Api.CreateRequirementAsync(new CreateRequirementRequest(
+                s.Title,
+                Description: $"Suggested from email folder ingest: {s.SourceFileName}",
+                due,
+                RecurrenceType.None,
+                category,
+                s.SubmitTo,
+                s.ContactName,
+                s.ContactEmail,
+                s.ContactPhone));
+            if (created is not null)
+            {
+                Toast.Show($"Created requirement “{created.Title}” — review on Requirements.");
+                TikrActionLog.Completed(Logger, "UI.Documents.EmailRequirement",
+                    $"RequirementId={created.Id}");
+            }
+        }
+        catch (Exception ex)
+        {
+            TikrActionLog.Failed(Logger, "UI.Documents.EmailRequirement", ex);
+            Toast.Show("Could not create requirement from email suggestion.");
+        }
+        finally
+        {
+            _emailRequirementBusy = false;
+        }
     }
 
     private async Task RetagLast()

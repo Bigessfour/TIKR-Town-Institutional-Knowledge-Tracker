@@ -2,13 +2,16 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using TIKR.Shared.Configuration;
+using TIKR.Shared.Diagnostics;
 using TIKR.Shared.DTOs;
+using TIKR.Shared.Helpers;
 using TIKR.Shared.Interfaces;
 
 namespace TIKR.Infrastructure.Services;
 
 /// <summary>
 /// Watches a local folder (forward-to-folder / IMAP drop) and uploads new files as Documents.
+/// Optionally runs structured email extract (contacts / knowledge / suggestions).
 /// Configure with <c>TIKR_EMAIL_INBOX_PATH</c>. Processed files move to <c>processed/</c> under that path.
 /// </summary>
 public sealed class FolderEmailIngestionService(
@@ -35,8 +38,16 @@ public sealed class FolderEmailIngestionService(
         Directory.CreateDirectory(processedDir);
 
         var errors = new List<string>();
+        var notices = new List<EmailExtractionNoticeDto>();
         var ingested = 0;
         var skipped = 0;
+        var contactsCreated = 0;
+        var contactsUpdated = 0;
+        var knowledgeCreated = 0;
+        var extractEnabled = TikrConfiguration.GetEmailStructuredExtractEnabled(configuration);
+
+        TikrActionLog.Started(logger, "Email.FolderIngest",
+            $"Inbox={inboxPath} StructuredExtract={extractEnabled}");
 
         foreach (var filePath in Directory.EnumerateFiles(inboxPath))
         {
@@ -46,6 +57,7 @@ public sealed class FolderEmailIngestionService(
             if (!AllowedExtensions.Contains(ext))
             {
                 skipped++;
+                logger.LogInformation("Email folder skip unsupported extension FileName={FileName}", fileName);
                 continue;
             }
 
@@ -57,32 +69,87 @@ public sealed class FolderEmailIngestionService(
                 var audit = scope.ServiceProvider.GetRequiredService<IAuditService>();
                 var currentUser = scope.ServiceProvider.GetRequiredService<ICurrentUserService>();
 
-                await using var stream = File.OpenRead(filePath);
+                byte[] bytes;
+                await using (var read = File.OpenRead(filePath))
+                {
+                    using var ms = new MemoryStream();
+                    await read.CopyToAsync(ms, ct);
+                    bytes = ms.ToArray();
+                }
+
+                await using var stream = new MemoryStream(bytes);
                 var contentType = GuessContentType(ext);
-                await documents.UploadAsync(
+                var document = await documents.UploadAsync(
                     stream,
                     fileName,
                     contentType,
-                    stream.Length,
+                    bytes.LongLength,
                     storage,
                     audit,
                     currentUser,
                     ct);
 
+                if (extractEnabled && IsEmailLike(ext))
+                {
+                    try
+                    {
+                        var apply = scope.ServiceProvider.GetRequiredService<IEmailStructuredApplyService>();
+                        var extract = EmailStructuredExtractor.ParseBytes(bytes, fileName);
+                        logger.LogInformation(
+                            "Email parse FileName={FileName} Success={Success} ContactCount={ContactCount} Election={Election} Fields={Fields}",
+                            fileName,
+                            extract.Succeeded,
+                            extract.Contacts.Count,
+                            extract.IsElectionRelated,
+                            $"From={extract.From};Subject={extract.Subject}");
+
+                        var notice = await apply.ApplyAsync(extract, fileName, document.Id, audit, currentUser, ct);
+                        notices.Add(notice);
+                        contactsCreated += notice.ContactsCreated;
+                        contactsUpdated += notice.ContactsUpdated;
+                        if (notice.KnowledgeEntryId is not null)
+                            knowledgeCreated++;
+                    }
+                    catch (Exception ex)
+                    {
+                        // Never fail the ingest because extract blew up.
+                        logger.LogWarning(ex, "Structured extract failed after ingest FileName={FileName}", fileName);
+                        errors.Add($"{fileName}: extract {ex.Message}");
+                    }
+                }
+
                 var dest = Path.Combine(processedDir, $"{DateTime.UtcNow:yyyyMMddHHmmss}_{fileName}");
                 File.Move(filePath, dest, overwrite: true);
                 ingested++;
-                logger.LogInformation("Ingested email-folder file {FileName} as document", fileName);
+                logger.LogInformation(
+                    "Ingested email-folder file FileName={FileName} DocumentId={DocumentId}",
+                    fileName,
+                    document.Id);
             }
             catch (Exception ex)
             {
-                logger.LogWarning(ex, "Failed to ingest email-folder file {FileName}", fileName);
+                logger.LogWarning(ex, "Failed to ingest email-folder file FileName={FileName}", fileName);
                 errors.Add($"{fileName}: {ex.Message}");
             }
         }
 
-        return new EmailIngestionResult(ingested, skipped, errors);
+        TikrActionLog.Completed(logger, "Email.FolderIngest",
+            $"Ingested={ingested} Skipped={skipped} Errors={errors.Count} ContactsCreated={contactsCreated} ContactsUpdated={contactsUpdated} KnowledgeCreated={knowledgeCreated}");
+
+        return new EmailIngestionResult(
+            ingested,
+            skipped,
+            errors,
+            contactsCreated,
+            contactsUpdated,
+            knowledgeCreated,
+            notices);
     }
+
+    private static bool IsEmailLike(string ext) =>
+        ext.Equals(".eml", StringComparison.OrdinalIgnoreCase) ||
+        ext.Equals(".msg", StringComparison.OrdinalIgnoreCase) ||
+        ext.Equals(".txt", StringComparison.OrdinalIgnoreCase);
 
     private static string GuessContentType(string ext) => ext.ToLowerInvariant() switch
     {
