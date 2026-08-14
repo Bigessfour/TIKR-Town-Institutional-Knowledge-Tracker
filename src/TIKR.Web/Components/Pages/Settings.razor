@@ -7,8 +7,10 @@
 @inject ClerkToastService Toast
 @inject ChatClerkIdentityService ClerkIdentity
 @inject IJSRuntime JS
+@inject ILogger<Settings> Logger
 
 @using Syncfusion.Licensing
+@using TIKR.Shared.Diagnostics
 @using TIKR.Shared.DTOs
 @using TIKR.Shared.Entities
 @using TIKR.Shared.Helpers
@@ -526,6 +528,7 @@ else
     protected override async Task OnInitializedAsync()
     {
         await InitializeClerkIdentityAsync();
+        TikrActionLog.Started(Logger, "UI.Settings.Load");
 
         try
         {
@@ -538,8 +541,10 @@ else
             _corpusHealth = await Api.GetCorpusHealthAsync();
             _embeddingRecovery = await Api.GetEmbeddingRecoveryStatusAsync();
             _audit = await Api.GetRecentAuditAsync(8);
+            TikrActionLog.Completed(Logger, "UI.Settings.Load",
+                $"Ollama={_status?.OllamaAvailable} Features={_features is not null} Audit={_audit.Count}");
         }
-        catch
+        catch (Exception ex)
         {
             _status = null;
             _features = null;
@@ -549,6 +554,7 @@ else
             _corpusHealth = null;
             _embeddingRecovery = null;
             _audit = [];
+            TikrActionLog.Failed(Logger, "UI.Settings.Load", ex);
         }
 
         _autoTourDisabled = await Tour.IsAutoTourDisabledForUiAsync();
@@ -600,9 +606,11 @@ else
         {
             await JS.InvokeVoidAsync(
                 "localStorage.setItem", ChatClerkProfiles.BrowserOverrideStorageKey, key);
+            TikrActionLog.Completed(Logger, "UI.Settings.SaveClerkOverride", $"Clerk={ClerkIdentity.DisplayName}");
         }
-        catch
+        catch (Exception ex)
         {
+            TikrActionLog.Failed(Logger, "UI.Settings.SaveClerkOverride", ex, $"Clerk={key}");
             /* best effort */
         }
 
@@ -715,6 +723,7 @@ else
     {
         _featuresBusy = true;
         _featuresMessage = "Saving…";
+        TikrActionLog.Started(Logger, "UI.Settings.SaveFeatures");
         try
         {
             var request = new UpdateFeatureSettingsRequest(
@@ -742,6 +751,7 @@ else
             {
                 _featuresMessage = "Could not save. Double-check the fields, or call Steve for help.";
                 Toast.Show(SteveHelpMessage);
+                TikrActionLog.Failed(Logger, "UI.Settings.SaveFeatures", "API returned null");
                 return;
             }
 
@@ -773,11 +783,14 @@ else
                 : (updated.StatusMessage ?? "Saved.");
             _audit = await Api.GetRecentAuditAsync(8);
             Toast.Show("Settings saved");
+            TikrActionLog.Completed(Logger, "UI.Settings.SaveFeatures",
+                $"Town={updated.TownName} Ollama={updated.OllamaAvailable}");
         }
-        catch (Exception)
+        catch (Exception ex)
         {
             _featuresMessage = "Could not save settings.";
             Toast.Show(SteveHelpMessage);
+            TikrActionLog.Failed(Logger, "UI.Settings.SaveFeatures", ex);
         }
         finally
         {
@@ -789,6 +802,7 @@ else
     {
         _libraryBusy = true;
         _libraryMessage = "Scanning shared folder…";
+        TikrActionLog.Started(Logger, "UI.Settings.ScanLibrary");
         try
         {
             var result = await Api.ScanLibraryAsync();
@@ -798,12 +812,21 @@ else
                 : $"Scan finished: brought in {result.Imported}, skipped {result.Skipped}, failed {result.Failed} (looked at {result.Scanned}).";
             _audit = await Api.GetRecentAuditAsync(8);
             if (result is null)
+            {
                 Toast.Show(SteveHelpMessage);
+                TikrActionLog.Failed(Logger, "UI.Settings.ScanLibrary", "Scan returned null");
+            }
+            else
+            {
+                TikrActionLog.Completed(Logger, "UI.Settings.ScanLibrary",
+                    $"Imported={result.Imported} Skipped={result.Skipped} Failed={result.Failed} Scanned={result.Scanned}");
+            }
         }
-        catch (Exception)
+        catch (Exception ex)
         {
             _libraryMessage = "Scan ran into a problem.";
             Toast.Show(SteveHelpMessage);
+            TikrActionLog.Failed(Logger, "UI.Settings.ScanLibrary", ex);
         }
         finally
         {
@@ -815,6 +838,7 @@ else
     {
         _libraryBusy = true;
         _libraryMessage = "Refreshing Assistant memory…";
+        TikrActionLog.Started(Logger, "UI.Settings.ReindexEmbeddings");
         try
         {
             var result = await Api.ReindexEmbeddingsAsync();
@@ -822,6 +846,7 @@ else
             {
                 _libraryMessage = "Refresh didn’t finish — call Steve for help.";
                 Toast.Show(SteveHelpMessage);
+                TikrActionLog.Failed(Logger, "UI.Settings.ReindexEmbeddings", "API returned null");
             }
             else
             {
@@ -832,12 +857,15 @@ else
                     (result.Errors.Count > 0 ? $". Notes: {string.Join("; ", result.Errors.Take(3))}" : ".");
                 _corpusHealth = await Api.GetCorpusHealthAsync();
                 _embeddingRecovery = await Api.GetEmbeddingRecoveryStatusAsync();
+                TikrActionLog.Completed(Logger, "UI.Settings.ReindexEmbeddings",
+                    $"Docs={result.DocumentsEmbedded}/{result.DocumentsAttempted} Vault={result.KnowledgeEmbedded}/{result.KnowledgeAttempted}");
             }
         }
-        catch (Exception)
+        catch (Exception ex)
         {
             _libraryMessage = "Refresh ran into a problem.";
             Toast.Show(SteveHelpMessage);
+            TikrActionLog.Failed(Logger, "UI.Settings.ReindexEmbeddings", ex);
         }
         finally
         {

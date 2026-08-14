@@ -90,6 +90,21 @@ public class DocumentsPageTests : ClerkTestContext
         }, TimeSpan.FromSeconds(5));
     }
 
+    [Fact]
+    public void Documents_WhenApiFails_ShowsEmptyOrErrorState()
+    {
+        var handler = new StubHandler((_, _) => throw new HttpRequestException("Connection refused"));
+        Services.AddSingleton(new TikrApiClient(new HttpClient(handler) { BaseAddress = new Uri("http://localhost/") }));
+        SetRendererInfo(new RendererInfo("Server", true));
+
+        var cut = RenderComponent<Documents>();
+        cut.WaitForAssertion(() =>
+        {
+            // Load failure should not leave a blank page — library chrome still present.
+            cut.Markup.Should().Contain("Document Library");
+        });
+    }
+
     private void RegisterApi(string docsJson, string? searchJson = null)
     {
         searchJson ??= JsonSerializer.Serialize(new SemanticSearchResponse("q", 0, []));

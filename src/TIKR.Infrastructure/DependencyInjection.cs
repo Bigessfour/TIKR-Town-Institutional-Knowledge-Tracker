@@ -29,6 +29,9 @@ public static class DependencyInjection
             else
             {
                 var connectionString = configuration.GetConnectionString("Default") ?? "Data Source=tikr.db";
+                connectionString = TikrConfiguration.RewriteContainerOnlySqliteConnectionString(
+                    connectionString,
+                    configuration["TIKR_DATA_PATH"]);
                 options.UseSqlite(connectionString);
             }
         });

@@ -2,7 +2,9 @@
 @rendermode InteractiveServer
 @attribute [Authorize(Policy = "AdminOnly")]
 @inject TikrApiClient Api
+@inject ILogger<Users> Logger
 
+@using TIKR.Shared.Diagnostics
 @using TIKR.Web.Components.Shared
 
 <div class="page-header">
@@ -90,7 +92,17 @@
 
     private async Task LoadUsersAsync()
     {
-        _users = await Api.GetUsersAsync();
+        TikrActionLog.Started(Logger, "UI.Users.Load");
+        try
+        {
+            _users = await Api.GetUsersAsync();
+            TikrActionLog.Completed(Logger, "UI.Users.Load", $"Count={_users.Count}");
+        }
+        catch (Exception ex)
+        {
+            _error = "Could not load users.";
+            TikrActionLog.Failed(Logger, "UI.Users.Load", ex);
+        }
     }
 
     private void OpenCreateDialog()
@@ -107,24 +119,46 @@
     private async Task CreateUserAsync()
     {
         _error = null;
-        var created = await Api.CreateUserAsync(new CreateUserRequest(
-            _createModel.Email,
-            _createModel.Password,
-            _createModel.DisplayName,
-            _createModel.Role));
-        if (created is null)
+        TikrActionLog.Started(Logger, "UI.Users.Create", $"Email={_createModel.Email} Role={_createModel.Role}");
+        try
         {
-            _error = "Could not create user. Check email and password requirements.";
-            return;
-        }
+            var created = await Api.CreateUserAsync(new CreateUserRequest(
+                _createModel.Email,
+                _createModel.Password,
+                _createModel.DisplayName,
+                _createModel.Role));
+            if (created is null)
+            {
+                _error = "Could not create user. Check email and password requirements.";
+                TikrActionLog.Failed(Logger, "UI.Users.Create", "API returned null", $"Email={_createModel.Email}");
+                return;
+            }
 
-        _showDialog = false;
-        await LoadUsersAsync();
+            _showDialog = false;
+            TikrActionLog.Completed(Logger, "UI.Users.Create", $"Email={created.Email}");
+            await LoadUsersAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = "Could not create user.";
+            TikrActionLog.Failed(Logger, "UI.Users.Create", ex, $"Email={_createModel.Email}");
+        }
     }
 
     private async Task ToggleActiveAsync(UserSummaryDto user)
     {
-        await Api.UpdateUserAsync(user.Id, new UpdateUserRequest(!user.IsActive, null, null));
-        await LoadUsersAsync();
+        var nextActive = !user.IsActive;
+        TikrActionLog.Started(Logger, "UI.Users.ToggleActive", $"UserId={user.Id} Active={nextActive}");
+        try
+        {
+            await Api.UpdateUserAsync(user.Id, new UpdateUserRequest(nextActive, null, null));
+            TikrActionLog.Completed(Logger, "UI.Users.ToggleActive", $"UserId={user.Id} Active={nextActive}");
+            await LoadUsersAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = "Could not update user.";
+            TikrActionLog.Failed(Logger, "UI.Users.ToggleActive", ex, $"UserId={user.Id}");
+        }
     }
 }

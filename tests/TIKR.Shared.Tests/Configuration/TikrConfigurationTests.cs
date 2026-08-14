@@ -49,6 +49,61 @@ public class TikrConfigurationTests
     }
 
     [Fact]
+    public void GetFileStoragePath_RewritesContainerDataPathOnHost()
+    {
+        var previous = Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER");
+        var previousData = Environment.GetEnvironmentVariable("TIKR_DATA_PATH");
+        try
+        {
+            Environment.SetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER", null);
+            Environment.SetEnvironmentVariable("TIKR_DATA_PATH", "/tmp/tikr-test-data");
+            TikrConfiguration.GetFileStoragePath(BuildConfig(new Dictionary<string, string?>
+            {
+                ["FileStorage:BasePath"] = "/data/documents"
+            })).Should().Be(Path.Combine("/tmp/tikr-test-data", "documents"));
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER", previous);
+            Environment.SetEnvironmentVariable("TIKR_DATA_PATH", previousData);
+        }
+    }
+
+    [Fact]
+    public void RewriteContainerOnlySqliteConnectionString_RewritesDataPathOnHost()
+    {
+        var previous = Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER");
+        try
+        {
+            Environment.SetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER", null);
+            TikrConfiguration.RewriteContainerOnlySqliteConnectionString(
+                    "Data Source=/data/tikr.db",
+                    "/tmp/tikr-test-data")
+                .Should().Be($"Data Source={Path.Combine("/tmp/tikr-test-data", "tikr.db")}");
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER", previous);
+        }
+    }
+
+    [Fact]
+    public void RewriteContainerOnlyStoragePath_KeepsContainerPathInsideContainer()
+    {
+        var previous = Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER");
+        try
+        {
+            Environment.SetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER", "true");
+            TikrConfiguration.RewriteContainerOnlyStoragePath("/data/documents")
+                .Should().Be("/data/documents");
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER", previous);
+        }
+    }
+
+    [Fact]
     public void GetOllamaHost_UsesDefaultsAndOverrides()
     {
         TikrConfiguration.GetOllamaHost(BuildConfig([]))

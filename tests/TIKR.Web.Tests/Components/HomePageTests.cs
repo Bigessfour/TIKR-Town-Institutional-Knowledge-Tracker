@@ -46,6 +46,8 @@ public class HomePageTests : ClerkTestContext
         cut.WaitForAssertion(() => cut.Markup.Should().Contain("e-dashboardlayout"));
         cut.Markup.Should().Contain("due-out-grid");
         cut.Markup.Should().Contain("urgency-strip");
+        cut.Markup.Should().Contain("Sales Tax Filing");
+        cut.Markup.Should().Contain("Overdue:");
     }
 
     [Fact]

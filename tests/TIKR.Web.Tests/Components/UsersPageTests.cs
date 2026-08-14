@@ -20,6 +20,7 @@ public class UsersPageTests : TestContext
 {
     public UsersPageTests()
     {
+        Services.AddLogging();
         Services.AddSyncfusionBlazor();
         JSInterop.Mode = JSRuntimeMode.Loose;
         this.AddTestAuthorization()

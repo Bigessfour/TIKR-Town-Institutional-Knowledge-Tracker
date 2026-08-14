@@ -6,6 +6,7 @@ using TIKR.Infrastructure.Services;
 using TIKR.SyncfusionDocuments;
 using TIKR.Shared.Configuration;
 using TIKR.Shared.Constants;
+using TIKR.Shared.Diagnostics;
 using TIKR.Shared.DTOs;
 using TIKR.Shared.Entities;
 using TIKR.Shared.Enums;
@@ -710,17 +711,22 @@ api.MapPost("/documents/{id:guid}/versions/{versionId:guid}/restore", async (
     }
 });
 
-api.MapGet("/documents/{id:guid}/requirements", async (Guid id, TikrDbContext db) =>
+api.MapGet("/documents/{id:guid}/requirements", async (Guid id, TikrDbContext db, ILogger<Program> endpointLog) =>
 {
     var exists = await db.Documents.AnyAsync(d => d.Id == id);
     if (!exists) return Results.NotFound();
 
+    // OrderBy entity DueDate before projecting to DTO — EF cannot translate OrderBy on a DTO member.
     var links = await db.RequirementDocuments
+        .AsNoTracking()
         .Where(rd => rd.DocumentId == id)
-        .Join(db.Requirements, rd => rd.RequirementId, r => r.Id, (rd, r) => new DocumentRequirementLinkDto(
-            r.Id, r.Title, r.DueDate))
-        .OrderBy(x => x.DueDate)
+        .Join(db.Requirements, rd => rd.RequirementId, r => r.Id, (rd, r) => r)
+        .OrderBy(r => r.DueDate)
+        .Select(r => new DocumentRequirementLinkDto(r.Id, r.Title, r.DueDate))
         .ToListAsync();
+
+    TikrActionLog.Completed(endpointLog, "Document.RequirementLinks",
+        $"DocumentId={id} LinkCount={links.Count}");
     return Results.Ok(links);
 });
 
@@ -1216,23 +1222,23 @@ static void LogStartupDiagnostics(WebApplication app, Microsoft.Extensions.Loggi
     var config = app.Configuration;
     var cs = config.GetConnectionString("Default") ?? "(null)";
     TryGetSqlitePath(cs, out var dbPath);
-    var storage = config["FileStorage:BasePath"]
-                  ?? config["FileStorage__BasePath"]
-                  ?? "(null)";
+    var storage = TikrConfiguration.GetFileStoragePath(config);
     var ollama = TikrConfiguration.GetOllamaHost(config);
     var urls = Environment.GetEnvironmentVariable("ASPNETCORE_URLS") ?? "(launchSettings / defaults)";
     var dataPath = config["TIKR_DATA_PATH"] ?? Environment.GetEnvironmentVariable("TIKR_DATA_PATH") ?? "(unset)";
     var contentRoot = app.Environment.ContentRootPath;
     var env = app.Environment.EnvironmentName;
+    var effectiveCs = TikrConfiguration.RewriteContainerOnlySqliteConnectionString(cs, config["TIKR_DATA_PATH"]);
+    TryGetSqlitePath(effectiveCs, out var effectiveDbPath);
 
     logger.LogInformation(
         "Startup diagnostics — Env={Env}, ContentRoot={ContentRoot}, ASPNETCORE_URLS={Urls}, LogDir={LogDir}",
         env, contentRoot, urls, logDir);
     logger.LogInformation(
         "Data paths — ConnectionString={ConnectionString}, SqlitePath={SqlitePath}, Exists={DbExists}, FileStorage={Storage}, TIKR_DATA_PATH={DataPath}",
-        cs,
-        dbPath ?? "(not sqlite file path)",
-        dbPath is not null && File.Exists(dbPath),
+        effectiveCs,
+        effectiveDbPath ?? dbPath ?? "(not sqlite file path)",
+        (effectiveDbPath ?? dbPath) is not null && File.Exists(effectiveDbPath ?? dbPath!),
         storage,
         dataPath);
     logger.LogInformation(

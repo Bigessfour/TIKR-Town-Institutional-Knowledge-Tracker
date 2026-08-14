@@ -79,6 +79,28 @@ public class CalendarPageTests : ClerkTestContext
         cut.Markup.Should().Contain("calendar-contact-picker");
     }
 
+    [Fact]
+    public void Calendar_ShowsNaturalLanguageCreateControls()
+    {
+        RegisterApi("[]");
+        SetRendererInfo(new RendererInfo("Server", true));
+
+        var cut = RenderComponent<Calendar>();
+        cut.WaitForAssertion(() => cut.Markup.Should().Contain("Add from plain English"));
+        cut.Markup.Should().Contain("Create deadline");
+    }
+
+    [Fact]
+    public void Calendar_WhenApiFails_ShowsError()
+    {
+        var handler = new StubHandler((_, _) => throw new HttpRequestException("Connection refused"));
+        Services.AddSingleton(new TikrApiClient(new HttpClient(handler) { BaseAddress = new Uri("http://localhost/") }));
+        SetRendererInfo(new RendererInfo("Server", true));
+
+        var cut = RenderComponent<Calendar>();
+        cut.WaitForAssertion(() => cut.Markup.Should().Contain("Could not load calendar"));
+    }
+
     private void RegisterApi(string json)
     {
         var handler = new StubHandler((req, _) =>

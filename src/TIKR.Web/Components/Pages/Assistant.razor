@@ -40,15 +40,8 @@
     </SfCard>
 }
 
-@if (!string.IsNullOrEmpty(_contextSummary))
-{
-    <SfCard CssClass="mb-3">
-        <CardHeader Title="Clerk context" />
-        <CardContent>
-            <p class="mb-0" style="white-space: pre-wrap">@_contextSummary</p>
-        </CardContent>
-    </SfCard>
-}
+@* Deadline context stays loaded for prompt injection (_contextSummary) but is not shown —
+   clerks already see due-outs on the Dashboard; the raw kind=/board= dump is not useful here. *@
 
 @if (_suggestionChips.Count > 0)
 {

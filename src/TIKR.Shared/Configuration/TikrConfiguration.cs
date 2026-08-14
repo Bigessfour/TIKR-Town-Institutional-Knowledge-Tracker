@@ -8,10 +8,98 @@ public static class TikrConfiguration
     public static string GetDatabaseProvider(IConfiguration configuration) =>
         configuration["DATABASE_PROVIDER"] ?? "Sqlite";
 
-    public static string GetFileStoragePath(IConfiguration configuration) =>
-        configuration["FileStorage:BasePath"]
-        ?? configuration["FILE_STORAGE_PATH"]
-        ?? Path.Combine(Directory.GetCurrentDirectory(), "data", "documents");
+    public static string GetFileStoragePath(IConfiguration configuration)
+    {
+        var path = configuration["FileStorage:BasePath"]
+            ?? configuration["FILE_STORAGE_PATH"]
+            ?? Path.Combine(Directory.GetCurrentDirectory(), "data", "documents");
+        return RewriteContainerOnlyStoragePath(path, configuration["TIKR_DATA_PATH"]);
+    }
+
+    /// <summary>
+    /// docker/.env and appsettings use <c>/data/...</c> for Compose/NAS.
+    /// On host <c>dotnet run</c> that path is not writable — rewrite under <c>TIKR_DATA_PATH</c>
+    /// or repo <c>.local-data/documents</c> (same idea as <see cref="RewriteDockerOnlyOllamaHost"/>).
+    /// </summary>
+    public static string RewriteContainerOnlyStoragePath(string path, string? dataPathOverride = null)
+    {
+        if (string.IsNullOrWhiteSpace(path) || IsRunningInsideContainer())
+            return path;
+
+        if (!IsContainerOnlyAbsoluteDataPath(path))
+            return path;
+
+        var dataRoot = !string.IsNullOrWhiteSpace(dataPathOverride)
+            ? dataPathOverride.Trim()
+            : Environment.GetEnvironmentVariable("TIKR_DATA_PATH");
+
+        if (!string.IsNullOrWhiteSpace(dataRoot))
+            return Path.Combine(dataRoot.Trim(), "documents");
+
+        foreach (var candidate in new[]
+                 {
+                     Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), "..", "..", ".local-data", "documents")),
+                     Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), ".local-data", "documents")),
+                 })
+        {
+            var parent = Path.GetDirectoryName(candidate);
+            if (parent is not null && Directory.Exists(parent))
+                return candidate;
+        }
+
+        return Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), ".local-data", "documents"));
+    }
+
+    /// <summary>True for Docker bind paths like <c>/data</c> or <c>/data/documents</c> (not NAS host mounts).</summary>
+    public static bool IsContainerOnlyAbsoluteDataPath(string path)
+    {
+        var normalized = path.Replace('\\', '/').TrimEnd('/');
+        return normalized.Equals("/data", StringComparison.OrdinalIgnoreCase)
+               || normalized.StartsWith("/data/", StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
+    /// Rewrites SQLite <c>Data Source=/data/tikr.db</c> for host <c>dotnet run</c>.
+    /// </summary>
+    public static string RewriteContainerOnlySqliteConnectionString(
+        string connectionString,
+        string? dataPathOverride = null)
+    {
+        if (string.IsNullOrWhiteSpace(connectionString) || IsRunningInsideContainer())
+            return connectionString;
+
+        const string prefix = "Data Source=";
+        var trimmed = connectionString.Trim();
+        if (!trimmed.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+            return connectionString;
+
+        var dbPath = trimmed[prefix.Length..].Trim().Trim('"');
+        if (!IsContainerOnlyAbsoluteDataPath(dbPath))
+            return connectionString;
+
+        var dataRoot = !string.IsNullOrWhiteSpace(dataPathOverride)
+            ? dataPathOverride.Trim()
+            : Environment.GetEnvironmentVariable("TIKR_DATA_PATH");
+
+        string localDb;
+        if (!string.IsNullOrWhiteSpace(dataRoot))
+        {
+            localDb = Path.Combine(dataRoot.Trim(), Path.GetFileName(dbPath));
+        }
+        else
+        {
+            localDb = Path.GetFullPath(Path.Combine(
+                Directory.GetCurrentDirectory(), "..", "..", ".local-data", Path.GetFileName(dbPath)));
+            var parent = Path.GetDirectoryName(localDb);
+            if (parent is null || !Directory.Exists(parent))
+            {
+                localDb = Path.GetFullPath(Path.Combine(
+                    Directory.GetCurrentDirectory(), ".local-data", Path.GetFileName(dbPath)));
+            }
+        }
+
+        return $"Data Source={localDb}";
+    }
 
     public static string GetOllamaHost(IConfiguration configuration)
     {

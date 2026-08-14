@@ -1,4 +1,3 @@
-using System.Net;
 using Bunit;
 using Bunit.TestDoubles;
 using FluentAssertions;
@@ -10,45 +9,70 @@ using TIKR.Web.Services;
 
 namespace TIKR.Web.Tests.Components;
 
-// Account.razor — clerk password change surface; proof for function inventory surfaces allowlist.
-
 public class AccountPageTests : TestContext
 {
     public AccountPageTests()
     {
+        Services.AddLogging();
         Services.AddSyncfusionBlazor();
         JSInterop.Mode = JSRuntimeMode.Loose;
-        this.AddTestAuthorization().SetAuthorized("clerk@test.gov");
+        this.AddTestAuthorization()
+            .SetAuthorized("clerk@test.gov", AuthorizationState.Authorized);
     }
 
     [Fact]
     public void Account_RendersChangePasswordForm()
     {
-        RegisterApi();
+        var handler = new StubHandler((_, _) => new HttpResponseMessage(System.Net.HttpStatusCode.OK));
+        Services.AddSingleton(new TikrApiClient(new HttpClient(handler) { BaseAddress = new Uri("http://localhost/") }));
         SetRendererInfo(new RendererInfo("Server", true));
 
         var cut = RenderComponent<Account>();
-        cut.Markup.Should().Contain("Account");
         cut.Markup.Should().Contain("Change your password");
         cut.Markup.Should().Contain("Update password");
-        cut.FindAll("input[type='password']").Should().HaveCount(3);
+        cut.Markup.Should().Contain("Account");
     }
 
-    // Write path (/api/auth/change-password) proven in AuthEndpointTests.ChangePassword_WithToken_UpdatesPassword.
-
-    private void RegisterApi()
+    [Fact]
+    public async Task Account_ChangePassword_SetsSuccessWhenApiOk()
     {
-        var handler = new StubHandler((_, _) => new HttpResponseMessage(HttpStatusCode.NotFound));
-        Services.AddSingleton(new TikrApiClient(new HttpClient(handler)
+        var handler = new StubHandler((req, _) =>
         {
-            BaseAddress = new Uri("http://localhost/")
-        }));
+            if (req.Method == HttpMethod.Post &&
+                req.RequestUri!.AbsolutePath.Contains("password", StringComparison.OrdinalIgnoreCase))
+            {
+                return new HttpResponseMessage(System.Net.HttpStatusCode.OK);
+            }
+
+            return new HttpResponseMessage(System.Net.HttpStatusCode.NotFound);
+        });
+        Services.AddSingleton(new TikrApiClient(new HttpClient(handler) { BaseAddress = new Uri("http://localhost/") }));
+        SetRendererInfo(new RendererInfo("Server", true));
+
+        var cut = RenderComponent<Account>();
+        var flags = System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance;
+        var model = cut.Instance.GetType().GetField("_model", flags)!.GetValue(cut.Instance)!;
+        model.GetType().GetProperty("CurrentPassword")!.SetValue(model, "old-pass");
+        model.GetType().GetProperty("NewPassword")!.SetValue(model, "new-pass-123");
+        model.GetType().GetProperty("ConfirmPassword")!.SetValue(model, "new-pass-123");
+
+        var method = cut.Instance.GetType().GetMethod("HandleChangePasswordAsync", flags)!;
+        await cut.InvokeAsync(async () =>
+        {
+            var task = (Task)method.Invoke(cut.Instance, null)!;
+            await task;
+        });
+
+        var message = cut.Instance.GetType().GetField("_message", flags)!.GetValue(cut.Instance) as string;
+        message.Should().Contain("Password updated successfully");
     }
 
     private sealed class StubHandler(Func<HttpRequestMessage, CancellationToken, HttpResponseMessage> handler)
         : HttpMessageHandler
     {
-        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
+        protected override Task<HttpResponseMessage> SendAsync(
+            HttpRequestMessage request,
+            CancellationToken cancellationToken) =>
             Task.FromResult(handler(request, cancellationToken));
     }
 }

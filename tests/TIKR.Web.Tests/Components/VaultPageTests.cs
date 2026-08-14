@@ -1,10 +1,13 @@
 using System.Net;
 using System.Text;
+using System.Text.Json;
 using Bunit;
 using FluentAssertions;
 using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.DependencyInjection;
 using Syncfusion.Blazor;
+using TIKR.Shared.DTOs;
+using TIKR.Shared.Enums;
 using TIKR.Web.Components.Pages;
 using TIKR.Web.Services;
 
@@ -23,6 +26,7 @@ public class VaultPageTests : ClerkTestContext
         var cut = RenderComponent<Vault>();
         cut.Markup.Should().Contain("hit by a bus");
         cut.Markup.Should().Contain("Copy Everything for New Clerk");
+        cut.Markup.Should().Contain("Generate Complete Handover Package");
     }
 
     [Fact]
@@ -43,6 +47,53 @@ public class VaultPageTests : ClerkTestContext
             cut.Markup.Should().Contain("Add contact");
             cut.Markup.Should().Contain("vault-contacts-inventory");
         });
+    }
+
+    [Fact]
+    public void Vault_LoadsHowToEntriesFromApi()
+    {
+        var id = Guid.NewGuid();
+        var json = JsonSerializer.Serialize(new List<KnowledgeEntryDto>
+        {
+            new(id, "TD Drive how-to", "<p>Call county first</p>", KnowledgeCategory.HowTo, 1),
+            new(Guid.NewGuid(), "Vendor contact", "ACME 555", KnowledgeCategory.Contact, 2),
+        });
+        RegisterApi(json);
+        SetRendererInfo(new RendererInfo("Server", true));
+
+        var cut = RenderComponent<Vault>();
+        cut.WaitForAssertion(() => cut.Markup.Should().Contain("TD Drive how-to"));
+        cut.Markup.Should().Contain("Knowledge Vault");
+        cut.Markup.Should().Contain("How-To");
+    }
+
+    [Fact]
+    public async Task Vault_CopyForNewClerk_InvokesClipboard()
+    {
+        var json = JsonSerializer.Serialize(new List<KnowledgeEntryDto>
+        {
+            new(Guid.NewGuid(), "Copy me", "secret process", KnowledgeCategory.HowTo, 1),
+        });
+        RegisterApi(json);
+        JSInterop.SetupVoid("navigator.clipboard.writeText", _ => true);
+        SetRendererInfo(new RendererInfo("Server", true));
+
+        var cut = RenderComponent<Vault>();
+        // CI runs Web tests in parallel with other assemblies; async vault load can exceed the
+        // default 1s WaitForAssertion window (seen as Check count: 0 / render count: 1).
+        cut.WaitForAssertion(
+            () =>
+            {
+                cut.Markup.Should().NotContain("Loading vault entries");
+                cut.Markup.Should().Contain("Copy me");
+            },
+            TimeSpan.FromSeconds(10));
+
+        var copyBtn = cut.FindAll("button")
+            .First(b => b.TextContent.Contains("Copy Everything for New Clerk", StringComparison.Ordinal));
+        await cut.InvokeAsync(() => copyBtn.Click());
+
+        JSInterop.VerifyInvoke("navigator.clipboard.writeText");
     }
 
     private void RegisterApi(string json)

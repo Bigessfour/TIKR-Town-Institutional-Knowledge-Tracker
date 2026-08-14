@@ -5,6 +5,10 @@ namespace TIKR.Shared.Diagnostics;
 /// <summary>
 /// Consistent structured action logs for clerk-invoked flows (buttons, API mutations, AI).
 /// Grep logs with: <c>Action </c> or filter property <c>Action</c>.
+/// Clerk UI surfaces use <c>UI.{Surface}.{Verb}</c> names, e.g.:
+/// <c>UI.Dashboard.Load</c>, <c>UI.Calendar.Create</c>, <c>UI.Requirements.AgentScan</c>,
+/// <c>UI.Documents.Upload</c>, <c>UI.Assistant.Prompt</c>, <c>UI.Vault.SaveEntry</c>,
+/// <c>UI.Settings.SaveFeatures</c>.
 /// </summary>
 public static class TikrActionLog
 {
