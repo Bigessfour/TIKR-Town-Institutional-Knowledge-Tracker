@@ -79,7 +79,15 @@ public class VaultPageTests : ClerkTestContext
         SetRendererInfo(new RendererInfo("Server", true));
 
         var cut = RenderComponent<Vault>();
-        cut.WaitForAssertion(() => cut.Markup.Should().Contain("Copy me"));
+        // CI runs Web tests in parallel with other assemblies; async vault load can exceed the
+        // default 1s WaitForAssertion window (seen as Check count: 0 / render count: 1).
+        cut.WaitForAssertion(
+            () =>
+            {
+                cut.Markup.Should().NotContain("Loading vault entries");
+                cut.Markup.Should().Contain("Copy me");
+            },
+            TimeSpan.FromSeconds(10));
 
         var copyBtn = cut.FindAll("button")
             .First(b => b.TextContent.Contains("Copy Everything for New Clerk", StringComparison.Ordinal));
