@@ -80,6 +80,33 @@ public class DocumentContextLabelTests
     }
 
     [Fact]
+    public void FormatCitationWithContent_IncludesExcerptNotJustFileName()
+    {
+        var line = DocumentContextLabel.FormatCitationWithContent(
+            "Scanned Document.pdf",
+            "Retirement Package Form DD-2656",
+            "Correspondence",
+            summary: "Form used to elect survivor benefits.",
+            snippet: "survivor benefit election section under CSRS/FERS…");
+
+        line.Should().Contain("[Retirement Package Form DD-2656] Scanned Document.pdf — Correspondence");
+        line.Should().Contain("survivor benefit election section");
+    }
+
+    [Fact]
+    public void FormatCitationWithContent_FallsBackToSummaryWhenSnippetMissing()
+    {
+        var line = DocumentContextLabel.FormatCitationWithContent(
+            "minutes.pdf",
+            "Board minutes",
+            "Minutes",
+            summary: "Town of Wiley Board of Trustees regular meeting held August 12.",
+            snippet: null);
+
+        line.Should().Contain("Town of Wiley Board of Trustees");
+    }
+
+    [Fact]
     public void InferTopic_FallsBackToDescriptiveFileStem()
     {
         DocumentContextLabel.InferTopic("cml-governance-101.pdf", fullTextContent: null)

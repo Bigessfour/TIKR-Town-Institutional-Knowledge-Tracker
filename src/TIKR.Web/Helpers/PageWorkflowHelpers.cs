@@ -26,9 +26,9 @@ public static partial class AssistantPromptBuilder
             "SOURCE RULES: " +
             "(1) For how-to questions about using TIKR or Syncfusion document tools, prefer TIKR product help when provided. " +
             "(2) For town substance (what a filing says, what is due, tribal knowledge), use document/vault context when provided and answer ONLY from that context. " +
-            "Document hits include topic labels, About summaries, and Excerpts — use them before guessing. " +
+            "Document hits include topic labels, About summaries, and Excerpts — answer from those Excerpts and About lines before guessing. " +
             "If required context is missing or empty, say you do not have matching documents or TIKR help — do not invent procedures, fees, or UI that is not in help. " +
-            "When you use town documents or vault entries, end with a Sources section listing those titles. " +
+            "When you use town documents or vault entries, end with a Sources section: for each source give the document label and a short quote or paraphrase of the content you used (not the filename alone). " +
             "When you use product help, name the TIKR page (e.g. Document Library, Settings). " +
             "End useful answers with 1–3 concrete next steps (e.g. open Requirements, Open Full Screen, Save to NAS) when it helps the clerk act. " +
             "If unsure on binding legal questions, say so and recommend the town attorney and trusted external sources below. " +
@@ -139,12 +139,85 @@ public static partial class AssistantPromptBuilder
         if (docs?.Hits is { Count: > 0 })
         {
             labels.AddRange(docs.Hits
-                .Select(h => DocumentContextLabel.FormatCitationLabel(h.FileName, h.Topic))
+                .Select(h => DocumentContextLabel.FormatCitationWithContent(
+                    h.FileName,
+                    h.Topic,
+                    h.SuggestedFolder,
+                    h.Summary,
+                    h.Snippet))
                 .Where(n => !string.IsNullOrWhiteSpace(n)));
         }
         if (vault?.Hits is { Count: > 0 })
-            labels.AddRange(vault.Hits.Select(h => h.Title).Where(n => !string.IsNullOrWhiteSpace(n)));
-        return labels.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+        {
+            labels.AddRange(vault.Hits
+                .Select(h => DocumentContextLabel.FormatVaultCitationWithContent(
+                    h.Title,
+                    h.Category,
+                    h.Snippet))
+                .Where(n => !string.IsNullOrWhiteSpace(n)));
+        }
+
+        return labels
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+
+    /// <summary>Formats Sources markdown so clerks see content excerpts, not bare filenames.</summary>
+    public static string FormatSourcesMarkdown(IReadOnlyList<string> citations)
+    {
+        if (citations.Count == 0)
+            return string.Empty;
+
+        return "**Sources**\n" + string.Join("\n", citations.Select(c =>
+        {
+            var lines = c.Replace("\r\n", "\n").Split('\n', StringSplitOptions.None);
+            if (lines.Length == 1)
+                return $"- {lines[0].Trim()}";
+
+            var header = lines[0].Trim();
+            var body = string.Join(" ", lines.Skip(1).Select(l => l.Trim()).Where(l => l.Length > 0));
+            return string.IsNullOrWhiteSpace(body)
+                ? $"- {header}"
+                : $"- {header}\n  {body}";
+        }));
+    }
+
+    /// <summary>
+    /// Ensures the clerk-facing reply ends with retrieval-backed Sources that include
+    /// content excerpts (not bare filenames). Replaces a trailing model Sources footer when present.
+    /// </summary>
+    public static string EnsureSourcesSection(string replyMarkdown, IReadOnlyList<string>? citations)
+    {
+        if (citations is not { Count: > 0 })
+            return replyMarkdown;
+
+        var withoutModelSources = StripTrailingSourcesSection(replyMarkdown);
+        return withoutModelSources.TrimEnd() + "\n\n" + FormatSourcesMarkdown(citations);
+    }
+
+    /// <summary>Removes a trailing Sources footer so we can replace it with excerpt-backed lines.</summary>
+    internal static string StripTrailingSourcesSection(string markdown)
+    {
+        if (string.IsNullOrWhiteSpace(markdown))
+            return markdown;
+
+        var markers = new[] { "\n**Sources**", "\n## Sources", "\nSources\n", "\nSources:" };
+        var idx = -1;
+        foreach (var marker in markers)
+        {
+            var found = markdown.LastIndexOf(marker, StringComparison.OrdinalIgnoreCase);
+            if (found > idx)
+                idx = found;
+        }
+
+        if (idx < 0)
+            return markdown;
+
+        // Only strip footer Sources (second half of the answer).
+        if (idx < markdown.Length / 2)
+            return markdown;
+
+        return markdown[..idx].TrimEnd();
     }
 
     public static string BuildUserMessageWithRag(
@@ -168,7 +241,9 @@ public static partial class AssistantPromptBuilder
         if (!string.IsNullOrWhiteSpace(vaultContext))
             blocks.Add(vaultContext);
         if (citations.Count > 0)
-            blocks.Add("Required Sources to cite if used (town documents / vault):\n" + string.Join("\n", citations.Select(c => $"- {c}")));
+            blocks.Add(
+                "Required Sources to cite if used (include a short content quote/paraphrase from each Excerpt, not the filename alone):\n" +
+                string.Join("\n", citations.Select(c => $"- {c}")));
         if (blocks.Count == 0)
             return question + "\n\n(No matching documents, vault entries, or product help were retrieved. If you cannot answer from general clerk practice, say so.)";
         return string.Join("\n\n", blocks) + $"\n\nQuestion: {question}";

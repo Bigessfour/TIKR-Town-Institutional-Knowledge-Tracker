@@ -3,6 +3,7 @@ namespace TIKR.Infrastructure.Services;
 /// <summary>
 /// Deterministic folder/tag suggestions when Ollama returns empty or incomplete tagging.
 /// Prefer AI results; heuristics only fill gaps.
+/// NAS library paths can seed <see cref="TryMapNasRelativePath"/> before the LLM.
 /// </summary>
 public static class DocumentTagHeuristics
 {
@@ -28,6 +29,55 @@ public static class DocumentTagHeuristics
         Contracts,
         General
     ];
+
+    /// <summary>
+    /// Maps the first NAS folder segment (and filename cues for council packets) onto the
+    /// 9-folder vocabulary. Returns null when the path is not a confident match.
+    /// </summary>
+    public static string? TryMapNasRelativePath(string? relativePath)
+    {
+        if (string.IsNullOrWhiteSpace(relativePath))
+            return null;
+
+        var normalized = relativePath.Replace('\\', '/').Trim('/');
+        var segments = normalized.Split('/', StringSplitOptions.RemoveEmptyEntries);
+        // Need a folder + file; bare filenames are not a NAS-tree signal.
+        if (segments.Length < 2)
+            return null;
+
+        var topKey = NormalizeNasSegment(segments[0]);
+        var nameLower = segments[^1].ToLowerInvariant();
+
+        if (topKey is "council meetings" or "council meeting")
+        {
+            if (nameLower.Contains("agenda", StringComparison.Ordinal))
+                return Agenda;
+            // Plural only — bare "minute" matches noise like last-minute-notes.pdf.
+            if (nameLower.Contains("minutes", StringComparison.Ordinal))
+                return Minutes;
+            return null;
+        }
+
+        if (topKey is "ordinances" or "ordinance" or "municipal code")
+            return Ordinances;
+        if (topKey is "budget" or "finance" or "mill levy" or "milllevy")
+            return BudgetFinance;
+        if (topKey is "contracts" or "contract" or "agreements" or "agreement")
+            return Contracts;
+        if (topKey is "personnel" or "hr" or "human resources")
+            return PersonnelHr;
+        if (topKey is "correspondence" or "letters" or "letter")
+            return Correspondence;
+        if (topKey is "forms" or "form")
+            return Forms;
+
+        return null;
+    }
+
+    private static string NormalizeNasSegment(string segment) =>
+        string.Join(' ', segment.Split([' ', '_', '-'], StringSplitOptions.RemoveEmptyEntries))
+            .Trim()
+            .ToLowerInvariant();
 
     public static (string[] Tags, string? Folder) FillGaps(
         string fileName,

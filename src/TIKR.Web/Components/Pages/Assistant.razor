@@ -448,7 +448,7 @@
 
             if (decision.Route == AiRoute.CloudGrok)
             {
-                await CompleteViaGrokAsync(args, prompt, userMessage, decision, turnSw);
+                await CompleteViaGrokAsync(args, prompt, userMessage, decision, turnSw, citations);
                 return;
             }
 
@@ -495,7 +495,7 @@
             {
                 var escalate = AssistantAgentRouter.EscalateAfterLocalFailure(grokEnabled: true);
                 TikrActionLog.Info(Logger, "UI.Assistant.Route", escalate.Reason);
-                await CompleteViaGrokAsync(args, prompt, userMessage, escalate, turnSw);
+                await CompleteViaGrokAsync(args, prompt, userMessage, escalate, turnSw, citations);
                 return;
             }
 
@@ -505,12 +505,7 @@
                                 "Check that Ollama is running, or enable Grok in Settings for automatic help on harder questions.";
             }
 
-            if (citations.Count > 0 && !replyMarkdown.Contains("Sources", StringComparison.OrdinalIgnoreCase))
-            {
-                replyMarkdown = replyMarkdown.TrimEnd() +
-                                "\n\n**Sources**\n" +
-                                string.Join("\n", citations.Select(c => $"- {c}"));
-            }
+            replyMarkdown = AssistantPromptBuilder.EnsureSourcesSection(replyMarkdown, citations);
 
             var html = Markdown.ToHtml(replyMarkdown);
             args.Response = html;
@@ -562,7 +557,8 @@
         string prompt,
         string ragPackedContext,
         AiRouteDecision decision,
-        System.Diagnostics.Stopwatch turnSw)
+        System.Diagnostics.Stopwatch turnSw,
+        IReadOnlyList<string>? citations = null)
     {
         var preparing = AssistantPromptBuilder.FormatPreparingHtml("Working on a deeper answer…");
         args.Response = preparing;
@@ -574,6 +570,8 @@
         replyMarkdown = AssistantPromptBuilder.SanitizeModelOutput(replyMarkdown);
         if (string.IsNullOrWhiteSpace(replyMarkdown))
             replyMarkdown = result?.Answer ?? "No answer returned.";
+
+        replyMarkdown = AssistantPromptBuilder.EnsureSourcesSection(replyMarkdown, citations);
 
         var html = Markdown.ToHtml(replyMarkdown);
         args.Response = html;

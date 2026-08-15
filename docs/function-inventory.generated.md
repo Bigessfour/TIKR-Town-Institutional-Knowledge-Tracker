@@ -2,7 +2,7 @@
 <!-- Do NOT edit manually. Lightweight correctness-surface tracker. -->
 
 # Function Inventory — tikr-town-institutional-knowledge-tracker
-Generated: 2026-08-14T22:38:15.725842+00:00
+Generated: 2026-08-15T15:45:23.939249+00:00
 **Stack:** C#/Blazor
 **Tracking mode:** `surfaces`
 **Scan roots:** `src`

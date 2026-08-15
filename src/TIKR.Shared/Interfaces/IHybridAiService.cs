@@ -4,7 +4,14 @@ namespace TIKR.Shared.Interfaces;
 
 public interface IHybridAiService
 {
-    Task<TagDocumentResponse> TagDocumentAsync(Guid documentId, CancellationToken cancellationToken = default);
+    /// <param name="libraryRelativePath">
+    /// Optional NAS-relative path from library scan (e.g. COUNCIL MEETINGS/2024/agenda.pdf).
+    /// Seeds folder classification and appears in the tag prompt.
+    /// </param>
+    Task<TagDocumentResponse> TagDocumentAsync(
+        Guid documentId,
+        CancellationToken cancellationToken = default,
+        string? libraryRelativePath = null);
     Task<IReadOnlyList<DashboardPriority>> GetDashboardPrioritiesAsync(CancellationToken cancellationToken = default);
     Task<AskAdvancedResponse> AskAdvancedAsync(AskAdvancedRequest request, CancellationToken cancellationToken = default);
     Task<AiStatusResponse> GetStatusAsync(CancellationToken cancellationToken = default);

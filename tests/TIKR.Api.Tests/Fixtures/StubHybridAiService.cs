@@ -8,7 +8,10 @@ namespace TIKR.Api.Tests.Fixtures;
 /// </summary>
 public sealed class StubHybridAiService : IHybridAiService
 {
-    public Task<TagDocumentResponse> TagDocumentAsync(Guid documentId, CancellationToken cancellationToken = default) =>
+    public Task<TagDocumentResponse> TagDocumentAsync(
+        Guid documentId,
+        CancellationToken cancellationToken = default,
+        string? libraryRelativePath = null) =>
         Task.FromResult(new TagDocumentResponse(documentId, ["stub-tag"], "StubFolder"));
 
     public Task<IReadOnlyList<DashboardPriority>> GetDashboardPrioritiesAsync(CancellationToken cancellationToken = default) =>

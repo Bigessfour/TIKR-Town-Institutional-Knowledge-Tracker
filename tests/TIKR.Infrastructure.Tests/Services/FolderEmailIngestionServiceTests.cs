@@ -208,7 +208,10 @@ public class FolderEmailIngestionServiceTests
 
     private sealed class StubTaggingAi : IHybridAiService
     {
-        public Task<TagDocumentResponse> TagDocumentAsync(Guid documentId, CancellationToken cancellationToken = default) =>
+        public Task<TagDocumentResponse> TagDocumentAsync(
+            Guid documentId,
+            CancellationToken cancellationToken = default,
+            string? libraryRelativePath = null) =>
             Task.FromResult(new TagDocumentResponse(documentId, ["email"], "Imported"));
 
         public Task<IReadOnlyList<DashboardPriority>> GetDashboardPrioritiesAsync(CancellationToken cancellationToken = default) =>
