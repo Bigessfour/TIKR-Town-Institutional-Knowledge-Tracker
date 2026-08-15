@@ -7,6 +7,8 @@ using TIKR.Infrastructure.Data;
 using TIKR.Infrastructure.Services;
 using TIKR.Infrastructure.Tests.Helpers;
 using TIKR.Shared.DTOs;
+using TIKR.Shared.Entities;
+using TIKR.Shared.Enums;
 using TIKR.Shared.Interfaces;
 // DbUpdateException used by unique-path unit checks
 
@@ -38,7 +40,8 @@ public class LibraryScanServiceTests
         try
         {
             var source = Path.Combine(nested, "water-rate.txt");
-            await File.WriteAllTextAsync(source, "Distinctive phrase: aqueduct levy schedule Q3");
+            await File.WriteAllTextAsync(source,
+                "Distinctive phrase: aqueduct levy schedule Q3 for the Town of Wiley water rate ordinance filing.");
 
             await using var db = await TestDbContextFactory.CreateMigratedAsync();
             var config = new ConfigurationBuilder()
@@ -92,6 +95,215 @@ public class LibraryScanServiceTests
             status.Configured.Should().BeTrue();
             status.LastResult.Should().NotBeNull();
             status.LibraryPath.Should().Be(library);
+        }
+        finally
+        {
+            try { Directory.Delete(library, recursive: true); } catch { /* ignore */ }
+            try { Directory.Delete(storage, recursive: true); } catch { /* ignore */ }
+        }
+    }
+
+    [Fact]
+    public async Task ScanAsync_IncompleteImport_RetriesTagInPlace_NoSecondCopy()
+    {
+        var library = Path.Combine(Path.GetTempPath(), "tikr-library-retry-" + Guid.NewGuid().ToString("N"));
+        var storage = Path.Combine(Path.GetTempPath(), "tikr-library-store-retry-" + Guid.NewGuid().ToString("N"));
+        var council = Path.Combine(library, "COUNCIL MEETINGS");
+        Directory.CreateDirectory(council);
+        Directory.CreateDirectory(storage);
+
+        try
+        {
+            var source = Path.Combine(council, "2024-08-12 minutes.txt");
+            // Sparse body so first import is not "done" even with fingerprint on file.
+            await File.WriteAllTextAsync(source, "x");
+
+            await using var db = await TestDbContextFactory.CreateMigratedAsync();
+            var config = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string?>
+                {
+                    ["TIKR_LIBRARY_SCAN_PATH"] = library,
+                    ["FILE_STORAGE_PATH"] = storage
+                })
+                .Build();
+
+            var trackingAi = new TrackingTaggingAi();
+            var services = new ServiceCollection();
+            services.AddSingleton<IConfiguration>(config);
+            services.AddSingleton(db);
+            services.AddScoped<IDocumentService, DocumentService>();
+            var featureState = new FeatureSettingsState();
+            featureState.Replace(new FeatureSettingsSnapshot
+            {
+                OllamaHost = "http://localhost:11434",
+                OllamaChatModel = "llama3.2:3b",
+                UseGrok = false,
+                FileStoragePath = storage
+            });
+            services.AddSingleton(featureState);
+            services.AddSingleton<IFileStorageService, LocalFileStorageService>();
+            services.AddScoped<IAuditService, AuditService>();
+            services.AddSingleton<ICurrentUserService>(new StubCurrentUser("library-scan@town.gov"));
+            services.AddSingleton<IHybridAiService>(trackingAi);
+            var provider = services.BuildServiceProvider();
+
+            var sut = new LibraryScanService(
+                provider.GetRequiredService<IServiceScopeFactory>(),
+                config,
+                NullLogger<LibraryScanService>.Instance);
+
+            var first = await sut.ScanAsync();
+            first.Imported.Should().Be(1);
+            trackingAi.TagCallCount.Should().Be(1);
+            trackingAi.LastRelativePath.Should().Be("COUNCIL MEETINGS/2024-08-12 minutes.txt");
+            (await db.Documents.CountAsync()).Should().Be(1);
+
+            // Simulate failed OCR/embed: strip text so corpus gate treats import as incomplete.
+            var doc = await db.Documents.SingleAsync();
+            doc.FullTextContent = null;
+            await db.SaveChangesAsync();
+
+            var second = await sut.ScanAsync();
+            second.Imported.Should().Be(0, "failed retry must not count as brought-in");
+            trackingAi.TagCallCount.Should().Be(2, "retry TagDocumentAsync in place");
+            trackingAi.LastRelativePath.Should().Be("COUNCIL MEETINGS/2024-08-12 minutes.txt");
+            (await db.Documents.CountAsync()).Should().Be(1, "must not create a second document copy");
+        }
+        finally
+        {
+            try { Directory.Delete(library, recursive: true); } catch { /* ignore */ }
+            try { Directory.Delete(storage, recursive: true); } catch { /* ignore */ }
+        }
+    }
+
+    [Fact]
+    public async Task ScanAsync_IncompleteRetry_CountsImportedOnlyWhenCorpusBecomesUsable()
+    {
+        var library = Path.Combine(Path.GetTempPath(), "tikr-library-retry-ok-" + Guid.NewGuid().ToString("N"));
+        var storage = Path.Combine(Path.GetTempPath(), "tikr-library-store-retry-ok-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(library);
+        Directory.CreateDirectory(storage);
+
+        try
+        {
+            await File.WriteAllTextAsync(Path.Combine(library, "sparse.txt"), "x");
+
+            await using var db = await TestDbContextFactory.CreateMigratedAsync();
+            var config = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string?>
+                {
+                    ["TIKR_LIBRARY_SCAN_PATH"] = library,
+                    ["FILE_STORAGE_PATH"] = storage
+                })
+                .Build();
+
+            var enrichingAi = new EnrichingTaggingAi(db);
+            var services = new ServiceCollection();
+            services.AddSingleton<IConfiguration>(config);
+            services.AddSingleton(db);
+            services.AddScoped<IDocumentService, DocumentService>();
+            var featureState = new FeatureSettingsState();
+            featureState.Replace(new FeatureSettingsSnapshot
+            {
+                OllamaHost = "http://localhost:11434",
+                OllamaChatModel = "llama3.2:3b",
+                UseGrok = false,
+                FileStoragePath = storage
+            });
+            services.AddSingleton(featureState);
+            services.AddSingleton<IFileStorageService, LocalFileStorageService>();
+            services.AddScoped<IAuditService, AuditService>();
+            services.AddSingleton<ICurrentUserService>(new StubCurrentUser("library-scan@town.gov"));
+            services.AddSingleton<IHybridAiService>(enrichingAi);
+            var provider = services.BuildServiceProvider();
+
+            var sut = new LibraryScanService(
+                provider.GetRequiredService<IServiceScopeFactory>(),
+                config,
+                NullLogger<LibraryScanService>.Instance);
+
+            var first = await sut.ScanAsync();
+            first.Imported.Should().Be(1);
+            enrichingAi.EnrichOnNextTag = true;
+
+            var doc = await db.Documents.SingleAsync();
+            doc.FullTextContent = null;
+            await db.SaveChangesAsync();
+
+            var second = await sut.ScanAsync();
+            second.Imported.Should().Be(1, "usable corpus after retry counts as imported");
+            enrichingAi.TagCallCount.Should().Be(2);
+        }
+        finally
+        {
+            try { Directory.Delete(library, recursive: true); } catch { /* ignore */ }
+            try { Directory.Delete(storage, recursive: true); } catch { /* ignore */ }
+        }
+    }
+
+    [Fact]
+    public async Task ScanAsync_PrefersNewImportsOverIncompleteRetries_WhenBudgetTight()
+    {
+        var library = Path.Combine(Path.GetTempPath(), "tikr-library-prio-" + Guid.NewGuid().ToString("N"));
+        var storage = Path.Combine(Path.GetTempPath(), "tikr-library-store-prio-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(library);
+        Directory.CreateDirectory(storage);
+
+        try
+        {
+            var sparse = Path.Combine(library, "aaa-sparse.txt");
+            await File.WriteAllTextAsync(sparse, "x");
+
+            await using var db = await TestDbContextFactory.CreateMigratedAsync();
+            var config = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string?>
+                {
+                    ["TIKR_LIBRARY_SCAN_PATH"] = library,
+                    ["FILE_STORAGE_PATH"] = storage,
+                    ["TIKR_LIBRARY_SCAN_MAX_IMPORTS"] = "1"
+                })
+                .Build();
+
+            var trackingAi = new TrackingTaggingAi();
+            var services = new ServiceCollection();
+            services.AddSingleton<IConfiguration>(config);
+            services.AddSingleton(db);
+            services.AddScoped<IDocumentService, DocumentService>();
+            var featureState = new FeatureSettingsState();
+            featureState.Replace(new FeatureSettingsSnapshot
+            {
+                OllamaHost = "http://localhost:11434",
+                OllamaChatModel = "llama3.2:3b",
+                UseGrok = false,
+                FileStoragePath = storage
+            });
+            services.AddSingleton(featureState);
+            services.AddSingleton<IFileStorageService, LocalFileStorageService>();
+            services.AddScoped<IAuditService, AuditService>();
+            services.AddSingleton<ICurrentUserService>(new StubCurrentUser("library-scan@town.gov"));
+            services.AddSingleton<IHybridAiService>(trackingAi);
+            var provider = services.BuildServiceProvider();
+
+            var sut = new LibraryScanService(
+                provider.GetRequiredService<IServiceScopeFactory>(),
+                config,
+                NullLogger<LibraryScanService>.Instance);
+
+            (await sut.ScanAsync()).Imported.Should().Be(1);
+            var sparseDoc = await db.Documents.SingleAsync();
+            sparseDoc.FullTextContent = null;
+            await db.SaveChangesAsync();
+
+            await File.WriteAllTextAsync(
+                Path.Combine(library, "zzz-new.txt"),
+                "Brand new filing with enough letter characters for the corpus usable gate threshold.");
+
+            trackingAi.TagCallCount = 0;
+            var second = await sut.ScanAsync();
+            second.Imported.Should().Be(1, "budget of 1 goes to the new file first");
+            (await db.Documents.CountAsync()).Should().Be(2);
+            trackingAi.LastRelativePath.Should().Be("zzz-new.txt");
+            trackingAi.TagCallCount.Should().Be(1, "incomplete retry deferred when budget exhausted by new import");
         }
         finally
         {
@@ -199,15 +411,50 @@ public class LibraryScanServiceTests
         LibraryScanService.IsUniqueRelativePathViolation(ex).Should().Be(expected);
     }
 
+    [Fact]
+    public async Task HasUsableImportCorpus_TrueWhenChunksOrNonSparseText()
+    {
+        await using var db = await TestDbContextFactory.CreateMigratedAsync();
+        var docId = Guid.NewGuid();
+
+        (await LibraryScanService.HasUsableImportCorpusAsync(db, docId, null, CancellationToken.None))
+            .Should().BeFalse();
+
+        (await LibraryScanService.HasUsableImportCorpusAsync(
+                db, docId,
+                "Town of Wiley Board of Trustees minutes with enough letter characters here",
+                CancellationToken.None))
+            .Should().BeTrue();
+
+        db.EmbeddingChunks.Add(new EmbeddingChunk
+        {
+            Id = Guid.NewGuid(),
+            SourceType = EmbeddingSourceType.Document,
+            SourceId = docId,
+            ChunkIndex = 0,
+            Content = "chunk",
+            Embedding = [0],
+            ContentHash = "h",
+            UpdatedAt = DateTime.UtcNow
+        });
+        await db.SaveChangesAsync();
+
+        (await LibraryScanService.HasUsableImportCorpusAsync(db, docId, null, CancellationToken.None))
+            .Should().BeTrue();
+    }
+
     private sealed class StubCurrentUser(string userId) : ICurrentUserService
     {
         public string? UserId { get; } = userId;
         public bool IsAuthenticated => true;
     }
 
-    private sealed class StubTaggingAi : IHybridAiService
+    private class StubTaggingAi : IHybridAiService
     {
-        public Task<TagDocumentResponse> TagDocumentAsync(Guid documentId, CancellationToken cancellationToken = default) =>
+        public virtual Task<TagDocumentResponse> TagDocumentAsync(
+            Guid documentId,
+            CancellationToken cancellationToken = default,
+            string? libraryRelativePath = null) =>
             Task.FromResult(new TagDocumentResponse(documentId, ["library"], "Imported"));
 
         public Task<IReadOnlyList<DashboardPriority>> GetDashboardPrioritiesAsync(CancellationToken cancellationToken = default) =>
@@ -238,5 +485,48 @@ public class LibraryScanServiceTests
 
         public Task<CorpusHealthResponse> GetCorpusHealthAsync(CancellationToken cancellationToken = default) =>
             Task.FromResult(new CorpusHealthResponse(0, 0, 0, 0, 0, 0, 100, 100, []));
+    }
+
+    private sealed class TrackingTaggingAi : StubTaggingAi
+    {
+        public int TagCallCount { get; set; }
+        public string? LastRelativePath { get; private set; }
+
+        public override Task<TagDocumentResponse> TagDocumentAsync(
+            Guid documentId,
+            CancellationToken cancellationToken = default,
+            string? libraryRelativePath = null)
+        {
+            TagCallCount++;
+            LastRelativePath = libraryRelativePath;
+            return Task.FromResult(new TagDocumentResponse(documentId, ["library"], "Minutes"));
+        }
+    }
+
+    /// <summary>On demand, writes non-sparse FullTextContent so incomplete retry can become usable.</summary>
+    private sealed class EnrichingTaggingAi(TikrDbContext db) : StubTaggingAi
+    {
+        public int TagCallCount { get; private set; }
+        public bool EnrichOnNextTag { get; set; }
+
+        public override async Task<TagDocumentResponse> TagDocumentAsync(
+            Guid documentId,
+            CancellationToken cancellationToken = default,
+            string? libraryRelativePath = null)
+        {
+            TagCallCount++;
+            if (EnrichOnNextTag)
+            {
+                var doc = await db.Documents.FindAsync([documentId], cancellationToken);
+                if (doc is not null)
+                {
+                    doc.FullTextContent =
+                        "Town of Wiley Board of Trustees minutes with enough letter characters for embedding gate";
+                    await db.SaveChangesAsync(cancellationToken);
+                }
+            }
+
+            return new TagDocumentResponse(documentId, ["library"], "Minutes");
+        }
     }
 }

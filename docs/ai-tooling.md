@@ -143,14 +143,14 @@ TIKR owns retrieval: chunk → embed → hybrid search → grounded prompt → c
 
 For a shared folder of town documents already on the NAS (not uploaded through TIKR yet):
 
-**Policy (Deb/Paige bulk corpus):** Prefer **accuracy and completeness over speed**. A first-pass of 200+ filings may take days or weeks across poller runs; that is intentional. Resume via content fingerprints; fix OCR/embed failures before treating a file as done. See [action-items.md](./action-items.md) — *High-accuracy corpus compilation*.
+**Policy (Deb/Paige bulk corpus):** Prefer **accuracy and completeness over speed**. A first-pass of 200+ filings may take days or weeks across poller runs; that is intentional. Skip a fingerprint match only when the linked document has usable `EmbeddingChunks` or non-sparse `FullTextContent`; otherwise retry tag/embed in place (no second copy). See [action-items.md](./action-items.md) — *High-accuracy corpus compilation*.
 
 1. Bind-mount the share into the API container and set `TIKR_LIBRARY_SCAN_PATH` (optional `TIKR_LIBRARY_SCAN_INTERVAL_SECONDS`, default 300).
 2. Settings → **NAS document library** → **Scan library now** (or wait for the background poller).
-3. Files are **copied** into `FILE_STORAGE_PATH`, tagged, and written to `EmbeddingChunks`. Source files are never moved or deleted.
+3. Files are **copied** into `FILE_STORAGE_PATH`, tagged with NAS-path folder seeding + Wiley tag prompts, and written to `EmbeddingChunks`. Source files are never moved or deleted.
 4. Deb/Paige ask questions on `/assistant` — existing RAG (`semantic-search`) pulls those passages into the chat.
 5. Ollama agent tools also get `search_town_documents` (same vector store) when Syncfusion orchestration is enabled.
-6. After large imports, use **Reindex embeddings** if Ollama was offline during the scan.
+6. After large imports, use **Reindex embeddings** if Ollama was offline during the scan (reindex cannot invent text for sparse OCR).
 
 **Formats:** PDF, Word, Excel, and plain text/email (town office). Scanned **PDF/Word** get Syncfusion Tesseract OCR when native text is sparse (`TIKR_OCR_ENABLED`, default on). TIFF/image archives are out of scope for town ingest.
 

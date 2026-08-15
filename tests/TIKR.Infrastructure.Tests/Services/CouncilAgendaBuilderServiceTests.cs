@@ -118,7 +118,10 @@ public class CouncilAgendaBuilderServiceTests
 
     private sealed class StubHybridAi : IHybridAiService
     {
-        public Task<TagDocumentResponse> TagDocumentAsync(Guid documentId, CancellationToken cancellationToken = default) =>
+        public Task<TagDocumentResponse> TagDocumentAsync(
+            Guid documentId,
+            CancellationToken cancellationToken = default,
+            string? libraryRelativePath = null) =>
             Task.FromResult(new TagDocumentResponse(documentId, ["minutes"], DocumentTagHeuristics.Minutes));
 
         public Task<IReadOnlyList<DashboardPriority>> GetDashboardPrioritiesAsync(CancellationToken cancellationToken = default) =>

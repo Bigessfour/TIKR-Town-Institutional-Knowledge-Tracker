@@ -230,7 +230,7 @@ public class PageWorkflowHelpersTests
     }
 
     [Fact]
-    public void CollectCitationLabels_PrefersTopicPrefixedDocumentNames()
+    public void CollectCitationLabels_IncludesDocumentContentExcerpt()
     {
         var labels = AssistantPromptBuilder.CollectCitationLabels(
             new SemanticSearchResponse(
@@ -241,14 +241,44 @@ public class PageWorkflowHelpersTests
                         Guid.NewGuid(),
                         "Scanned Document.pdf",
                         "Correspondence",
-                        "snippet",
+                        "survivor benefit election section…",
                         0.9,
-                        Topic: "Retirement Package Form DD-2656")
+                        Topic: "Retirement Package Form DD-2656",
+                        Summary: "Form used to elect survivor benefits.")
                 ]),
             vault: null);
 
-        labels.Should().ContainSingle()
-            .Which.Should().Be("[Retirement Package Form DD-2656] Scanned Document.pdf");
+        labels.Should().ContainSingle();
+        labels[0].Should().Contain("[Retirement Package Form DD-2656] Scanned Document.pdf");
+        labels[0].Should().Contain("survivor benefit election section");
+    }
+
+    [Fact]
+    public void FormatSourcesMarkdown_ShowsHeaderAndExcerpt()
+    {
+        var md = AssistantPromptBuilder.FormatSourcesMarkdown(
+        [
+            "[Board minutes] 2024-08-12 minutes.pdf — Minutes\n  Water rates tabled until September."
+        ]);
+
+        md.Should().Contain("**Sources**");
+        md.Should().Contain("2024-08-12 minutes.pdf");
+        md.Should().Contain("Water rates tabled until September");
+    }
+
+    [Fact]
+    public void EnsureSourcesSection_ReplacesFilenameOnlyFooterWithExcerpts()
+    {
+        var reply = "The board tabled water rates.\n\n**Sources**\n- minutes.pdf";
+        var citations = new[]
+        {
+            "[Board minutes] 2024-08-12 minutes.pdf — Minutes\n  Water rates tabled until September meeting."
+        };
+
+        var ensured = AssistantPromptBuilder.EnsureSourcesSection(reply, citations);
+        ensured.Should().Contain("The board tabled water rates");
+        ensured.Should().Contain("Water rates tabled until September meeting");
+        ensured.Should().NotContain("- minutes.pdf\n");
     }
 
     [Fact]

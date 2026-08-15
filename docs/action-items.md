@@ -114,6 +114,10 @@ Shipped: circuit-scoped multi-turn memory + follow-up retrieval rewrite + Clear 
 - [x] **Methodical queue + progress** — Settings shows scan errors + Corpus health (chunk coverage, sparse/needs-attention list); resume via fingerprints across poller runs
 - [x] **Accuracy-first chunk/embed settings** — `TextChunker` defaults 500/120 overlap; reindex after OCR/import still via Settings
 - [x] **OCR completeness gate** — Sparse `FullTextContent` fails embed (needs attention) until text/OCR is usable; transient docs skip RAG
+- [x] **Incomplete-import retry** — fingerprint match skips only when linked doc has chunks or non-sparse text; else `TagDocumentAsync` in place (no second copy). New imports claim budget before retries; `Imported` only counts usable retries. Proof: `LibraryScanServiceTests.ScanAsync_IncompleteImport_*`, `ScanAsync_PrefersNewImportsOverIncompleteRetries_WhenBudgetTight`
+- [x] **NAS-path folder seed** — first path segment → 9-folder vocabulary; locked before LLM; relative path in tag prompt. Proof: `DocumentTagHeuristicsTests.TryMapNasRelativePath_*`
+- [x] **Wiley tag prompt + Modelfile** — Town of Wiley few-shots; Agenda in `tikr-clerk` SYSTEM list. Recreate model: `./scripts/create-tikr-clerk-model.sh`
+- [x] **Content-rich Assistant Sources** — citations include matched Excerpt (or About), not filenames alone; footer replaced with retrieval-backed Sources. Proof: `DocumentContextLabelTests.FormatCitationWithContent_*`, `PageWorkflowHelpersTests.EnsureSourcesSection_*`
 - [x] **Weekly corpus health** — `GET /api/ai/corpus-health` + Settings **Corpus health** button
 
 

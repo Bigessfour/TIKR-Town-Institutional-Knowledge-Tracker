@@ -169,6 +169,58 @@ public static partial class DocumentContextLabel
     public static string FormatCitationLabel(string? fileName, string? topic) =>
         BuildSourceLabel(fileName, topic);
 
+    /// <summary>
+    /// Clerk-facing Sources line: label + folder, plus matched Excerpt (or About) so answers
+    /// cite document substance rather than filenames alone.
+    /// </summary>
+    public static string FormatCitationWithContent(
+        string? fileName,
+        string? topic,
+        string? suggestedFolder = null,
+        string? summary = null,
+        string? snippet = null,
+        int excerptMaxLen = DefaultCitationExcerptMaxLen)
+    {
+        var header = FormatSourceHeader(fileName, topic, suggestedFolder, chunkIndex: null);
+        var body = FirstUsefulExcerpt(snippet, summary, excerptMaxLen);
+        if (body is null)
+            return header;
+
+        return $"{header}\n  {body}";
+    }
+
+    /// <summary>Vault / knowledge citation with optional excerpt.</summary>
+    public static string FormatVaultCitationWithContent(
+        string? title,
+        string? category = null,
+        string? snippet = null,
+        int excerptMaxLen = DefaultCitationExcerptMaxLen)
+    {
+        var name = string.IsNullOrWhiteSpace(title) ? "knowledge entry" : title.Trim();
+        var header = string.IsNullOrWhiteSpace(category)
+            ? name
+            : $"{name} — {category.Trim()}";
+        var body = FirstUsefulExcerpt(snippet, summary: null, excerptMaxLen);
+        if (body is null)
+            return header;
+
+        return $"{header}\n  {body}";
+    }
+
+    public const int DefaultCitationExcerptMaxLen = 280;
+
+    private static string? FirstUsefulExcerpt(string? snippet, string? summary, int maxLen)
+    {
+        var text = !string.IsNullOrWhiteSpace(snippet)
+            ? snippet.Trim().TrimStart('…', '.', ' ')
+            : summary?.Trim();
+        if (string.IsNullOrWhiteSpace(text))
+            return null;
+
+        text = NormalizeWhitespace(text);
+        return Truncate(text, maxLen);
+    }
+
     internal static string? InferTopicFromText(string? fullTextContent, int maxLen)
     {
         if (string.IsNullOrWhiteSpace(fullTextContent))

@@ -17,20 +17,26 @@ public class DocumentTagPromptBuilderTests
     }
 
     [Fact]
-    public void Build_IncludesFewShotExamples()
+    public void Build_IncludesWileyFewShotExamples()
     {
         var prompt = DocumentTagPromptBuilder.Build("doc.pdf", "preview text");
 
-        prompt.Should().Contain("Stephen_Resume.pdf");
-        prompt.Should().Contain("Personnel / HR");
-        prompt.Should().Contain("budget-2026.pdf");
-        prompt.Should().Contain("Budget / Finance");
-        prompt.Should().Contain("council-minutes-2026-03-12.pdf");
+        prompt.Should().Contain("Town of Wiley");
+        prompt.Should().Contain("Prowers County");
+        prompt.Should().Contain("Board of Trustees");
+        prompt.Should().Contain("304 Main Street");
+        prompt.Should().Contain("COUNCIL MEETINGS/2024-08-12 minutes.pdf");
         prompt.Should().Contain("\"suggestedFolder\": \"Minutes\"");
-        prompt.Should().Contain("Ordinance_12.pdf");
+        prompt.Should().Contain("COUNCIL MEETINGS/2025-03-10 agenda.pdf");
+        prompt.Should().Contain("\"suggestedFolder\": \"Agenda\"");
+        prompt.Should().Contain("BUDGET/2026 mill levy certification.pdf");
+        prompt.Should().Contain("Budget / Finance");
+        prompt.Should().Contain("ORDINANCES/Ordinance_2024-05.pdf");
         prompt.Should().Contain("Ordinances");
         prompt.Should().Contain("{\"tags\":");
         prompt.Should().Contain("JSON only");
+        prompt.Should().NotContain("Stephen_Resume.pdf");
+        prompt.Should().NotContain("Town of Example");
     }
 
     [Fact]
@@ -40,6 +46,18 @@ public class DocumentTagPromptBuilderTests
 
         prompt.Should().Contain("File name: my-file.pdf");
         prompt.Should().Contain("Content preview: unique preview body xyz");
+    }
+
+    [Fact]
+    public void Build_PrefersLibraryRelativePathOverLeafName()
+    {
+        var prompt = DocumentTagPromptBuilder.Build(
+            "agenda.pdf",
+            "preview",
+            "COUNCIL MEETINGS/2024/agenda.pdf");
+
+        prompt.Should().Contain("File name: COUNCIL MEETINGS/2024/agenda.pdf");
+        prompt.Should().NotContain("File name: agenda.pdf");
     }
 
     [Fact]

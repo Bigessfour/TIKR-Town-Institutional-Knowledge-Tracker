@@ -8,6 +8,7 @@ using TIKR.Shared.Configuration;
 using TIKR.Shared.Diagnostics;
 using TIKR.Shared.DTOs;
 using TIKR.Shared.Entities;
+using TIKR.Shared.Enums;
 using TIKR.Shared.Interfaces;
 
 namespace TIKR.Infrastructure.Services;
@@ -126,21 +127,18 @@ public sealed class LibraryScanService(
         var imported = 0;
         var skipped = 0;
         var failed = 0;
+        // Budget counts every upload + every incomplete retry attempt so sparse OCR cannot
+        // monopolize a run; Imported only increments for new copies or retries that become usable.
+        var budgetUsed = 0;
+        var incompleteRetries = new List<(string FilePath, string RelativePath, string Fingerprint)>();
 
+        // Pass 1: new / changed files first so incomplete retries cannot starve fresh NAS drops.
         foreach (var filePath in EnumerateLibraryFiles(root))
         {
             ct.ThrowIfCancellationRequested();
             scanned++;
 
-            if (imported >= MaxImportsPerRun)
-            {
-                skipped++;
-                continue;
-            }
-
-            var relativePath = Path.GetRelativePath(root, filePath);
-            // Normalize separators so RelativePath uniqueness is stable across platforms.
-            relativePath = relativePath.Replace('\\', '/');
+            var relativePath = Path.GetRelativePath(root, filePath).Replace('\\', '/');
             var fingerprint = BuildFingerprint(filePath);
 
             try
@@ -151,6 +149,30 @@ public sealed class LibraryScanService(
                     .FirstOrDefaultAsync(r => r.RelativePath == relativePath, ct);
 
                 if (existing is not null && existing.ContentFingerprint == fingerprint)
+                {
+                    var linked = await db.Documents
+                        .FirstOrDefaultAsync(d => d.Id == existing.DocumentId && d.DeletedAt == null, ct);
+
+                    if (linked is not null &&
+                        await HasUsableImportCorpusAsync(db, linked.Id, linked.FullTextContent, ct))
+                    {
+                        skipped++;
+                        continue;
+                    }
+
+                    if (linked is not null)
+                    {
+                        // Defer tag retry until after new imports claim budget.
+                        incompleteRetries.Add((filePath, relativePath, fingerprint));
+                        continue;
+                    }
+
+                    logger.LogWarning(
+                        "Library scan import record for {RelativePath} points at missing document {DocumentId}; re-importing",
+                        relativePath, existing.DocumentId);
+                }
+
+                if (budgetUsed >= MaxImportsPerRun)
                 {
                     skipped++;
                     continue;
@@ -178,17 +200,16 @@ public sealed class LibraryScanService(
 
                 try
                 {
-                    await ai.TagDocumentAsync(document.Id, ct);
+                    await ai.TagDocumentAsync(document.Id, ct, relativePath);
                 }
                 catch (Exception tagEx)
                 {
                     logger.LogWarning(tagEx,
-                        "Library scan uploaded {RelativePath} but tag/embed failed; document {DocumentId} remains searchable after reindex",
-                        relativePath, document.Id);
+                        "Library scan uploaded {RelativePath} but tag/embed failed; will retry on next poll if corpus still incomplete",
+                        relativePath);
                     errors.Add($"{relativePath}: tag/embed — {tagEx.Message}");
                 }
 
-                // Re-check after long tag/embed work in case another process wrote the claim.
                 existing ??= await db.LibraryImportRecords
                     .FirstOrDefaultAsync(r => r.RelativePath == relativePath, ct);
 
@@ -216,7 +237,6 @@ public sealed class LibraryScanService(
                 }
                 catch (DbUpdateException ex) when (IsUniqueRelativePathViolation(ex))
                 {
-                    // Defensive: treat as skip rather than failed after a successful upload.
                     logger.LogInformation(
                         ex,
                         "Library scan import record race for {RelativePath}; treating as skipped",
@@ -225,6 +245,7 @@ public sealed class LibraryScanService(
                     continue;
                 }
 
+                budgetUsed++;
                 imported++;
                 logger.LogInformation(
                     "Library scan imported {RelativePath} as document {DocumentId}",
@@ -234,6 +255,89 @@ public sealed class LibraryScanService(
             {
                 failed++;
                 logger.LogWarning(ex, "Library scan failed for {RelativePath}", relativePath);
+                errors.Add($"{relativePath}: {ex.Message}");
+            }
+        }
+
+        // Pass 2: incomplete fingerprint matches — retry tag/embed in place (no second copy).
+        foreach (var (_, relativePath, _) in incompleteRetries)
+        {
+            ct.ThrowIfCancellationRequested();
+
+            if (budgetUsed >= MaxImportsPerRun)
+            {
+                skipped++;
+                continue;
+            }
+
+            try
+            {
+                await using var scope = scopeFactory.CreateAsyncScope();
+                var db = scope.ServiceProvider.GetRequiredService<TikrDbContext>();
+                var ai = scope.ServiceProvider.GetRequiredService<IHybridAiService>();
+                var existing = await db.LibraryImportRecords
+                    .FirstOrDefaultAsync(r => r.RelativePath == relativePath, ct);
+                if (existing is null)
+                {
+                    skipped++;
+                    continue;
+                }
+
+                var linked = await db.Documents
+                    .FirstOrDefaultAsync(d => d.Id == existing.DocumentId && d.DeletedAt == null, ct);
+                if (linked is null)
+                {
+                    skipped++;
+                    continue;
+                }
+
+                // Re-check in case another process finished the corpus between passes.
+                if (await HasUsableImportCorpusAsync(db, linked.Id, linked.FullTextContent, ct))
+                {
+                    skipped++;
+                    continue;
+                }
+
+                logger.LogInformation(
+                    "Library scan retrying tag/embed for incomplete import {RelativePath} (document {DocumentId})",
+                    relativePath, linked.Id);
+
+                budgetUsed++;
+                try
+                {
+                    await ai.TagDocumentAsync(linked.Id, ct, relativePath);
+                }
+                catch (Exception tagEx)
+                {
+                    logger.LogWarning(tagEx,
+                        "Library scan tag/embed retry failed for {RelativePath}; document {DocumentId} still incomplete",
+                        relativePath, linked.Id);
+                    errors.Add($"{relativePath}: tag/embed retry — {tagEx.Message}");
+                }
+
+                await db.Entry(linked).ReloadAsync(ct);
+                var usable = await HasUsableImportCorpusAsync(db, linked.Id, linked.FullTextContent, ct);
+                if (usable)
+                {
+                    existing.ImportedAt = DateTime.UtcNow;
+                    await db.SaveChangesAsync(ct);
+                    imported++;
+                    logger.LogInformation(
+                        "Library scan completed incomplete import {RelativePath} as document {DocumentId}",
+                        relativePath, linked.Id);
+                }
+                else
+                {
+                    // Still sparse / no chunks — do not count as Imported (Settings "brought in").
+                    logger.LogInformation(
+                        "Library scan incomplete import {RelativePath} still lacks usable corpus after retry",
+                        relativePath);
+                }
+            }
+            catch (Exception ex)
+            {
+                failed++;
+                logger.LogWarning(ex, "Library scan incomplete retry failed for {RelativePath}", relativePath);
                 errors.Add($"{relativePath}: {ex.Message}");
             }
         }
@@ -250,6 +354,24 @@ public sealed class LibraryScanService(
             _lastResult = result;
             _lastScanUtc = DateTime.UtcNow;
         }
+    }
+
+    /// <summary>
+    /// True when the document has embedding chunks or non-sparse extracted text —
+    /// the gate for treating a fingerprint-matched import as done.
+    /// </summary>
+    internal static async Task<bool> HasUsableImportCorpusAsync(
+        TikrDbContext db,
+        Guid documentId,
+        string? fullTextContent,
+        CancellationToken ct)
+    {
+        if (!HybridAiService.IsSparseForEmbedding(fullTextContent))
+            return true;
+
+        return await db.EmbeddingChunks.AnyAsync(
+            c => c.SourceType == EmbeddingSourceType.Document && c.SourceId == documentId,
+            ct);
     }
 
     internal static bool IsUniqueRelativePathViolation(DbUpdateException ex)

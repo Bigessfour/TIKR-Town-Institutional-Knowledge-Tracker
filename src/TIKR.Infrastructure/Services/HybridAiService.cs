@@ -29,7 +29,10 @@ public class HybridAiService(
     private const double KeywordWeight = 0.3;
     private const int PassageSnippetChars = 1000;
 
-    public async Task<TagDocumentResponse> TagDocumentAsync(Guid documentId, CancellationToken cancellationToken = default)
+    public async Task<TagDocumentResponse> TagDocumentAsync(
+        Guid documentId,
+        CancellationToken cancellationToken = default,
+        string? libraryRelativePath = null)
     {
         var sw = Stopwatch.StartNew();
         TikrActionLog.Started(logger, "AI.TagDocument", $"DocumentId={documentId}");
@@ -39,15 +42,18 @@ public class HybridAiService(
 
         await TryBackfillFullTextAsync(document, cancellationToken);
 
+        // NAS folder labels are a confident seed — do not let the LLM overwrite them.
+        var pathSeededFolder = DocumentTagHeuristics.TryMapNasRelativePath(libraryRelativePath);
+
         var previewSource = document.FullTextContent ?? document.FileName;
         var preview = previewSource[..Math.Min(TagPreviewChars, previewSource.Length)];
-        var prompt = DocumentTagPromptBuilder.Build(document.FileName, preview);
+        var prompt = DocumentTagPromptBuilder.Build(document.FileName, preview, libraryRelativePath);
 
         // Low temperature for deterministic JSON tagging; AskAdvanced keeps default sampling.
         var taggingOptions = new ChatOptions { Temperature = DocumentTagPromptBuilder.TaggingTemperature };
         var response = await GetLocalCompletionAsync(prompt, cancellationToken, taggingOptions);
         var tags = Array.Empty<string>();
-        string? folder = null;
+        string? folder = pathSeededFolder;
 
         if (!string.IsNullOrWhiteSpace(response))
         {
@@ -56,7 +62,8 @@ public class HybridAiService(
                 using var doc = JsonDocument.Parse(ExtractJson(response));
                 if (doc.RootElement.TryGetProperty("tags", out var tagsEl))
                     tags = tagsEl.EnumerateArray().Select(t => t.GetString() ?? "").Where(t => t.Length > 0).ToArray();
-                if (doc.RootElement.TryGetProperty("suggestedFolder", out var folderEl))
+                if (pathSeededFolder is null &&
+                    doc.RootElement.TryGetProperty("suggestedFolder", out var folderEl))
                     folder = folderEl.GetString();
             }
             catch (Exception ex)
@@ -66,11 +73,17 @@ public class HybridAiService(
             }
         }
 
+        // Leaf filename only — do not pass NAS folder path into heuristics (e.g. "COUNCIL MEETINGS"
+        // would false-positive InferFolder's "council meeting" → Minutes when path seed was null).
         (tags, folder) = DocumentTagHeuristics.FillGaps(
             document.FileName,
             document.FullTextContent,
             tags,
             folder);
+
+        // Path seed wins even if FillGaps somehow changed the folder.
+        if (pathSeededFolder is not null)
+            folder = pathSeededFolder;
 
         document.AiTags = JsonSerializer.Serialize(tags);
         document.SuggestedFolder = folder;
