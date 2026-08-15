@@ -78,9 +78,10 @@ echo "${HEALTH_JSON}" | jq -r '.needsAttention[:10][]?' 2>/dev/null || true
 echo
 
 echo "→ Semantic search: ${QUERY}"
+SEARCH_BODY="$(jq -n --arg q "${QUERY}" --argjson k "${TOP_K}" '{query:$q, topK:$k, minScore:0.3}')"
 SEARCH_JSON="$(curl -sf -X POST "${API_URL}/api/ai/semantic-search" \
 	-H 'Content-Type: application/json' \
-	-d "$(jq -n --arg q "${QUERY}" --argjson k "${TOP_K}" '{query:$q, topK:$k, minScore:0.3}')")"
+	-d "${SEARCH_BODY}")"
 echo "${SEARCH_JSON}" | jq '{
   embeddingAvailable,
   considered,
