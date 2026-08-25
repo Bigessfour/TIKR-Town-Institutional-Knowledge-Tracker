@@ -4,6 +4,8 @@ services:
       context: ..
       dockerfile: docker/Dockerfile.api
     container_name: tikr-api
+    mem_limit: 768m
+    memswap_limit: 768m
     env_file:
       - .env
     environment:
@@ -27,6 +29,8 @@ services:
       context: ..
       dockerfile: docker/Dockerfile.web
     container_name: tikr-web
+    mem_limit: 512m
+    memswap_limit: 512m
     env_file:
       - .env
     environment:
@@ -49,6 +53,8 @@ services:
   ollama:
     image: ollama/ollama:latest
     container_name: tikr-ollama
+    mem_limit: 1024m
+    memswap_limit: 1024m
     ports:
       - 11434:11434
     volumes:
