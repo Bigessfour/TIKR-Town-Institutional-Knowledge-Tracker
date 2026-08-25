@@ -92,6 +92,19 @@ Right-click `docker/docker-compose.yml` → **Compose Up** / **Compose Down** al
 
 Docker builds use the repo root as context (see `context: ..` in compose). A root [`.dockerignore`](../.dockerignore) keeps transfers small — avoid removing those exclusions or builds will stall on multi-GB context uploads.
 
+
+## DS225+ memory fence
+
+Mr_Storage has ~6 GiB RAM shared with ClerkSuite (`1536m`) and DSM. Production compose caps:
+
+| Container | Limit | Why |
+|-----------|-------|-----|
+| `tikr-web` | 512m | Idle ~190 MiB |
+| `tikr-api` | 768m | Idle ~350 MiB |
+| `tikr-ollama` | 1024m | Unbounded llama-server previously OOM-killed the NAS (~2.5 GiB) |
+
+`memswap_limit` equals `mem_limit` so TIKR cannot consume host swap. Large models (e.g. unquantized 3B+) will fail inside the Ollama cgroup instead of taking ClerkSuite down.
+
 ## Synology NAS
 
 Import `docker/docker-compose.yml` in Container Manager; map `tikr-data` to a shared folder. See [docs/architecture.md](../docs/architecture.md#nas-setup-synology).

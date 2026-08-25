@@ -1,4 +1,6 @@
 # TIKR production stack — Synology DS225+ / Container Manager
+# DS225+ ~6GiB RAM fence (share with ClerkSuite 1536m + DSM):
+#   tikr-web 512m, tikr-api 768m, ollama 1024m. memswap_limit = mem_limit.
 #
 # Prerequisites:
 #   cp docker/.env.example docker/.env   # SYNCFUSION_LICENSE_KEY, paths
@@ -19,6 +21,8 @@ services:
     image: ollama/ollama:latest
     container_name: tikr-ollama
     restart: unless-stopped
+    mem_limit: 1024m
+    memswap_limit: 1024m
     ports:
       - ${TIKR_OLLAMA_HOST_PORT:-11434}:11434
     volumes:
@@ -34,6 +38,8 @@ services:
     image: ghcr.io/bigessfour/tikr-api:${TIKR_VERSION:-latest}
     container_name: tikr-api
     restart: unless-stopped
+    mem_limit: 768m
+    memswap_limit: 768m
     env_file:
       - .env
     environment:
@@ -59,6 +65,8 @@ services:
     image: ghcr.io/bigessfour/tikr-web:${TIKR_VERSION:-latest}
     container_name: tikr-web
     restart: unless-stopped
+    mem_limit: 512m
+    memswap_limit: 512m
     env_file:
       - .env
     environment:
