@@ -13,7 +13,7 @@
     <PackageReference Include="Microsoft.Extensions.AI" Version="10.8.1" />
     <PackageReference Include="Syncfusion.Blazor.FileManager" Version="34.1.32" />
     <PackageReference Include="Syncfusion.Blazor.SfPdfViewer" Version="34.1.32" />
-    <PackageReference Include="Syncfusion.Blazor.SfSmartPdfViewer" Version="34.1.32" />
+    <PackageReference Include="Syncfusion.Blazor.SfSmartPdfViewer" Version="35.1.37" />
     <PackageReference Include="Syncfusion.Blazor.SmartComponents" Version="34.1.32" />
     <PackageReference Include="Syncfusion.Blazor.Spreadsheet" Version="34.1.32" />
     <PackageReference Include="Syncfusion.Blazor.WordProcessor" Version="34.1.32" />
@@ -35,7 +35,7 @@
     <PackageReference Include="Syncfusion.Blazor.RichTextEditor" Version="34.1.32" />
     <PackageReference Include="Syncfusion.Blazor.Schedule" Version="34.1.32" />
     <PackageReference Include="Syncfusion.Blazor.Themes" Version="34.1.32" />
-    <PackageReference Include="Syncfusion.Blazor.AI" Version="34.1.32" />
+    <PackageReference Include="Syncfusion.Blazor.AI" Version="35.1.37" />
     <!-- Structured logging for runtime visibility and operational proof -->
     <PackageReference Include="Serilog.AspNetCore" Version="10.0.0" />
     <PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
