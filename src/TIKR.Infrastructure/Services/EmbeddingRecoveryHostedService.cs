@@ -2,6 +2,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using TIKR.Infrastructure.Data;
 using TIKR.Shared.Configuration;
 using TIKR.Shared.Diagnostics;
 using TIKR.Shared.Interfaces;
@@ -16,6 +17,7 @@ namespace TIKR.Infrastructure.Services;
 public sealed class EmbeddingRecoveryHostedService(
     IServiceScopeFactory scopeFactory,
     EmbeddingRecoveryState state,
+    EmbeddingRecoveryStateStore stateStore,
     IConfiguration configuration,
     ILogger<EmbeddingRecoveryHostedService> logger) : BackgroundService
 {
@@ -34,6 +36,8 @@ public sealed class EmbeddingRecoveryHostedService(
 
         var cooldown = TimeSpan.FromMinutes(
             TikrConfiguration.GetEmbeddingRecoveryCooldownMinutes(configuration));
+
+        await LoadPersistedStateAsync(stoppingToken);
 
         try
         {
@@ -108,7 +112,7 @@ public sealed class EmbeddingRecoveryHostedService(
             return;
         }
 
-        if (state.LastAutoReindexUtc is { } last && utcNow - last < cooldown)
+        if (state.CooldownAnchorUtc is { } last && utcNow - last < cooldown)
         {
             TikrActionLog.Info(logger, "AI.EmbeddingRecovery",
                 $"Cooldown active until {last.Add(cooldown):u} — skip " +
@@ -121,8 +125,12 @@ public sealed class EmbeddingRecoveryHostedService(
             $"Trigger={trigger} DocCoverage={health.DocumentsChunkCoveragePercent}% " +
             $"VaultCoverage={health.KnowledgeChunkCoveragePercent}%");
 
+        state.NoteReindexStarted(trigger, utcNow);
+        await PersistStateAsync(ct);
+
         var result = await ai.ReindexAllEmbeddingsAsync(trigger, ct);
         state.NoteReindexResult(trigger, result, utcNow);
+        await PersistStateAsync(ct);
 
         var after = await ai.GetCorpusHealthAsync(ct);
         state.NoteCorpus(after);
@@ -131,5 +139,34 @@ public sealed class EmbeddingRecoveryHostedService(
             $"Trigger={trigger} Docs={result.DocumentsEmbedded}/{result.DocumentsAttempted} " +
             $"Vault={result.KnowledgeEmbedded}/{result.KnowledgeAttempted} Errors={result.Errors.Count} " +
             $"DocCoverageNow={after.DocumentsChunkCoveragePercent}%");
+    }
+
+    private async Task LoadPersistedStateAsync(CancellationToken ct)
+    {
+        try
+        {
+            await using var scope = scopeFactory.CreateAsyncScope();
+            var db = scope.ServiceProvider.GetRequiredService<TikrDbContext>();
+            await stateStore.LoadIntoAsync(state, db, ct);
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Could not load persisted embedding recovery state");
+        }
+    }
+
+    private async Task PersistStateAsync(CancellationToken ct)
+    {
+        try
+        {
+            await using var scope = scopeFactory.CreateAsyncScope();
+            var db = scope.ServiceProvider.GetRequiredService<TikrDbContext>();
+            await stateStore.SaveAsync(state, db, ct);
+        }
+        catch (Exception ex)
+        {
+            state.NoteError(ex.Message);
+            logger.LogWarning(ex, "Could not persist embedding recovery state");
+        }
     }
 }
