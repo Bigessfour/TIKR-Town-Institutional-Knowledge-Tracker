@@ -17,13 +17,13 @@
     <PackageReference Include="Syncfusion.Blazor.SmartComponents" Version="34.1.32" />
     <PackageReference Include="Syncfusion.Blazor.Spreadsheet" Version="34.1.32" />
     <PackageReference Include="Syncfusion.Blazor.WordProcessor" Version="34.1.32" />
-    <PackageReference Include="Syncfusion.Licensing" Version="34.1.32" />
+    <PackageReference Include="Syncfusion.Licensing" Version="35.1.37" />
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.21.0" />
     <PackageReference Include="OllamaSharp" Version="5.4.30" />
     <PackageReference Include="Syncfusion.Blazor.Buttons" Version="34.1.32" />
     <PackageReference Include="Syncfusion.Blazor.Calendars" Version="34.1.32" />
-    <PackageReference Include="Syncfusion.Blazor.Cards" Version="34.1.32" />
-    <PackageReference Include="Syncfusion.Blazor.Core" Version="34.1.32" />
+    <PackageReference Include="Syncfusion.Blazor.Cards" Version="35.1.37" />
+    <PackageReference Include="Syncfusion.Blazor.Core" Version="35.1.37" />
     <PackageReference Include="Syncfusion.Blazor.DataForm" Version="34.1.32" />
     <PackageReference Include="Syncfusion.Blazor.DropDowns" Version="34.1.32" />
     <PackageReference Include="Syncfusion.Blazor.Grid" Version="34.1.32" />
