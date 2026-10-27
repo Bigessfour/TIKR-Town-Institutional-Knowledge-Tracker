@@ -15,6 +15,10 @@
 # - run playwright E2E
 # - tear down
 #
+# CI sets TIKR_CI_DOCKER_CACHE=gha and TIKR_CI_SKIP_IMAGE_BUILD=1 after
+# docker/build-push-action loads tikr-ci-api:local and tikr-ci-web:local.
+# A local run leaves those unset and builds with docker compose.
+#
 # It mirrors the CI step as closely as possible so local run == what CI will do.
 set -euo pipefail
 
@@ -22,52 +26,75 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
 LICENSE_KEY="${SYNCFUSION_LICENSE_KEY:-}"
+CI_IMAGE_OVERRIDE=""
+if [ "${TIKR_CI_DOCKER_CACHE:-}" = "gha" ]; then
+	CI_IMAGE_OVERRIDE="$(mktemp)"
+	cat >"$CI_IMAGE_OVERRIDE" <<'EOF'
+services:
+  tikr-api:
+    image: tikr-ci-api:local
+  tikr-web:
+    image: tikr-ci-web:local
+EOF
+fi
+
+compose() {
+	if [ -n "$CI_IMAGE_OVERRIDE" ]; then
+		docker compose -f docker/docker-compose.yml -f "$CI_IMAGE_OVERRIDE" "$@"
+	else
+		docker compose -f docker/docker-compose.yml "$@"
+	fi
+}
 
 echo "=== TIKR CI Smoke (local simulation) ==="
 echo "License present: $([ -n "$LICENSE_KEY" ] && echo yes || echo no)"
 
 if [ -z "$LICENSE_KEY" ]; then
-  echo "SYNCFUSION_LICENSE_KEY not set — running without licensed Syncfusion tools (stub path only)."
-  cp docker/.env.example docker/.env
+	echo "SYNCFUSION_LICENSE_KEY not set — running without licensed Syncfusion tools (stub path only)."
+	cp docker/.env.example docker/.env
 else
-  cp docker/.env.example docker/.env
-  {
-    echo "SYNCFUSION_LICENSE_KEY=${LICENSE_KEY}"
-    echo "USE_SYNCFUSION_AGENT_TOOLS=true"
-  } >> docker/.env
+	cp docker/.env.example docker/.env
+	{
+		echo "SYNCFUSION_LICENSE_KEY=${LICENSE_KEY}"
+		echo "USE_SYNCFUSION_AGENT_TOOLS=true"
+	} >>docker/.env
 fi
 
-echo ">>> docker compose build"
-docker compose -f docker/docker-compose.yml build
+if [ "${TIKR_CI_SKIP_IMAGE_BUILD:-}" = "1" ]; then
+	echo ">>> using images built with the GitHub Actions layer cache"
+else
+	echo ">>> docker compose build"
+	compose build
+fi
 
 echo ">>> docker compose up -d --wait"
-docker compose -f docker/docker-compose.yml up -d --wait --wait-timeout 180 || {
-  echo "docker compose up --wait failed or timed out"
-  docker compose -f docker/docker-compose.yml logs --tail=50 || true
-  exit 1
+compose up -d --wait --wait-timeout 180 || {
+	echo "docker compose up --wait failed or timed out"
+	compose logs --tail=50 || true
+	exit 1
 }
 
 echo ">>> API health"
 curl -sf http://localhost:5000/health || {
-  echo "API health failed post-wait"
-  docker compose -f docker/docker-compose.yml logs --tail=50 tikr-api || true
-  exit 1
+	echo "API health failed post-wait"
+	compose logs --tail=50 tikr-api || true
+	exit 1
 }
 
 echo ">>> Web check"
 code=$(curl -sf -o /dev/null -w "%{http_code}" http://localhost:8080/ 2>/dev/null || echo "000")
 if ! echo "$code" | grep -qE '200|302'; then
-  echo "Web check failed with code $code"
-  docker compose -f docker/docker-compose.yml logs --tail=50 tikr-web || true
-  exit 1
+	echo "Web check failed with code $code"
+	compose logs --tail=50 tikr-web || true
+	exit 1
 fi
 
 echo ">>> Agent scan smoke (plain text fixture -> stub)"
 agent_ok=false
 for attempt in $(seq 1 6); do
-  response=$(curl -sf -F "file=@tests/fixtures/agent-scan/wiley-periodic-report.txt" \
-    http://localhost:5000/api/ai/agent-scan || echo '{"error":"curl failed"}')
-  if node --input-type=module -e '
+	response=$(curl -sf -F "file=@tests/fixtures/agent-scan/wiley-periodic-report.txt" \
+		http://localhost:5000/api/ai/agent-scan || echo '{"error":"curl failed"}')
+	if node --input-type=module -e '
     try {
       const data = JSON.parse(process.argv[1] || "{}");
       const hasText = typeof data.extractedText === "string" && data.extractedText.includes("Wiley periodic report due Q1 2026");
@@ -76,57 +103,57 @@ for attempt in $(seq 1 6); do
     } catch { /* ignore */ }
     process.exit(1);
   ' "$response"; then
-    agent_ok=true
-    break
-  fi
-  sleep 4
+		agent_ok=true
+		break
+	fi
+	sleep 4
 done
 if [ "$agent_ok" != "true" ]; then
-  echo "::error::Agent scan smoke failed after retries"
-  docker compose -f docker/docker-compose.yml logs --tail=30 tikr-api || true
-  exit 1
+	echo "::error::Agent scan smoke failed after retries"
+	compose logs --tail=30 tikr-api || true
+	exit 1
 fi
 
 echo "$response" | grep -q '"usedSyncfusionTools":false' || {
-  echo "::error::Expected usedSyncfusionTools:false for plain-text agent-scan fixture"
-  exit 1
+	echo "::error::Expected usedSyncfusionTools:false for plain-text agent-scan fixture"
+	exit 1
 }
 
 if [ -n "$LICENSE_KEY" ]; then
-  echo ">>> Licensed PDF agent-scan smoke"
-  pdf_response=$(curl -sf -F "file=@tests/fixtures/agent-scan/minimal-clerk-report.pdf" \
-    http://localhost:5000/api/ai/agent-scan || echo '{"error":"curl failed"}')
-  echo "$pdf_response" | grep -q "Wiley clerk report" || {
-    echo "::error::Licensed PDF agent-scan smoke failed to extract expected text"
-    exit 1
-  }
-  echo "$pdf_response" | grep -q '"usedSyncfusionTools":true' || {
-    echo "::error::Expected usedSyncfusionTools:true for PDF when SYNCFUSION_LICENSE_KEY is set"
-    exit 1
-  }
+	echo ">>> Licensed PDF agent-scan smoke"
+	pdf_response=$(curl -sf -F "file=@tests/fixtures/agent-scan/minimal-clerk-report.pdf" \
+		http://localhost:5000/api/ai/agent-scan || echo '{"error":"curl failed"}')
+	echo "$pdf_response" | grep -q "Wiley clerk report" || {
+		echo "::error::Licensed PDF agent-scan smoke failed to extract expected text"
+		exit 1
+	}
+	echo "$pdf_response" | grep -q '"usedSyncfusionTools":true' || {
+		echo "::error::Expected usedSyncfusionTools:true for PDF when SYNCFUSION_LICENSE_KEY is set"
+		exit 1
+	}
 fi
 
 echo ">>> E2E (Playwright)"
 cd tests/e2e
 npm ci
 for i in $(seq 1 10); do
-  if curl -sf http://localhost:8080/ > /dev/null; then break; fi
-  sleep 2
+	if curl -sf http://localhost:8080/ >/dev/null; then break; fi
+	sleep 2
 done
 if [ -n "$LICENSE_KEY" ]; then
-  SYNCFUSION_LICENSE_KEY=${LICENSE_KEY} TIKR_E2E_BASE_URL=http://localhost:8080 \
-    npx playwright install --with-deps chromium
-  SYNCFUSION_LICENSE_KEY=${LICENSE_KEY} TIKR_E2E_BASE_URL=http://localhost:8080 \
-    npx playwright test --reporter=list --timeout=120000
+	SYNCFUSION_LICENSE_KEY=${LICENSE_KEY} TIKR_E2E_BASE_URL=http://localhost:8080 \
+		npx playwright install --with-deps chromium
+	SYNCFUSION_LICENSE_KEY=${LICENSE_KEY} TIKR_E2E_BASE_URL=http://localhost:8080 \
+		npx playwright test --reporter=list --timeout=120000
 else
-  TIKR_E2E_BASE_URL=http://localhost:8080 \
-    npx playwright install --with-deps chromium
-  TIKR_E2E_BASE_URL=http://localhost:8080 \
-    npx playwright test --reporter=list --timeout=120000
+	TIKR_E2E_BASE_URL=http://localhost:8080 \
+		npx playwright install --with-deps chromium
+	TIKR_E2E_BASE_URL=http://localhost:8080 \
+		npx playwright test --reporter=list --timeout=120000
 fi
 cd -
 
 echo ">>> docker compose down"
-docker compose -f docker/docker-compose.yml down
+compose down
 
 echo "=== CI smoke completed successfully ==="
