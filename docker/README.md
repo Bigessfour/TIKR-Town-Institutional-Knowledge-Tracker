@@ -95,15 +95,15 @@ Docker builds use the repo root as context (see `context: ..` in compose). A roo
 
 ## DS225+ memory fence
 
-Mr_Storage has ~6 GiB RAM shared with ClerkSuite (`1536m`) and DSM. Production compose caps:
+Mr_Storage has a 16 GB SODIMM plus 2 GB soldered (~17.3 GiB usable), shared with ClerkSuite (`1536m`) and DSM. Production compose caps:
 
 | Container | Limit | Why |
 |-----------|-------|-----|
-| `tikr-web` | 512m | Idle ~190 MiB |
-| `tikr-api` | 768m | Idle ~350 MiB |
-| `tikr-ollama` | 1024m | Unbounded llama-server previously OOM-killed the NAS (~2.5 GiB) |
+| `tikr-web` | 1g | Idle well under this |
+| `tikr-api` | 3g | Tagging and embedding stay inside the cgroup |
+| `tikr-ollama` | 8g | `qwen2.5:7b` plus `nomic-embed-text` at context 4096 |
 
-`memswap_limit` equals `mem_limit` so TIKR cannot consume host swap. Large models (e.g. unquantized 3B+) will fail inside the Ollama cgroup instead of taking ClerkSuite down.
+`memswap_limit` equals `mem_limit` so model weights cannot spill into host swap. The old 1024m Ollama cap could not hold the 7B weights.
 
 ## Synology NAS
 
