@@ -83,6 +83,9 @@ jobs:
         with:
           node-version: 20
 
+      - name: Verify compose memory budget sync
+        run: bash scripts/sync-compose-memory-budget.test.sh
+
       - name: Restore
         run: dotnet restore TIKR.sln
 
