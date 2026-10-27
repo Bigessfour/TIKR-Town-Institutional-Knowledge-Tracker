@@ -103,7 +103,7 @@ Mr_Storage has a 16 GB SODIMM plus 2 GB soldered (~17.3 GiB usable), shared with
 | `tikr-api` | 3g | Tagging and embedding stay inside the cgroup |
 | `tikr-ollama` | 8g | `qwen2.5:7b` plus `nomic-embed-text` at context 4096 |
 
-`memswap_limit` equals `mem_limit` so model weights cannot spill into host swap. The old 1024m Ollama cap could not hold the 7B weights.
+`memswap_limit` equals `mem_limit` so model weights cannot spill into host swap. The old 1024m Ollama cap could not hold the 7B weights. `./scripts/deploy-tikr-nas.sh` copies these three caps onto an existing NAS compose file and leaves extra mounts and entrypoints in place.
 
 ## Synology NAS
 

@@ -348,6 +348,7 @@ Re-run inventory: `./scripts/update-function-inventory.sh` (use `--root .` from 
 - [x] **Docs:** research R9–R10, quickstart US3/US4 — T023–T024
 - [x] **Shipped:** merged to `main`, tagged **v1.0.1**, GHCR images published
 - [x] **NAS deploy:** `./scripts/deploy-tikr-nas.sh` — 2026-08-08 Mr_Storage upgraded to GHCR `1.0.1`; stack healthy (`5050/health`, Web `:8080`); council preview APIs green
+- [x] **Memory budget on an existing NAS compose file:** `scripts/sync-compose-memory-budget.test.sh` keeps a town-docs mount and replaces 1792m/1536m/512m with 8g/3g/1g. A reboot of Mr_Storage after the next deploy is still a manual check.
 - [ ] **Manual NAS validation (UI):** seed → linked agenda with text → minutes dialog → save/link/complete — API verified 2026-08-08; clerk UI walkthrough still open — see [quickstart](../specs/006-council-agenda-minutes/quickstart.md)
 - [ ] **vNext:** bUnit test for `DownloadMeetingMinutesAsync` link-failure + save-without-requirement paths; trigger text extract when linked agenda lacks `FullTextContent`
 
