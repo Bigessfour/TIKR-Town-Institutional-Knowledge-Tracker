@@ -4,11 +4,12 @@ using System.Text.Json;
 using TIKR.Shared.DTOs;
 
 /// <summary>
-/// Default clerk dashboard panel layout and localStorage persistence (key tikr-dashboard-layout-v1).
+/// Default clerk dashboard panel layout and localStorage persistence.
+/// v2 drops a saved v1 layout so the taller due-out rows apply. Reset layout still restores these defaults.
 /// </summary>
 public static class DashboardLayoutService
 {
-    public const string StorageKey = "tikr-dashboard-layout-v1";
+    public const string StorageKey = "tikr-dashboard-layout-v2";
 
     public static IReadOnlyList<DashboardLayoutPanelDto> DefaultPanels { get; } =
     [

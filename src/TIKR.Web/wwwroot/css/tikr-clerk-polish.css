@@ -751,12 +751,6 @@ html[data-theme="high-contrast"] .form-label {
     .tikr-main-content {
         padding: 1rem;
     }
-
-    .tikr-status-footer {
-        padding: 0.65rem 1rem;
-        flex-direction: column;
-        align-items: flex-start;
-    }
 }
 
 @media print {
@@ -1655,6 +1649,14 @@ html[data-theme="high-contrast"] .tikr-doc-fullscreen-surface {
 .tikr-status-footer-hint.is-offline {
     color: #9a6700;
     font-weight: 600;
+}
+
+@media (max-width: 768px) {
+    .tikr-status-footer {
+        padding: 0.65rem 1rem;
+        flex-direction: column;
+        align-items: flex-start;
+    }
 }
 
 .dashboard-panel {

@@ -7,6 +7,12 @@ namespace TIKR.Web.Tests.Services;
 public class DashboardLayoutServiceTests
 {
     [Fact]
+    public void StorageKey_DropsSavedV1Layout()
+    {
+        DashboardLayoutService.StorageKey.Should().Be("tikr-dashboard-layout-v2");
+    }
+
+    [Fact]
     public void DefaultPanels_HasExpectedIds()
     {
         var ids = DashboardLayoutService.DefaultPanels.Select(p => p.PanelId).ToList();
