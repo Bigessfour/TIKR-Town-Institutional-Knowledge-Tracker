@@ -109,6 +109,21 @@ public class DocumentTagHeuristicsTests
     }
 
     [Fact]
+    public void FillGaps_PayrollFileMentioningElectionStaysPersonnel()
+    {
+        var fromName = DocumentTagHeuristics.FillGaps("election-judge-payroll.pdf", null, [], null);
+        fromName.Folder.Should().Be(DocumentTagHeuristics.PersonnelHr);
+
+        var fromBody = DocumentTagHeuristics.FillGaps(
+            "scan.pdf",
+            "Election judge payroll schedule for the special district.",
+            [],
+            null);
+        fromBody.Folder.Should().Be(DocumentTagHeuristics.PersonnelHr);
+        fromBody.Tags.Should().NotContain("election");
+    }
+
+    [Fact]
     public void FillGaps_DoesNotTreatCouncilFolderPathAsMinutes()
     {
         // Leaf name only — callers must not pass NAS relative paths into FillGaps.

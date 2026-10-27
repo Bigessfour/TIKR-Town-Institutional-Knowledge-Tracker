@@ -85,7 +85,8 @@ public class HybridAiServiceTests
             "ELECTION INFORMATION/2025 Special District Election Manual.pdf");
 
         result.SuggestedFolder.Should().Be(DocumentTagHeuristics.General);
-        result.Tags.Should().BeEquivalentTo(["personnel"]);
+        result.Tags.Should().BeEquivalentTo(["election"]);
+        result.Tags.Should().NotContain("personnel");
 
         var updated = await db.Documents.FindAsync(document.Id);
         updated!.SuggestedFolder.Should().Be(DocumentTagHeuristics.General);

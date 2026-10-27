@@ -88,7 +88,10 @@ public class HybridAiService(
 
         // Path seed wins even if FillGaps somehow changed the folder.
         if (pathSeededFolder is not null)
+        {
             folder = pathSeededFolder;
+            tags = DocumentTagHeuristics.TagsForLockedFolder(document.FileName, pathSeededFolder, tags);
+        }
 
         document.AiTags = JsonSerializer.Serialize(tags);
         document.SuggestedFolder = folder;

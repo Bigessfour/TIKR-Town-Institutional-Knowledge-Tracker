@@ -106,8 +106,43 @@ public static class DocumentTagHeuristics
         if (tags.Length == 0)
             tags = InferTags(lower);
 
+        // Filename only. Body text that mentions an election must not steal a
+        // payroll or personnel file when the model left the folder empty.
+        if (string.IsNullOrWhiteSpace(folder) && FileNameMentionsElection(fileName))
+        {
+            folder = General;
+            if (tags.Length == 0)
+                tags = ["election"];
+        }
+
         return (tags, folder);
     }
+
+    /// <summary>
+    /// Path seed already replaced the model folder. Drop a personnel tag the model
+    /// attached to an election filename, and keep an election tag.
+    /// </summary>
+    public static string[] TagsForLockedFolder(string fileName, string? lockedFolder, string[] tags)
+    {
+        if (lockedFolder != General || !FileNameMentionsElection(fileName))
+            return tags;
+
+        var kept = tags.Where(tag => !IsPersonnelTag(tag)).ToArray();
+        if (!kept.Any(tag => tag.Equals("election", StringComparison.OrdinalIgnoreCase)))
+            kept = [.. kept, "election"];
+        return kept;
+    }
+
+    private static bool FileNameMentionsElection(string? fileName)
+    {
+        var lower = fileName?.ToLowerInvariant() ?? "";
+        return HasWord(lower, "election") || HasWord(lower, "elections");
+    }
+
+    private static bool IsPersonnelTag(string tag) =>
+        tag.Equals("personnel", StringComparison.OrdinalIgnoreCase)
+        || tag.Equals("hr", StringComparison.OrdinalIgnoreCase)
+        || tag.Equals("human resources", StringComparison.OrdinalIgnoreCase);
 
     internal static string? InferFolder(string lowerHaystack)
     {
@@ -127,8 +162,6 @@ public static class DocumentTagHeuristics
             return Correspondence;
         if (ContainsAny(lowerHaystack, "application form", "request form", "permit form"))
             return Forms;
-        if (HasWord(lowerHaystack, "election") || HasWord(lowerHaystack, "elections"))
-            return General;
         if (ContainsAny(lowerHaystack, "personnel", "human resources", "hr ", "employment", "payroll"))
             return PersonnelHr;
 
@@ -149,8 +182,6 @@ public static class DocumentTagHeuristics
             return ["minutes"];
         if (ContainsAny(lowerHaystack, "contract", "agreement"))
             return ["contract"];
-        if (HasWord(lowerHaystack, "election") || HasWord(lowerHaystack, "elections"))
-            return ["election"];
         return [];
     }
 
