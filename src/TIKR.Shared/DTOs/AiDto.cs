@@ -2,7 +2,17 @@ namespace TIKR.Shared.DTOs;
 
 public record TagDocumentRequest(Guid DocumentId);
 
-public record TagDocumentResponse(Guid DocumentId, string[] Tags, string? SuggestedFolder);
+public record TagDocumentResponse(
+    Guid DocumentId,
+    string[] Tags,
+    string? SuggestedFolder,
+    string? ProposedFolder = null);
+
+public record FolderProposalGroupDto(string Name, int Count);
+
+public record FolderProposalDecisionRequest(string Name);
+
+public record FolderProposalDecisionResponse(string Name, int Updated);
 
 public record DashboardPriority(
     string Title,

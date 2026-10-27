@@ -70,9 +70,41 @@ public static class DocumentTagHeuristics
             return Correspondence;
         if (topKey is "forms" or "form")
             return Forms;
+        if (topKey is "election information" or "elections" or "election")
+            return General;
 
         return null;
     }
+
+    /// <summary>
+    /// Top library folder that is not one of the known roots. The clerk already named it.
+    /// Known roots stay out of this so a council packet is not proposed as a new folder.
+    /// </summary>
+    public static string? TryReadUnmappedTopFolder(string? relativePath)
+    {
+        if (string.IsNullOrWhiteSpace(relativePath))
+            return null;
+
+        var normalized = relativePath.Replace('\\', '/').Trim('/');
+        var segments = normalized.Split('/', StringSplitOptions.RemoveEmptyEntries);
+        if (segments.Length < 2)
+            return null;
+
+        if (IsKnownLibraryRoot(NormalizeNasSegment(segments[0])))
+            return null;
+
+        return FolderNamePolicy.CanonicalOrNull(segments[0]);
+    }
+
+    internal static bool IsKnownLibraryRoot(string topKey) =>
+        topKey is "council meetings" or "council meeting"
+            or "ordinances" or "ordinance" or "municipal code"
+            or "budget" or "finance" or "mill levy" or "milllevy"
+            or "contracts" or "contract" or "agreements" or "agreement"
+            or "personnel" or "hr" or "human resources"
+            or "correspondence" or "letters" or "letter"
+            or "forms" or "form"
+            or "election information" or "elections" or "election";
 
     private static string NormalizeNasSegment(string segment) =>
         string.Join(' ', segment.Split([' ', '_', '-'], StringSplitOptions.RemoveEmptyEntries))

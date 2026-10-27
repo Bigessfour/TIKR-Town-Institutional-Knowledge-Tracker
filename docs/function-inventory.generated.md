@@ -2,7 +2,7 @@
 <!-- Do NOT edit manually. Lightweight correctness-surface tracker. -->
 
 # Function Inventory — tikr-town-institutional-knowledge-tracker
-Generated: 2026-08-15T15:45:23.939249+00:00
+Generated: 2026-10-27T17:05:00.796078+00:00
 **Stack:** C#/Blazor
 **Tracking mode:** `surfaces`
 **Scan roots:** `src`
@@ -37,31 +37,31 @@ Ship gate remains project acceptance / smoke checklists — inventory count alon
 
 ## Correctness surfaces
 
-| Tier | Category | Surface | Location | Proof of Function | Minimal Impl Signal |
-|------|----------|---------|----------|-------------------|---------------------|
-| P1 | Other Public | AuthEndpoints.AuthEndpoints | src/TIKR.Api/AuthEndpoints.cs:1 | tests/TIKR.Api.Tests/Endpoints/AuthEndpointTests.cs | has logic |
-| P1 | Other Public | Program.Program | src/TIKR.Api/Program.cs:1 | tests/TIKR.Api.Tests/Endpoints/CouncilPacketEndpointTests.cs... | has logic |
-| P1 | Other Public | ChatHistoryEndpoints.ChatHistoryEndpoints | src/TIKR.Api/ChatHistoryEndpoints.cs:1 | tests/TIKR.Api.Tests/Endpoints/ChatHistoryEndpointTests.cs | has logic |
-| P1 | Other Public | CouncilPacketEndpoints.CouncilPacketEndpoints | src/TIKR.Api/CouncilPacketEndpoints.cs:1 | tests/TIKR.Api.Tests/Endpoints/CouncilPacketEndpointTests.cs... | has logic |
-| P1 | Core Service | JwtTokenService.JwtTokenService | src/TIKR.Infrastructure/Identity/JwtTokenService.cs:9 | tests/TIKR.Infrastructure.Tests/Identity/JwtTokenServiceTest... | has logic |
-| P1 | Core Service | DashboardService.DashboardService | src/TIKR.Infrastructure/Services/DashboardService.cs:9 | tests/TIKR.Infrastructure.Tests/Services/DashboardServiceTes... | has logic |
-| P1 | Core Service | FeatureSettingsService.FeatureSettingsService | src/TIKR.Infrastructure/Services/FeatureSettingsService.cs:20 | tests/TIKR.Infrastructure.Tests/Services/FeatureSettingsServ... | has logic |
-| P1 | Core Service | HybridAiService.HybridAiService | src/TIKR.Infrastructure/Services/HybridAiService.cs:15 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceTest... | has logic |
-| P1 | Core Service | ContactService.ContactService | src/TIKR.Infrastructure/Services/ContactService.cs:13 | tests/TIKR.Infrastructure.Tests/Services/ContactServiceTests... | has logic |
-| P1 | Core Service | RuntimeSecretsStore.RuntimeSecretsStore | src/TIKR.Infrastructure/Services/RuntimeSecretsStore.cs:21 | tests/TIKR.Infrastructure.Tests/Services/RuntimeSecretsStore... | has logic |
-| P2 | Other Public | Login.Login | src/TIKR.Web/Components/Pages/Login.razor:1 | tests/TIKR.Api.Tests/Endpoints/ChatHistoryEndpointTests.cs, ... | has logic |
-| P2 | Other Public | Requirements.Requirements | src/TIKR.Web/Components/Pages/Requirements.razor:1 | tests/e2e/page-readiness.spec.ts, tests/e2e/clerk-smoke.spec... | has logic |
-| P2 | Other Public | Documents.Documents | src/TIKR.Web/Components/Pages/Documents.razor:1 | tests/TIKR.SyncfusionDocuments.Tests/SyncfusionDocumentOcrSe... | has logic |
-| P2 | Other Public | Vault.Vault | src/TIKR.Web/Components/Pages/Vault.razor:1 | tests/TIKR.Web.Tests/Components/VaultPageTests.cs, tests/TIK... | has logic |
-| P2 | Other Public | Assistant.Assistant | src/TIKR.Web/Components/Pages/Assistant.razor:1 | tests/e2e/page-readiness.spec.ts, tests/TIKR.Api.Tests/Endpo... | has logic |
-| P2 | Other Public | Settings.Settings | src/TIKR.Web/Components/Pages/Settings.razor:1 | tests/e2e/page-readiness.spec.ts, tests/TIKR.Web.Tests/Compo... | has logic |
-| P2 | Other Public | Account.Account | src/TIKR.Web/Components/Pages/Account.razor:1 | tests/TIKR.Web.Tests/Components/AccountPageTests.cs | has logic |
-| P2 | Other Public | Users.Users | src/TIKR.Web/Components/Pages/Users.razor:1 | tests/TIKR.Web.Tests/Components/UsersPageTests.cs, tests/TIK... | has logic |
-| P2 | Other Public | Home.Home | src/TIKR.Web/Components/Pages/Home.razor:1 | tests/TIKR.Web.Tests/Components/HomePageTests.cs | has logic |
-| P2 | Other Public | Calendar.Calendar | src/TIKR.Web/Components/Pages/Calendar.razor:1 | tests/e2e/page-readiness.spec.ts, tests/TIKR.Web.Tests/Compo... | has logic |
-| P2 | Core Service | ChatClerkIdentityService.ChatClerkIdentityService | src/TIKR.Web/Services/ChatClerkIdentityService.cs:11 | tests/TIKR.Web.Tests/Services/WebServicesProofTests.cs | has logic |
-| P2 | Core Service | ClerkUserGuideService.ClerkUserGuideService | src/TIKR.Web/Services/ClerkUserGuideService.cs:2 | tests/TIKR.Web.Tests/Services/WebServicesProofTests.cs | has logic |
-| P2 | Core Service | ClerkTourService.ClerkTourService | src/TIKR.Web/Services/ClerkTourService.cs:7 | tests/TIKR.Web.Tests/ClerkTour/ClerkTourServiceTests.cs | has logic |
+| Tier | Category     | Surface                                           | Location                                                      | Proof of Function                                               | Minimal Impl Signal |
+| ---- | ------------ | ------------------------------------------------- | ------------------------------------------------------------- | --------------------------------------------------------------- | ------------------- |
+| P1   | Other Public | AuthEndpoints.AuthEndpoints                       | src/TIKR.Api/AuthEndpoints.cs:1                               | tests/TIKR.Api.Tests/Endpoints/AuthEndpointTests.cs             | has logic           |
+| P1   | Other Public | Program.Program                                   | src/TIKR.Api/Program.cs:1                                     | tests/TIKR.Api.Tests/Endpoints/CouncilPacketEndpointTests.cs... | has logic           |
+| P1   | Other Public | ChatHistoryEndpoints.ChatHistoryEndpoints         | src/TIKR.Api/ChatHistoryEndpoints.cs:1                        | tests/TIKR.Api.Tests/Endpoints/ChatHistoryEndpointTests.cs      | has logic           |
+| P1   | Other Public | CouncilPacketEndpoints.CouncilPacketEndpoints     | src/TIKR.Api/CouncilPacketEndpoints.cs:1                      | tests/TIKR.Api.Tests/Endpoints/CouncilPacketEndpointTests.cs... | has logic           |
+| P1   | Core Service | JwtTokenService.JwtTokenService                   | src/TIKR.Infrastructure/Identity/JwtTokenService.cs:9         | tests/TIKR.Infrastructure.Tests/Identity/JwtTokenServiceTest... | has logic           |
+| P1   | Core Service | DashboardService.DashboardService                 | src/TIKR.Infrastructure/Services/DashboardService.cs:9        | tests/TIKR.Infrastructure.Tests/Services/DashboardServiceTes... | has logic           |
+| P1   | Core Service | FeatureSettingsService.FeatureSettingsService     | src/TIKR.Infrastructure/Services/FeatureSettingsService.cs:20 | tests/TIKR.Infrastructure.Tests/Services/FeatureSettingsServ... | has logic           |
+| P1   | Core Service | HybridAiService.HybridAiService                   | src/TIKR.Infrastructure/Services/HybridAiService.cs:17        | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceTest... | has logic           |
+| P1   | Core Service | ContactService.ContactService                     | src/TIKR.Infrastructure/Services/ContactService.cs:13         | tests/TIKR.Infrastructure.Tests/Services/ContactServiceTests... | has logic           |
+| P1   | Core Service | RuntimeSecretsStore.RuntimeSecretsStore           | src/TIKR.Infrastructure/Services/RuntimeSecretsStore.cs:21    | tests/TIKR.Infrastructure.Tests/Services/RuntimeSecretsStore... | has logic           |
+| P2   | Other Public | Login.Login                                       | src/TIKR.Web/Components/Pages/Login.razor:1                   | tests/TIKR.Api.Tests/Endpoints/ChatHistoryEndpointTests.cs, ... | has logic           |
+| P2   | Other Public | Requirements.Requirements                         | src/TIKR.Web/Components/Pages/Requirements.razor:1            | tests/e2e/page-readiness.spec.ts, tests/e2e/clerk-smoke.spec... | has logic           |
+| P2   | Other Public | Documents.Documents                               | src/TIKR.Web/Components/Pages/Documents.razor:1               | tests/TIKR.SyncfusionDocuments.Tests/SyncfusionDocumentOcrSe... | has logic           |
+| P2   | Other Public | Vault.Vault                                       | src/TIKR.Web/Components/Pages/Vault.razor:1                   | tests/TIKR.Web.Tests/Components/VaultPageTests.cs, tests/TIK... | has logic           |
+| P2   | Other Public | Assistant.Assistant                               | src/TIKR.Web/Components/Pages/Assistant.razor:1               | tests/e2e/page-readiness.spec.ts, tests/TIKR.Api.Tests/Endpo... | has logic           |
+| P2   | Other Public | Settings.Settings                                 | src/TIKR.Web/Components/Pages/Settings.razor:1                | tests/e2e/page-readiness.spec.ts, tests/TIKR.Web.Tests/Compo... | has logic           |
+| P2   | Other Public | Account.Account                                   | src/TIKR.Web/Components/Pages/Account.razor:1                 | tests/TIKR.Web.Tests/Components/AccountPageTests.cs             | has logic           |
+| P2   | Other Public | Users.Users                                       | src/TIKR.Web/Components/Pages/Users.razor:1                   | tests/TIKR.Web.Tests/Components/UsersPageTests.cs, tests/TIK... | has logic           |
+| P2   | Other Public | Home.Home                                         | src/TIKR.Web/Components/Pages/Home.razor:1                    | tests/TIKR.Web.Tests/Components/HomePageTests.cs                | has logic           |
+| P2   | Other Public | Calendar.Calendar                                 | src/TIKR.Web/Components/Pages/Calendar.razor:1                | tests/e2e/page-readiness.spec.ts, tests/TIKR.Web.Tests/Compo... | has logic           |
+| P2   | Core Service | ChatClerkIdentityService.ChatClerkIdentityService | src/TIKR.Web/Services/ChatClerkIdentityService.cs:11          | tests/TIKR.Web.Tests/Services/WebServicesProofTests.cs          | has logic           |
+| P2   | Core Service | ClerkUserGuideService.ClerkUserGuideService       | src/TIKR.Web/Services/ClerkUserGuideService.cs:2              | tests/TIKR.Web.Tests/Services/WebServicesProofTests.cs          | has logic           |
+| P2   | Core Service | ClerkTourService.ClerkTourService                 | src/TIKR.Web/Services/ClerkTourService.cs:7                   | tests/TIKR.Web.Tests/ClerkTour/ClerkTourServiceTests.cs         | has logic           |
 
 ## Philosophy (solo superpower)
 - Track **correctness surfaces** (pages, core services, handlers) — not every tiny helper.

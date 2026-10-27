@@ -62,9 +62,20 @@ public class DocumentTagHeuristicsTests
     [InlineData("CORRESPONDENCE/letter.pdf", DocumentTagHeuristics.Correspondence)]
     [InlineData("LETTERS/resident.pdf", DocumentTagHeuristics.Correspondence)]
     [InlineData("FORMS/permit.pdf", DocumentTagHeuristics.Forms)]
+    [InlineData("ELECTION INFORMATION/2025 Special District Election Manual.pdf", DocumentTagHeuristics.General)]
+    [InlineData("ELECTIONS/notice.pdf", DocumentTagHeuristics.General)]
     public void TryMapNasRelativePath_MapsWileyFolders(string relativePath, string expected)
     {
         DocumentTagHeuristics.TryMapNasRelativePath(relativePath).Should().Be(expected);
+    }
+
+    [Fact]
+    public void TryReadUnmappedTopFolder_ProposesClerkFolderAndSkipsKnownRoots()
+    {
+        DocumentTagHeuristics.TryReadUnmappedTopFolder("FIRE DEPARTMENT/notes.pdf")
+            .Should().Be("FIRE DEPARTMENT");
+        DocumentTagHeuristics.TryReadUnmappedTopFolder("COUNCIL MEETINGS/packet.pdf").Should().BeNull();
+        DocumentTagHeuristics.TryReadUnmappedTopFolder("agenda.pdf").Should().BeNull();
     }
 
     [Theory]

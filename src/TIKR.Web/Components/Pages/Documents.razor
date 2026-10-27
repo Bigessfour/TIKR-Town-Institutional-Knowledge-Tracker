@@ -64,7 +64,29 @@
 </div>
 
 <!-- AI banners (appear after upload + auto-tag) -->
-@if (_lastTagSuggestion is not null)
+@if (_folderProposals.Count > 0)
+{
+    <AiSuggestionBanner>
+        <ChildContent>
+            <strong>New folder?</strong>
+            @foreach (var proposal in _folderProposals)
+            {
+                var proposedName = proposal.Name;
+                var proposedCount = proposal.Count;
+                <div class="banner-body">
+                    @proposedCount @(proposedCount == 1 ? "file looks" : "files look") like <strong>@proposedName</strong>.
+                    Create that folder, or keep @(proposedCount == 1 ? "it" : "them") in General.
+                </div>
+                <div class="banner-actions">
+                    <SfButton CssClass="tikr-action-btn" Content="Create folder" OnClick="@(() => AcceptFolderProposalAsync(proposedName))" />
+                    <SfButton CssClass="tikr-action-btn" Content="Keep in General" OnClick="@(() => DeclineFolderProposalAsync(proposedName))" />
+                </div>
+            }
+        </ChildContent>
+    </AiSuggestionBanner>
+}
+
+@if (_lastTagSuggestion is not null && string.IsNullOrWhiteSpace(_lastTagSuggestion.ProposedFolder))
 {
     <AiSuggestionBanner>
         <ChildContent>
@@ -495,6 +517,7 @@ else
     private string? _statusMessage;
     private bool _showUploadBanner;
     private TagDocumentResponse? _lastTagSuggestion;
+    private List<FolderProposalGroupDto> _folderProposals = [];
     private EmailExtractionNoticeDto? _emailExtractNotice;
     private bool _emailRequirementBusy;
     private bool _keepForAssistantContext = true;
@@ -610,6 +633,7 @@ else
         try
         {
             _documents = await Api.GetDocumentsAsync(query, deleted: _showRecycleBin);
+            await LoadFolderProposalsAsync();
             RebuildFolderTree();
             RebuildFileManagerData();
             await ClearSelection();
@@ -763,6 +787,58 @@ else
             }
         }
 
+        await LoadDocumentsAsync();
+    }
+
+    private async Task LoadFolderProposalsAsync()
+    {
+        if (_showRecycleBin)
+        {
+            _folderProposals = [];
+            return;
+        }
+
+        try
+        {
+            _folderProposals = await Api.GetFolderProposalsAsync();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogDebug(ex, "Folder proposals unavailable");
+            _folderProposals = [];
+        }
+    }
+
+    private async Task AcceptFolderProposalAsync(string name)
+    {
+        TikrActionLog.Started(Logger, "UI.Documents.FolderProposal", $"Accept Name={name}");
+        var result = await Api.AcceptFolderProposalAsync(name);
+        if (result is null)
+        {
+            TikrActionLog.Failed(Logger, "UI.Documents.FolderProposal", "Accept failed", name);
+            Toast.Show("Could not create that folder.");
+            return;
+        }
+
+        _lastTagSuggestion = null;
+        TikrActionLog.Completed(Logger, "UI.Documents.FolderProposal", $"Accept Name={result.Name} Updated={result.Updated}");
+        Toast.Show($"Created folder {result.Name}.");
+        await LoadDocumentsAsync();
+    }
+
+    private async Task DeclineFolderProposalAsync(string name)
+    {
+        TikrActionLog.Started(Logger, "UI.Documents.FolderProposal", $"Decline Name={name}");
+        var result = await Api.DeclineFolderProposalAsync(name);
+        if (result is null)
+        {
+            TikrActionLog.Failed(Logger, "UI.Documents.FolderProposal", "Decline failed", name);
+            Toast.Show("Could not dismiss that folder.");
+            return;
+        }
+
+        _lastTagSuggestion = null;
+        TikrActionLog.Completed(Logger, "UI.Documents.FolderProposal", $"Decline Name={result.Name} Updated={result.Updated}");
         await LoadDocumentsAsync();
     }
 

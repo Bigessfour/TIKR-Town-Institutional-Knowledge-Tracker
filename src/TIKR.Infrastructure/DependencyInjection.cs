@@ -63,6 +63,11 @@ public static class DependencyInjection
 
         services.AddScoped<IAuditService, AuditService>();
         services.AddSingleton<IFileStorageService, LocalFileStorageService>();
+        services.AddSingleton<IFolderClassifier>(sp =>
+            FolderClassifier.Load(
+                sp.GetRequiredService<IConfiguration>()["FolderClassifier:ModelPath"],
+                sp.GetRequiredService<ILogger<FolderClassifier>>()));
+        services.AddScoped<IDocumentFolderCatalog, DocumentFolderCatalog>();
         services.AddScoped<IHybridAiService, HybridAiService>();
         services.AddScoped<IAgentDocumentStorage, NasAgentDocumentStorage>();
         services.AddSingleton<NasSyncfusionDocumentStorage>();
