@@ -128,11 +128,7 @@ fi
 
 echo ">>> E2E (Playwright)"
 cd tests/e2e
-if [[ -d node_modules/@playwright/test ]]; then
-	echo ">>> using cached e2e node_modules"
-else
-	npm ci
-fi
+npm ci
 for i in $(seq 1 10); do
 	if curl -sf http://localhost:8080/ >/dev/null; then break; fi
 	sleep 2

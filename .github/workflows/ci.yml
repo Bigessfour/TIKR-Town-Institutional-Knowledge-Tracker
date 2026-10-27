@@ -61,11 +61,11 @@ jobs:
             echo "Could not resolve PR file list — running full build/test/coverage/E2E."
           elif grep -qE '\.(cs|csproj|sln|razor|sh)$|Dockerfile|docker/|scripts/|tests/|coverlet|global\.json|\.ya?ml$' /tmp/changed.txt 2>/dev/null; then
             echo "Code changes detected — running build, test, and coverage."
-            if grep -qE '^(docker/|src/TIKR\.Web/|tests/e2e/)|(^|/)Dockerfile|scripts/ci-smoke\.sh|\.github/workflows/ci\.yml$' /tmp/changed.txt 2>/dev/null; then
-              echo "Docker, Web, or end-to-end files changed — running the image and Playwright gate."
+            if grep -qE '^(docker/|src/TIKR\.(Api|Infrastructure|Shared|SyncfusionDocuments|Web)/|tests/e2e/)|(^|/)Dockerfile|scripts/ci-smoke\.sh|\.github/workflows/ci\.yml$|(^|/)global\.json$|(^|/)Directory\.Build\.props$' /tmp/changed.txt 2>/dev/null; then
+              echo "Image or end-to-end files changed — running the Docker and Playwright gate."
             else
               echo "docker_gate=false" >> "$GITHUB_OUTPUT"
-              echo "Library-only diff — dotnet test runs. Docker build and Playwright are skipped."
+              echo "No image inputs changed — dotnet test runs. Docker build and Playwright are skipped."
             fi
           else
             # Only skip when we positively know the PR is docs/non-code.
@@ -145,13 +145,6 @@ jobs:
         with:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ hashFiles('tests/e2e/package-lock.json') }}
-
-      - name: Cache E2E node_modules
-        if: (steps.changes.outputs.code_changed == 'true' || steps.changes.outputs.code_changed == '') && steps.changes.outputs.recent_green != 'true' && (steps.changes.outputs.docker_gate == 'true' || steps.changes.outputs.docker_gate == '')
-        uses: actions/cache@v4
-        with:
-          path: tests/e2e/node_modules
-          key: e2e-node-modules-${{ runner.os }}-${{ hashFiles('tests/e2e/package-lock.json') }}
 
       - name: Set up Docker Buildx
         if: (steps.changes.outputs.code_changed == 'true' || steps.changes.outputs.code_changed == '') && steps.changes.outputs.recent_green != 'true' && (steps.changes.outputs.docker_gate == 'true' || steps.changes.outputs.docker_gate == '')
