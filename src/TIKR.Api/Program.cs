@@ -1265,14 +1265,27 @@ api.MapPost("/ai/embed-knowledge/{id:guid}", async (Guid id, IHybridAiService ai
     }
 });
 
-api.MapPost("/ai/reindex-embeddings", async (IHybridAiService ai, EmbeddingRecoveryState recovery) =>
+api.MapPost("/ai/reindex-embeddings", async (
+    IHybridAiService ai,
+    EmbeddingRecoveryState recovery,
+    EmbeddingRecoveryStateStore recoveryStore,
+    TikrDbContext db) =>
 {
+    var utcNow = DateTime.UtcNow;
+    recovery.NoteReindexStarted("manual", utcNow);
+    try
+    {
+        await recoveryStore.SaveAsync(recovery, db);
+    }
+    catch { /* best-effort cooldown persist */ }
+
     var result = await ai.ReindexAllEmbeddingsAsync(trigger: "manual");
-    recovery.NoteReindexResult("manual", result, DateTime.UtcNow);
+    recovery.NoteReindexResult("manual", result, utcNow);
     try
     {
         var health = await ai.GetCorpusHealthAsync();
         recovery.NoteCorpus(health);
+        await recoveryStore.SaveAsync(recovery, db);
     }
     catch { /* best-effort status refresh */ }
     return Results.Ok(result);

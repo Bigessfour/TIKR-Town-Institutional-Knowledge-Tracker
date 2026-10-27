@@ -96,6 +96,7 @@ public static class DependencyInjection
         services.AddSingleton<ILibraryScanService, LibraryScanService>();
         services.AddHostedService<LibraryScanHostedService>();
         services.AddSingleton<EmbeddingRecoveryState>();
+        services.AddSingleton<EmbeddingRecoveryStateStore>();
         services.AddHostedService<EmbeddingRecoveryHostedService>();
         services.AddSingleton<TownDocumentSearchToolRegistry>();
 

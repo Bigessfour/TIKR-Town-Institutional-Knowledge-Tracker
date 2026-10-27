@@ -1,4 +1,5 @@
 using FluentAssertions;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using TIKR.Infrastructure.Services;
@@ -143,6 +144,56 @@ public class EmbeddingRecoveryTests
     }
 
     [Fact]
+    public async Task EmbeddingRecoveryStateStore_RoundTripsCooldown()
+    {
+        await using var db = await TestDbContextFactory.CreateMigratedAsync();
+        var state = new EmbeddingRecoveryState();
+        var attempt = DateTime.UtcNow.AddMinutes(-5);
+        state.NoteReindexStarted("auto-recovery-ollama", attempt);
+
+        var store = new EmbeddingRecoveryStateStore();
+        await store.SaveAsync(state, db);
+
+        var reloaded = new EmbeddingRecoveryState();
+        await store.LoadIntoAsync(reloaded, db);
+        reloaded.CooldownAnchorUtc.Should().BeCloseTo(attempt, TimeSpan.FromSeconds(1));
+        reloaded.LastTrigger.Should().Be("auto-recovery-ollama");
+    }
+
+    [Fact]
+    public async Task ReindexAllEmbeddingsAsync_PausesAfterConsecutiveEmbeddingFailures()
+    {
+        await using var db = await TestDbContextFactory.CreateMigratedAsync();
+        for (var i = 0; i < 5; i++)
+        {
+            db.Documents.Add(new Document
+            {
+                Id = Guid.NewGuid(),
+                FileName = $"doc{i}.pdf",
+                StoragePath = $"p/doc{i}.pdf",
+                FullTextContent =
+                    $"document {i} with enough letter characters for embedding sparse gate threshold check",
+                UploadedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            });
+        }
+        await db.SaveChangesAsync();
+
+        var config = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["TIKR_EMBEDDING_REINDEX_MAX_CONSECUTIVE_FAILURES"] = "2"
+            })
+            .Build();
+
+        var sut = CreateSut(db, _ => null, config);
+        var result = await sut.ReindexAllEmbeddingsAsync(trigger: "test");
+        result.DocumentsAttempted.Should().Be(5);
+        result.DocumentsEmbedded.Should().Be(0);
+        result.Errors.Should().HaveCount(2);
+    }
+
+    [Fact]
     public void EmbeddingRecoveryState_NoteReindex_SnapshotsSummary()
     {
         var state = new EmbeddingRecoveryState();
@@ -161,7 +212,8 @@ public class EmbeddingRecoveryTests
 
     private static HybridAiService CreateSut(
         TIKR.Infrastructure.Data.TikrDbContext db,
-        Func<string, float[]?> embedder)
+        Func<string, float[]?> embedder,
+        IConfiguration? configuration = null)
     {
         var factory = new Mock<IOllamaChatClientFactory>();
         factory.Setup(f => f.CreateChatClient()).Returns(new StubChatClient(""));
@@ -174,6 +226,7 @@ public class EmbeddingRecoveryTests
             DisabledGrok,
             Mock.Of<IFileStorageService>(),
             Mock.Of<IDocumentAgentExtractionBackend>(),
-            NullLogger<HybridAiService>.Instance);
+            NullLogger<HybridAiService>.Instance,
+            configuration: configuration);
     }
 }

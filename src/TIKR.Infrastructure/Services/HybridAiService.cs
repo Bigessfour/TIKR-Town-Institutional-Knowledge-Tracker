@@ -2,7 +2,9 @@ using System.Diagnostics;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.AI;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using TIKR.Shared.Configuration;
 using TIKR.Infrastructure.Data;
 using TIKR.Shared.Diagnostics;
 using TIKR.Shared.DTOs;
@@ -20,7 +22,8 @@ public class HybridAiService(
     IFileStorageService storage,
     IDocumentAgentExtractionBackend extractionBackend,
     ILogger<HybridAiService> logger,
-    FeatureSettingsState? featureSettings = null) : IHybridAiService
+    FeatureSettingsState? featureSettings = null,
+    IConfiguration? configuration = null) : IHybridAiService
 {
     private const int TagPreviewChars = 4000;
     private const int MaxPersistedExtractChars = 100_000;
@@ -28,6 +31,8 @@ public class HybridAiService(
     private const double VectorWeight = 0.7;
     private const double KeywordWeight = 0.3;
     private const int PassageSnippetChars = 1000;
+
+    private bool _bulkReindexActive;
 
     public async Task<TagDocumentResponse> TagDocumentAsync(
         Guid documentId,
@@ -365,63 +370,175 @@ public class HybridAiService(
         var triggerLabel = string.IsNullOrWhiteSpace(trigger) ? "manual" : trigger.Trim();
         TikrActionLog.Started(logger, "AI.ReindexEmbeddings", $"Trigger={triggerLabel}");
 
+        var batchSize = TikrConfiguration.GetEmbeddingReindexBatchSize(configuration);
+        var maxConsecutiveFailures = TikrConfiguration.GetEmbeddingReindexMaxConsecutiveFailures(configuration);
+        var maxErrorMessages = TikrConfiguration.GetEmbeddingReindexMaxErrorMessages(configuration);
+
         var errors = new List<string>();
-        // Active library only: skip recycle-bin and one-time filings (not in Assistant RAG).
-        var docs = await db.Documents
-            .Where(d => d.DeletedAt == null && !d.IsTransient)
-            .ToListAsync(cancellationToken);
+        var totalErrorCount = 0;
+        var consecutiveFailures = 0;
+        var aborted = false;
+
+        void AddError(string message)
+        {
+            totalErrorCount++;
+            if (errors.Count < maxErrorMessages)
+                errors.Add(message);
+        }
+
         var skipped = await db.Documents.CountAsync(
             d => d.DeletedAt != null || d.IsTransient,
             cancellationToken);
-        var entries = await db.KnowledgeEntries.ToListAsync(cancellationToken);
+        var docsTotal = await db.Documents.CountAsync(
+            d => d.DeletedAt == null && !d.IsTransient,
+            cancellationToken);
+        var knowledgeTotal = await db.KnowledgeEntries.CountAsync(cancellationToken);
         var docsOk = 0;
         var knowledgeOk = 0;
 
-        foreach (var doc in docs)
+        _bulkReindexActive = true;
+        try
         {
-            try
+            Guid? lastDocId = null;
+            while (!aborted)
             {
-                var sourceText = BuildEmbeddingText(doc);
-                if (IsSparseForEmbedding(sourceText))
+                var docQuery = db.Documents
+                    .Where(d => d.DeletedAt == null && !d.IsTransient);
+                if (lastDocId is { } cursor)
+                    docQuery = docQuery.Where(d => d.Id.CompareTo(cursor) > 0);
+
+                var batch = await docQuery
+                    .OrderBy(d => d.Id)
+                    .Take(batchSize)
+                    .ToListAsync(cancellationToken);
+                if (batch.Count == 0)
+                    break;
+
+                foreach (var doc in batch)
                 {
-                    errors.Add($"Document {doc.FileName}: sparse/missing text (OCR or re-tag may help)");
-                    continue;
+                    lastDocId = doc.Id;
+                    try
+                    {
+                        var sourceText = BuildEmbeddingText(doc);
+                        if (IsSparseForEmbedding(sourceText))
+                        {
+                            AddError($"Document {doc.FileName}: sparse/missing text (OCR or re-tag may help)");
+                            consecutiveFailures = 0;
+                            continue;
+                        }
+
+                        if (await TryIndexDocumentChunksAsync(doc, cancellationToken))
+                        {
+                            docsOk++;
+                            consecutiveFailures = 0;
+                        }
+                        else
+                        {
+                            AddError(
+                                $"Document {doc.FileName}: embedding generator unavailable (is Ollama + nomic-embed-text up?)");
+                            consecutiveFailures++;
+                            if (consecutiveFailures >= maxConsecutiveFailures)
+                            {
+                                aborted = true;
+                                logger.LogWarning(
+                                    "Reindex paused after {Count} consecutive embedding failures (Trigger={Trigger})",
+                                    consecutiveFailures,
+                                    triggerLabel);
+                                break;
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        AddError($"Document {doc.FileName}: {ex.Message}");
+                        consecutiveFailures++;
+                        if (consecutiveFailures >= maxConsecutiveFailures)
+                        {
+                            aborted = true;
+                            break;
+                        }
+                    }
+
+                    await db.SaveChangesAsync(cancellationToken);
+                    db.ChangeTracker.Clear();
                 }
-
-                if (await TryIndexDocumentChunksAsync(doc, cancellationToken))
-                    docsOk++;
-                else
-                    errors.Add($"Document {doc.FileName}: embedding generator unavailable (is Ollama + nomic-embed-text up?)");
             }
-            catch (Exception ex)
+
+            if (!aborted)
             {
-                errors.Add($"Document {doc.FileName}: {ex.Message}");
+                Guid? lastKnowledgeId = null;
+                while (!aborted)
+                {
+                    var knowledgeQuery = db.KnowledgeEntries.AsQueryable();
+                    if (lastKnowledgeId is { } kCursor)
+                        knowledgeQuery = knowledgeQuery.Where(e => e.Id.CompareTo(kCursor) > 0);
+
+                    var batch = await knowledgeQuery
+                        .OrderBy(e => e.Id)
+                        .Take(batchSize)
+                        .ToListAsync(cancellationToken);
+                    if (batch.Count == 0)
+                        break;
+
+                    foreach (var entry in batch)
+                    {
+                        lastKnowledgeId = entry.Id;
+                        try
+                        {
+                            if (await TryIndexKnowledgeChunksAsync(entry, cancellationToken))
+                            {
+                                knowledgeOk++;
+                                consecutiveFailures = 0;
+                            }
+                            else
+                            {
+                                AddError($"Knowledge {entry.Title}: embedding generator unavailable");
+                                consecutiveFailures++;
+                                if (consecutiveFailures >= maxConsecutiveFailures)
+                                {
+                                    aborted = true;
+                                    logger.LogWarning(
+                                        "Reindex paused after {Count} consecutive embedding failures (Trigger={Trigger})",
+                                        consecutiveFailures,
+                                        triggerLabel);
+                                    break;
+                                }
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            AddError($"Knowledge {entry.Title}: {ex.Message}");
+                            consecutiveFailures++;
+                            if (consecutiveFailures >= maxConsecutiveFailures)
+                            {
+                                aborted = true;
+                                break;
+                            }
+                        }
+
+                        await db.SaveChangesAsync(cancellationToken);
+                        db.ChangeTracker.Clear();
+                    }
+                }
             }
         }
-
-        foreach (var entry in entries)
+        finally
         {
-            try
-            {
-                if (await TryIndexKnowledgeChunksAsync(entry, cancellationToken))
-                    knowledgeOk++;
-                else
-                    errors.Add($"Knowledge {entry.Title}: embedding generator unavailable");
-            }
-            catch (Exception ex)
-            {
-                errors.Add($"Knowledge {entry.Title}: {ex.Message}");
-            }
+            _bulkReindexActive = false;
+            db.ChangeTracker.Clear();
         }
 
-        await db.SaveChangesAsync(cancellationToken);
+        var errorSummary = totalErrorCount == errors.Count
+            ? errors.Count.ToString()
+            : $"{totalErrorCount} ({errors.Count} listed)";
         TikrActionLog.Completed(logger, "AI.ReindexEmbeddings",
-            $"Trigger={triggerLabel} Docs={docsOk}/{docs.Count} Knowledge={knowledgeOk}/{entries.Count} Skipped={skipped} Errors={errors.Count}",
+            $"Trigger={triggerLabel} Docs={docsOk}/{docsTotal} Knowledge={knowledgeOk}/{knowledgeTotal} " +
+            $"Skipped={skipped} Errors={errorSummary} Aborted={aborted}",
             sw.ElapsedMilliseconds);
         return new ReindexEmbeddingsResponse(
-            docs.Count,
+            docsTotal,
             docsOk,
-            entries.Count,
+            knowledgeTotal,
             knowledgeOk,
             errors,
             DocumentsSkipped: skipped,
@@ -638,20 +755,55 @@ public class HybridAiService(
         if (string.IsNullOrWhiteSpace(text))
             return null;
 
-        try
+        var maxAttempts = _bulkReindexActive ? 3 : 1;
+        var attemptTimeout = _bulkReindexActive
+            ? TimeSpan.FromSeconds(TikrConfiguration.GetEmbeddingGenerationTimeoutSeconds(configuration))
+            : (TimeSpan?)null;
+
+        for (var attempt = 1; attempt <= maxAttempts; attempt++)
         {
-            var generator = ollamaFactory.CreateEmbeddingGenerator();
-            // nomic-embed-text has an 8k context; we cap defensively for chat-model parity.
-            var trimmed = text.Length > 4000 ? text[..4000] : text;
-            var result = await generator.GenerateAsync([trimmed], cancellationToken: cancellationToken);
-            var first = result.FirstOrDefault();
-            return first?.Vector.ToArray();
+            try
+            {
+                using var attemptCts = attemptTimeout is not null
+                    ? CancellationTokenSource.CreateLinkedTokenSource(cancellationToken)
+                    : null;
+                if (attemptTimeout is not null)
+                    attemptCts!.CancelAfter(attemptTimeout.Value);
+
+                var token = attemptCts?.Token ?? cancellationToken;
+                var generator = ollamaFactory.CreateEmbeddingGenerator();
+                // nomic-embed-text has an 8k context; we cap defensively for chat-model parity.
+                var trimmed = text.Length > 4000 ? text[..4000] : text;
+                var result = await generator.GenerateAsync([trimmed], cancellationToken: token);
+                var first = result.FirstOrDefault();
+                return first?.Vector.ToArray();
+            }
+            catch (Exception ex) when (attempt < maxAttempts && !cancellationToken.IsCancellationRequested)
+            {
+                var delay = TimeSpan.FromSeconds(Math.Pow(2, attempt));
+                logger.LogWarning(
+                    ex,
+                    "Embedding generation attempt {Attempt}/{Max} failed; retry in {DelaySec}s",
+                    attempt,
+                    maxAttempts,
+                    delay.TotalSeconds);
+                try
+                {
+                    await Task.Delay(delay, cancellationToken);
+                }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                {
+                    return null;
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex, "Embedding generation failed (Ollama may be offline or model missing)");
+                return null;
+            }
         }
-        catch (Exception ex)
-        {
-            logger.LogWarning(ex, "Embedding generation failed (Ollama may be offline or model missing)");
-            return null;
-        }
+
+        return null;
     }
 
     internal static string BuildEmbeddingText(Document document)

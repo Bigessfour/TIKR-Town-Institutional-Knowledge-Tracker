@@ -297,6 +297,48 @@ public static class TikrConfiguration
         return 15;
     }
 
+    /// <summary>
+    /// Documents (and knowledge entries) loaded per reindex batch before SaveChanges + change-tracker clear. Default 20.
+    /// </summary>
+    public static int GetEmbeddingReindexBatchSize(IConfiguration? configuration)
+    {
+        if (configuration is not null &&
+            int.TryParse(configuration["TIKR_EMBEDDING_REINDEX_BATCH_SIZE"], out var fromEnv) &&
+            fromEnv > 0)
+            return fromEnv;
+        return 20;
+    }
+
+    /// <summary>Per-embedding HTTP attempt timeout during bulk reindex (seconds). Default 180.</summary>
+    public static int GetEmbeddingGenerationTimeoutSeconds(IConfiguration? configuration)
+    {
+        if (configuration is not null &&
+            int.TryParse(configuration["TIKR_EMBEDDING_GENERATION_TIMEOUT_SECONDS"], out var fromEnv) &&
+            fromEnv >= 30)
+            return fromEnv;
+        return 180;
+    }
+
+    /// <summary>Stop a reindex run after this many consecutive embed failures (Ollama timeouts). Default 25.</summary>
+    public static int GetEmbeddingReindexMaxConsecutiveFailures(IConfiguration? configuration)
+    {
+        if (configuration is not null &&
+            int.TryParse(configuration["TIKR_EMBEDDING_REINDEX_MAX_CONSECUTIVE_FAILURES"], out var fromEnv) &&
+            fromEnv > 0)
+            return fromEnv;
+        return 25;
+    }
+
+    /// <summary>Cap error strings returned from reindex (full count still logged). Default 50.</summary>
+    public static int GetEmbeddingReindexMaxErrorMessages(IConfiguration? configuration)
+    {
+        if (configuration is not null &&
+            int.TryParse(configuration["TIKR_EMBEDDING_REINDEX_MAX_ERROR_MESSAGES"], out var fromEnv) &&
+            fromEnv > 0)
+            return fromEnv;
+        return 50;
+    }
+
     public static int GetLibraryScanIntervalSeconds(IConfiguration configuration) =>
         int.TryParse(configuration["TIKR_LIBRARY_SCAN_INTERVAL_SECONDS"], out var seconds) && seconds > 0
             ? seconds

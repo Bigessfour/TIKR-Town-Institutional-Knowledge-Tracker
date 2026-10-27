@@ -14,6 +14,10 @@ public sealed class EmbeddingRecoveryState
     public DateTime? LastOllamaHealthyUtc { get; private set; }
     public DateTime? LastOllamaUnhealthyUtc { get; private set; }
     public DateTime? LastAutoReindexUtc { get; private set; }
+
+    /// <summary>Set at reindex start (auto or manual) so cooldown survives mid-run OOM/restart.</summary>
+    public DateTime? LastReindexAttemptUtc { get; private set; }
+
     public string? LastTrigger { get; private set; }
     public string? LastResultSummary { get; private set; }
     public string? LastError { get; private set; }
@@ -43,12 +47,22 @@ public sealed class EmbeddingRecoveryState
         }
     }
 
+    public void NoteReindexStarted(string trigger, DateTime utcNow)
+    {
+        lock (_gate)
+        {
+            LastTrigger = trigger;
+            LastReindexAttemptUtc = utcNow;
+        }
+    }
+
     public void NoteReindexResult(string trigger, ReindexEmbeddingsResponse result, DateTime utcNow)
     {
         lock (_gate)
         {
             LastTrigger = trigger;
             LastAutoReindexUtc = utcNow;
+            LastReindexAttemptUtc = utcNow;
             LastResultSummary =
                 $"docs {result.DocumentsEmbedded}/{result.DocumentsAttempted}, " +
                 $"vault {result.KnowledgeEmbedded}/{result.KnowledgeAttempted}, " +
@@ -99,5 +113,44 @@ public sealed class EmbeddingRecoveryState
             return true;
 
         return false;
+    }
+
+    /// <summary>Cooldown anchor: attempt time (set at run start) or last completed auto run.</summary>
+    public DateTime? CooldownAnchorUtc
+    {
+        get
+        {
+            lock (_gate)
+                return LastReindexAttemptUtc ?? LastAutoReindexUtc;
+        }
+    }
+
+    internal void ApplyPersisted(EmbeddingRecoveryPersistedDto dto)
+    {
+        lock (_gate)
+        {
+            LastReindexAttemptUtc = dto.LastReindexAttemptUtc;
+            LastAutoReindexUtc = dto.LastAutoReindexUtc;
+            LastTrigger = dto.LastTrigger;
+            LastResultSummary = dto.LastResultSummary;
+            LastError = dto.LastError;
+            LastDocumentsCoveragePercent = dto.LastDocumentsCoveragePercent;
+            LastKnowledgeCoveragePercent = dto.LastKnowledgeCoveragePercent;
+        }
+    }
+
+    internal EmbeddingRecoveryPersistedDto ToPersistedDto()
+    {
+        lock (_gate)
+        {
+            return new EmbeddingRecoveryPersistedDto(
+                LastReindexAttemptUtc,
+                LastAutoReindexUtc,
+                LastTrigger,
+                LastResultSummary,
+                LastError,
+                LastDocumentsCoveragePercent,
+                LastKnowledgeCoveragePercent);
+        }
     }
 }
