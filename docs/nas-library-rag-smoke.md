@@ -43,10 +43,11 @@ Representative areas (not exhaustive):
 | `BUDGET COMPARISON/…`, mill levy / finance paths           | Budget / Finance                                                      |
 | `RESOLUTIONS&ORDINANCE/…`                                  | Ordinances (mapper also accepts `ORDINANCES`, `MUNICIPAL CODE`)       |
 | `EMPLOYEE INFO/…`, personnel/HR-named paths                | Personnel / HR                                                        |
+| `ELECTION INFORMATION/…`, `ELECTIONS/…`                    | General, locked before the chat model                                 |
 | Contracts / agreements style folders                       | Contracts                                                             |
 | Correspondence / letters style folders                     | Correspondence                                                        |
 | Forms / permit application trees                           | Forms                                                                 |
-| Everything else (CDPHE, grants, elections, fire, taxes, …) | Heuristic + LLM / General — still must **embed and retrieve content** |
+| Everything else (CDPHE, grants, fire, taxes, …)            | Heuristic + LLM / General — still must **embed and retrieve content** |
 
 Path seeding improves classification; it does **not** limit which folders are knowledge. Unmapped trees still import, OCR, chunk, and answer Assistant questions from **excerpts**.
 

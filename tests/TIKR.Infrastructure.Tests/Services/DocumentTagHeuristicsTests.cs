@@ -62,6 +62,12 @@ public class DocumentTagHeuristicsTests
     [InlineData("CORRESPONDENCE/letter.pdf", DocumentTagHeuristics.Correspondence)]
     [InlineData("LETTERS/resident.pdf", DocumentTagHeuristics.Correspondence)]
     [InlineData("FORMS/permit.pdf", DocumentTagHeuristics.Forms)]
+    [InlineData("BUDGET COMPARISON/2026.pdf", DocumentTagHeuristics.BudgetFinance)]
+    [InlineData("RESOLUTIONS&ORDINANCE/res-12.pdf", DocumentTagHeuristics.Ordinances)]
+    [InlineData("EMPLOYEE INFO/handbook.pdf", DocumentTagHeuristics.PersonnelHr)]
+    [InlineData("ELECTION INFORMATION/2025 Special District Election Manual.pdf", DocumentTagHeuristics.General)]
+    [InlineData("ELECTIONS/calendar.pdf", DocumentTagHeuristics.General)]
+    [InlineData("2025 ELECTIONS/notice.pdf", DocumentTagHeuristics.General)]
     public void TryMapNasRelativePath_MapsWileyFolders(string relativePath, string expected)
     {
         DocumentTagHeuristics.TryMapNasRelativePath(relativePath).Should().Be(expected);
@@ -74,9 +80,47 @@ public class DocumentTagHeuristicsTests
     [InlineData("COUNCIL MEETINGS/packet.pdf")]
     [InlineData("COUNCIL MEETINGS/last-minute-notes.pdf")]
     [InlineData("RANDOM FOLDER/file.pdf")]
+    [InlineData("SELECTION COMMITTEE/notes.pdf")]
     public void TryMapNasRelativePath_ReturnsNullWhenNotConfident(string? relativePath)
     {
         DocumentTagHeuristics.TryMapNasRelativePath(relativePath).Should().BeNull();
+    }
+
+    [Fact]
+    public void FillGaps_InfersElectionFromFilenameWithoutOverridingModelFolder()
+    {
+        var (tags, folder) = DocumentTagHeuristics.FillGaps(
+            "2025 Special District Election Manual.pdf",
+            null,
+            [],
+            null);
+
+        folder.Should().Be(DocumentTagHeuristics.General);
+        tags.Should().Contain("election");
+
+        var kept = DocumentTagHeuristics.FillGaps(
+            "2025 Special District Election Manual.pdf",
+            null,
+            ["personnel"],
+            DocumentTagHeuristics.PersonnelHr);
+
+        kept.Tags.Should().BeEquivalentTo(["personnel"]);
+        kept.Folder.Should().Be(DocumentTagHeuristics.PersonnelHr);
+    }
+
+    [Fact]
+    public void FillGaps_PayrollFileMentioningElectionStaysPersonnel()
+    {
+        var fromName = DocumentTagHeuristics.FillGaps("election-judge-payroll.pdf", null, [], null);
+        fromName.Folder.Should().Be(DocumentTagHeuristics.PersonnelHr);
+
+        var fromBody = DocumentTagHeuristics.FillGaps(
+            "scan.pdf",
+            "Election judge payroll schedule for the special district.",
+            [],
+            null);
+        fromBody.Folder.Should().Be(DocumentTagHeuristics.PersonnelHr);
+        fromBody.Tags.Should().NotContain("election");
     }
 
     [Fact]
