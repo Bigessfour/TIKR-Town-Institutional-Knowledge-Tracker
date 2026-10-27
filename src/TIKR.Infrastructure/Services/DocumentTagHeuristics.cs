@@ -70,6 +70,8 @@ public static class DocumentTagHeuristics
             return Correspondence;
         if (topKey is "forms" or "form")
             return Forms;
+        if (topKey is "election information" or "elections" or "election")
+            return General;
 
         // Election is not one of the nine folders. Lock General so the chat model
         // cannot replace it (the 1B model filed this tree under Personnel / HR).
@@ -79,6 +81,42 @@ public static class DocumentTagHeuristics
 
         return null;
     }
+
+    /// <summary>
+    /// Top library folder that is not one of the known roots. The clerk already named it.
+    /// Known roots stay out of this so a council packet is not proposed as a new folder.
+    /// </summary>
+    public static string? TryReadUnmappedTopFolder(string? relativePath)
+    {
+        if (string.IsNullOrWhiteSpace(relativePath))
+            return null;
+
+        if (TryMapNasRelativePath(relativePath) is not null)
+            return null;
+
+        var normalized = relativePath.Replace('\\', '/').Trim('/');
+        var segments = normalized.Split('/', StringSplitOptions.RemoveEmptyEntries);
+        if (segments.Length < 2)
+            return null;
+
+        if (IsKnownLibraryRoot(NormalizeNasSegment(segments[0])))
+            return null;
+
+        return FolderNamePolicy.CanonicalOrNull(segments[0]);
+    }
+
+    internal static bool IsKnownLibraryRoot(string topKey) =>
+        topKey is "council meetings" or "council meeting"
+            or "ordinances" or "ordinance" or "municipal code"
+            or "budget" or "finance" or "mill levy" or "milllevy"
+            or "contracts" or "contract" or "agreements" or "agreement"
+            or "personnel" or "hr" or "human resources" or "employee info"
+            or "correspondence" or "letters" or "letter"
+            or "forms" or "form"
+            or "election information" or "elections" or "election"
+        || SegmentHasWord(topKey, "election", "elections")
+        || SegmentHasWord(topKey, "ordinance", "ordinances")
+        || SegmentHasWord(topKey, "budget");
 
     private static bool SegmentHasWord(string topKey, params string[] words)
     {

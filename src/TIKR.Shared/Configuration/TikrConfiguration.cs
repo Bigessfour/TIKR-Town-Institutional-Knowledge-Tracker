@@ -141,10 +141,20 @@ public static class TikrConfiguration
             "true",
             StringComparison.OrdinalIgnoreCase);
 
-    public static string GetChatModel(IConfiguration configuration) =>
-        configuration["AI:DefaultModel"]
-        ?? configuration["OLLAMA_CHAT_MODEL"]
-        ?? "llama3.2:3b";
+    public static string GetChatModel(IConfiguration configuration)
+    {
+        // Env wins over the baked appsettings default so a NAS .env change
+        // actually switches models without rebuilding the image.
+        var fromEnv = configuration["OLLAMA_CHAT_MODEL"];
+        if (!string.IsNullOrWhiteSpace(fromEnv))
+            return fromEnv.Trim();
+
+        var fromSection = configuration["AI:DefaultModel"];
+        if (!string.IsNullOrWhiteSpace(fromSection))
+            return fromSection.Trim();
+
+        return "llama3.2:3b";
+    }
 
     public static bool GetUseGrok(IConfiguration configuration)
     {
@@ -309,7 +319,21 @@ public static class TikrConfiguration
         return 20;
     }
 
-    /// <summary>Per-embedding HTTP attempt timeout during bulk reindex (seconds). Default 180.</summary>
+    /// <summary>
+    /// Per-call deadline for interactive Ollama chat (tagging, ask). Default 180 seconds,
+    /// the same budget as one embedding attempt on the J4125. Override with
+    /// <c>TIKR_CHAT_COMPLETION_TIMEOUT_SECONDS</c> (any positive value; smaller values are for tests).
+    /// </summary>
+    public static int GetChatCompletionTimeoutSeconds(IConfiguration? configuration)
+    {
+        if (configuration is not null &&
+            int.TryParse(configuration["TIKR_CHAT_COMPLETION_TIMEOUT_SECONDS"], out var fromEnv) &&
+            fromEnv > 0)
+            return fromEnv;
+        return 180;
+    }
+
+    /// <summary>Per-embedding HTTP attempt timeout (seconds). Default 180. Bulk reindex retries; tagging does not.</summary>
     public static int GetEmbeddingGenerationTimeoutSeconds(IConfiguration? configuration)
     {
         if (configuration is not null &&

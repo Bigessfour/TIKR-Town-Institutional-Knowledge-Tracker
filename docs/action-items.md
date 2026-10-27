@@ -415,3 +415,59 @@ Once all checked (incl. the walkthrough items), the phase/project can be declare
 ---
 
 *This file is intentionally small and focused because the raw list is auto-generated.*
+
+## Issue #142 — Dashboard status line
+
+- [x] Dashboard page grows with the Syncfusion layout instead of letting the status footer sit on the panels
+- [ ] Confirm at about 1280px and about 390px on the running app. The NAS page did not load in the browser from this session.
+
+| Function | Proof | Minimal impl |
+| --- | --- | --- |
+| Dashboard layout | CSS only. Not yet seen in a browser at desktop width. | `flex: 1 0 auto` on the dashboard content column; panel containers scroll |
+
+## Issue #139 — Election library paths
+
+- [x] `ELECTION INFORMATION`, `ELECTIONS`, and `ELECTION` map to General before the chat model
+- [x] A Personnel / HR model answer cannot replace that folder
+- [ ] Re-tag the stored election manual on the NAS
+
+| Function | Proof | Minimal impl |
+| --- | --- | --- |
+| `DocumentTagHeuristics.TryMapNasRelativePath` | `TryMapNasRelativePath_MapsWileyFolders` election rows | Known root, not a proposal |
+| `HybridAiService.TagDocumentAsync` | `TagDocumentAsync_ElectionPath_KeepsGeneralWhenModelSaysPersonnel` | Path seed is applied again after the model answer |
+
+## Issue #138 — Tagging timeout
+
+- [x] `GetLocalCompletionAsync` abandons a chat call after `TIKR_CHAT_COMPLETION_TIMEOUT_SECONDS` (default 180)
+- [x] A path-seeded folder is kept when that call times out
+- [x] Single-document embedding uses the same 180s attempt budget as bulk reindex, without the retries
+- [ ] NAS: tag one PDF and confirm `AI.TagDocument` `DurationMs` stays under the limit
+
+| Function                                            | Proof                                                  | Minimal impl                                                    |
+| --------------------------------------------------- | ------------------------------------------------------ | --------------------------------------------------------------- |
+| `HybridAiService.TagDocumentAsync`                  | `TagDocumentAsync_ChatTimeout_ReturnsAndKeepsPathSeed` | Linked cancellation; timeout returns null and tagging continues |
+| `TikrConfiguration.GetChatCompletionTimeoutSeconds` | Covered by that test with a 1 second override          | Default 180 when unset                                          |
+
+## Issue #140 — Chat model precedence
+
+- [x] `GetChatModel` prefers a non-empty `OLLAMA_CHAT_MODEL` over `AI:DefaultModel`
+- [x] A Settings `OllamaChatModel` row still wins over that env value
+- [ ] Not in the NAS image yet. Do not ship this from the mixed `feature/146` working tree
+
+| Function                                    | Proof                                                                                                            | Minimal impl                              |
+| ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
+| `TikrConfiguration.GetChatModel`            | `GetChatModel_UsesDefaultsAndOverrides`                                                                          | Env, then appsettings, then `llama3.2:3b` |
+| `FeatureSettingsService.LoadIntoStateAsync` | `LoadIntoStateAsync_EnvChatModelWinsWhenDatabaseRowIsMissing`, `LoadIntoStateAsync_DatabaseChatModelWinsOverEnv` | Database row, otherwise `GetChatModel`    |
+
+## Issue #146 — Mac folder classifier
+
+- [x] `scripts/train_folder_classifier.py` trains TF-IDF + logistic regression and writes joblib + JSON
+- [x] `FolderClassifier` scores the JSON in-process. Empty `FolderClassifier:ModelPath` leaves tagging on the chat model
+- [x] Confident hit skips `GetLocalCompletionAsync`. NAS path seed still wins
+- [ ] Train on Wiley labels on this Mac and point the NAS at that JSON. Do not commit town-record weights
+
+| Function                                             | Proof                                                                                                                                                                                                                                                                                                       | Minimal impl                                                       |
+| ---------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| `FolderClassifier.Classify`                          | `FolderClassifierTests` (election manual → General, resume → Personnel / HR, vague note stays unsure)                                                                                                                                                                                                       | JSON linear weights, no Python in the API                          |
+| `HybridAiService.TagDocumentAsync`                   | `TagDocumentAsync_ConfidentClassifier_SkipsChatModel`, `TagDocumentAsync_LowConfidenceClassifier_StillCallsChat`, `TagDocumentAsync_PathSeed_BeatsClassifierAndStillCallsChat`, `TagDocumentAsync_UnmappedLibraryFolder_ProposesNameAndSkipsChat`, `TagDocumentAsync_DeclinedLibraryFolder_DoesNotAskAgain` | Skip chat only when the folder is already decided                  |
+| `DocumentFolderCatalog.AcceptAsync` / `DeclineAsync` | `DocumentFolderCatalogTests`                                                                                                                                                                                                                                                                                | AppSetting lists plus a group update. Unknown names stay proposals |
