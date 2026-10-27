@@ -99,6 +99,9 @@ jobs:
             **/Directory.Build.props
             global.json
 
+      - name: Verify compose memory budget sync
+        run: bash scripts/sync-compose-memory-budget.test.sh
+
       - name: Restore
         run: dotnet restore TIKR.sln
 

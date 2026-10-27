@@ -31,6 +31,7 @@ fi
 echo "→ Sync prod compose + validate script"
 ssh "${NAS_HOST}" "mkdir -p /volume1/tikr/app/docker /volume1/tikr/app/tests/fixtures/agent-scan"
 nas_copy_file "${ROOT}/docker/docker-compose.prod.yml" "/volume1/tikr/app/docker/docker-compose.prod.yml.base"
+nas_copy_file "${ROOT}/scripts/sync-compose-memory-budget.sh" "/volume1/tikr/app/docker/sync-compose-memory-budget.sh"
 nas_copy_file "${ROOT}/validate-prod.sh" "/volume1/tikr/app/validate-prod.sh"
 nas_copy_file "${ROOT}/tests/fixtures/agent-scan/wiley-periodic-report.txt" "/volume1/tikr/app/tests/fixtures/agent-scan/wiley-periodic-report.txt"
 ssh "${NAS_HOST}" "chmod +x /volume1/tikr/app/validate-prod.sh"
@@ -42,10 +43,12 @@ DIR="$1"
 VER="$2"
 cd "$DIR"
 
-# Keep NAS overrides if compose already customized; otherwise use repo base.
+# Keep NAS mounts and entrypoints if compose already exists; otherwise use the repo file.
 if [[ ! -f docker-compose.prod.yml ]]; then
   cp docker-compose.prod.yml.base docker-compose.prod.yml
 fi
+# The 6 GB fence survived on machines that already had a compose file.
+bash ./sync-compose-memory-budget.sh docker-compose.prod.yml.base docker-compose.prod.yml
 
 sudo sed -i "s|^TIKR_VERSION=.*|TIKR_VERSION=${VER}|" .env 2>/dev/null || true
 grep -q '^TIKR_VERSION=' .env || echo "TIKR_VERSION=${VER}" | sudo tee -a .env >/dev/null
