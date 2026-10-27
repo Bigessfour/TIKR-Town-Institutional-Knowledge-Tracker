@@ -92,6 +92,19 @@ Right-click `docker/docker-compose.yml` → **Compose Up** / **Compose Down** al
 
 Docker builds use the repo root as context (see `context: ..` in compose). A root [`.dockerignore`](../.dockerignore) keeps transfers small — avoid removing those exclusions or builds will stall on multi-GB context uploads.
 
+
+## DS225+ memory fence
+
+Mr_Storage has a 16 GB SODIMM plus 2 GB soldered (~17.3 GiB usable), shared with ClerkSuite (`1536m`) and DSM. Production compose caps:
+
+| Container | Limit | Why |
+|-----------|-------|-----|
+| `tikr-web` | 1g | Idle well under this |
+| `tikr-api` | 3g | Tagging and embedding stay inside the cgroup |
+| `tikr-ollama` | 8g | `qwen2.5:7b` plus `nomic-embed-text` at context 4096 |
+
+`memswap_limit` equals `mem_limit` so model weights cannot spill into host swap. The old 1024m Ollama cap could not hold the 7B weights.
+
 ## Synology NAS
 
 Import `docker/docker-compose.yml` in Container Manager; map `tikr-data` to a shared folder. See [docs/architecture.md](../docs/architecture.md#nas-setup-synology).
