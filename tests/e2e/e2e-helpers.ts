@@ -42,6 +42,44 @@ export async function dismissClerkTourIfPresent(page: Page): Promise<void> {
   await expect(page.locator('.tikr-tour-overlay')).toHaveCount(0, { timeout: 5_000 });
 }
 
+/**
+ * Dependabot pull requests do not receive Actions secrets, so CI runs this
+ * suite without SYNCFUSION_LICENSE_KEY. Syncfusion then injects a trial banner
+ * that covers the page and fails axe. Remove that banner only on the
+ * unlicensed path. A licensed run must still fail if the banner appears.
+ */
+export async function dismissSyncfusionTrialIfPresent(page: Page): Promise<void> {
+  if (process.env.SYNCFUSION_LICENSE_KEY) {
+    return;
+  }
+
+  await page.evaluate(() => {
+    const trial = /claim your free account|30-day free trial/i;
+    const nodes = Array.from(document.querySelectorAll('body *'));
+    for (const el of nodes) {
+      const text = el.textContent ?? '';
+      if (!trial.test(text) || text.length > 800) {
+        continue;
+      }
+      let node: HTMLElement | null = el as HTMLElement;
+      let overlay: HTMLElement | null = null;
+      while (node && node !== document.body) {
+        if (node.querySelector('main')) {
+          break;
+        }
+        const style = window.getComputedStyle(node);
+        if (style.position === 'fixed' || style.position === 'sticky' || node.parentElement === document.body) {
+          overlay = node;
+        }
+        node = node.parentElement;
+      }
+      overlay?.remove();
+    }
+
+    document.querySelectorAll('body > img[src^="data:image"]').forEach((img) => img.remove());
+  });
+}
+
 export async function gotoClerkPage(page: Page, path: string): Promise<void> {
   await disableClerkTour(page);
   await page.goto(path);
@@ -56,4 +94,5 @@ export async function gotoClerkPage(page: Page, path: string): Promise<void> {
     { timeout: 15_000 },
   );
   await dismissClerkTourIfPresent(page);
+  await dismissSyncfusionTrialIfPresent(page);
 }

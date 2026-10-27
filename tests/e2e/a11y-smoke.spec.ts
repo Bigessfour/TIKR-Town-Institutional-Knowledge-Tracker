@@ -25,6 +25,8 @@ test.describe('Accessibility smoke (axe)', () => {
         .exclude('.e-upload')
         .exclude('.e-aiassistview')
         .exclude('.e-assistview')
+        // SfSplitter separator is role=separator without aria-valuenow.
+        .exclude('.e-splitter')
         .analyze();
 
       const critical = results.violations.filter((v) => v.impact === 'critical');
