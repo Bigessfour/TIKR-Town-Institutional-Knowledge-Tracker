@@ -16,7 +16,7 @@
 # - tear down
 #
 # CI sets TIKR_CI_DOCKER_CACHE=gha and TIKR_CI_SKIP_IMAGE_BUILD=1 after
-# docker/build-push-action loads tikr-ci-api:local and tikr-ci-web:local.
+# docker/bake-action loads tikr-ci-api:local and tikr-ci-web:local.
 # A local run leaves those unset and builds with docker compose.
 #
 # It mirrors the CI step as closely as possible so local run == what CI will do.
@@ -26,25 +26,18 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
 LICENSE_KEY="${SYNCFUSION_LICENSE_KEY:-}"
-CI_IMAGE_OVERRIDE=""
-if [ "${TIKR_CI_DOCKER_CACHE:-}" = "gha" ]; then
+compose_args=(-f docker/docker-compose.yml)
+if [[ ${TIKR_CI_DOCKER_CACHE:-} == "gha" ]]; then
 	CI_IMAGE_OVERRIDE="$(mktemp)"
-	cat >"$CI_IMAGE_OVERRIDE" <<'EOF'
+	cat >"${CI_IMAGE_OVERRIDE}" <<'EOF'
 services:
   tikr-api:
     image: tikr-ci-api:local
   tikr-web:
     image: tikr-ci-web:local
 EOF
+	compose_args+=(-f "${CI_IMAGE_OVERRIDE}")
 fi
-
-compose() {
-	if [ -n "$CI_IMAGE_OVERRIDE" ]; then
-		docker compose -f docker/docker-compose.yml -f "$CI_IMAGE_OVERRIDE" "$@"
-	else
-		docker compose -f docker/docker-compose.yml "$@"
-	fi
-}
 
 echo "=== TIKR CI Smoke (local simulation) ==="
 echo "License present: $([ -n "$LICENSE_KEY" ] && echo yes || echo no)"
@@ -60,24 +53,24 @@ else
 	} >>docker/.env
 fi
 
-if [ "${TIKR_CI_SKIP_IMAGE_BUILD:-}" = "1" ]; then
+if [[ ${TIKR_CI_SKIP_IMAGE_BUILD:-} == "1" ]]; then
 	echo ">>> using images built with the GitHub Actions layer cache"
 else
 	echo ">>> docker compose build"
-	compose build
+	docker compose "${compose_args[@]}" build
 fi
 
 echo ">>> docker compose up -d --wait"
-compose up -d --wait --wait-timeout 180 || {
+if ! docker compose "${compose_args[@]}" up -d --wait --wait-timeout 180; then
 	echo "docker compose up --wait failed or timed out"
-	compose logs --tail=50 || true
+	docker compose "${compose_args[@]}" logs --tail=50 || true
 	exit 1
-}
+fi
 
 echo ">>> API health"
 curl -sf http://localhost:5000/health || {
 	echo "API health failed post-wait"
-	compose logs --tail=50 tikr-api || true
+	docker compose "${compose_args[@]}" logs --tail=50 tikr-api || true
 	exit 1
 }
 
@@ -85,7 +78,7 @@ echo ">>> Web check"
 code=$(curl -sf -o /dev/null -w "%{http_code}" http://localhost:8080/ 2>/dev/null || echo "000")
 if ! echo "$code" | grep -qE '200|302'; then
 	echo "Web check failed with code $code"
-	compose logs --tail=50 tikr-web || true
+	docker compose "${compose_args[@]}" logs --tail=50 tikr-web || true
 	exit 1
 fi
 
@@ -110,7 +103,7 @@ for attempt in $(seq 1 6); do
 done
 if [ "$agent_ok" != "true" ]; then
 	echo "::error::Agent scan smoke failed after retries"
-	compose logs --tail=30 tikr-api || true
+	docker compose "${compose_args[@]}" logs --tail=30 tikr-api || true
 	exit 1
 fi
 
@@ -135,7 +128,11 @@ fi
 
 echo ">>> E2E (Playwright)"
 cd tests/e2e
-npm ci
+if [[ -d node_modules/@playwright/test ]]; then
+	echo ">>> using cached e2e node_modules"
+else
+	npm ci
+fi
 for i in $(seq 1 10); do
 	if curl -sf http://localhost:8080/ >/dev/null; then break; fi
 	sleep 2
@@ -154,6 +151,6 @@ fi
 cd -
 
 echo ">>> docker compose down"
-compose down
+docker compose "${compose_args[@]}" down
 
 echo "=== CI smoke completed successfully ==="

@@ -146,32 +146,25 @@ jobs:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ hashFiles('tests/e2e/package-lock.json') }}
 
+      - name: Cache E2E node_modules
+        if: (steps.changes.outputs.code_changed == 'true' || steps.changes.outputs.code_changed == '') && steps.changes.outputs.recent_green != 'true' && (steps.changes.outputs.docker_gate == 'true' || steps.changes.outputs.docker_gate == '')
+        uses: actions/cache@v4
+        with:
+          path: tests/e2e/node_modules
+          key: e2e-node-modules-${{ runner.os }}-${{ hashFiles('tests/e2e/package-lock.json') }}
+
       - name: Set up Docker Buildx
         if: (steps.changes.outputs.code_changed == 'true' || steps.changes.outputs.code_changed == '') && steps.changes.outputs.recent_green != 'true' && (steps.changes.outputs.docker_gate == 'true' || steps.changes.outputs.docker_gate == '')
         uses: docker/setup-buildx-action@v3
 
-      - name: Build API image
+      - name: Build API and Web images
         if: (steps.changes.outputs.code_changed == 'true' || steps.changes.outputs.code_changed == '') && steps.changes.outputs.recent_green != 'true' && (steps.changes.outputs.docker_gate == 'true' || steps.changes.outputs.docker_gate == '')
-        uses: docker/build-push-action@v7
+        uses: docker/bake-action@v7
         with:
-          context: .
-          file: docker/Dockerfile.api
+          source: .
+          files: docker/docker-bake.ci.hcl
+          targets: smoke
           load: true
-          tags: tikr-ci-api:local
-          cache-from: type=gha,scope=tikr-api
-          cache-to: type=gha,scope=tikr-api,mode=max
-          provenance: false
-
-      - name: Build Web image
-        if: (steps.changes.outputs.code_changed == 'true' || steps.changes.outputs.code_changed == '') && steps.changes.outputs.recent_green != 'true' && (steps.changes.outputs.docker_gate == 'true' || steps.changes.outputs.docker_gate == '')
-        uses: docker/build-push-action@v7
-        with:
-          context: .
-          file: docker/Dockerfile.web
-          load: true
-          tags: tikr-ci-web:local
-          cache-from: type=gha,scope=tikr-web
-          cache-to: type=gha,scope=tikr-web,mode=max
           provenance: false
 
       - name: Docker Build, Smoke Test & E2E Gate
