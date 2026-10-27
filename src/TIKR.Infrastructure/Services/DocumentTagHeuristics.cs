@@ -58,24 +58,36 @@ public static class DocumentTagHeuristics
             return null;
         }
 
-        if (topKey is "ordinances" or "ordinance" or "municipal code")
+        if (SegmentHasWord(topKey, "ordinance", "ordinances") || topKey is "municipal code")
             return Ordinances;
-        if (topKey is "budget" or "finance" or "mill levy" or "milllevy")
+        if (SegmentHasWord(topKey, "budget") || topKey is "finance" or "mill levy" or "milllevy")
             return BudgetFinance;
         if (topKey is "contracts" or "contract" or "agreements" or "agreement")
             return Contracts;
-        if (topKey is "personnel" or "hr" or "human resources")
+        if (topKey is "personnel" or "hr" or "human resources" or "employee info")
             return PersonnelHr;
         if (topKey is "correspondence" or "letters" or "letter")
             return Correspondence;
         if (topKey is "forms" or "form")
             return Forms;
 
+        // Election is not one of the nine folders. Lock General so the chat model
+        // cannot replace it (the 1B model filed this tree under Personnel / HR).
+        // Whole words only — "selection" is not an election folder.
+        if (SegmentHasWord(topKey, "election", "elections"))
+            return General;
+
         return null;
     }
 
+    private static bool SegmentHasWord(string topKey, params string[] words)
+    {
+        var parts = topKey.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        return parts.Any(part => words.Contains(part, StringComparer.Ordinal));
+    }
+
     private static string NormalizeNasSegment(string segment) =>
-        string.Join(' ', segment.Split([' ', '_', '-'], StringSplitOptions.RemoveEmptyEntries))
+        string.Join(' ', segment.Split([' ', '_', '-', '&'], StringSplitOptions.RemoveEmptyEntries))
             .Trim()
             .ToLowerInvariant();
 
@@ -115,6 +127,8 @@ public static class DocumentTagHeuristics
             return Correspondence;
         if (ContainsAny(lowerHaystack, "application form", "request form", "permit form"))
             return Forms;
+        if (HasWord(lowerHaystack, "election") || HasWord(lowerHaystack, "elections"))
+            return General;
         if (ContainsAny(lowerHaystack, "personnel", "human resources", "hr ", "employment", "payroll"))
             return PersonnelHr;
 
@@ -135,6 +149,8 @@ public static class DocumentTagHeuristics
             return ["minutes"];
         if (ContainsAny(lowerHaystack, "contract", "agreement"))
             return ["contract"];
+        if (HasWord(lowerHaystack, "election") || HasWord(lowerHaystack, "elections"))
+            return ["election"];
         return [];
     }
 
