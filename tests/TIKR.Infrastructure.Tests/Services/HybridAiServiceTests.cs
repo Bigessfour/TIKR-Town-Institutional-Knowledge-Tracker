@@ -60,6 +60,39 @@ public class HybridAiServiceTests
     }
 
     [Fact]
+    public async Task TagDocumentAsync_ElectionPath_KeepsGeneralWhenModelSaysPersonnel()
+    {
+        await using var db = await TestDbContextFactory.CreateMigratedAsync();
+        var document = new Document
+        {
+            Id = Guid.NewGuid(),
+            FileName = "2025 Special District Election Manual.pdf",
+            StoragePath = "2026/01/election-manual.pdf",
+            ContentType = "application/pdf",
+            UploadedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
+        db.Documents.Add(document);
+        await db.SaveChangesAsync();
+
+        var ollama = CreateOllamaFactory(
+            """{"tags":["personnel"],"suggestedFolder":"Personnel / HR"}""");
+        var sut = CreateService(db, ollama, DisabledGrok);
+
+        var result = await sut.TagDocumentAsync(
+            document.Id,
+            default,
+            "ELECTION INFORMATION/2025 Special District Election Manual.pdf");
+
+        result.SuggestedFolder.Should().Be(DocumentTagHeuristics.General);
+        result.Tags.Should().BeEquivalentTo(["election"]);
+        result.Tags.Should().NotContain("personnel");
+
+        var updated = await db.Documents.FindAsync(document.Id);
+        updated!.SuggestedFolder.Should().Be(DocumentTagHeuristics.General);
+    }
+
+    [Fact]
     public async Task TagDocumentAsync_UsesLowTemperature()
     {
         await using var db = await TestDbContextFactory.CreateMigratedAsync();

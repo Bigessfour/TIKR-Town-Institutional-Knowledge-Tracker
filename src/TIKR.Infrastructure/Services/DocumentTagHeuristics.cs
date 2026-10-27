@@ -58,24 +58,36 @@ public static class DocumentTagHeuristics
             return null;
         }
 
-        if (topKey is "ordinances" or "ordinance" or "municipal code")
+        if (SegmentHasWord(topKey, "ordinance", "ordinances") || topKey is "municipal code")
             return Ordinances;
-        if (topKey is "budget" or "finance" or "mill levy" or "milllevy")
+        if (SegmentHasWord(topKey, "budget") || topKey is "finance" or "mill levy" or "milllevy")
             return BudgetFinance;
         if (topKey is "contracts" or "contract" or "agreements" or "agreement")
             return Contracts;
-        if (topKey is "personnel" or "hr" or "human resources")
+        if (topKey is "personnel" or "hr" or "human resources" or "employee info")
             return PersonnelHr;
         if (topKey is "correspondence" or "letters" or "letter")
             return Correspondence;
         if (topKey is "forms" or "form")
             return Forms;
 
+        // Election is not one of the nine folders. Lock General so the chat model
+        // cannot replace it (the 1B model filed this tree under Personnel / HR).
+        // Whole words only — "selection" is not an election folder.
+        if (SegmentHasWord(topKey, "election", "elections"))
+            return General;
+
         return null;
     }
 
+    private static bool SegmentHasWord(string topKey, params string[] words)
+    {
+        var parts = topKey.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        return parts.Any(part => words.Contains(part, StringComparer.Ordinal));
+    }
+
     private static string NormalizeNasSegment(string segment) =>
-        string.Join(' ', segment.Split([' ', '_', '-'], StringSplitOptions.RemoveEmptyEntries))
+        string.Join(' ', segment.Split([' ', '_', '-', '&'], StringSplitOptions.RemoveEmptyEntries))
             .Trim()
             .ToLowerInvariant();
 
@@ -94,8 +106,43 @@ public static class DocumentTagHeuristics
         if (tags.Length == 0)
             tags = InferTags(lower);
 
+        // Filename only. Body text that mentions an election must not steal a
+        // payroll or personnel file when the model left the folder empty.
+        if (string.IsNullOrWhiteSpace(folder) && FileNameMentionsElection(fileName))
+        {
+            folder = General;
+            if (tags.Length == 0)
+                tags = ["election"];
+        }
+
         return (tags, folder);
     }
+
+    /// <summary>
+    /// Path seed already replaced the model folder. Drop a personnel tag the model
+    /// attached to an election filename, and keep an election tag.
+    /// </summary>
+    public static string[] TagsForLockedFolder(string fileName, string? lockedFolder, string[] tags)
+    {
+        if (lockedFolder != General || !FileNameMentionsElection(fileName))
+            return tags;
+
+        var kept = tags.Where(tag => !IsPersonnelTag(tag)).ToArray();
+        if (!kept.Any(tag => tag.Equals("election", StringComparison.OrdinalIgnoreCase)))
+            kept = [.. kept, "election"];
+        return kept;
+    }
+
+    private static bool FileNameMentionsElection(string? fileName)
+    {
+        var lower = fileName?.ToLowerInvariant() ?? "";
+        return HasWord(lower, "election") || HasWord(lower, "elections");
+    }
+
+    private static bool IsPersonnelTag(string tag) =>
+        tag.Equals("personnel", StringComparison.OrdinalIgnoreCase)
+        || tag.Equals("hr", StringComparison.OrdinalIgnoreCase)
+        || tag.Equals("human resources", StringComparison.OrdinalIgnoreCase);
 
     internal static string? InferFolder(string lowerHaystack)
     {
