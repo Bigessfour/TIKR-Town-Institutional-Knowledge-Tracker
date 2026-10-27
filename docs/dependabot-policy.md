@@ -21,7 +21,7 @@ How TIKR handles dependency update pull requests. Config: [`.github/dependabot.y
 
 ## Required CI (non-negotiable)
 
-- **TIKR CI** — `build-and-test` (restore, build, test, Docker smoke optional)
+- **TIKR CI** — `build-and-test` (restore, build, test). Docker smoke and Playwright run on pushes to `main`, and on pull requests that touch Docker, the API, Infrastructure, Shared, Syncfusion documents, the Web app, end-to-end tests, `global.json`, `Directory.Build.props`, `scripts/ci-smoke.sh`, or this workflow. Other pull requests stop after `dotnet test`.
 - **Trunk** — `trunk-check` (gitleaks, yaml/md/docker lint, dotnet format verify)
 
 ## Weekly rhythm

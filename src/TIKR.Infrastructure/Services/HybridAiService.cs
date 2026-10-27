@@ -145,7 +145,10 @@ public class HybridAiService(
             folder);
 
         if (pathSeededFolder is not null)
+        {
             folder = pathSeededFolder;
+            tags = DocumentTagHeuristics.TagsForLockedFolder(document.FileName, pathSeededFolder, tags);
+        }
         else if (proposal is not null)
             folder = DocumentTagHeuristics.General;
         else if (classifierFolder is not null && directory.MatchAllowed(classifierFolder) is { } keptClassifier)

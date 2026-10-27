@@ -599,6 +599,8 @@ public class HybridAiServiceTests
         chat.CallCount.Should().Be(1);
         result.SuggestedFolder.Should().Be(DocumentTagHeuristics.General);
         result.ProposedFolder.Should().BeNull();
+        result.Tags.Should().BeEquivalentTo(["election"]);
+        result.Tags.Should().NotContain("personnel");
     }
 
     [Fact]

@@ -181,6 +181,10 @@ test.describe('TIKR page readiness (nav + primary controls)', () => {
   });
 
   test('no Syncfusion trial overlay on clerk pages', async ({ page }) => {
+    test.skip(
+      !process.env.SYNCFUSION_LICENSE_KEY,
+      'Unlicensed CI dismisses the Syncfusion trial banner in gotoClerkPage.',
+    );
     for (const path of ['/', '/requirements', '/documents', '/vault']) {
       await gotoClerkPage(page, path);
       const trial = page.getByText(/claim your free account|30-day free trial/i);

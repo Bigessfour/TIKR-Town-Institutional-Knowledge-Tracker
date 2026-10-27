@@ -115,7 +115,7 @@ Shipped: circuit-scoped multi-turn memory + follow-up retrieval rewrite + Clear 
 - [x] **Accuracy-first chunk/embed settings** — `TextChunker` defaults 500/120 overlap; reindex after OCR/import still via Settings
 - [x] **OCR completeness gate** — Sparse `FullTextContent` fails embed (needs attention) until text/OCR is usable; transient docs skip RAG
 - [x] **Incomplete-import retry** — fingerprint match skips only when linked doc has chunks or non-sparse text; else `TagDocumentAsync` in place (no second copy). New imports claim budget before retries; `Imported` only counts usable retries. Proof: `LibraryScanServiceTests.ScanAsync_IncompleteImport_*`, `ScanAsync_PrefersNewImportsOverIncompleteRetries_WhenBudgetTight`
-- [x] **NAS-path folder seed** — first path segment → 9-folder vocabulary; locked before LLM; relative path in tag prompt. Proof: `DocumentTagHeuristicsTests.TryMapNasRelativePath_*`
+- [x] **NAS-path folder seed** — first path segment → 9-folder vocabulary; locked before LLM; relative path in tag prompt. Election trees (`ELECTION INFORMATION`, `ELECTIONS`) lock to General so the chat model cannot replace them. Proof: `DocumentTagHeuristicsTests.TryMapNasRelativePath_*`, `HybridAiServiceTests.TagDocumentAsync_ElectionPath_KeepsGeneralWhenModelSaysPersonnel`. Minimal impl: word match on the top folder segment. NAS re-tag of the stored election manual is still open until this build is the image the NAS runs.
 - [x] **Wiley tag prompt + Modelfile** — Town of Wiley few-shots; Agenda in `tikr-clerk` SYSTEM list. Recreate model: `./scripts/create-tikr-clerk-model.sh`
 - [x] **Content-rich Assistant Sources** — citations include matched Excerpt (or About), not filenames alone; footer replaced with retrieval-backed Sources. Proof: `DocumentContextLabelTests.FormatCitationWithContent_*`, `PageWorkflowHelpersTests.EnsureSourcesSection_*`
 - [x] **Weekly corpus health** — `GET /api/ai/corpus-health` + Settings **Corpus health** button
@@ -193,7 +193,7 @@ All prior items now have scanner-detected proof (string mentions in *Tests.cs ex
 See generated "Correctness surfaces" table — **0 without proof** as of 2026-08-12 (surfaces allowlist mode). Legacy exhaustive scan (`tracking_mode: all`) still finds ~28 infra helpers outside the allowlist; demoted unless touched.
 
 - [x] GET /health — basic health. Verified: HealthEndpointTests.cs, docker smoke in CI.
-- [x] GET /api/system/local-status — NAS + AI status footer. Used on every page.
+- [x] GET /api/system/local-status — NAS + AI status footer. Used on every page. The footer stays in document flow under the dashboard; panel content scrolls inside its card instead of painting over due-outs, the packet list, or the status line. Proof: `DashboardLayoutServiceTests.DefaultPanels_DoNotOccupyTheSameCell`. Minimal impl: overflow on `.e-panel` plus a global `.tikr-status-footer` rule (MainLayout scoped CSS does not reach `TikrStatusFooter`).
 - [x] GET /api/system/document-sdk-status — license flag for agent tools.
 - [x] Full requirements CRUD + document links (`/api/requirements*`) — covered by RequirementsEndpointTests + bUnit + Playwright 05b.
   - Transaction integrity: link/unlink + doc delete now delegate to IRequirementService/I DocumentService methods using BeginTransactionAsync + audit.Log inside tx (AuditService skips inner Save when CurrentTransaction). Fixes last direct Save+log in Program.cs. Pattern matches RequirementService.Create etc. Proofs via existing create/update/delete+audit assertions in tests; doc delete test path now through service.
@@ -348,6 +348,7 @@ Re-run inventory: `./scripts/update-function-inventory.sh` (use `--root .` from 
 - [x] **Docs:** research R9–R10, quickstart US3/US4 — T023–T024
 - [x] **Shipped:** merged to `main`, tagged **v1.0.1**, GHCR images published
 - [x] **NAS deploy:** `./scripts/deploy-tikr-nas.sh` — 2026-08-08 Mr_Storage upgraded to GHCR `1.0.1`; stack healthy (`5050/health`, Web `:8080`); council preview APIs green
+- [x] **Memory budget on an existing NAS compose file:** `scripts/sync-compose-memory-budget.test.sh` (also a CI step) keeps a town-docs mount, accepts tab or deep indent, and replaces 1792m/1536m/512m with 8g/3g/1g. A reboot of Mr_Storage after the next deploy is still a manual check.
 - [ ] **Manual NAS validation (UI):** seed → linked agenda with text → minutes dialog → save/link/complete — API verified 2026-08-08; clerk UI walkthrough still open — see [quickstart](../specs/006-council-agenda-minutes/quickstart.md)
 - [ ] **vNext:** bUnit test for `DownloadMeetingMinutesAsync` link-failure + save-without-requirement paths; trigger text extract when linked agenda lacks `FullTextContent`
 

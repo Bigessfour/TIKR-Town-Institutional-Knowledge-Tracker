@@ -751,12 +751,6 @@ html[data-theme="high-contrast"] .form-label {
     .tikr-main-content {
         padding: 1rem;
     }
-
-    .tikr-status-footer {
-        padding: 0.65rem 1rem;
-        flex-direction: column;
-        align-items: flex-start;
-    }
 }
 
 @media print {
@@ -1613,7 +1607,58 @@ html[data-theme="high-contrast"] .tikr-doc-fullscreen-surface {
     gap: 0.5rem;
 }
 
-/* Dashboard command center (004-clerk-command-dashboard) */
+/* Dashboard command center (004-clerk-command-dashboard).
+   Panels are position:absolute with z-index 1000. Visible overflow paints over the
+   next card and over the status line. Keep each card inside its panel. */
+.e-dashboardlayout.e-control .e-panel {
+    overflow: hidden;
+}
+
+.e-dashboardlayout.e-control .e-panel .e-panel-container {
+    height: 100%;
+    overflow: auto;
+}
+
+/* Status line lives in TikrStatusFooter, a child of MainLayout, so MainLayout.razor.css
+   does not reach it. Keep it in normal flow under the page, with a solid bar. */
+.tikr-status-footer {
+    position: static;
+    z-index: auto;
+    flex-shrink: 0;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem 1rem;
+    margin-top: 0.75rem;
+    padding: 0.65rem 2rem;
+    font-size: 0.8rem;
+    color: #4a5568;
+    background: #e8edf3;
+    border-top: 1px solid #d0d7e2;
+}
+
+.tikr-status-footer-primary {
+    font-weight: 500;
+}
+
+.tikr-status-footer-hint.is-local {
+    color: #1e6b3a;
+}
+
+.tikr-status-footer-hint.is-offline {
+    color: #9a6700;
+    font-weight: 600;
+}
+
+@media (max-width: 768px) {
+    .tikr-status-footer {
+        padding: 0.65rem 1rem;
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}
+
 .dashboard-panel {
     padding: 0.75rem 1rem;
     height: 100%;
