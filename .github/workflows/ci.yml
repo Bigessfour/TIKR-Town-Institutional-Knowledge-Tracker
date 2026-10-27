@@ -14,7 +14,8 @@ concurrency:
 
 permissions:
   contents: read
-  actions: read
+  # write so NuGet, Playwright, and Docker layer caches can be saved
+  actions: write
 
 jobs:
   build-and-test:
@@ -23,8 +24,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          # Need base commit available so PR diffs are not empty/unknown.
-          fetch-depth: 0
+          # The docs-only check fetches the PR base itself. Full history is not needed.
+          fetch-depth: 1
 
       - name: Detect code vs docs-only changes (skip expensive build/test/E2E/coverage for pure docs PRs)
         id: changes
@@ -34,6 +35,7 @@ jobs:
           set +e
           # Fail open: if we cannot determine changed files, run full CI.
           echo "code_changed=true" >> "$GITHUB_OUTPUT"
+          echo "docker_gate=true" >> "$GITHUB_OUTPUT"
           echo "recent_green=false" >> "$GITHUB_OUTPUT"
 
           if [ "${{ github.event_name }}" = "pull_request" ]; then
@@ -46,16 +48,29 @@ jobs:
               echo "unknown" > /tmp/changed.txt
             fi
           else
-            echo "code" > /tmp/changed.txt
+            # A push has no PR file list. Do not write a placeholder here: the
+            # docs-only branch used to treat the word "code" as a non-code diff
+            # and skip tests on main.
+            echo "Push event — running full build/test/coverage/E2E."
+            echo "push" > /tmp/changed.txt
           fi
 
-          if grep -qx 'unknown' /tmp/changed.txt 2>/dev/null || [ ! -s /tmp/changed.txt ]; then
+          if [ "${{ github.event_name }}" != "pull_request" ]; then
+            :
+          elif grep -qx 'unknown' /tmp/changed.txt 2>/dev/null || [ ! -s /tmp/changed.txt ]; then
             echo "Could not resolve PR file list — running full build/test/coverage/E2E."
           elif grep -qE '\.(cs|csproj|sln|razor|sh)$|Dockerfile|docker/|scripts/|tests/|coverlet|global\.json|\.ya?ml$' /tmp/changed.txt 2>/dev/null; then
-            echo "Code changes detected — running full build/test/coverage/E2E."
+            echo "Code changes detected — running build, test, and coverage."
+            if grep -qE '^(docker/|src/TIKR\.(Api|Infrastructure|Shared|SyncfusionDocuments|Web)/|tests/e2e/)|(^|/)Dockerfile|scripts/ci-smoke\.sh|\.github/workflows/ci\.yml$|(^|/)global\.json$|(^|/)Directory\.Build\.props$' /tmp/changed.txt 2>/dev/null; then
+              echo "Image or end-to-end files changed — running the Docker and Playwright gate."
+            else
+              echo "docker_gate=false" >> "$GITHUB_OUTPUT"
+              echo "No image inputs changed — dotnet test runs. Docker build and Playwright are skipped."
+            fi
           else
             # Only skip when we positively know the PR is docs/non-code.
             echo "code_changed=false" >> "$GITHUB_OUTPUT"
+            echo "docker_gate=false" >> "$GITHUB_OUTPUT"
             echo "Only docs/markdown or unrelated files changed — skipping heavy steps to save runner time."
           fi
           cat /tmp/changed.txt | head -20 || true
@@ -77,11 +92,12 @@ jobs:
         uses: actions/setup-dotnet@v6
         with:
           dotnet-version: 10.0.x
-
-      - name: Setup Node.js for E2E
-        uses: actions/setup-node@v7
-        with:
-          node-version: 20
+          cache: true
+          # No packages.lock.json in this repo. Hash project files instead.
+          cache-dependency-path: |
+            **/*.csproj
+            **/Directory.Build.props
+            global.json
 
       - name: Verify compose memory budget sync
         run: bash scripts/sync-compose-memory-budget.test.sh
@@ -118,11 +134,46 @@ jobs:
         # On failure, the subsequent "Capture failure snapshot" (if: failure()) will emit structured info.
         # We also write a dedicated file there for high-signal to ollama.
 
+      - name: Setup Node.js for E2E
+        if: (steps.changes.outputs.code_changed == 'true' || steps.changes.outputs.code_changed == '') && steps.changes.outputs.recent_green != 'true' && (steps.changes.outputs.docker_gate == 'true' || steps.changes.outputs.docker_gate == '')
+        uses: actions/setup-node@v7
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: tests/e2e/package-lock.json
+
+      - name: Cache Playwright browsers
+        if: (steps.changes.outputs.code_changed == 'true' || steps.changes.outputs.code_changed == '') && steps.changes.outputs.recent_green != 'true' && (steps.changes.outputs.docker_gate == 'true' || steps.changes.outputs.docker_gate == '')
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('tests/e2e/package-lock.json') }}
+
+      - name: Set up Docker Buildx
+        if: (steps.changes.outputs.code_changed == 'true' || steps.changes.outputs.code_changed == '') && steps.changes.outputs.recent_green != 'true' && (steps.changes.outputs.docker_gate == 'true' || steps.changes.outputs.docker_gate == '')
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build API and Web images
+        if: (steps.changes.outputs.code_changed == 'true' || steps.changes.outputs.code_changed == '') && steps.changes.outputs.recent_green != 'true' && (steps.changes.outputs.docker_gate == 'true' || steps.changes.outputs.docker_gate == '')
+        uses: docker/bake-action@v7
+        with:
+          source: .
+          files: docker/docker-bake.ci.hcl
+          targets: smoke
+          load: true
+          provenance: false
+
       - name: Docker Build, Smoke Test & E2E Gate
-        if: (steps.changes.outputs.code_changed == 'true' || steps.changes.outputs.code_changed == '') && steps.changes.outputs.recent_green != 'true'
+        if: (steps.changes.outputs.code_changed == 'true' || steps.changes.outputs.code_changed == '') && steps.changes.outputs.recent_green != 'true' && (steps.changes.outputs.docker_gate == 'true' || steps.changes.outputs.docker_gate == '')
         env:
           SYNCFUSION_LICENSE_KEY: ${{ secrets.SYNCFUSION_LICENSE_KEY }}
+          TIKR_CI_DOCKER_CACHE: gha
+          TIKR_CI_SKIP_IMAGE_BUILD: 1
         run: ./scripts/ci-smoke.sh
+
+      - name: Docker and Playwright skipped
+        if: (steps.changes.outputs.code_changed == 'true' || steps.changes.outputs.code_changed == '') && steps.changes.outputs.recent_green != 'true' && steps.changes.outputs.docker_gate == 'false'
+        run: echo "Library-only diff. dotnet test ran. Docker build and Playwright were skipped."
 
       - name: Capture failure snapshot
         if: failure()
@@ -171,6 +222,7 @@ jobs:
     permissions:
       checks: write
       contents: read
+      actions: write
 
     steps:
       - uses: actions/checkout@v4
@@ -178,6 +230,11 @@ jobs:
       - uses: actions/setup-dotnet@v6
         with:
           dotnet-version: 10.0.x
+          cache: true
+          cache-dependency-path: |
+            **/*.csproj
+            **/Directory.Build.props
+            global.json
 
       - name: Verify dotnet format
         run: dotnet format TIKR.sln --verify-no-changes
