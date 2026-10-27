@@ -16,6 +16,24 @@ public class DashboardLayoutServiceTests
     }
 
     [Fact]
+    public void DefaultPanels_DoNotOccupyTheSameCell()
+    {
+        var cells = new HashSet<(int Column, int Row)>();
+        foreach (var panel in DashboardLayoutService.DefaultPanels)
+        {
+            for (var row = panel.Row; row < panel.Row + panel.SizeY; row++)
+            {
+                for (var column = panel.Column; column < panel.Column + panel.SizeX; column++)
+                {
+                    cells.Add((column, row))
+                        .Should()
+                        .BeTrue($"{panel.PanelId} overlaps column {column}, row {row}");
+                }
+            }
+        }
+    }
+
+    [Fact]
     public void SerializeDeserialize_RoundTrips()
     {
         var json = DashboardLayoutService.Serialize(DashboardLayoutService.DefaultPanels);

@@ -193,7 +193,7 @@ All prior items now have scanner-detected proof (string mentions in *Tests.cs ex
 See generated "Correctness surfaces" table — **0 without proof** as of 2026-08-12 (surfaces allowlist mode). Legacy exhaustive scan (`tracking_mode: all`) still finds ~28 infra helpers outside the allowlist; demoted unless touched.
 
 - [x] GET /health — basic health. Verified: HealthEndpointTests.cs, docker smoke in CI.
-- [x] GET /api/system/local-status — NAS + AI status footer. Used on every page.
+- [x] GET /api/system/local-status — NAS + AI status footer. Used on every page. The footer stays in document flow under the dashboard; panel content scrolls inside its card instead of painting over due-outs, the packet list, or the status line. Proof: `DashboardLayoutServiceTests.DefaultPanels_DoNotOccupyTheSameCell`. Minimal impl: overflow on `.e-panel` plus a global `.tikr-status-footer` rule (MainLayout scoped CSS does not reach `TikrStatusFooter`).
 - [x] GET /api/system/document-sdk-status — license flag for agent tools.
 - [x] Full requirements CRUD + document links (`/api/requirements*`) — covered by RequirementsEndpointTests + bUnit + Playwright 05b.
   - Transaction integrity: link/unlink + doc delete now delegate to IRequirementService/I DocumentService methods using BeginTransactionAsync + audit.Log inside tx (AuditService skips inner Save when CurrentTransaction). Fixes last direct Save+log in Program.cs. Pattern matches RequirementService.Create etc. Proofs via existing create/update/delete+audit assertions in tests; doc delete test path now through service.
