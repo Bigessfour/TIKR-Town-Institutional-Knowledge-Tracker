@@ -151,7 +151,7 @@ jobs:
 
       - name: Set up Docker Buildx
         if: (steps.changes.outputs.code_changed == 'true' || steps.changes.outputs.code_changed == '') && steps.changes.outputs.recent_green != 'true' && (steps.changes.outputs.docker_gate == 'true' || steps.changes.outputs.docker_gate == '')
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: Build API and Web images
         if: (steps.changes.outputs.code_changed == 'true' || steps.changes.outputs.code_changed == '') && steps.changes.outputs.recent_green != 'true' && (steps.changes.outputs.docker_gate == 'true' || steps.changes.outputs.docker_gate == '')
