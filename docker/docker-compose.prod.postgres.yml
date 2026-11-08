@@ -1,0 +1,73 @@
+# TIKR production-style stack against Postgres (Aurora / RDS).
+#
+# Synology NAS clerk workflow stays on docker-compose.prod.yml + SQLite
+# (ConnectionStrings__Default=Data Source=/data/tikr.db). Do not replace that
+# file for day-to-day NAS use.
+#
+# Usage:
+#   cp docker/.env.example docker/.env.aurora   # set DATABASE_PROVIDER=Postgres + Aurora URL
+#   docker compose -f docker/docker-compose.prod.postgres.yml --env-file docker/.env.aurora up -d
+#
+# Images: same GHCR/multi-stage Dockerfiles as NAS (Dockerfile.api + Dockerfile.web).
+# Ollama is optional here — set profile "ollama" or point OLLAMA_HOST at an external host.
+
+name: tikr-prod-postgres
+
+services:
+  tikr-api:
+    image: ghcr.io/bigessfour/tikr-api:${TIKR_VERSION:-latest}
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.api
+    container_name: tikr-api
+    restart: unless-stopped
+    env_file:
+      - ${TIKR_ENV_FILE:-.env}
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
+      DATABASE_PROVIDER: Postgres
+      ConnectionStrings__Default: ${ConnectionStrings__Default}
+      FILE_STORAGE_PATH: ${FILE_STORAGE_PATH:-/data/documents}
+      OLLAMA_HOST: ${OLLAMA_HOST:-http://host.docker.internal:11434}
+      USE_GROK: ${USE_GROK:-false}
+      TIKR_API_URL: http://tikr-api:8080
+    ports:
+      - ${TIKR_API_HOST_PORT:-5000}:8080
+    volumes:
+      # Documents / DP keys / logs — not the SQLite file when Provider=Postgres
+      - ${TIKR_DATA_PATH:-tikr-data}:/data
+    healthcheck:
+      test: [CMD-SHELL, curl -sf http://localhost:8080/health || exit 1]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  tikr-web:
+    image: ghcr.io/bigessfour/tikr-web:${TIKR_VERSION:-latest}
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.web
+    container_name: tikr-web
+    restart: unless-stopped
+    env_file:
+      - ${TIKR_ENV_FILE:-.env}
+    environment:
+      TIKR_API_URL: http://tikr-api:8080
+      TIKR_PUBLIC_API_URL: ${TIKR_PUBLIC_API_URL:-http://localhost:${TIKR_API_HOST_PORT:-5000}}
+    ports:
+      - ${TIKR_WEB_HOST_PORT:-8080}:8080
+    volumes:
+      - ${TIKR_DATA_PATH:-tikr-data}:/data
+    depends_on:
+      tikr-api:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD-SHELL, curl -sf http://localhost:8080/ || exit 1]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+volumes:
+  tikr-data:
