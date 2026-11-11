@@ -5,6 +5,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Update="Fixtures\folder-classifier.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\src\TIKR.Infrastructure\TIKR.Infrastructure.csproj" />
     <ProjectReference Include="..\..\src\TIKR.SyncfusionDocuments\TIKR.SyncfusionDocuments.csproj" />
     <ProjectReference Include="..\..\src\TIKR.Shared\TIKR.Shared.csproj" />

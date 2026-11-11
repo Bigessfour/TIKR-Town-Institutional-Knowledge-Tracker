@@ -148,6 +148,24 @@ public class TikrConfigurationTests
         {
             ["OLLAMA_CHAT_MODEL"] = "mistral"
         })).Should().Be("mistral");
+
+        TikrConfiguration.GetChatModel(BuildConfig(new Dictionary<string, string?>
+        {
+            ["AI:DefaultModel"] = "llama3.2:3b",
+            ["OLLAMA_CHAT_MODEL"] = "qwen2.5:7b"
+        })).Should().Be("qwen2.5:7b");
+
+        TikrConfiguration.GetChatModel(BuildConfig(new Dictionary<string, string?>
+        {
+            ["AI:DefaultModel"] = "llama3.2:3b",
+            ["OLLAMA_CHAT_MODEL"] = "  qwen2.5:7b  "
+        })).Should().Be("qwen2.5:7b");
+
+        TikrConfiguration.GetChatModel(BuildConfig(new Dictionary<string, string?>
+        {
+            ["AI:DefaultModel"] = "llama3.2:3b",
+            ["OLLAMA_CHAT_MODEL"] = "   "
+        })).Should().Be("llama3.2:3b");
     }
 
     [Theory]

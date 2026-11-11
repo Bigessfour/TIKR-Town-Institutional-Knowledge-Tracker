@@ -9,6 +9,12 @@ public class Document
     public long FileSizeBytes { get; set; }
     public string? AiTags { get; set; }
     public string? SuggestedFolder { get; set; }
+
+    /// <summary>
+    /// Folder name the clerk has not accepted yet. The file stays in General until they do.
+    /// </summary>
+    public string? ProposedFolder { get; set; }
+
     public string? FullTextContent { get; set; }
 
     // Phase 9: byte-packed float[] vector from nomic-embed-text (typically 768 floats = 3072 bytes).

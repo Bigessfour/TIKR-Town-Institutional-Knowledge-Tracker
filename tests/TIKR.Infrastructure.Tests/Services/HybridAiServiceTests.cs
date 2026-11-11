@@ -1,5 +1,7 @@
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.AI;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using TIKR.Infrastructure.Data;
@@ -53,43 +55,12 @@ public class HybridAiServiceTests
         var result = await sut.TagDocumentAsync(document.Id);
 
         result.Tags.Should().BeEquivalentTo(["budget", "finance"]);
-        result.SuggestedFolder.Should().Be("Finance");
-
-        var updated = await db.Documents.FindAsync(document.Id);
-        updated!.SuggestedFolder.Should().Be("Finance");
-    }
-
-    [Fact]
-    public async Task TagDocumentAsync_ElectionPath_KeepsGeneralWhenModelSaysPersonnel()
-    {
-        await using var db = await TestDbContextFactory.CreateMigratedAsync();
-        var document = new Document
-        {
-            Id = Guid.NewGuid(),
-            FileName = "2025 Special District Election Manual.pdf",
-            StoragePath = "2026/01/election-manual.pdf",
-            ContentType = "application/pdf",
-            UploadedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow
-        };
-        db.Documents.Add(document);
-        await db.SaveChangesAsync();
-
-        var ollama = CreateOllamaFactory(
-            """{"tags":["personnel"],"suggestedFolder":"Personnel / HR"}""");
-        var sut = CreateService(db, ollama, DisabledGrok);
-
-        var result = await sut.TagDocumentAsync(
-            document.Id,
-            default,
-            "ELECTION INFORMATION/2025 Special District Election Manual.pdf");
-
         result.SuggestedFolder.Should().Be(DocumentTagHeuristics.General);
-        result.Tags.Should().BeEquivalentTo(["election"]);
-        result.Tags.Should().NotContain("personnel");
+        result.ProposedFolder.Should().Be("Finance");
 
         var updated = await db.Documents.FindAsync(document.Id);
         updated!.SuggestedFolder.Should().Be(DocumentTagHeuristics.General);
+        updated.ProposedFolder.Should().Be("Finance");
     }
 
     [Fact]
@@ -525,24 +496,203 @@ public class HybridAiServiceTests
         HybridAiService.StripTopicPrefix("budget.pdf").Should().Be("budget.pdf");
     }
 
+    [Fact]
+    public async Task TagDocumentAsync_ConfidentClassifier_SkipsChatModel()
+    {
+        await using var db = await TestDbContextFactory.CreateMigratedAsync();
+        var document = await AddDocumentAsync(db, "budget.pdf");
+        var chat = new StubChatClient("""{"tags":["personnel"],"suggestedFolder":"Personnel / HR"}""");
+        var sut = CreateService(
+            db,
+            CreateOllamaFactory("unused", chatClient: chat),
+            DisabledGrok,
+            folderClassifier: new FixedFolderClassifier(
+                new FolderPrediction(DocumentTagHeuristics.BudgetFinance, 0.91, true)));
+
+        var result = await sut.TagDocumentAsync(document.Id);
+
+        chat.CallCount.Should().Be(0);
+        result.SuggestedFolder.Should().Be(DocumentTagHeuristics.BudgetFinance);
+        result.Tags.Should().BeEquivalentTo(["budget", "finance"]);
+    }
+
+    [Fact]
+    public async Task TagDocumentAsync_LowConfidenceClassifier_StillCallsChat()
+    {
+        await using var db = await TestDbContextFactory.CreateMigratedAsync();
+        var document = await AddDocumentAsync(db, "notes.pdf");
+        var chat = new StubChatClient("""{"tags":["finance"],"suggestedFolder":"Budget / Finance"}""");
+        var sut = CreateService(
+            db,
+            CreateOllamaFactory("unused", chatClient: chat),
+            DisabledGrok,
+            folderClassifier: new FixedFolderClassifier(
+                new FolderPrediction(DocumentTagHeuristics.PersonnelHr, 0.22, false)));
+
+        var result = await sut.TagDocumentAsync(document.Id);
+
+        chat.CallCount.Should().Be(1);
+        result.SuggestedFolder.Should().Be(DocumentTagHeuristics.BudgetFinance);
+    }
+
+    [Fact]
+    public async Task TagDocumentAsync_PathSeed_BeatsClassifierAndStillCallsChat()
+    {
+        await using var db = await TestDbContextFactory.CreateMigratedAsync();
+        var document = await AddDocumentAsync(db, "water-rate.pdf");
+        var chat = new StubChatClient("""{"tags":["minutes"],"suggestedFolder":"Minutes"}""");
+        var sut = CreateService(
+            db,
+            CreateOllamaFactory("unused", chatClient: chat),
+            DisabledGrok,
+            folderClassifier: new FixedFolderClassifier(
+                new FolderPrediction(DocumentTagHeuristics.PersonnelHr, 0.99, true)));
+
+        var result = await sut.TagDocumentAsync(document.Id, default, "ORDINANCES/water-rate.pdf");
+
+        chat.CallCount.Should().Be(1);
+        result.SuggestedFolder.Should().Be(DocumentTagHeuristics.Ordinances);
+        result.ProposedFolder.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task TagDocumentAsync_ChatTimeout_ReturnsAndKeepsPathSeed()
+    {
+        await using var db = await TestDbContextFactory.CreateMigratedAsync();
+        var document = await AddDocumentAsync(db, "water-rate.pdf");
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["TIKR_CHAT_COMPLETION_TIMEOUT_SECONDS"] = "1"
+            })
+            .Build();
+        var sut = CreateService(
+            db,
+            CreateOllamaFactory("unused", chatClient: new HangingChatClient()),
+            DisabledGrok,
+            configuration: configuration);
+
+        var started = DateTime.UtcNow;
+        var result = await sut.TagDocumentAsync(document.Id, default, "ORDINANCES/water-rate.pdf");
+
+        (DateTime.UtcNow - started).Should().BeLessThan(TimeSpan.FromSeconds(10));
+        result.SuggestedFolder.Should().Be(DocumentTagHeuristics.Ordinances);
+        result.ProposedFolder.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task TagDocumentAsync_ElectionPath_KeepsGeneralWhenModelSaysPersonnel()
+    {
+        await using var db = await TestDbContextFactory.CreateMigratedAsync();
+        var document = await AddDocumentAsync(db, "2025 Special District Election Manual.pdf");
+        var chat = new StubChatClient("""{"tags":["personnel"],"suggestedFolder":"Personnel / HR"}""");
+        var sut = CreateService(
+            db,
+            CreateOllamaFactory("unused", chatClient: chat),
+            DisabledGrok);
+
+        var result = await sut.TagDocumentAsync(
+            document.Id,
+            default,
+            "ELECTION INFORMATION/2025 Special District Election Manual.pdf");
+
+        chat.CallCount.Should().Be(1);
+        result.SuggestedFolder.Should().Be(DocumentTagHeuristics.General);
+        result.ProposedFolder.Should().BeNull();
+        result.Tags.Should().BeEquivalentTo(["election"]);
+        result.Tags.Should().NotContain("personnel");
+    }
+
+    [Fact]
+    public async Task TagDocumentAsync_UnmappedLibraryFolder_ProposesNameAndSkipsChat()
+    {
+        await using var db = await TestDbContextFactory.CreateMigratedAsync();
+        var document = await AddDocumentAsync(db, "notes.pdf");
+        var chat = new StubChatClient("""{"tags":["personnel"],"suggestedFolder":"Personnel / HR"}""");
+        var sut = CreateService(
+            db,
+            CreateOllamaFactory("unused", chatClient: chat),
+            DisabledGrok);
+
+        var result = await sut.TagDocumentAsync(
+            document.Id,
+            default,
+            "FIRE DEPARTMENT/notes.pdf");
+
+        chat.CallCount.Should().Be(0);
+        result.SuggestedFolder.Should().Be(DocumentTagHeuristics.General);
+        result.ProposedFolder.Should().Be("FIRE DEPARTMENT");
+    }
+
+    [Fact]
+    public async Task TagDocumentAsync_DeclinedLibraryFolder_DoesNotAskAgain()
+    {
+        await using var db = await TestDbContextFactory.CreateMigratedAsync();
+        var first = await AddDocumentAsync(db, "manual.pdf");
+        var second = await AddDocumentAsync(db, "calendar.pdf");
+        var chat = new StubChatClient("""{"tags":["election"],"suggestedFolder":"Elections"}""");
+        var catalog = new DocumentFolderCatalog(db);
+        var sut = CreateService(
+            db,
+            CreateOllamaFactory("unused", chatClient: chat),
+            DisabledGrok,
+            folderCatalog: catalog);
+
+        await sut.TagDocumentAsync(first.Id, default, "FIRE DEPARTMENT/manual.pdf");
+        await catalog.DeclineAsync("FIRE DEPARTMENT");
+        var result = await sut.TagDocumentAsync(second.Id, default, "FIRE DEPARTMENT/calendar.pdf");
+
+        chat.CallCount.Should().Be(0);
+        result.SuggestedFolder.Should().Be(DocumentTagHeuristics.General);
+        result.ProposedFolder.Should().BeNull();
+    }
+
+    private static async Task<Document> AddDocumentAsync(TikrDbContext db, string fileName)
+    {
+        var document = new Document
+        {
+            Id = Guid.NewGuid(),
+            FileName = fileName,
+            StoragePath = $"2026/01/{fileName}",
+            ContentType = "application/pdf",
+            UploadedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
+        db.Documents.Add(document);
+        await db.SaveChangesAsync();
+        return document;
+    }
+
     private static HybridAiService CreateService(
         TikrDbContext db,
         IOllamaChatClientFactory ollama,
         GrokService grok,
         IFileStorageService? storage = null,
-        IDocumentAgentExtractionBackend? extraction = null) =>
+        IDocumentAgentExtractionBackend? extraction = null,
+        IFolderClassifier? folderClassifier = null,
+        IDocumentFolderCatalog? folderCatalog = null,
+        IConfiguration? configuration = null) =>
         new(
             db,
             ollama,
             grok,
             storage ?? Mock.Of<IFileStorageService>(),
             extraction ?? Mock.Of<IDocumentAgentExtractionBackend>(),
-            NullLogger<HybridAiService>.Instance);
+            NullLogger<HybridAiService>.Instance,
+            configuration: configuration,
+            folderClassifier: folderClassifier,
+            folderCatalog: folderCatalog);
+
+    private sealed class FixedFolderClassifier(FolderPrediction? prediction) : IFolderClassifier
+    {
+        public FolderPrediction? Classify(string fileName, string? content, string? libraryRelativePath) =>
+            prediction;
+    }
 
     private static IOllamaChatClientFactory CreateOllamaFactory(
         string responseText,
         Func<string, float[]?>? embedder = null,
-        StubChatClient? chatClient = null)
+        IChatClient? chatClient = null)
     {
         var factory = new Mock<IOllamaChatClientFactory>();
         factory.Setup(f => f.CreateChatClient()).Returns(chatClient ?? new StubChatClient(responseText));

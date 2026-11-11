@@ -1,4 +1,8 @@
-# TIKR production stack — Synology DS225+ / Container Manager
+# TIKR production stack — Synology DS225+ / Container Manager (SQLite default)
+#
+# Clerk workflow: DATABASE_PROVIDER=Sqlite + Data Source=/data/tikr.db via docker/.env.
+# For Aurora/RDS (App Runner), use docker-compose.prod.postgres.yml + PRODUCTION-AURORA.md
+# instead of changing this file.
 #
 # Mr_Storage has a 16 GB SODIMM plus 2 GB soldered (~17.3 GiB usable).
 # Caps leave room for DSM and ClerkSuite (1536m, outside this file):

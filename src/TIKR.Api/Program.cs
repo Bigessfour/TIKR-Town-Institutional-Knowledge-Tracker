@@ -1232,6 +1232,36 @@ api.MapPost("/ai/tag-document", async (TagDocumentRequest request, IHybridAiServ
         return Results.NotFound(new { error = ex.Message });
     }
 });
+api.MapGet("/documents/folder-proposals", async (IDocumentFolderCatalog catalog, CancellationToken ct) =>
+    Results.Ok(await catalog.ListProposalsAsync(ct)));
+api.MapPost("/documents/folder-proposals/accept", async (
+    FolderProposalDecisionRequest request,
+    IDocumentFolderCatalog catalog,
+    CancellationToken ct) =>
+{
+    try
+    {
+        return Results.Ok(await catalog.AcceptAsync(request.Name, ct));
+    }
+    catch (ArgumentException ex)
+    {
+        return Results.BadRequest(new { error = ex.Message });
+    }
+});
+api.MapPost("/documents/folder-proposals/decline", async (
+    FolderProposalDecisionRequest request,
+    IDocumentFolderCatalog catalog,
+    CancellationToken ct) =>
+{
+    try
+    {
+        return Results.Ok(await catalog.DeclineAsync(request.Name, ct));
+    }
+    catch (ArgumentException ex)
+    {
+        return Results.BadRequest(new { error = ex.Message });
+    }
+});
 api.MapPost("/ai/ask-advanced", async (AskAdvancedRequest request, IHybridAiService ai) =>
     Results.Ok(await ai.AskAdvancedAsync(request)));
 

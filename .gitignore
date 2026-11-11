@@ -34,6 +34,9 @@ coverage/
 # Local RAG index (tikr-rag-mcp)
 .rag_index/
 
+# Mac-trained folder classifier. The synthetic fixture lives under tests/.
+/models/
+
 # Repomix pack output (npm run repomix)
 repomix-output.md
 repomix-output.*

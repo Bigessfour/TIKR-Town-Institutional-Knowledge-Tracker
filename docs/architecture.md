@@ -381,8 +381,9 @@ User action → HybridAiService
 
 ## Database
 
-- **Default:** SQLite at `/data/tikr.db` (Docker volume)
+- **Default:** SQLite at `/data/tikr.db` (Docker volume) — Synology / local clerk workflow
 - **Switch to PostgreSQL:** Set `DATABASE_PROVIDER=Postgres` and Npgsql connection string
+- **Aurora / App Runner:** see [`docker/PRODUCTION-AURORA.md`](../docker/PRODUCTION-AURORA.md) and `docker/docker-compose.prod.postgres.yml`
 
 ## Audit Trail
 

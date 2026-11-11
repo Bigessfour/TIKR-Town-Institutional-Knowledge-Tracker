@@ -34,6 +34,7 @@ public class DocumentTagPromptBuilderTests
         prompt.Should().Contain("ORDINANCES/Ordinance_2024-05.pdf");
         prompt.Should().Contain("Ordinances");
         prompt.Should().Contain("{\"tags\":");
+        prompt.Should().Contain("proposedFolder");
         prompt.Should().Contain("JSON only");
         prompt.Should().NotContain("Stephen_Resume.pdf");
         prompt.Should().NotContain("Town of Example");

@@ -95,6 +95,29 @@ public class TikrApiClient(HttpClient http)
             : null;
     }
 
+    public async Task<List<FolderProposalGroupDto>> GetFolderProposalsAsync() =>
+        await http.GetFromJsonAsync<List<FolderProposalGroupDto>>("/api/documents/folder-proposals") ?? [];
+
+    public async Task<FolderProposalDecisionResponse?> AcceptFolderProposalAsync(string name)
+    {
+        var response = await http.PostAsJsonAsync(
+            "/api/documents/folder-proposals/accept",
+            new FolderProposalDecisionRequest(name));
+        return response.IsSuccessStatusCode
+            ? await response.Content.ReadFromJsonAsync<FolderProposalDecisionResponse>()
+            : null;
+    }
+
+    public async Task<FolderProposalDecisionResponse?> DeclineFolderProposalAsync(string name)
+    {
+        var response = await http.PostAsJsonAsync(
+            "/api/documents/folder-proposals/decline",
+            new FolderProposalDecisionRequest(name));
+        return response.IsSuccessStatusCode
+            ? await response.Content.ReadFromJsonAsync<FolderProposalDecisionResponse>()
+            : null;
+    }
+
     public async Task<AskAdvancedResponse?> AskAdvancedAsync(
         string prompt,
         string? context = null,
