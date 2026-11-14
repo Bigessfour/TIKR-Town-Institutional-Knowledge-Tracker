@@ -14,6 +14,9 @@ using TIKR.Shared.Interfaces;
 using Serilog;
 using Serilog.Events;
 
+// SQLite-origin DateTimes are Unspecified; required when DATABASE_PROVIDER=Postgres.
+AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
+
 // Operational structured logging: console + rolling file.
 // Docker/NAS uses /data/logs; Mac dev falls back to .local-data/logs (or TIKR_LOG_PATH).
 var logDir = ResolveLogDirectory();
@@ -1232,8 +1235,38 @@ api.MapPost("/ai/tag-document", async (TagDocumentRequest request, IHybridAiServ
         return Results.NotFound(new { error = ex.Message });
     }
 });
-api.MapPost("/ai/ask-advanced", async (AskAdvancedRequest request, IHybridAiService ai) =>
-    Results.Ok(await ai.AskAdvancedAsync(request)));
+api.MapGet("/documents/folder-proposals", async (IDocumentFolderCatalog catalog, CancellationToken ct) =>
+    Results.Ok(await catalog.ListProposalsAsync(ct)));
+api.MapPost("/documents/folder-proposals/accept", async (
+    FolderProposalDecisionRequest request,
+    IDocumentFolderCatalog catalog,
+    CancellationToken ct) =>
+{
+    try
+    {
+        return Results.Ok(await catalog.AcceptAsync(request.Name, ct));
+    }
+    catch (ArgumentException ex)
+    {
+        return Results.BadRequest(new { error = ex.Message });
+    }
+});
+api.MapPost("/documents/folder-proposals/decline", async (
+    FolderProposalDecisionRequest request,
+    IDocumentFolderCatalog catalog,
+    CancellationToken ct) =>
+{
+    try
+    {
+        return Results.Ok(await catalog.DeclineAsync(request.Name, ct));
+    }
+    catch (ArgumentException ex)
+    {
+        return Results.BadRequest(new { error = ex.Message });
+    }
+});
+api.MapPost("/ai/ask-advanced", async (AskAdvancedRequest request, IHybridAiService ai, CancellationToken ct) =>
+    Results.Ok(await ai.AskAdvancedAsync(request, ct)));
 
 api.MapPost("/ai/semantic-search", async (SemanticSearchRequest request, IHybridAiService ai) =>
     Results.Ok(await ai.SemanticSearchDocumentsAsync(request)));
@@ -1422,6 +1455,12 @@ static void LogStartupDiagnostics(WebApplication app, Microsoft.Extensions.Loggi
         ollama,
         TikrConfiguration.IsAuthEnabled(config),
         TikrConfiguration.GetUseGrok(config));
+    if (TikrConfiguration.GetUseGrok(config) && !TikrConfiguration.IsAuthEnabled(config))
+    {
+        logger.LogWarning(
+            "Grok is on and API auth is off. Keep the API published on 127.0.0.1 only. " +
+            "The web container reaches it on the Docker network. Do not expose port 8080 of tikr-api on the tailnet.");
+    }
 
     if (dbPath is not null)
     {

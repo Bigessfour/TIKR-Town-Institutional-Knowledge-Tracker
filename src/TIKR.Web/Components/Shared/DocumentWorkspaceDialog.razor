@@ -37,10 +37,12 @@
                                       aria-expanded="@_workspaceToolsExpanded" />
                             @if (CanSaveInWorkspace)
                             {
-                                <SfButton CssClass="tikr-action-btn primary"
-                                          Content="@(_saving ? "Saving…" : (_dirty ? "Save to NAS *" : "Save to NAS"))"
-                                          Disabled="@_saving"
-                                          OnClick="SaveAsync" />
+                                <SfTooltip Content="Saves this file back to the town NAS library." Position="Position.TopCenter">
+                                    <SfButton CssClass="tikr-action-btn primary"
+                                              Content="@(_saving ? "Saving…" : (_dirty ? "Save *" : "Save"))"
+                                              Disabled="@_saving"
+                                              OnClick="SaveAsync" />
+                                </SfTooltip>
                                 @if (_dirty)
                                 {
                                     <span class="text-muted tikr-doc-unsaved-hint">Unsaved changes</span>
@@ -167,16 +169,25 @@
                     }
                     else if (!string.IsNullOrEmpty(_previewError))
                     {
-                        <div class="tikr-empty-state">
-                            @_previewError
-                            @if (_licenseFallback)
-                            {
-                                <div class="tikr-empty-action mt-2">
-                                    <SfButton CssClass="tikr-action-btn" Content="Open in Document Library"
-                                              OnClick="NavigateToDocumentsFallback" />
-                                </div>
-                            }
-                        </div>
+                        <SfTooltip Content="@(_licenseFallback ? _previewError : "Could not open this document.")" Position="Position.TopCenter">
+                            <div class="tikr-empty-state">
+                                @if (_licenseFallback)
+                                {
+                                    <span>Document tools need a license. Ask Steve to check Settings, or open this file from the Document Library.</span>
+                                }
+                                else
+                                {
+                                    @_previewError
+                                }
+                                @if (_licenseFallback)
+                                {
+                                    <div class="tikr-empty-action mt-2">
+                                        <SfButton CssClass="tikr-action-btn" Content="Open in Document Library"
+                                                  OnClick="NavigateToDocumentsFallback" />
+                                    </div>
+                                }
+                            </div>
+                        </SfTooltip>
                     }
                     else
                     {
@@ -237,7 +248,7 @@
         new CustomToolbarItemModel
         {
             Id = "tikr-save-nas",
-            Text = "Save to NAS",
+            Text = "Save",
             PrefixIcon = "e-icons e-save",
             TooltipText = "Save Word document back to the town NAS library"
         },

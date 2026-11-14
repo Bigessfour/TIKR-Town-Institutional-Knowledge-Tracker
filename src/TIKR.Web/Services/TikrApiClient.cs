@@ -95,17 +95,55 @@ public class TikrApiClient(HttpClient http)
             : null;
     }
 
+    public async Task<List<FolderProposalGroupDto>> GetFolderProposalsAsync() =>
+        await http.GetFromJsonAsync<List<FolderProposalGroupDto>>("/api/documents/folder-proposals") ?? [];
+
+    public async Task<FolderProposalDecisionResponse?> AcceptFolderProposalAsync(string name)
+    {
+        var response = await http.PostAsJsonAsync(
+            "/api/documents/folder-proposals/accept",
+            new FolderProposalDecisionRequest(name));
+        return response.IsSuccessStatusCode
+            ? await response.Content.ReadFromJsonAsync<FolderProposalDecisionResponse>()
+            : null;
+    }
+
+    public async Task<FolderProposalDecisionResponse?> DeclineFolderProposalAsync(string name)
+    {
+        var response = await http.PostAsJsonAsync(
+            "/api/documents/folder-proposals/decline",
+            new FolderProposalDecisionRequest(name));
+        return response.IsSuccessStatusCode
+            ? await response.Content.ReadFromJsonAsync<FolderProposalDecisionResponse>()
+            : null;
+    }
+
     public async Task<AskAdvancedResponse?> AskAdvancedAsync(
         string prompt,
         string? context = null,
-        bool preferCloud = false)
+        bool preferCloud = false,
+        IReadOnlyList<AssistantTurn>? history = null,
+        CancellationToken cancellationToken = default)
     {
-        var response = await http.PostAsJsonAsync(
-            "/api/ai/ask-advanced",
-            new AskAdvancedRequest(prompt, context, PreferCloud: preferCloud));
-        return response.IsSuccessStatusCode
-            ? await response.Content.ReadFromJsonAsync<AskAdvancedResponse>()
-            : null;
+        for (var attempt = 1; attempt <= 3; attempt++)
+        {
+            try
+            {
+                var response = await http.PostAsJsonAsync(
+                    "/api/ai/ask-advanced",
+                    new AskAdvancedRequest(prompt, context, PreferCloud: preferCloud, History: history),
+                    cancellationToken);
+                return response.IsSuccessStatusCode
+                    ? await response.Content.ReadFromJsonAsync<AskAdvancedResponse>(cancellationToken)
+                    : null;
+            }
+            catch (HttpRequestException) when (attempt < 3 && !cancellationToken.IsCancellationRequested)
+            {
+                await Task.Delay(TimeSpan.FromMilliseconds(400 * attempt), cancellationToken);
+            }
+        }
+
+        return null;
     }
 
     public async Task<RequirementDto?> CreateRequirementAsync(CreateRequirementRequest request)

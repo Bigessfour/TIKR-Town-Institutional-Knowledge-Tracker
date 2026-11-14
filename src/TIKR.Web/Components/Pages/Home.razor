@@ -26,7 +26,7 @@
         </TourAnchor>
         <PageTourButton Route="/" />
         <PageHelp DataTour="@ClerkTourIds.HelpDashboard"
-                  HelpText="Your command center for Colorado due-outs, linked NAS documents, and clerk quick actions. Drag panels to personalize; Reset layout restores the default. Chat memory follows this computer’s clerk (Deb Dillon or Paige Lindo)." />
+                  HelpText="Your command center for Colorado due-outs, linked town documents, and quick actions. Drag panels to rearrange them. Reset layout puts them back. Chat memory follows this computer’s clerk (Deb Dillon or Paige Lindo). Linked files live on the town NAS (Synology). The status line shows whether the local helper (Ollama) is ready. If the dashboard does not load, Settings shows NAS and API status." />
     </div>
 </div>
 
@@ -44,7 +44,7 @@ else if (_summary is null)
 {
     <div class="tikr-empty-state" role="status">
         <strong>Could not load dashboard.</strong>
-        <div class="tikr-empty-action">Check the <a href="/settings">Settings</a> page for NAS/API status.</div>
+        <div class="tikr-empty-action">Check the <a href="/settings">Settings</a> page for connection status.</div>
     </div>
 }
 else
@@ -207,15 +207,19 @@ else
                                     @if (_corpusAttention is { Count: > 0 })
                                     {
                                         <span>@AuditDetailsFormatter.FormatCorpusAttention(_corpusAttention)</span>
-                                        <a href="/settings">Settings → reindex</a>
+                                        <a href="/settings">Refresh search in Settings</a>
                                     }
                                     else if (_localStatus is not null)
                                     {
-                                        <span>@_localStatus.StorageLabel — Ollama @(_localStatus.OllamaAvailable ? "ready" : "offline")</span>
+                                        <SfTooltip Content="@(_localStatus.OllamaAvailable ? "Ollama is ready. Files stay on the Synology NAS." : "Ollama is offline. Files stay on the Synology NAS.")" Position="Position.TopCenter">
+                                            <span>@_localStatus.StorageLabel — local helper @(_localStatus.OllamaAvailable ? "ready" : "offline")</span>
+                                        </SfTooltip>
                                     }
                                     else
                                     {
-                                        <span>All data stays local on Synology NAS</span>
+                                        <SfTooltip Content="All data stays local on the Synology NAS." Position="Position.TopCenter">
+                                            <span>Town files stay on town storage</span>
+                                        </SfTooltip>
                                     }
                                 </div>
                                 break;

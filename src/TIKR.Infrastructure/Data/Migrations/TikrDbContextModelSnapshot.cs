@@ -448,6 +448,10 @@ namespace TIKR.Infrastructure.Data.Migrations
                     b.Property<bool>("IsTransient")
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("ProposedFolder")
+                        .HasMaxLength(80)
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("StoragePath")
                         .IsRequired()
                         .HasMaxLength(1000)

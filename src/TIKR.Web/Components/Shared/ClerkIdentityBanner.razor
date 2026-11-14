@@ -3,42 +3,52 @@
 
 @using TIKR.Web.Services
 
+<SfTooltip Content="@TooltipText" Position="Position.TopCenter">
 <div class="clerk-identity-banner @(Compact ? "clerk-identity-banner-compact" : null)"
      role="status"
      data-tour="clerk-identity">
     @if (ClerkIdentity.IsResolved)
     {
         <span>
-            Chat memory:
+            This computer’s clerk:
             <strong>@ClerkIdentity.DisplayName</strong>
-            @if (ClerkIdentity.IsMachineMapped && !ClerkIdentity.IsManualOverride)
+            @if (ClerkIdentity.IsManualOverride)
             {
-                <span class="text-muted"> — this computer (@ClerkIdentity.MachineName)</span>
-            }
-            else if (ClerkIdentity.IsManualOverride)
-            {
-                <span class="text-muted"> — manual override</span>
+                <span class="text-muted"> — chosen on this computer</span>
             }
         </span>
     }
     else
     {
         <span>
-            Chat memory is not assigned for this computer
-            (<code>@ClerkIdentity.MachineName</code>).
+            No clerk is assigned for this computer.
             @if (_showSettingsLink)
             {
-                <a href="/settings">Set clerk in Settings</a>
+                <a href="/settings">Choose a clerk in Settings</a>
             }
         </span>
     }
 </div>
+</SfTooltip>
 
 @code {
     [Parameter] public bool Compact { get; set; }
 
     private bool _showSettingsLink =>
         !Navigation.Uri.Contains("/settings", StringComparison.OrdinalIgnoreCase);
+
+    private string TooltipText
+    {
+        get
+        {
+            var detail = $"Chat memory follows this computer’s clerk. Machine: {ClerkIdentity.MachineName}. NAS backup inventory: DESKTOP-KN6INHL is Deb Dillon, DESKTOP-O9TCKP1 is Paige Lindo.";
+            if (ClerkIdentity.IsManualOverride)
+                detail += " Manual override (unmapped PC, demo, or Steve only).";
+            else if (!ClerkIdentity.IsResolved)
+                detail += " This computer is unmapped — choose a clerk in Settings.";
+            return detail;
+        }
+    }
 
     protected override void OnInitialized() => ClerkIdentity.EnsureResolved();
 }

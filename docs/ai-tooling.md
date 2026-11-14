@@ -222,6 +222,17 @@ docker exec -i tikr-ollama ollama create tikr-clerk -f - < docker/ollama/Modelfi
 
 Then set `OLLAMA_CHAT_MODEL=tikr-clerk` in `docker/.env` (or host env) and restart `tikr-api` / Web so they pick up the model name. Default remains `llama3.2:3b` if you skip this step.
 
+#### Folder classifier (Mac training, NAS scoring)
+
+Nine-folder guesses can be learned on this Mac with scikit-learn and scored inside `tikr-api` with no Python and no GPU. A NAS path that `DocumentTagHeuristics` already maps still wins. A confident classifier skips the chat model for that document. An empty `FolderClassifier:ModelPath` leaves tagging on Qwen.
+
+```bash
+.venv/bin/python3 -m pip install 'scikit-learn>=1.5,<1.8'
+.venv/bin/python3 scripts/train_folder_classifier.py --data scripts/folder-classifier-sample.jsonl --fixture
+```
+
+Point `FolderClassifier__ModelPath` at the JSON (not the joblib) and restart `tikr-api`. Train Wiley labels on this Mac. Do not commit a model trained on town records. SageMaker stays off this path unless a later job no longer fits the 24 GB Mac.
+
 ### Clerk surface action logs (`TikrActionLog`)
 
 Every clerk-facing page logs major load/write flows as `Action UI.{Surface}.{Verb}` (Started / Completed / Failed). Domain services and API use the same helper with non-UI prefixes (`Requirement.*`, `Document.*`, `AI.*`, `Email.*`, `Auth.*`, `Host.*`, `API.*`). Conventions: [architecture.md — Surface logging conventions](architecture.md#surface-logging-conventions).

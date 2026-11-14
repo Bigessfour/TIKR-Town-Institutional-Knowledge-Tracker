@@ -122,6 +122,10 @@ public static class AssistantAgentRouter
             reasons.Add("little local context for complex ask");
         }
 
+        // Threshold: escalate when score high enough. Declared here so a greeting
+        // cannot veto a prompt that already earned a cloud route.
+        const int grokThreshold = 30;
+
         // Prefer local for product how-to when we have help hits (3b + pack is enough)
         if (productHelpHitCount > 0 && score < 40)
         {
@@ -129,15 +133,13 @@ public static class AssistantAgentRouter
             reasons.Add("product help available — prefer local");
         }
 
-        // Simple local intents
-        if (IsSimpleLocalIntent(lower))
+        // A short courtesy or how-to phrase only keeps the turn local when the
+        // rest of the prompt has not already crossed the Grok threshold.
+        if (IsSimpleLocalIntent(lower) && score < grokThreshold)
         {
             score = Math.Min(score, 5);
             reasons.Add("simple local intent");
         }
-
-        // Threshold: escalate when score high enough
-        const int grokThreshold = 30;
         if (score >= grokThreshold)
         {
             var conf = Math.Min(1.0, 0.55 + (score - grokThreshold) / 50.0);
@@ -159,23 +161,47 @@ public static class AssistantAgentRouter
             ? new AiRouteDecision(AiRoute.CloudGrok, "Local Ollama failed or empty; escalate to Grok", 0.95)
             : new AiRouteDecision(AiRoute.LocalOllama, "Local failed and Grok unavailable", 1.0);
 
-    private static bool IsSimpleLocalIntent(string lower) =>
-        ContainsAny(lower,
-            "what should i work on",
-            "what's due",
-            "whats due",
-            "due this week",
-            "due today",
-            "hello",
-            "hi ",
-            "thanks",
-            "thank you",
-            "how do i upload",
-            "how do i save",
-            "how do i open",
-            "what is smart redact",
-            "link a packet",
-            "who is chatting");
+    /// <summary>
+    /// True when a routine phrase appears as its own words.
+    /// "thanks" must not match "thanksgiving", and "hi" must not match "high".
+    /// </summary>
+    private static bool IsSimpleLocalIntent(string lower)
+    {
+        foreach (var phrase in SimpleLocalPhrases)
+        {
+            var idx = 0;
+            while ((idx = lower.IndexOf(phrase, idx, StringComparison.Ordinal)) >= 0)
+            {
+                var beforeOk = idx == 0 || !char.IsLetterOrDigit(lower[idx - 1]);
+                var end = idx + phrase.Length;
+                var afterOk = end >= lower.Length || !char.IsLetterOrDigit(lower[end]);
+                if (beforeOk && afterOk)
+                    return true;
+                idx = end;
+            }
+        }
+
+        return false;
+    }
+
+    private static readonly string[] SimpleLocalPhrases =
+    [
+        "what should i work on",
+        "what's due",
+        "whats due",
+        "due this week",
+        "due today",
+        "hello",
+        "hi",
+        "thanks",
+        "thank you",
+        "how do i upload",
+        "how do i save",
+        "how do i open",
+        "what is smart redact",
+        "link a packet",
+        "who is chatting"
+    ];
 
     private static bool ContainsAny(string haystack, params string[] needles) =>
         needles.Any(n => haystack.Contains(n, StringComparison.Ordinal));

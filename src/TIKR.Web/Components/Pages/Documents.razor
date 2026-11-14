@@ -24,11 +24,11 @@
 <div class="page-header">
     <div class="page-header-main">
         <h2>Document Library</h2>
-        <p>Upload, AI-tag, organize, and open files in the Syncfusion document workspace</p>
+        <p>Upload, tag, organize, and open files</p>
     </div>
     <div class="page-header-actions">
         <PageTourButton Route="/documents" />
-        <PageHelp DataTour="@ClerkTourIds.HelpDocuments" HelpText="Library mode: AI tags and search. Browse mode: Syncfusion File Manager folders. Open Full Screen for Smart PDF (annotate, summarize, redact, form fill), Word editor, or Spreadsheet — then Save to NAS. Convert Word/Excel/images to PDF when needed." />
+        <PageHelp DataTour="@ClerkTourIds.HelpDocuments" HelpText="Library: tags and search. Browse: folders (Syncfusion File Manager). Open Full Screen to mark up a PDF, edit Word, or use a spreadsheet, then save to the NAS. Search by meaning uses embeddings from the local helper (Ollama). Convert Word, Excel, or images to PDF when needed." />
     </div>
 </div>
 
@@ -64,7 +64,29 @@
 </div>
 
 <!-- AI banners (appear after upload + auto-tag) -->
-@if (_lastTagSuggestion is not null)
+@if (_folderProposals.Count > 0)
+{
+    <AiSuggestionBanner>
+        <ChildContent>
+            <strong>New folder?</strong>
+            @foreach (var proposal in _folderProposals)
+            {
+                var proposedName = proposal.Name;
+                var proposedCount = proposal.Count;
+                <div class="banner-body">
+                    @proposedCount @(proposedCount == 1 ? "file looks" : "files look") like <strong>@proposedName</strong>.
+                    Create that folder, or keep @(proposedCount == 1 ? "it" : "them") in General.
+                </div>
+                <div class="banner-actions">
+                    <SfButton CssClass="tikr-action-btn" Content="Create folder" OnClick="@(() => AcceptFolderProposalAsync(proposedName))" />
+                    <SfButton CssClass="tikr-action-btn" Content="Keep in General" OnClick="@(() => DeclineFolderProposalAsync(proposedName))" />
+                </div>
+            }
+        </ChildContent>
+    </AiSuggestionBanner>
+}
+
+@if (_lastTagSuggestion is not null && string.IsNullOrWhiteSpace(_lastTagSuggestion.ProposedFolder))
 {
     <AiSuggestionBanner>
         <ChildContent>
@@ -126,9 +148,11 @@
         <SfButton CssClass="@(SearchMode == "full" ? "tikr-action-btn active" : "tikr-action-btn")"
                   Content="Full-text search"
                   OnClick="@(async () => await SetSearchMode("full"))" />
-        <SfButton CssClass="@(SearchMode == "semantic" ? "tikr-action-btn active" : "tikr-action-btn")"
-                  Content="Semantic search"
-                  OnClick="@(async () => await SetSearchMode("semantic"))" />
+        <SfTooltip Content="Semantic search uses embeddings from the local helper (Ollama)." Position="Position.TopCenter">
+            <SfButton CssClass="@(SearchMode == "semantic" ? "tikr-action-btn active" : "tikr-action-btn")"
+                      Content="Search by meaning"
+                      OnClick="@(async () => await SetSearchMode("semantic"))" />
+        </SfTooltip>
     </div>
     <SfTextBox CssClass="search-box"
                Placeholder="@(SearchMode == "semantic" ? "Describe the document (e.g. '2025 budget resolution')" : "Search filename, tags, or content...")"
@@ -165,9 +189,11 @@
 @if (_viewMode == "browse")
 {
     <div class="documents-browse-host" data-tour="@ClerkTourIds.DocLibrary" style="min-height:28rem;">
-        <p class="text-muted mb-2">
-            Syncfusion File Manager over your library folders. Double-click a file to open the full document workspace (annotate PDF, edit Word/Excel, Save to NAS).
-        </p>
+        <SfTooltip Content="Syncfusion File Manager over your library folders. Double-click a file to open the full document workspace (annotate PDF, edit Word/Excel, Save to NAS)." Position="Position.TopCenter">
+            <p class="text-muted mb-2">
+                Folders for your library. Double-click a file to open it, then save when you are done.
+            </p>
+        </SfTooltip>
         <SfFileManager TValue="FileManagerDirectoryContent"
                        Height="520px"
                        AllowMultiSelection="true"
@@ -373,9 +399,11 @@ else
                                   Content="@(_previewLoading ? "Preparing…" : "Open Full Screen")"
                                   Disabled="@(_previewLoading || !CanOpenFullScreen)"
                                   OnClick="OpenFullScreenAsync" />
-                        <p class="text-muted doc-open-hint">
-                            Opens the full Syncfusion workspace — Smart PDF (annotate, AI summarize, smart redact/fill), Word editor, or Spreadsheet with toolbars. Save changes back to NAS.
-                        </p>
+                        <SfTooltip Content="Opens the full Syncfusion workspace — Smart PDF (annotate, AI summarize, smart redact/fill), Word editor, or Spreadsheet with toolbars. Save changes back to NAS." Position="Position.TopCenter">
+                            <p class="text-muted doc-open-hint">
+                                Opens the full workspace so you can mark up a PDF, edit a Word file, or work in a spreadsheet, then save.
+                            </p>
+                        </SfTooltip>
                     </div>
 
                     <div class="doc-tools" role="toolbar" aria-label="Quick document actions">
@@ -471,7 +499,9 @@ else
 
 @if (!string.IsNullOrEmpty(_statusMessage))
 {
-    <div class="status-msg mt-2" role="status" aria-live="polite">@_statusMessage</div>
+    <SfTooltip Content="@_statusMessage" Position="Position.TopCenter">
+        <div class="status-msg mt-2" role="status" aria-live="polite">@ClerkStatusText(_statusMessage)</div>
+    </SfTooltip>
 }
 
 <ConfirmDeleteDialog @bind-Visible="_confirmDeleteVisible"
@@ -493,8 +523,38 @@ else
     private string _viewMode = "library"; // "library" | "browse"
     private bool _showRecycleBin;
     private string? _statusMessage;
+
+    private static string ClerkStatusText(string message)
+    {
+        if (message.Contains("Semantic search unavailable", StringComparison.Ordinal)
+            || message.Contains("Ollama", StringComparison.Ordinal)
+            || message.Contains("nomic-embed", StringComparison.Ordinal))
+            return "Search by meaning is not available right now.";
+        if (message.StartsWith("Semantic search failed", StringComparison.Ordinal))
+            return "Search by meaning failed. Try full-text search.";
+        if (message.StartsWith("No semantic matches", StringComparison.Ordinal))
+            return "No matches yet.";
+        if (message.Contains("semantic match", StringComparison.Ordinal))
+            return "Matches are listed below.";
+        if (message.Contains("Syncfusion", StringComparison.Ordinal))
+            return "Could not finish that document. Ask Steve to check the license in Settings.";
+        if (message.Contains("NAS", StringComparison.Ordinal) || message.Contains("Synology", StringComparison.Ordinal))
+        {
+            return message
+                .Replace(" from NAS storage", "", StringComparison.Ordinal)
+                .Replace(" on NAS storage", "", StringComparison.Ordinal)
+                .Replace(" on the NAS", "", StringComparison.Ordinal)
+                .Replace(" to NAS", "", StringComparison.Ordinal)
+                .Replace(" on Synology", "", StringComparison.Ordinal)
+                .Replace("Synology NAS", "town storage", StringComparison.Ordinal)
+                .Replace("NAS", "town storage", StringComparison.Ordinal);
+        }
+
+        return message;
+    }
     private bool _showUploadBanner;
     private TagDocumentResponse? _lastTagSuggestion;
+    private List<FolderProposalGroupDto> _folderProposals = [];
     private EmailExtractionNoticeDto? _emailExtractNotice;
     private bool _emailRequirementBusy;
     private bool _keepForAssistantContext = true;
@@ -565,7 +625,7 @@ else
         new CustomToolbarItemModel
         {
             Id = "tikr-save-nas",
-            Text = "Save to NAS",
+            Text = "Save",
             PrefixIcon = "e-icons e-save",
             TooltipText = "Save Word document back to the town NAS library"
         },
@@ -610,6 +670,7 @@ else
         try
         {
             _documents = await Api.GetDocumentsAsync(query, deleted: _showRecycleBin);
+            await LoadFolderProposalsAsync();
             RebuildFolderTree();
             RebuildFileManagerData();
             await ClearSelection();
@@ -763,6 +824,58 @@ else
             }
         }
 
+        await LoadDocumentsAsync();
+    }
+
+    private async Task LoadFolderProposalsAsync()
+    {
+        if (_showRecycleBin)
+        {
+            _folderProposals = [];
+            return;
+        }
+
+        try
+        {
+            _folderProposals = await Api.GetFolderProposalsAsync();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogDebug(ex, "Folder proposals unavailable");
+            _folderProposals = [];
+        }
+    }
+
+    private async Task AcceptFolderProposalAsync(string name)
+    {
+        TikrActionLog.Started(Logger, "UI.Documents.FolderProposal", $"Accept Name={name}");
+        var result = await Api.AcceptFolderProposalAsync(name);
+        if (result is null)
+        {
+            TikrActionLog.Failed(Logger, "UI.Documents.FolderProposal", "Accept failed", name);
+            Toast.Show("Could not create that folder.");
+            return;
+        }
+
+        _lastTagSuggestion = null;
+        TikrActionLog.Completed(Logger, "UI.Documents.FolderProposal", $"Accept Name={result.Name} Updated={result.Updated}");
+        Toast.Show($"Created folder {result.Name}.");
+        await LoadDocumentsAsync();
+    }
+
+    private async Task DeclineFolderProposalAsync(string name)
+    {
+        TikrActionLog.Started(Logger, "UI.Documents.FolderProposal", $"Decline Name={name}");
+        var result = await Api.DeclineFolderProposalAsync(name);
+        if (result is null)
+        {
+            TikrActionLog.Failed(Logger, "UI.Documents.FolderProposal", "Decline failed", name);
+            Toast.Show("Could not dismiss that folder.");
+            return;
+        }
+
+        _lastTagSuggestion = null;
+        TikrActionLog.Completed(Logger, "UI.Documents.FolderProposal", $"Decline Name={result.Name} Updated={result.Updated}");
         await LoadDocumentsAsync();
     }
 

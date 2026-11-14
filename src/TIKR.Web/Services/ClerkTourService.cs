@@ -31,14 +31,14 @@ public sealed class ClerkTourService(
             return false;
 
         var completed = await GetCompletedVersionAsync();
-        return !string.Equals(completed, ClerkTourCatalog.CurrentVersion, StringComparison.Ordinal);
+        return string.IsNullOrWhiteSpace(completed);
     }
 
     public async Task StartGlobalTourAsync() =>
-        await RunTourAsync(ClerkTourCatalog.GetGlobalSteps());
+        await RunTourAsync(ClerkTourCatalog.GetGlobalSteps(), force: false);
 
     public async Task StartFullTourAsync() =>
-        await RunTourAsync(ClerkTourCatalog.GetFullTourSteps());
+        await RunTourAsync(ClerkTourCatalog.GetFullTourSteps(), force: true);
 
     public async Task StartPageTourAsync(string route)
     {
@@ -50,7 +50,7 @@ public sealed class ClerkTourService(
         if (!navigation.Uri.Contains(normalized, StringComparison.OrdinalIgnoreCase))
             navigation.NavigateTo(normalized);
 
-        await RunTourAsync(steps);
+        await RunTourAsync(steps, force: true);
     }
 
     public async Task SetAutoTourDisabledAsync(bool disabled)
@@ -63,10 +63,17 @@ public sealed class ClerkTourService(
 
     public async Task MarkCompletedAsync()
     {
-        if (auth.IsEnabled && await TryUpdateServerTourAsync(s => s with { CompletedVersion = ClerkTourCatalog.CurrentVersion }))
-            return;
+        if (auth.IsEnabled)
+            await TryUpdateServerTourAsync(s => s with { CompletedVersion = ClerkTourCatalog.CurrentVersion });
 
-        await js.InvokeVoidAsync("tikrTour.setLocalValue", LocalCompletedKey, ClerkTourCatalog.CurrentVersion);
+        try
+        {
+            await js.InvokeVoidAsync("tikrTour.setLocalValue", LocalCompletedKey, ClerkTourCatalog.CurrentVersion);
+        }
+        catch
+        {
+            // The browser copy is also written in tikr-tour.js before the overlay opens.
+        }
     }
 
     private async Task<bool> TryUpdateServerTourAsync(Func<ClerkTourStateDto, ClerkTourStateDto> update)
@@ -79,7 +86,7 @@ public sealed class ClerkTourService(
         return updated is not null;
     }
 
-    private async Task RunTourAsync(IReadOnlyList<ClerkTourStep> steps)
+    private async Task RunTourAsync(IReadOnlyList<ClerkTourStep> steps, bool force)
     {
         // Allow "Start tour" from Tools tour / Settings to replace an in-progress auto-tour.
         if (_running)
@@ -107,7 +114,7 @@ public sealed class ClerkTourService(
         try
         {
             var dto = steps.Select(s => new { element = s.Element, title = s.Title, description = s.Description, route = s.Route }).ToList();
-            await js.InvokeVoidAsync("tikrTour.run", dto, _bridgeRef);
+            await js.InvokeVoidAsync("tikrTour.run", dto, _bridgeRef, force);
         }
         catch
         {
@@ -149,7 +156,7 @@ public sealed class ClerkTourService(
         if (auth.IsEnabled)
         {
             var state = await api.GetClerkTourStateAsync();
-            if (state?.CompletedVersion is not null)
+            if (!string.IsNullOrWhiteSpace(state?.CompletedVersion))
                 return state.CompletedVersion;
         }
 

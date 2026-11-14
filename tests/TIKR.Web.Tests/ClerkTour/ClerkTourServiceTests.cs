@@ -45,6 +45,23 @@ public sealed class ClerkTourServiceTests : TestContext
     }
 
     [Fact]
+    public async Task ShouldAutoStartAsync_ReturnsFalseAfterAnyCompletedVisit()
+    {
+        JSInterop.Setup<string?>("tikrTour.getLocalValue", ClerkTourService.LocalCompletedKey).SetResult("v1");
+        var sut = CreateSut(authEnabled: false);
+
+        (await sut.ShouldAutoStartAsync()).Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task ShouldAutoStartAsync_ReturnsFalseWhenServerRecordsAnyCompletedVersion()
+    {
+        var sut = CreateSut(authEnabled: true, tourState: new ClerkTourStateDto("v1", AutoTourDisabled: false));
+
+        (await sut.ShouldAutoStartAsync()).Should().BeFalse();
+    }
+
+    [Fact]
     public async Task SetAutoTourDisabledAsync_WritesLocalFlagWhenAuthOff()
     {
         var sut = CreateSut(authEnabled: false);

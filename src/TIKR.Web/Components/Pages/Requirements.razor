@@ -26,7 +26,7 @@
     </div>
     <div class="page-header-actions">
         <PageTourButton Route="/requirements" />
-        <PageHelp DataTour="@ClerkTourIds.HelpRequirements" HelpText="Manage pre-seeded Colorado deadlines and add town-specific requirements. Export council agenda PDF, compliance Excel, or meeting minutes when Syncfusion Document SDK is licensed (see Settings)." />
+        <PageHelp DataTour="@ClerkTourIds.HelpRequirements" HelpText="Manage Colorado deadlines and add town-specific requirements. Export a council agenda PDF, a compliance spreadsheet, or meeting minutes." />
     </div>
 </div>
 
@@ -37,7 +37,9 @@
     <TourAnchor TourId="@ClerkTourIds.ReqExportCsv">
         <SfButton CssClass="tikr-action-btn" IconCss="e-icons e-export" Content="Export CSV" OnClick="ExportCsvAsync" />
     </TourAnchor>
-    <SfButton CssClass="tikr-action-btn primary" IsPrimary="true" IconCss="e-icons e-export-pdf" Content="@CouncilPacketButtonLabel" Disabled="@(_generating is not null)" OnClick="GenerateCouncilPacketAsync" />
+    <SfTooltip Content="Council packet, agenda PDF, compliance spreadsheet, and meeting minutes need the Syncfusion Document SDK license (see Settings)." Position="Position.TopCenter">
+        <SfButton CssClass="tikr-action-btn primary" IsPrimary="true" IconCss="e-icons e-export-pdf" Content="@CouncilPacketButtonLabel" Disabled="@(_generating is not null)" OnClick="GenerateCouncilPacketAsync" />
+    </SfTooltip>
     <SfButton CssClass="tikr-action-btn" IconCss="e-icons e-export-pdf" Content="@AgendaPdfButtonLabel" Disabled="@(_generating is not null)" OnClick="OpenAgendaBuilderDialogAsync" />
     <SfButton CssClass="tikr-action-btn" IconCss="e-icons e-export-excel" Content="@ComplianceExcelButtonLabel" Disabled="@(_generating is not null)" OnClick="DownloadComplianceReportAsync" />
     <SfButton CssClass="tikr-action-btn" IconCss="e-icons e-description" Content="Meeting minutes" OnClick="OpenMinutesDialog" />
@@ -95,14 +97,18 @@ else
 {
     @if (!string.IsNullOrWhiteSpace(_error))
     {
-        <div class="tikr-error-state" role="alert" aria-live="assertive">@_error</div>
+        <SfTooltip Content="@_error" Position="Position.TopCenter">
+            <div class="tikr-error-state" role="alert" aria-live="assertive">@ClerkError(_error)</div>
+        </SfTooltip>
     }
 
     @if (!string.IsNullOrWhiteSpace(_packetStatus))
     {
         <AiSuggestionBanner CssClass="mb-3" aria-busy="@(_generating == "packet")" aria-live="polite">
             <ChildContent>
-                <strong>@_packetStatus</strong>
+                <SfTooltip Content="@_packetStatus" Position="Position.TopCenter">
+                    <strong>@ClerkPacketStatus(_packetStatus)</strong>
+                </SfTooltip>
             </ChildContent>
         </AiSuggestionBanner>
     }
@@ -111,8 +117,10 @@ else
     {
         <AiSuggestionBanner CssClass="mb-3" aria-busy="true" aria-live="polite">
             <ChildContent>
-                <strong>Scanning document on Synology…</strong>
-                <div class="banner-body">Extracting text and tables for the requirement form.</div>
+                <SfTooltip Content="The scan runs on the Synology NAS (agent-scan). It reads the text and any tables into the requirement form." Position="Position.TopCenter">
+                    <strong>Scanning the document…</strong>
+                </SfTooltip>
+                <div class="banner-body">Reading the text and tables into the requirement form.</div>
             </ChildContent>
         </AiSuggestionBanner>
     }
@@ -122,11 +130,15 @@ else
             <ChildContent>
                 @if (_lastAgentResult is not null)
                 {
-                    <span class="extraction-badge @RequirementWorkflowHelpers.GetExtractionBadgeCssClass(_lastAgentResult)">
-                        @RequirementWorkflowHelpers.GetExtractionSourceLabel(_lastAgentResult)
-                    </span>
+                    <SfTooltip Content="@RequirementWorkflowHelpers.GetExtractionSourceLabel(_lastAgentResult)" Position="Position.TopCenter">
+                        <span class="extraction-badge @RequirementWorkflowHelpers.GetExtractionBadgeCssClass(_lastAgentResult)">
+                            @(_lastAgentResult.UsedSyncfusionTools ? "Full document read" : "Text read")
+                        </span>
+                    </SfTooltip>
                 }
-                <strong>@_agentMessage</strong>
+                <SfTooltip Content="@_agentMessage" Position="Position.TopCenter">
+                    <strong>Scan finished.</strong>
+                </SfTooltip>
                 <div class="banner-body">Review the pre-filled requirement below, then save or edit before filing.</div>
             </ChildContent>
         </AiSuggestionBanner>
@@ -197,9 +209,11 @@ else
 <SfDialog @bind-Visible="_showDialog" Width="640px" IsModal="true" ShowCloseIcon="true" Header="@(_editingId is null ? "Add requirement" : "Edit requirement")">
     <DialogTemplates>
         <Content>
-            <p class="text-muted" style="margin-top:0;">Copy notes from email or clipboard, then use <strong>Smart Paste</strong> to fill fields (needs Ollama).</p>
+            <p class="text-muted" style="margin-top:0;">Copy notes from email or clipboard, then use <strong>Smart Paste</strong> to fill fields.</p>
             <div class="mb-2">
-                <SfSmartPasteButton Content="Smart Paste from clipboard" CssClass="tikr-action-btn" />
+                <SfTooltip Content="Smart Paste needs the local helper (Ollama)." Position="Position.TopCenter">
+                    <SfSmartPasteButton Content="Smart Paste from clipboard" CssClass="tikr-action-btn" />
+                </SfTooltip>
             </div>
             <EditForm Model="_form" OnValidSubmit="SaveAsync">
                 <DataAnnotationsValidator />
@@ -1615,6 +1629,30 @@ else
         _form.ContactPhone = draft.ContactPhone;
         _formDueDate = draft.DueDate.ToDateTime(TimeOnly.MinValue);
         _showDialog = true;
+    }
+
+    private static string ClerkPacketStatus(string? status)
+    {
+        if (string.IsNullOrWhiteSpace(status))
+            return "Working on the council packet…";
+        if (status.Contains("NAS", StringComparison.Ordinal) || status.Contains("Synology", StringComparison.Ordinal))
+            return "Saving the council packet…";
+        if (status.Contains("Building", StringComparison.Ordinal))
+            return "Building the council packet…";
+        return status;
+    }
+
+    private static string ClerkError(string error)
+    {
+        if (error.Contains("timed out", StringComparison.OrdinalIgnoreCase))
+            return "The scan timed out. Try a smaller file, or try again in a moment.";
+        if (error.Contains("TIKR.Api", StringComparison.Ordinal) || error.Contains("port 5000", StringComparison.Ordinal))
+            return "Could not reach the town server. Try again in a moment.";
+        if (error.Contains("NAS", StringComparison.Ordinal))
+            return "The council packet was created, but the download did not finish.";
+        if (error.Contains("Syncfusion", StringComparison.Ordinal) || error.Contains("USE_SYNCFUSION", StringComparison.Ordinal))
+            return "That step could not finish. Try a text file, or ask Steve to check the document license in Settings.";
+        return error;
     }
 
     private static string BuildAgentScanFailureMessage(string fileName)

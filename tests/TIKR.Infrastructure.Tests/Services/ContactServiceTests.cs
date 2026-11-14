@@ -13,6 +13,20 @@ namespace TIKR.Infrastructure.Tests.Services;
 public class ContactServiceTests
 {
     [Fact]
+    public async Task GetAsync_ReturnsContactOrNull()
+    {
+        await using var db = await TestDbContextFactory.CreateMigratedAsync();
+        var sut = new ContactService(db);
+        var created = await sut.CreateAsync(
+            new CreateContactRequest("Ada", Email: "ada@example.gov", Categories: ContactCategory.Custom),
+            Mock.Of<IAuditService>(),
+            Mock.Of<ICurrentUserService>(u => u.UserId == "deb"));
+
+        (await sut.GetAsync(created.Id))!.Name.Should().Be("Ada");
+        (await sut.GetAsync(Guid.NewGuid())).Should().BeNull();
+    }
+
+    [Fact]
     public async Task UpdateAsync_PersistsFieldsAndAudits()
     {
         await using var db = await TestDbContextFactory.CreateMigratedAsync();

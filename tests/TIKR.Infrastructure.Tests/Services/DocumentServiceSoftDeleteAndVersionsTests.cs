@@ -87,6 +87,57 @@ public class DocumentServiceSoftDeleteAndVersionsTests
     }
 
     [Fact]
+    public async Task RestoreVersion_PutsPriorBytesBackAsCurrentContent()
+    {
+        await using var db = await TestDbContextFactory.CreateMigratedAsync();
+        var storage = new InMemoryFileStorage();
+        await using var initial = new MemoryStream("version one body with enough text"u8.ToArray());
+        var path = await storage.SaveAsync(initial, "ver.txt");
+        var doc = new Document
+        {
+            Id = Guid.NewGuid(),
+            FileName = "ver.txt",
+            StoragePath = path,
+            FileSizeBytes = 30,
+            FullTextContent = "version one body with enough text",
+            UploadedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
+        db.Documents.Add(doc);
+        await db.SaveChangesAsync();
+
+        var sut = new DocumentService(db, NullLogger<DocumentService>.Instance);
+        var audit = Mock.Of<IAuditService>();
+        var user = Mock.Of<ICurrentUserService>(u => u.UserId == "u");
+        await using var next = new MemoryStream("version two body with enough text"u8.ToArray());
+        await sut.ReplaceContentAsync(doc.Id, next, "text/plain", next.Length, storage, audit, user);
+
+        var prior = (await sut.ListVersionsAsync(doc.Id)).Single();
+        var restored = await sut.RestoreVersionAsync(doc.Id, prior.Id, storage, audit, user);
+
+        restored.FullTextContent.Should().Contain("version one");
+        (await sut.ListVersionsAsync(doc.Id)).Should().HaveCount(2);
+    }
+
+    [Fact]
+    public async Task RestoreVersion_MissingVersion_Throws()
+    {
+        await using var db = await TestDbContextFactory.CreateMigratedAsync();
+        var doc = SeedDoc(db, "missing.txt", "content");
+        await db.SaveChangesAsync();
+        var sut = new DocumentService(db, NullLogger<DocumentService>.Instance);
+
+        var act = () => sut.RestoreVersionAsync(
+            doc.Id,
+            Guid.NewGuid(),
+            new InMemoryFileStorage(),
+            Mock.Of<IAuditService>(),
+            Mock.Of<ICurrentUserService>());
+
+        await act.Should().ThrowAsync<KeyNotFoundException>();
+    }
+
+    [Fact]
     public async Task Purge_RemovesDocumentAndVersions()
     {
         await using var db = await TestDbContextFactory.CreateMigratedAsync();
