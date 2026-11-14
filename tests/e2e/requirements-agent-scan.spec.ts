@@ -22,8 +22,8 @@ test.describe('Requirements AI Scan', () => {
     const dialog = page.locator('.e-dialog').filter({ hasText: 'Add requirement' });
     await expect(dialog).toBeVisible({ timeout: 45_000 });
     await expect(page.locator('.ai-suggestion-banner')).toBeVisible({ timeout: 15_000 });
-    await expect(page.locator('.ai-suggestion-banner')).toContainText('Processed on Synology');
-    await expect(page.locator('.ai-suggestion-banner')).toContainText('Plain-text extraction');
+    await expect(page.locator('.ai-suggestion-banner')).toContainText('Scan finished');
+    await expect(page.locator('.ai-suggestion-banner')).toContainText('Text read');
     await expect(page.getByPlaceholder('Notes, statute cite, filing instructions...')).toHaveValue(
       /Wiley periodic report due Q1 2026/,
       { timeout: 15_000 },
