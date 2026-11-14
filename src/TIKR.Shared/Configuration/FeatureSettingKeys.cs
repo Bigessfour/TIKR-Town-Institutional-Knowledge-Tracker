@@ -20,3 +20,9 @@ public static class FeatureSettingKeys
     public const string LibraryScanMaxImports = "LibraryScanMaxImports";
     public const string EmailInboxPath = "EmailInboxPath";
 }
+
+public static class DocumentFolderSettingKeys
+{
+    public const string Allowed = "documents.allowedFolders";
+    public const string Declined = "documents.declinedFolders";
+}

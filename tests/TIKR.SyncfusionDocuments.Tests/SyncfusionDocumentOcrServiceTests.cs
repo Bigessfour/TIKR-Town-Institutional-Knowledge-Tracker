@@ -36,6 +36,28 @@ public class SyncfusionDocumentOcrServiceTests
     }
 
     [Fact]
+    public void CountLetters_CountsLettersOnly()
+    {
+        SyncfusionDocumentOcrService.CountLetters(null).Should().Be(0);
+        SyncfusionDocumentOcrService.CountLetters("A1 b!").Should().Be(2);
+    }
+
+    [Fact]
+    public void EnrichWord_DisabledReturnsExistingText()
+    {
+        var config = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?> { ["TIKR_OCR_ENABLED"] = "false" })
+            .Build();
+        var sut = new SyncfusionDocumentOcrService(config, NullLogger<SyncfusionDocumentOcrService>.Instance);
+        using var word = new MemoryStream([1, 2, 3, 4]);
+
+        var result = sut.EnrichWord(word, "note.docx", "native text");
+
+        result.UsedOcr.Should().BeFalse();
+        result.Text.Should().Be("native text");
+    }
+
+    [Fact]
     public void EnrichPdf_DisabledReturnsExistingText()
     {
         var config = new ConfigurationBuilder()

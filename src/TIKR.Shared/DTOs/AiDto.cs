@@ -2,7 +2,17 @@ namespace TIKR.Shared.DTOs;
 
 public record TagDocumentRequest(Guid DocumentId);
 
-public record TagDocumentResponse(Guid DocumentId, string[] Tags, string? SuggestedFolder);
+public record TagDocumentResponse(
+    Guid DocumentId,
+    string[] Tags,
+    string? SuggestedFolder,
+    string? ProposedFolder = null);
+
+public record FolderProposalGroupDto(string Name, int Count);
+
+public record FolderProposalDecisionRequest(string Name);
+
+public record FolderProposalDecisionResponse(string Name, int Updated);
 
 public record DashboardPriority(
     string Title,
@@ -14,10 +24,19 @@ public record DashboardPriority(
     string? ContactEmail = null,
     string? ContactPhone = null);
 
-/// <param name="PreferCloud">When true (Assistant auto-route), try Grok first if enabled.</param>
-public record AskAdvancedRequest(string Prompt, string? Context, bool PreferCloud = false);
+/// <summary>One prior clerk or assistant turn sent with an advanced ask.</summary>
+public record AssistantTurn(string Role, string Content);
 
-public record AskAdvancedResponse(string Answer, bool UsedGrok);
+/// <param name="PreferCloud">When true (Assistant auto-route), try Grok first if enabled.</param>
+/// <param name="History">Prior turns, oldest first. Same window the local model already sees.</param>
+public record AskAdvancedRequest(
+    string Prompt,
+    string? Context,
+    bool PreferCloud = false,
+    IReadOnlyList<AssistantTurn>? History = null);
+
+/// <param name="GrokAttemptFailed">True when a cloud call was attempted and returned nothing.</param>
+public record AskAdvancedResponse(string Answer, bool UsedGrok, bool GrokAttemptFailed = false);
 
 public record AiStatusResponse(
     bool OllamaAvailable,

@@ -618,7 +618,25 @@ public static partial class AssistantPromptBuilder
                || text.Contains("\n\nQuestion: ", StringComparison.Ordinal);
     }
 
-    private static IEnumerable<ChatMessage> TakeLastTurns(IReadOnlyList<ChatMessage>? history, int maxTurns)
+    /// <summary>Prior turns for a cloud call, capped to the same window Ollama uses.</summary>
+    public static IReadOnlyList<AssistantTurn> ToCloudHistory(
+        IReadOnlyList<ChatMessage>? history,
+        int maxTurns = DefaultMaxHistoryTurns)
+    {
+        var turns = new List<AssistantTurn>();
+        foreach (var message in TakeLastTurns(history, maxTurns))
+        {
+            var text = message.Text ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(text))
+                continue;
+            var role = message.Role == ChatRole.Assistant ? "assistant" : "user";
+            turns.Add(new AssistantTurn(role, text));
+        }
+
+        return turns;
+    }
+
+    public static IEnumerable<ChatMessage> TakeLastTurns(IReadOnlyList<ChatMessage>? history, int maxTurns)
     {
         if (history is null || history.Count == 0 || maxTurns < 1)
             yield break;

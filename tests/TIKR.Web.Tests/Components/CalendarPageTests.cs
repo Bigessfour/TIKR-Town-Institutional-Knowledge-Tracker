@@ -64,7 +64,7 @@ public class CalendarPageTests : ClerkTestContext
         SetRendererInfo(new RendererInfo("Server", true));
 
         var cut = RenderComponent<Calendar>();
-        cut.WaitForAssertion(() => cut.Markup.Should().Contain("Schedule view needs a valid Syncfusion Blazor license"));
+        cut.WaitForAssertion(() => cut.Markup.Should().Contain("The calendar needs a license before the month view can open"));
         cut.Markup.Should().NotContain("e-schedule");
     }
 

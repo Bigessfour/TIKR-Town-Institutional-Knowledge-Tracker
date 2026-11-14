@@ -23,7 +23,9 @@ public class HybridAiService(
     IDocumentAgentExtractionBackend extractionBackend,
     ILogger<HybridAiService> logger,
     FeatureSettingsState? featureSettings = null,
-    IConfiguration? configuration = null) : IHybridAiService
+    IConfiguration? configuration = null,
+    IFolderClassifier? folderClassifier = null,
+    IDocumentFolderCatalog? folderCatalog = null) : IHybridAiService
 {
     private const int TagPreviewChars = 4000;
     private const int MaxPersistedExtractChars = 100_000;
@@ -47,34 +49,90 @@ public class HybridAiService(
 
         await TryBackfillFullTextAsync(document, cancellationToken);
 
-        // NAS folder labels are a confident seed — do not let the LLM overwrite them.
+        var directory = folderCatalog is null
+            ? FolderDirectory.BuiltIn
+            : await folderCatalog.GetAsync(cancellationToken);
+
+        // A mapped NAS path is final. An unmapped library folder is a proposal, not a second model guess.
         var pathSeededFolder = DocumentTagHeuristics.TryMapNasRelativePath(libraryRelativePath);
+        var libraryTop = DocumentTagHeuristics.TryReadUnmappedTopFolder(libraryRelativePath);
+        var classifierFolder = libraryTop is null
+            ? TryClassifyFolder(document, libraryRelativePath, pathSeededFolder)
+            : null;
 
-        var previewSource = document.FullTextContent ?? document.FileName;
-        var preview = previewSource[..Math.Min(TagPreviewChars, previewSource.Length)];
-        var prompt = DocumentTagPromptBuilder.Build(document.FileName, preview, libraryRelativePath);
-
-        // Low temperature for deterministic JSON tagging; AskAdvanced keeps default sampling.
-        var taggingOptions = new ChatOptions { Temperature = DocumentTagPromptBuilder.TaggingTemperature };
-        var response = await GetLocalCompletionAsync(prompt, cancellationToken, taggingOptions);
         var tags = Array.Empty<string>();
+        string? proposal = null;
         string? folder = pathSeededFolder;
+        var skipChat = false;
 
-        if (!string.IsNullOrWhiteSpace(response))
+        if (libraryTop is not null)
         {
-            try
+            skipChat = true;
+            var allowedTop = directory.MatchAllowed(libraryTop);
+            if (allowedTop is not null)
+                folder = allowedTop;
+            else if (directory.IsDeclined(libraryTop))
+                folder = DocumentTagHeuristics.General;
+            else
             {
-                using var doc = JsonDocument.Parse(ExtractJson(response));
-                if (doc.RootElement.TryGetProperty("tags", out var tagsEl))
-                    tags = tagsEl.EnumerateArray().Select(t => t.GetString() ?? "").Where(t => t.Length > 0).ToArray();
-                if (pathSeededFolder is null &&
-                    doc.RootElement.TryGetProperty("suggestedFolder", out var folderEl))
-                    folder = folderEl.GetString();
+                folder = DocumentTagHeuristics.General;
+                proposal = libraryTop;
             }
-            catch (Exception ex)
+        }
+        else if (classifierFolder is not null && directory.MatchAllowed(classifierFolder) is { } allowedClassifier)
+        {
+            skipChat = true;
+            folder = allowedClassifier;
+        }
+
+        if (!skipChat)
+        {
+            var previewSource = document.FullTextContent ?? document.FileName;
+            var preview = previewSource[..Math.Min(TagPreviewChars, previewSource.Length)];
+            var prompt = DocumentTagPromptBuilder.Build(
+                document.FileName,
+                preview,
+                libraryRelativePath,
+                directory.Allowed);
+
+            // Low temperature for deterministic JSON tagging; AskAdvanced keeps default sampling.
+            var taggingOptions = new ChatOptions { Temperature = DocumentTagPromptBuilder.TaggingTemperature };
+            var response = await GetLocalCompletionAsync(prompt, cancellationToken, taggingOptions);
+
+            if (!string.IsNullOrWhiteSpace(response))
             {
-                logger.LogWarning(ex, "Failed to parse AI tagging response");
-                tags = ["uncategorized"];
+                try
+                {
+                    using var doc = JsonDocument.Parse(ExtractJson(response));
+                    if (doc.RootElement.TryGetProperty("tags", out var tagsEl))
+                        tags = tagsEl.EnumerateArray().Select(t => t.GetString() ?? "").Where(t => t.Length > 0).ToArray();
+
+                    if (pathSeededFolder is null && folder is null)
+                    {
+                        string? suggested = null;
+                        string? proposed = null;
+                        if (doc.RootElement.TryGetProperty("suggestedFolder", out var folderEl))
+                            suggested = folderEl.GetString();
+                        if (doc.RootElement.TryGetProperty("proposedFolder", out var proposedEl))
+                            proposed = proposedEl.GetString();
+
+                        var allowed = directory.MatchAllowed(suggested);
+                        if (allowed is not null)
+                            folder = allowed;
+                        else
+                        {
+                            proposal = FolderNamePolicy.ProposalOrNull(proposed, directory.Allowed, directory.Declined)
+                                ?? FolderNamePolicy.ProposalOrNull(suggested, directory.Allowed, directory.Declined);
+                            if (proposal is not null)
+                                folder = DocumentTagHeuristics.General;
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    logger.LogWarning(ex, "Failed to parse AI tagging response");
+                    tags = ["uncategorized"];
+                }
             }
         }
 
@@ -86,15 +144,19 @@ public class HybridAiService(
             tags,
             folder);
 
-        // Path seed wins even if FillGaps somehow changed the folder.
         if (pathSeededFolder is not null)
         {
             folder = pathSeededFolder;
             tags = DocumentTagHeuristics.TagsForLockedFolder(document.FileName, pathSeededFolder, tags);
         }
+        else if (proposal is not null)
+            folder = DocumentTagHeuristics.General;
+        else if (classifierFolder is not null && directory.MatchAllowed(classifierFolder) is { } keptClassifier)
+            folder = keptClassifier;
 
         document.AiTags = JsonSerializer.Serialize(tags);
         document.SuggestedFolder = folder;
+        document.ProposedFolder = proposal;
         document.UpdatedAt = DateTime.UtcNow;
 
         // Best-effort: refresh chunk embeddings so semantic search stays current.
@@ -106,7 +168,29 @@ public class HybridAiService(
         TikrActionLog.Completed(logger, "AI.TagDocument",
             $"DocumentId={documentId} FileName={document.FileName} Tags={tags.Length} Folder={folder ?? "(none)"}",
             sw.ElapsedMilliseconds);
-        return new TagDocumentResponse(documentId, tags, folder);
+        return new TagDocumentResponse(documentId, tags, folder, proposal);
+    }
+
+    private string? TryClassifyFolder(Document document, string? libraryRelativePath, string? pathSeededFolder)
+    {
+        if (pathSeededFolder is not null || folderClassifier is null)
+            return null;
+
+        var prediction = folderClassifier.Classify(
+            document.FileName,
+            document.FullTextContent,
+            libraryRelativePath);
+        if (prediction is not { IsConfident: true } predicted)
+            return null;
+        if (!DocumentTagHeuristics.FolderVocabulary.Contains(predicted.Folder))
+            return null;
+
+        logger.LogInformation(
+            "Folder classifier kept {Folder} at {Confidence:0.00} and skipped the chat model for {FileName}",
+            predicted.Folder,
+            predicted.Confidence,
+            document.FileName);
+        return predicted.Folder;
     }
 
     private async Task TryBackfillFullTextAsync(Document document, CancellationToken cancellationToken)
@@ -667,9 +751,13 @@ public class HybridAiService(
                 ollamaAvailable: ollamaAvailable,
                 grokEnabled: grokService.IsEnabled);
 
+        var grokAttemptFailed = false;
         if (decision.Route == AiRoute.CloudGrok && grokService.IsEnabled)
         {
-            var grokAnswer = await grokService.CompleteAsync(prompt, cancellationToken: cancellationToken);
+            var grokAnswer = await grokService.CompleteAsync(
+                prompt,
+                cancellationToken: cancellationToken,
+                history: request.History);
             if (!string.IsNullOrWhiteSpace(grokAnswer))
             {
                 TikrActionLog.Completed(logger, "AI.AskAdvanced",
@@ -677,21 +765,28 @@ public class HybridAiService(
                     sw.ElapsedMilliseconds);
                 return new AskAdvancedResponse(grokAnswer, UsedGrok: true);
             }
+
+            grokAttemptFailed = true;
+            TikrActionLog.Failed(logger, "AI.AskAdvanced",
+                $"Grok returned nothing Route={decision.Reason}; falling back to Ollama");
         }
 
-        var localAnswer = await GetLocalCompletionAsync(prompt, cancellationToken);
+        var localAnswer = await GetLocalCompletionAsync(prompt, cancellationToken, history: request.History);
         if (!string.IsNullOrWhiteSpace(localAnswer))
         {
             TikrActionLog.Completed(logger, "AI.AskAdvanced",
-                $"UsedGrok=false Route={decision.Reason} AnswerLen={localAnswer.Length} OllamaAvailable={ollamaAvailable}",
+                $"UsedGrok=false GrokAttemptFailed={grokAttemptFailed} Route={decision.Reason} AnswerLen={localAnswer.Length} OllamaAvailable={ollamaAvailable}",
                 sw.ElapsedMilliseconds);
-            return new AskAdvancedResponse(localAnswer, UsedGrok: false);
+            return new AskAdvancedResponse(localAnswer, UsedGrok: false, GrokAttemptFailed: grokAttemptFailed);
         }
 
-        if (grokService.IsEnabled)
+        if (grokService.IsEnabled && !grokAttemptFailed)
         {
             var escalate = AssistantAgentRouter.EscalateAfterLocalFailure(grokEnabled: true);
-            var grokAnswer = await grokService.CompleteAsync(prompt, cancellationToken: cancellationToken);
+            var grokAnswer = await grokService.CompleteAsync(
+                prompt,
+                cancellationToken: cancellationToken,
+                history: request.History);
             if (!string.IsNullOrWhiteSpace(grokAnswer))
             {
                 TikrActionLog.Completed(logger, "AI.AskAdvanced",
@@ -699,10 +794,15 @@ public class HybridAiService(
                     sw.ElapsedMilliseconds);
                 return new AskAdvancedResponse(grokAnswer, UsedGrok: true);
             }
+
+            grokAttemptFailed = true;
         }
 
         TikrActionLog.Failed(logger, "AI.AskAdvanced", "No answer from Ollama or Grok");
-        return new AskAdvancedResponse("Unable to get a response. Check Ollama connectivity (or enable USE_GROK with a valid GROK_API_KEY).", UsedGrok: false);
+        return new AskAdvancedResponse(
+            "Unable to get a response. Check Ollama connectivity (or enable USE_GROK with a valid GROK_API_KEY).",
+            UsedGrok: false,
+            GrokAttemptFailed: grokAttemptFailed);
     }
 
     public async Task<AiStatusResponse> GetStatusAsync(CancellationToken cancellationToken = default)
@@ -720,19 +820,55 @@ public class HybridAiService(
     private async Task<string?> GetLocalCompletionAsync(
         string prompt,
         CancellationToken cancellationToken,
-        ChatOptions? options = null)
+        ChatOptions? options = null,
+        IReadOnlyList<AssistantTurn>? history = null)
     {
+        var timeoutSeconds = TikrConfiguration.GetChatCompletionTimeoutSeconds(configuration);
+        using var attemptCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        attemptCts.CancelAfter(TimeSpan.FromSeconds(timeoutSeconds));
         try
         {
             var client = ollamaFactory.CreateChatClient();
-            var response = await client.GetResponseAsync(prompt, options, cancellationToken);
+            var response = await client.GetResponseAsync(BuildLocalMessages(prompt, history), options, attemptCts.Token);
             return response.Text;
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (OperationCanceledException ex)
+        {
+            logger.LogWarning(
+                ex,
+                "Ollama completion timed out after {TimeoutSeconds}s",
+                timeoutSeconds);
+            return null;
         }
         catch (Exception ex)
         {
             logger.LogWarning(ex, "Ollama completion failed");
             return null;
         }
+    }
+
+    private static List<ChatMessage> BuildLocalMessages(string prompt, IReadOnlyList<AssistantTurn>? history)
+    {
+        var messages = new List<ChatMessage>();
+        if (history is not null)
+        {
+            foreach (var turn in history)
+            {
+                if (string.IsNullOrWhiteSpace(turn.Content))
+                    continue;
+                var role = string.Equals(turn.Role, "assistant", StringComparison.OrdinalIgnoreCase)
+                    ? ChatRole.Assistant
+                    : ChatRole.User;
+                messages.Add(new ChatMessage(role, turn.Content));
+            }
+        }
+
+        messages.Add(new ChatMessage(ChatRole.User, prompt ?? string.Empty));
+        return messages;
     }
 
     private static string ExtractJson(string text)
@@ -759,25 +895,20 @@ public class HybridAiService(
             return null;
 
         var maxAttempts = _bulkReindexActive ? 3 : 1;
-        var attemptTimeout = _bulkReindexActive
-            ? TimeSpan.FromSeconds(TikrConfiguration.GetEmbeddingGenerationTimeoutSeconds(configuration))
-            : (TimeSpan?)null;
+        var attemptTimeout = TimeSpan.FromSeconds(
+            TikrConfiguration.GetEmbeddingGenerationTimeoutSeconds(configuration));
 
         for (var attempt = 1; attempt <= maxAttempts; attempt++)
         {
             try
             {
-                using var attemptCts = attemptTimeout is not null
-                    ? CancellationTokenSource.CreateLinkedTokenSource(cancellationToken)
-                    : null;
-                if (attemptTimeout is not null)
-                    attemptCts!.CancelAfter(attemptTimeout.Value);
+                using var attemptCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+                attemptCts.CancelAfter(attemptTimeout);
 
-                var token = attemptCts?.Token ?? cancellationToken;
                 var generator = ollamaFactory.CreateEmbeddingGenerator();
                 // nomic-embed-text has an 8k context; we cap defensively for chat-model parity.
                 var trimmed = text.Length > 4000 ? text[..4000] : text;
-                var result = await generator.GenerateAsync([trimmed], cancellationToken: token);
+                var result = await generator.GenerateAsync([trimmed], cancellationToken: attemptCts.Token);
                 var first = result.FirstOrDefault();
                 return first?.Vector.ToArray();
             }

@@ -20,8 +20,8 @@ public class TikrOfflineBannerTests : ClerkTestContext
         connection.SetApiOffline(true);
         cut.Render();
 
-        cut.Markup.Should().Contain("API offline");
-        cut.Markup.Should().Contain("still on the NAS");
+        cut.Markup.Should().Contain("town server is offline");
+        cut.Markup.Should().Contain("files are still saved");
     }
 
     [Fact]
@@ -31,6 +31,6 @@ public class TikrOfflineBannerTests : ClerkTestContext
         connection.SetApiOffline(false);
 
         var cut = RenderComponent<TikrOfflineBanner>();
-        cut.Markup.Should().NotContain("API offline");
+        cut.Markup.Should().NotContain("town server is offline");
     }
 }

@@ -102,7 +102,7 @@ public class AssistantPageTests : ClerkTestContext
         // Unmapped CI host → banner explains assignment; Settings link available.
         var cut = RenderComponent<Assistant>();
         cut.WaitForAssertion(() => cut.Markup.Should().Contain("data-tour=\"clerk-identity\""));
-        cut.Markup.Should().Contain("Chat memory");
+        cut.Markup.Should().Contain("No clerk is assigned for this computer");
     }
 
     [Fact]

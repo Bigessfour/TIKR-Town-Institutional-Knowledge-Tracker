@@ -53,7 +53,7 @@ public static class ProductHelpCatalog
     [
         "What should I work on this week?",
         "How do I open a document full screen?",
-        "How do I save PDF changes to the NAS?",
+        "How do I save PDF changes?",
         "How do I link a packet to a due-out?",
         "What is Smart Redact?",
         "How do I upload today's mail?",

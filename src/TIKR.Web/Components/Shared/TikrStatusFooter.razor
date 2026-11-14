@@ -4,13 +4,18 @@
 
 @using TIKR.Web.ClerkTour
 <footer class="tikr-status-footer" data-tour="@ClerkTourIds.FooterStatus" role="contentinfo" aria-live="polite">
-    <span class="tikr-status-footer-primary">@_primaryMessage</span>
-    <span class="tikr-status-footer-hint @(_apiOffline ? "is-offline" : "is-local")">@_connectionHint</span>
+    <SfTooltip Content="Files stay on the town NAS (Synology). Nothing is sent off site for storage." Position="Position.TopCenter">
+        <span class="tikr-status-footer-primary">@_primaryMessage</span>
+    </SfTooltip>
+    <SfTooltip Content="@_connectionTooltip" Position="Position.TopCenter">
+        <span class="tikr-status-footer-hint @(_apiOffline ? "is-offline" : "is-local")">@_connectionHint</span>
+    </SfTooltip>
 </footer>
 
 @code {
-    private string _primaryMessage = "All data stays local on Synology NAS";
-    private string _connectionHint = "Local-first on Synology";
+    private string _primaryMessage = "Town files stay local";
+    private string _connectionHint = "Checking the town server";
+    private string _connectionTooltip = "Local-first on Synology. Ollama status appears when the town server responds.";
     private bool _apiOffline;
     private Timer? _timer;
 
@@ -41,22 +46,25 @@
             {
                 _apiOffline = true;
                 Connection.SetApiOffline(true);
-                _primaryMessage = "All data stays local on Synology NAS";
-                _connectionHint = LocalStatusFooterHelper.BuildConnectionHint(true, false);
+                _primaryMessage = "Town files stay local";
+                _connectionHint = "Town server offline — files are still saved";
+                _connectionTooltip = LocalStatusFooterHelper.BuildConnectionHint(true, false);
                 return;
             }
 
             _apiOffline = false;
             Connection.SetApiOffline(false);
             _primaryMessage = LocalStatusFooterHelper.BuildFooterMessage(status, DateTime.UtcNow);
-            _connectionHint = LocalStatusFooterHelper.BuildConnectionHint(false, status.OllamaAvailable);
+            _connectionHint = status.OllamaAvailable ? "Local helper ready" : "Local helper offline";
+            _connectionTooltip = LocalStatusFooterHelper.BuildConnectionHint(false, status.OllamaAvailable);
         }
         catch
         {
             _apiOffline = true;
             Connection.SetApiOffline(true);
-            _primaryMessage = "All data stays local on Synology NAS";
-            _connectionHint = LocalStatusFooterHelper.BuildConnectionHint(true, false);
+            _primaryMessage = "Town files stay local";
+            _connectionHint = "Town server offline — files are still saved";
+            _connectionTooltip = LocalStatusFooterHelper.BuildConnectionHint(true, false);
         }
     }
 

@@ -39,10 +39,12 @@
           Content="Copy Everything for New Clerk"
           OnClick="CopyAllForNewClerkAsync" />
 </TourAnchor>
+<SfTooltip Content="Builds the handover PDF. If this fails, the Syncfusion document license in Settings may need attention." Position="Position.TopCenter">
 <SfButton CssClass="tikr-action-btn"
           IconCss="e-icons e-export-pdf"
           Content="Generate Complete Handover Package"
           OnClick="GenerateHandoverPackageAsync" />
+</SfTooltip>
 
 <!-- Bulk toolbar (appears on multi-selection, consistent with Documents pattern) -->
 @if (VaultSelectedCount > 0)
@@ -308,7 +310,9 @@
 {
     <div class="editor-section">
         <h4>Editing: @SelectedEntry.Title</h4>
-        <p class="text-muted" style="margin:0.25rem 0 0.5rem;">AI sentence assist (Ollama) — press Tab to accept suggestions, then insert into the editor.</p>
+        <SfTooltip Content="Sentence suggestions use the local helper (Ollama). Press Tab to accept one, then insert it into the note." Position="Position.TopCenter">
+            <p class="text-muted" style="margin:0.25rem 0 0.5rem;">Suggestions appear as you type. Press Tab to accept one, then insert it into the note.</p>
+        </SfTooltip>
         <SfSmartTextArea UserRole="@_smartVaultRole"
                          UserPhrases="@_smartVaultPhrases"
                          @bind-Value="_smartDraft"
@@ -837,7 +841,7 @@
             var bytes = await Api.GenerateHandoverPackageAsync();
             if (bytes == null || bytes.Length == 0)
             {
-                Toast.Show("Failed to generate handover package (check Syncfusion license).");
+                Toast.Show("Could not create the handover package. Ask Steve to check the document license in Settings.");
                 TikrActionLog.Failed(Logger, "UI.Vault.HandoverPackage", "Empty PDF bytes");
                 return;
             }

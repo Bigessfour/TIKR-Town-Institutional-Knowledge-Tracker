@@ -1,4 +1,8 @@
-# TIKR production stack — Synology DS225+ / Container Manager
+# TIKR production stack — Synology DS225+ / Container Manager (SQLite default)
+#
+# Clerk workflow: DATABASE_PROVIDER=Sqlite + Data Source=/data/tikr.db via docker/.env.
+# For Aurora/RDS (App Runner), use docker-compose.prod.postgres.yml + PRODUCTION-AURORA.md
+# instead of changing this file.
 #
 # Mr_Storage has a 16 GB SODIMM plus 2 GB soldered (~17.3 GiB usable).
 # Caps leave room for DSM and ClerkSuite (1536m, outside this file):
@@ -56,8 +60,10 @@ services:
       USE_GROK: ${USE_GROK:-false}
       OLLAMA_HOST: http://ollama:11434
       TIKR_API_URL: http://tikr-api:8080
+    # Loopback only. Clerks use tikr-web. The web container calls tikr-api on the Docker network.
+    # Publishing 0.0.0.0 lets anyone on the tailnet call /api/ai and replace the Grok key while auth is off.
     ports:
-      - ${TIKR_API_HOST_PORT:-5000}:8080
+      - "127.0.0.1:${TIKR_API_HOST_PORT:-5000}:8080"
     volumes:
       - ${TIKR_DATA_PATH:-/volume1/tikr/data}:/data
     depends_on:
