@@ -6,6 +6,8 @@ internal sealed class StubChatClient(string responseText) : IChatClient
 {
     public ChatOptions? LastOptions { get; private set; }
 
+    public IReadOnlyList<ChatMessage> LastMessages { get; private set; } = [];
+
     public int CallCount { get; private set; }
 
     public ChatClientMetadata Metadata { get; } = new("stub");
@@ -16,6 +18,7 @@ internal sealed class StubChatClient(string responseText) : IChatClient
         CancellationToken cancellationToken = default)
     {
         LastOptions = options;
+        LastMessages = messages.ToList();
         CallCount++;
         return Task.FromResult(new ChatResponse(new ChatMessage(ChatRole.Assistant, responseText)));
     }

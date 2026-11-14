@@ -751,9 +751,13 @@ public class HybridAiService(
                 ollamaAvailable: ollamaAvailable,
                 grokEnabled: grokService.IsEnabled);
 
+        var grokAttemptFailed = false;
         if (decision.Route == AiRoute.CloudGrok && grokService.IsEnabled)
         {
-            var grokAnswer = await grokService.CompleteAsync(prompt, cancellationToken: cancellationToken);
+            var grokAnswer = await grokService.CompleteAsync(
+                prompt,
+                cancellationToken: cancellationToken,
+                history: request.History);
             if (!string.IsNullOrWhiteSpace(grokAnswer))
             {
                 TikrActionLog.Completed(logger, "AI.AskAdvanced",
@@ -761,21 +765,28 @@ public class HybridAiService(
                     sw.ElapsedMilliseconds);
                 return new AskAdvancedResponse(grokAnswer, UsedGrok: true);
             }
+
+            grokAttemptFailed = true;
+            TikrActionLog.Failed(logger, "AI.AskAdvanced",
+                $"Grok returned nothing Route={decision.Reason}; falling back to Ollama");
         }
 
-        var localAnswer = await GetLocalCompletionAsync(prompt, cancellationToken);
+        var localAnswer = await GetLocalCompletionAsync(prompt, cancellationToken, history: request.History);
         if (!string.IsNullOrWhiteSpace(localAnswer))
         {
             TikrActionLog.Completed(logger, "AI.AskAdvanced",
-                $"UsedGrok=false Route={decision.Reason} AnswerLen={localAnswer.Length} OllamaAvailable={ollamaAvailable}",
+                $"UsedGrok=false GrokAttemptFailed={grokAttemptFailed} Route={decision.Reason} AnswerLen={localAnswer.Length} OllamaAvailable={ollamaAvailable}",
                 sw.ElapsedMilliseconds);
-            return new AskAdvancedResponse(localAnswer, UsedGrok: false);
+            return new AskAdvancedResponse(localAnswer, UsedGrok: false, GrokAttemptFailed: grokAttemptFailed);
         }
 
-        if (grokService.IsEnabled)
+        if (grokService.IsEnabled && !grokAttemptFailed)
         {
             var escalate = AssistantAgentRouter.EscalateAfterLocalFailure(grokEnabled: true);
-            var grokAnswer = await grokService.CompleteAsync(prompt, cancellationToken: cancellationToken);
+            var grokAnswer = await grokService.CompleteAsync(
+                prompt,
+                cancellationToken: cancellationToken,
+                history: request.History);
             if (!string.IsNullOrWhiteSpace(grokAnswer))
             {
                 TikrActionLog.Completed(logger, "AI.AskAdvanced",
@@ -783,10 +794,15 @@ public class HybridAiService(
                     sw.ElapsedMilliseconds);
                 return new AskAdvancedResponse(grokAnswer, UsedGrok: true);
             }
+
+            grokAttemptFailed = true;
         }
 
         TikrActionLog.Failed(logger, "AI.AskAdvanced", "No answer from Ollama or Grok");
-        return new AskAdvancedResponse("Unable to get a response. Check Ollama connectivity (or enable USE_GROK with a valid GROK_API_KEY).", UsedGrok: false);
+        return new AskAdvancedResponse(
+            "Unable to get a response. Check Ollama connectivity (or enable USE_GROK with a valid GROK_API_KEY).",
+            UsedGrok: false,
+            GrokAttemptFailed: grokAttemptFailed);
     }
 
     public async Task<AiStatusResponse> GetStatusAsync(CancellationToken cancellationToken = default)
@@ -804,7 +820,8 @@ public class HybridAiService(
     private async Task<string?> GetLocalCompletionAsync(
         string prompt,
         CancellationToken cancellationToken,
-        ChatOptions? options = null)
+        ChatOptions? options = null,
+        IReadOnlyList<AssistantTurn>? history = null)
     {
         var timeoutSeconds = TikrConfiguration.GetChatCompletionTimeoutSeconds(configuration);
         using var attemptCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
@@ -812,7 +829,7 @@ public class HybridAiService(
         try
         {
             var client = ollamaFactory.CreateChatClient();
-            var response = await client.GetResponseAsync(prompt, options, attemptCts.Token);
+            var response = await client.GetResponseAsync(BuildLocalMessages(prompt, history), options, attemptCts.Token);
             return response.Text;
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
@@ -832,6 +849,26 @@ public class HybridAiService(
             logger.LogWarning(ex, "Ollama completion failed");
             return null;
         }
+    }
+
+    private static List<ChatMessage> BuildLocalMessages(string prompt, IReadOnlyList<AssistantTurn>? history)
+    {
+        var messages = new List<ChatMessage>();
+        if (history is not null)
+        {
+            foreach (var turn in history)
+            {
+                if (string.IsNullOrWhiteSpace(turn.Content))
+                    continue;
+                var role = string.Equals(turn.Role, "assistant", StringComparison.OrdinalIgnoreCase)
+                    ? ChatRole.Assistant
+                    : ChatRole.User;
+                messages.Add(new ChatMessage(role, turn.Content));
+            }
+        }
+
+        messages.Add(new ChatMessage(ChatRole.User, prompt ?? string.Empty));
+        return messages;
     }
 
     private static string ExtractJson(string text)

@@ -32,7 +32,7 @@ services:
       USE_GROK: ${USE_GROK:-false}
       TIKR_API_URL: http://tikr-api:8080
     ports:
-      - ${TIKR_API_HOST_PORT:-5000}:8080
+      - "127.0.0.1:${TIKR_API_HOST_PORT:-5000}:8080"
     volumes:
       # Documents / DP keys / logs — not the SQLite file when Provider=Postgres
       - ${TIKR_DATA_PATH:-tikr-data}:/data

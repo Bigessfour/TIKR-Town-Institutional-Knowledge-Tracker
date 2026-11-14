@@ -83,6 +83,30 @@ public class FeatureSettingsServiceTests
         state.Current.OllamaChatModel.Should().Be("llama3.2:3b");
     }
 
+    [Fact]
+    public async Task UpdateAsync_PersistsTownName()
+    {
+        await using var db = await TestDbContextFactory.CreateMigratedAsync();
+        var state = new FeatureSettingsState();
+        var sut = CreateService(db, state, environmentName: "Testing");
+
+        var dto = await sut.UpdateAsync(new UpdateFeatureSettingsRequest(TownName: "Wiley Test"));
+
+        dto.TownName.Should().Be("Wiley Test");
+        state.Current.TownName.Should().Be("Wiley Test");
+    }
+
+    [Fact]
+    public async Task UpdateAsync_UseGrokWithoutKey_Throws()
+    {
+        await using var db = await TestDbContextFactory.CreateMigratedAsync();
+        var sut = CreateService(db, new FeatureSettingsState(), environmentName: "Testing");
+
+        var act = () => sut.UpdateAsync(new UpdateFeatureSettingsRequest(UseGrok: true));
+
+        await act.Should().ThrowAsync<ArgumentException>();
+    }
+
     private static IConfiguration ChatModelConfig() =>
         new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>

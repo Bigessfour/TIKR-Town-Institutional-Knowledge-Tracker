@@ -25,6 +25,9 @@ public static class DependencyInjection
             {
                 options.UseNpgsql(configuration.GetConnectionString("Default")
                     ?? throw new InvalidOperationException("Postgres connection string required."));
+                // Historical migrations were authored for SQLite; keep MigrateAsync usable on Postgres.
+                options.ConfigureWarnings(w =>
+                    w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
             }
             else
             {

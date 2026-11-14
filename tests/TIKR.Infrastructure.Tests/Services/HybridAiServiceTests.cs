@@ -438,6 +438,88 @@ public class HybridAiServiceTests
     }
 
     [Fact]
+    public async Task AskAdvancedAsync_PreferCloud_GrokMiss_ReportsFailureAndUsesLocal()
+    {
+        await using var db = await TestDbContextFactory.CreateMigratedAsync();
+        var grok = TestGrokServiceFactory.Create(
+            new Dictionary<string, string?> { ["USE_GROK"] = "true", ["GROK_API_KEY"] = "unit-test-grok-key-not-a-real-credential" },
+            new DelegatingHandlerStub(_ => new HttpResponseMessage(System.Net.HttpStatusCode.OK)
+            {
+                Content = new StringContent("""{ "choices": [] }""", System.Text.Encoding.UTF8, "application/json")
+            }));
+        var ollama = CreateOllamaFactory("Ollama after Grok miss");
+        var sut = CreateService(db, ollama, grok);
+
+        var result = await sut.AskAdvancedAsync(new AskAdvancedRequest("Question?", null, PreferCloud: true));
+
+        result.UsedGrok.Should().BeFalse();
+        result.GrokAttemptFailed.Should().BeTrue();
+        result.Answer.Should().Be("Ollama after Grok miss");
+    }
+
+    [Fact]
+    public async Task AskAdvancedAsync_LocalFallbackIncludesPriorTurns()
+    {
+        await using var db = await TestDbContextFactory.CreateMigratedAsync();
+        var chat = new StubChatClient("from history");
+        var grok = TestGrokServiceFactory.Create(
+            new Dictionary<string, string?> { ["USE_GROK"] = "true", ["GROK_API_KEY"] = "unit-test-grok-key-not-a-real-credential" },
+            new DelegatingHandlerStub(_ => new HttpResponseMessage(System.Net.HttpStatusCode.OK)
+            {
+                Content = new StringContent("""{ "choices": [] }""", System.Text.Encoding.UTF8, "application/json")
+            }));
+        var sut = CreateService(db, CreateOllamaFactory("unused", chatClient: chat), grok);
+
+        var result = await sut.AskAdvancedAsync(new AskAdvancedRequest(
+            "What about that fee?",
+            null,
+            PreferCloud: true,
+            History: [new AssistantTurn("assistant", "The board tabled the mill levy.")]));
+
+        result.Answer.Should().Be("from history");
+        result.GrokAttemptFailed.Should().BeTrue();
+        chat.LastMessages.Should().Contain(m => m.Text != null && m.Text.Contains("tabled the mill levy"));
+    }
+
+    [Fact]
+    public async Task AskAdvancedAsync_SendsHistoryAndRedactsContacts()
+    {
+        await using var db = await TestDbContextFactory.CreateMigratedAsync();
+        string? capturedBody = null;
+        var grok = TestGrokServiceFactory.Create(
+            new Dictionary<string, string?> { ["USE_GROK"] = "true", ["GROK_API_KEY"] = "unit-test-grok-key-not-a-real-credential" },
+            new DelegatingHandlerStub(req =>
+            {
+                capturedBody = req.Content!.ReadAsStringAsync().GetAwaiter().GetResult();
+                return new HttpResponseMessage(System.Net.HttpStatusCode.OK)
+                {
+                    Content = new StringContent(
+                        """{ "choices": [ { "message": { "content": "ok" } } ] }""",
+                        System.Text.Encoding.UTF8,
+                        "application/json")
+                };
+            }));
+        var sut = CreateService(db, Mock.Of<IOllamaChatClientFactory>(), grok);
+
+        await sut.AskAdvancedAsync(new AskAdvancedRequest(
+            "Compare the options step by step",
+            "Contact clerk@townofwiley.gov or (970) 555-0142",
+            PreferCloud: true,
+            History:
+            [
+                new AssistantTurn("user", "What did we decide?"),
+                new AssistantTurn("assistant", "The board tabled the mill levy.")
+            ]));
+
+        capturedBody.Should().NotBeNull();
+        capturedBody.Should().Contain("The board tabled the mill levy.");
+        capturedBody.Should().Contain("[email]");
+        capturedBody.Should().Contain("[phone]");
+        capturedBody.Should().NotContain("clerk@townofwiley.gov");
+        capturedBody.Should().NotContain("555-0142");
+    }
+
+    [Fact]
     public async Task TagDocumentAsync_PersistsEmbeddingWhenEmbedderSucceeds()
     {
         await using var db = await TestDbContextFactory.CreateMigratedAsync();

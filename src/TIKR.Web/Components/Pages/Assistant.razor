@@ -387,7 +387,8 @@
             }
             catch (Exception ex)
             {
-                ollamaOk = true; // try local first
+                // A status glitch must not force a cloud call while Ollama may still be up.
+                ollamaOk = true;
                 TikrActionLog.Info(Logger, "UI.Assistant.Prompt", $"AI status check failed; trying local: {ex.Message}");
             }
 
@@ -450,7 +451,7 @@
 
             if (decision.Route == AiRoute.CloudGrok)
             {
-                await CompleteViaGrokAsync(args, prompt, userMessage, decision, turnSw, citations);
+                await CompleteViaGrokAsync(args, prompt, userMessage, decision, turnSw, token, citations);
                 return;
             }
 
@@ -497,7 +498,7 @@
             {
                 var escalate = AssistantAgentRouter.EscalateAfterLocalFailure(grokEnabled: true);
                 TikrActionLog.Info(Logger, "UI.Assistant.Route", escalate.Reason);
-                await CompleteViaGrokAsync(args, prompt, userMessage, escalate, turnSw, citations);
+                await CompleteViaGrokAsync(args, prompt, userMessage, escalate, turnSw, token, citations);
                 return;
             }
 
@@ -533,16 +534,22 @@
             try
             {
                 var escalate = AssistantAgentRouter.EscalateAfterLocalFailure(_grokEnabled);
-                var fbContext = await BuildRagContextAsync(prompt);
+                var (fbContext, fbCitations) = await BuildRagContextAsync(prompt);
                 if (escalate.Route == AiRoute.CloudGrok)
                 {
-                    await CompleteViaGrokAsync(args, prompt, fbContext, escalate, turnSw);
+                    await CompleteViaGrokAsync(args, prompt, fbContext, escalate, turnSw, token, fbCitations);
                     return;
                 }
 
                 var err = "<p class='text-danger'>The local helper is not available right now. Try again, or check Settings.</p>";
                 args.Response = err;
                 await SafeUpdateResponseAsync(err);
+            }
+            catch (OperationCanceledException)
+            {
+                var stopped = "<p><em>Response stopped.</em></p>";
+                args.Response = stopped;
+                await SafeUpdateResponseAsync(stopped);
             }
             catch (Exception fbEx)
             {
@@ -560,18 +567,39 @@
         string ragPackedContext,
         AiRouteDecision decision,
         System.Diagnostics.Stopwatch turnSw,
+        CancellationToken cancellationToken,
         IReadOnlyList<string>? citations = null)
     {
         var preparing = AssistantPromptBuilder.FormatPreparingHtml("Working on a deeper answer…");
         args.Response = preparing;
         await SafeUpdateResponseAsync(preparing);
+        cancellationToken.ThrowIfCancellationRequested();
 
         // PreferCloud so API honors the Web decision matrix (does not re-score down to Ollama).
-        var result = await Api.AskAdvancedAsync(prompt, ragPackedContext, preferCloud: true);
-        var replyMarkdown = result?.Answer ?? "The advanced helper is not available. Check Settings, or try again when the local helper is ready.";
-        replyMarkdown = AssistantPromptBuilder.SanitizeModelOutput(replyMarkdown);
-        if (string.IsNullOrWhiteSpace(replyMarkdown))
-            replyMarkdown = result?.Answer ?? "No answer returned.";
+        var history = AssistantPromptBuilder.ToCloudHistory(_modelHistory);
+        var result = await Api.AskAdvancedAsync(
+            prompt,
+            ragPackedContext,
+            preferCloud: true,
+            history: history,
+            cancellationToken: cancellationToken);
+        cancellationToken.ThrowIfCancellationRequested();
+
+        string replyMarkdown;
+        var usedLocalStream = false;
+        if (result is null || IsNoModelAnswer(result.Answer))
+        {
+            replyMarkdown = await StreamLocalMarkdownAsync(ragPackedContext, cancellationToken);
+            usedLocalStream = !string.IsNullOrWhiteSpace(replyMarkdown);
+            if (!usedLocalStream)
+                replyMarkdown = "Neither helper could answer.";
+        }
+        else
+        {
+            replyMarkdown = AssistantPromptBuilder.SanitizeModelOutput(result.Answer);
+            if (string.IsNullOrWhiteSpace(replyMarkdown))
+                replyMarkdown = result.Answer;
+        }
 
         replyMarkdown = AssistantPromptBuilder.EnsureSourcesSection(replyMarkdown, citations);
 
@@ -580,15 +608,50 @@
         await SafeUpdateResponseAsync(html);
 
         var usedGrok = result?.UsedGrok == true;
-        _routeNote = usedGrok
-            ? "Answered by the advanced helper."
-            : "Answered by the local helper.";
+        var localDidAnswer = usedLocalStream || (result is { GrokAttemptFailed: true } && !IsNoModelAnswer(result.Answer));
+        _routeNote = result switch
+        {
+            { UsedGrok: true } => "Answered by the advanced helper.",
+            _ when localDidAnswer => "The advanced helper did not answer. This reply is from the local helper.",
+            null => "Neither helper could answer.",
+            { GrokAttemptFailed: true } => "Neither helper could answer.",
+            _ => "Answered by the local helper."
+        };
 
         AssistantPromptBuilder.AppendTurn(_modelHistory, prompt, replyMarkdown);
         await PersistTurnAsync(prompt, replyMarkdown);
         TikrActionLog.Completed(Logger, "UI.Assistant.Prompt",
-            $"Path=auto-route UsedGrok={usedGrok} Reason={decision.Reason} AnswerLen={replyMarkdown.Length}",
+            $"Path=auto-route UsedGrok={usedGrok} GrokAttemptFailed={result?.GrokAttemptFailed == true} Reason={decision.Reason} AnswerLen={replyMarkdown.Length} HistoryTurns={history.Count}",
             turnSw.ElapsedMilliseconds);
+    }
+
+    private static bool IsNoModelAnswer(string? answer) =>
+        string.IsNullOrWhiteSpace(answer)
+        || answer.StartsWith("Unable to get a response", StringComparison.Ordinal);
+
+    private async Task<string> StreamLocalMarkdownAsync(string userMessage, CancellationToken cancellationToken)
+    {
+        var messages = AssistantPromptBuilder.BuildChatMessages(SystemPrompt, _modelHistory, userMessage);
+        var markdownBuilder = new System.Text.StringBuilder();
+        await foreach (var update in ChatClient.GetStreamingResponseAsync(messages, cancellationToken: cancellationToken))
+        {
+            if (!string.IsNullOrEmpty(update.Text))
+            {
+                markdownBuilder.Append(update.Text);
+                continue;
+            }
+
+            if (update.Contents is not { Count: > 0 })
+                continue;
+
+            foreach (var part in update.Contents)
+            {
+                if (part is Microsoft.Extensions.AI.TextContent tc && !string.IsNullOrEmpty(tc.Text))
+                    markdownBuilder.Append(tc.Text);
+            }
+        }
+
+        return AssistantPromptBuilder.SanitizeModelOutput(markdownBuilder.ToString());
     }
 
     /// <summary>
@@ -644,7 +707,7 @@
         StateHasChanged();
     }
 
-    private async Task<string> BuildRagContextAsync(string prompt)
+    private async Task<(string Message, IReadOnlyList<string> Citations)> BuildRagContextAsync(string prompt)
     {
         var retrievalQuery = AssistantPromptBuilder.BuildRetrievalQuery(
             prompt,
@@ -676,14 +739,14 @@
         searchUnavailable = searchUnavailable || docsDown || vaultDown;
         var productContext = ProductHelpCatalog.FormatForPrompt(ProductHelpCatalog.Search(prompt, topK: 3));
         var citations = AssistantPromptBuilder.CollectCitationLabels(docSearch, vaultSearch);
-        return AssistantPromptBuilder.BuildUserMessageWithRag(
+        return (AssistantPromptBuilder.BuildUserMessageWithRag(
             prompt,
             _contextSummary,
             docContext,
             vaultContext,
             searchUnavailable,
             citations,
-            productContext);
+            productContext), citations);
     }
 
     public void Dispose()
