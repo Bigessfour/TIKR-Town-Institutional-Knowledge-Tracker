@@ -17,6 +17,6 @@ public class ConfirmDeleteDialogTests : ClerkTestContext
             .Add(p => p.ItemName, "Mill Levy Certification"));
 
         cut.Markup.Should().Contain("Mill Levy Certification");
-        cut.Markup.Should().Contain("audit log");
+        cut.Markup.Should().Contain("activity log");
     }
 }

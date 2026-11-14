@@ -19,12 +19,12 @@
 
 <div class="page-header">
     <div class="page-header-main">
-        <h2>AI Assistant</h2>
-        <p>Your energetic local deputy — town documents, vault, TIKR how-tos, and Syncfusion workspace coaching. Chat memory follows this computer’s clerk.</p>
+        <h2>Assistant</h2>
+        <p>Your local deputy for town documents, the vault, and how to use TIKR.</p>
     </div>
     <div class="page-header-actions">
         <PageTourButton Route="/assistant" />
-        <PageHelp DataTour="@ClerkTourIds.HelpAssistant" HelpText="Ask about deadlines, documents, how TIKR works, or Full Screen PDF tools. History and personal facts stay with Deb Dillon or Paige Lindo for this PC. Clear conversation keeps remembered facts." />
+        <PageHelp DataTour="@ClerkTourIds.HelpAssistant" HelpText="Ask about deadlines, documents, how TIKR works, or full-screen PDF tools (Syncfusion). Chat memory follows this computer’s clerk (Deb Dillon or Paige Lindo). Ordinary answers use the local helper (Ollama on the NAS). Harder questions can use the advanced helper (Grok) when it is turned on in Settings. Clear conversation keeps remembered facts." />
     </div>
 </div>
 
@@ -101,7 +101,9 @@
     <SfButton CssClass="tikr-action-btn ms-2" IsPrimary="false" Content="Clear conversation" OnClick="ClearConversationAsync"></SfButton>
     @if (!string.IsNullOrEmpty(_routeNote))
     {
-        <p class="mt-2 text-muted" data-tour="assistant-route-note">@_routeNote</p>
+        <SfTooltip Content="Local answers use Ollama on the NAS. Harder questions can use Grok when it is turned on in Settings." Position="Position.TopCenter">
+            <p class="mt-2 text-muted" data-tour="assistant-route-note">@_routeNote</p>
+        </SfTooltip>
     }
     @if (!string.IsNullOrEmpty(_advancedNote))
     {
@@ -197,7 +199,7 @@
 
         if (!ClerkIdentity.IsResolved)
         {
-            _advancedNote = ClerkIdentity.StatusDetail();
+            _advancedNote = "Choose a clerk in Settings so this chat stays with the right person.";
             return;
         }
 
@@ -502,7 +504,7 @@
             if (string.IsNullOrWhiteSpace(replyMarkdown))
             {
                 replyMarkdown = "I could not produce a clear answer from the local helper. " +
-                                "Check that Ollama is running, or enable Grok in Settings for automatic help on harder questions.";
+                                "Try again, or check Settings if the helper is offline.";
             }
 
             replyMarkdown = AssistantPromptBuilder.EnsureSourcesSection(replyMarkdown, citations);
@@ -510,7 +512,7 @@
             var html = Markdown.ToHtml(replyMarkdown);
             args.Response = html;
             await SafeUpdateResponseAsync(html);
-            _routeNote = "Answered locally (Ollama on the NAS).";
+            _routeNote = "Answered by the local helper.";
 
             AssistantPromptBuilder.AppendTurn(_modelHistory, prompt, replyMarkdown);
             await PersistTurnAsync(prompt, replyMarkdown);
@@ -538,14 +540,14 @@
                     return;
                 }
 
-                var err = $"<p class='text-danger'>Local AI unavailable: {ex.Message}. Is Ollama running?</p>";
+                var err = "<p class='text-danger'>The local helper is not available right now. Try again, or check Settings.</p>";
                 args.Response = err;
                 await SafeUpdateResponseAsync(err);
             }
             catch (Exception fbEx)
             {
                 TikrActionLog.Failed(Logger, "UI.Assistant.Prompt", fbEx, "Grok escalate also failed");
-                var err = $"<p class='text-danger'>Local AI unavailable: {ex.Message}. Cloud fallback also failed.</p>";
+                var err = "<p class='text-danger'>The local helper is not available right now, and the advanced helper did not answer either. Try again, or check Settings.</p>";
                 args.Response = err;
                 await SafeUpdateResponseAsync(err);
             }
@@ -566,7 +568,7 @@
 
         // PreferCloud so API honors the Web decision matrix (does not re-score down to Ollama).
         var result = await Api.AskAdvancedAsync(prompt, ragPackedContext, preferCloud: true);
-        var replyMarkdown = result?.Answer ?? "Advanced AI is unavailable. Check Settings (Grok) or try again when Ollama is ready.";
+        var replyMarkdown = result?.Answer ?? "The advanced helper is not available. Check Settings, or try again when the local helper is ready.";
         replyMarkdown = AssistantPromptBuilder.SanitizeModelOutput(replyMarkdown);
         if (string.IsNullOrWhiteSpace(replyMarkdown))
             replyMarkdown = result?.Answer ?? "No answer returned.";
@@ -579,8 +581,8 @@
 
         var usedGrok = result?.UsedGrok == true;
         _routeNote = usedGrok
-            ? "Answered with Grok (auto-selected for this question)."
-            : "Answered via advanced path (local). " + decision.Reason;
+            ? "Answered by the advanced helper."
+            : "Answered by the local helper.";
 
         AssistantPromptBuilder.AppendTurn(_modelHistory, prompt, replyMarkdown);
         await PersistTurnAsync(prompt, replyMarkdown);

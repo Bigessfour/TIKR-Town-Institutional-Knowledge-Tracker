@@ -2,7 +2,9 @@
     <DialogTemplates>
         <Content>
             <p>Delete <strong>@ItemName</strong>?</p>
-            <p class="confirm-audit-note">Recorded in the local audit log on your NAS.</p>
+            <SfTooltip Content="Recorded in the local audit log on your NAS." Position="Position.TopCenter">
+                <p class="confirm-audit-note">This delete is written to the town activity log.</p>
+            </SfTooltip>
         </Content>
         <FooterTemplate>
             <SfButton CssClass="tikr-action-btn" Content="Cancel" OnClick="CancelAsync" />

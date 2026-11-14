@@ -44,7 +44,7 @@ public class DocumentsPageTests : ClerkTestContext
         SetRendererInfo(new RendererInfo("Server", true));
 
         var cut = RenderComponent<Documents>();
-        cut.Markup.Should().Contain("Semantic search");
+        cut.Markup.Should().Contain("Search by meaning");
         cut.Markup.Should().Contain("Full-text search");
     }
 
@@ -86,7 +86,7 @@ public class DocumentsPageTests : ClerkTestContext
         // Mode switch shows browse copy even if SfFileManager JS hosts are limited under bUnit.
         cut.WaitForAssertion(() =>
         {
-            cut.Markup.Should().Contain("Syncfusion File Manager over your library folders");
+            cut.Markup.Should().Contain("Folders for your library");
         }, TimeSpan.FromSeconds(5));
     }
 
