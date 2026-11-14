@@ -91,7 +91,7 @@ def train(rows: list[dict]):
                 "tfidf",
                 TfidfVectorizer(
                     lowercase=True,
-                    token_pattern=r"(?u)\b\w\w+\b",
+                    token_pattern=r"(?u)\b\w\w+\b",  # nosec B106 -- sklearn token regex, not a credential
                     ngram_range=(1, 1),
                     norm="l2",
                     use_idf=True,

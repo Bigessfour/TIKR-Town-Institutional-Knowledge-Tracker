@@ -14,11 +14,13 @@ from __future__ import annotations
 import argparse
 import json
 import re
-import subprocess
+import subprocess  # nosec B404 -- local builder calls pdftotext with a fixed argument list
 import sys
 import zipfile
 from pathlib import Path
-from xml.etree import ElementTree
+from xml.etree import (  # nosec B405 -- only parses document.xml from a local docx zip
+    ElementTree,
+)
 
 SKIP_DIRS = {"#recycle", "@eaDir", ".DS_Store"}
 SKIP_SUFFIXES = ("@synoeastream", "@eadir")
@@ -92,17 +94,21 @@ def clean_text(text: str, limit: int) -> str:
 def docx_text(path: Path, limit: int) -> str:
     with zipfile.ZipFile(path) as archive:
         xml = archive.read("word/document.xml")
-    root = ElementTree.fromstring(xml)
+    root = ElementTree.fromstring(
+        xml
+    )  # nosec B314 -- document.xml from the docx we just opened locally
     parts = [node.text or "" for node in root.iter(WORD_NS + "t")]
     return clean_text(" ".join(parts), limit)
 
 
 def pdf_text(path: Path, limit: int) -> str:
-    result = subprocess.run(
-        ["pdftotext", "-f", "1", "-l", "1", "-q", str(path), "-"],
-        check=False,
-        capture_output=True,
-        timeout=25,
+    result = (
+        subprocess.run(  # nosec B603 B607 -- fixed pdftotext argv, shell is not used
+            ["pdftotext", "-f", "1", "-l", "1", "-q", str(path), "-"],
+            check=False,
+            capture_output=True,
+            timeout=25,
+        )
     )
     if result.returncode != 0:
         return ""
