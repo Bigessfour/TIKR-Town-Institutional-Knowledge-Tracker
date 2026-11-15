@@ -1,17 +1,17 @@
 {
   "meta": {
-    "generatedAt": "2026-11-15T22:50:37Z",
+    "generatedAt": "2026-11-15T23:14:23Z",
     "itemCount": 226,
     "pageCount": 14,
     "buttonCount": 122,
     "linkCount": 25,
     "fieldCount": 66,
     "knownFailureCount": 36,
-    "smokeSafeCount": 112
+    "smokeSafeCount": 111
   },
   "items": [
     {
-      "id": "inv-account-route-account-page-route",
+      "id": "inv-account-account-route-account-page-route-L1",
       "page": "/account",
       "route": "/account",
       "label": "Route /account",
@@ -21,7 +21,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Control responds without unhandled error.",
-      "testId": "inv-account-route-account-page-route",
+      "testId": "inv-account-account-route-account-page-route-L1",
       "smokeSafe": true,
       "writesData": false,
       "knownFailure": null,
@@ -31,7 +31,7 @@
       }
     },
     {
-      "id": "inv-account-text-field",
+      "id": "inv-account-account-text-field-L36",
       "page": "/account",
       "route": "/account",
       "label": "Text field",
@@ -41,7 +41,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Value binds and persists on save.",
-      "testId": "inv-account-text-field",
+      "testId": "inv-account-account-text-field-L36",
       "smokeSafe": false,
       "writesData": true,
       "knownFailure": null,
@@ -52,7 +52,7 @@
       }
     },
     {
-      "id": "inv-account-text-field-2",
+      "id": "inv-account-account-text-field-L41",
       "page": "/account",
       "route": "/account",
       "label": "Text field",
@@ -62,7 +62,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Value binds and persists on save.",
-      "testId": "inv-account-text-field-2",
+      "testId": "inv-account-account-text-field-L41",
       "smokeSafe": false,
       "writesData": true,
       "knownFailure": null,
@@ -73,7 +73,7 @@
       }
     },
     {
-      "id": "inv-account-text-field-3",
+      "id": "inv-account-account-text-field-L46",
       "page": "/account",
       "route": "/account",
       "label": "Text field",
@@ -83,7 +83,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Value binds and persists on save.",
-      "testId": "inv-account-text-field-3",
+      "testId": "inv-account-account-text-field-L46",
       "smokeSafe": false,
       "writesData": true,
       "knownFailure": null,
@@ -94,7 +94,7 @@
       }
     },
     {
-      "id": "inv-assistant-route-assistant-page-route",
+      "id": "inv-assistant-assistant-route-assistant-page-route-L1",
       "page": "/assistant",
       "route": "/assistant",
       "label": "Route /assistant",
@@ -107,7 +107,7 @@
       ],
       "permissions": [],
       "expectedResult": "Progress visible; assistant message returned.",
-      "testId": "inv-assistant-route-assistant-page-route",
+      "testId": "inv-assistant-assistant-route-assistant-page-route-L1",
       "smokeSafe": false,
       "writesData": true,
       "knownFailure": null,
@@ -117,7 +117,7 @@
       }
     },
     {
-      "id": "inv-assistant-forget",
+      "id": "inv-assistant-assistant-forget-L68",
       "page": "/assistant",
       "route": "/assistant",
       "label": "Forget",
@@ -127,7 +127,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Control responds without unhandled error.",
-      "testId": "inv-assistant-forget",
+      "testId": "inv-assistant-assistant-forget-L68",
       "smokeSafe": true,
       "writesData": false,
       "knownFailure": null,
@@ -138,7 +138,7 @@
       }
     },
     {
-      "id": "inv-assistant-clear-conversation",
+      "id": "inv-assistant-assistant-clear-conversation-L101",
       "page": "/assistant",
       "route": "/assistant",
       "label": "Clear conversation",
@@ -148,7 +148,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Control responds without unhandled error.",
-      "testId": "inv-assistant-clear-conversation",
+      "testId": "inv-assistant-assistant-clear-conversation-L101",
       "smokeSafe": false,
       "writesData": false,
       "knownFailure": null,
@@ -159,7 +159,7 @@
       }
     },
     {
-      "id": "inv-assistant-dropdown",
+      "id": "inv-assistant-assistant-dropdown-L100",
       "page": "/assistant",
       "route": "/assistant",
       "label": "Dropdown",
@@ -169,7 +169,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Value binds and persists on save.",
-      "testId": "inv-assistant-dropdown",
+      "testId": "inv-assistant-assistant-dropdown-L100",
       "smokeSafe": false,
       "writesData": true,
       "knownFailure": null,
@@ -203,7 +203,7 @@
       }
     },
     {
-      "id": "inv-calendar-route-calendar-page-route",
+      "id": "inv-calendar-calendar-route-calendar-page-route-L1",
       "page": "/calendar",
       "route": "/calendar",
       "label": "Route /calendar",
@@ -213,7 +213,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Control responds without unhandled error.",
-      "testId": "inv-calendar-route-calendar-page-route",
+      "testId": "inv-calendar-calendar-route-calendar-page-route-L1",
       "smokeSafe": true,
       "writesData": false,
       "knownFailure": null,
@@ -223,7 +223,7 @@
       }
     },
     {
-      "id": "inv-calendar-text-field",
+      "id": "inv-calendar-calendar-text-field-L48",
       "page": "/calendar",
       "route": "/calendar",
       "label": "Text field",
@@ -233,7 +233,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Value binds and persists on save.",
-      "testId": "inv-calendar-text-field",
+      "testId": "inv-calendar-calendar-text-field-L48",
       "smokeSafe": false,
       "writesData": true,
       "knownFailure": null,
@@ -244,7 +244,7 @@
       }
     },
     {
-      "id": "inv-calendar-dropdown",
+      "id": "inv-calendar-calendar-dropdown-L103",
       "page": "/calendar",
       "route": "/calendar",
       "label": "Dropdown",
@@ -254,7 +254,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Value binds and persists on save.",
-      "testId": "inv-calendar-dropdown",
+      "testId": "inv-calendar-calendar-dropdown-L103",
       "smokeSafe": false,
       "writesData": true,
       "knownFailure": null,
@@ -265,7 +265,7 @@
       }
     },
     {
-      "id": "inv-calendar-dropdown-2",
+      "id": "inv-calendar-calendar-dropdown-L111",
       "page": "/calendar",
       "route": "/calendar",
       "label": "Dropdown",
@@ -275,7 +275,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Value binds and persists on save.",
-      "testId": "inv-calendar-dropdown-2",
+      "testId": "inv-calendar-calendar-dropdown-L111",
       "smokeSafe": false,
       "writesData": true,
       "knownFailure": null,
@@ -286,7 +286,7 @@
       }
     },
     {
-      "id": "inv-demo-clerk-tools-route-demo-clerk-tools-page-route",
+      "id": "inv-demo-clerk-tools-clerktoolsshowcase-route-demo-clerk-tools-page-route-L1",
       "page": "/demo/clerk-tools",
       "route": "/demo/clerk-tools",
       "label": "Route /demo/clerk-tools",
@@ -296,7 +296,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Control responds without unhandled error.",
-      "testId": "inv-demo-clerk-tools-route-demo-clerk-tools-page-route",
+      "testId": "inv-demo-clerk-tools-clerktoolsshowcase-route-demo-clerk-tools-page-route-L1",
       "smokeSafe": true,
       "writesData": false,
       "knownFailure": null,
@@ -306,7 +306,7 @@
       }
     },
     {
-      "id": "inv-demo-clerk-tools-end-demo",
+      "id": "inv-demo-clerk-tools-clerktoolsshowcase-end-demo-L35",
       "page": "/demo/clerk-tools",
       "route": "/demo/clerk-tools",
       "label": "End demo",
@@ -316,7 +316,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Control responds without unhandled error.",
-      "testId": "inv-demo-clerk-tools-end-demo",
+      "testId": "inv-demo-clerk-tools-clerktoolsshowcase-end-demo-L35",
       "smokeSafe": true,
       "writesData": false,
       "knownFailure": null,
@@ -327,7 +327,7 @@
       }
     },
     {
-      "id": "inv-demo-clerk-tools-start-clerk-tools-demo",
+      "id": "inv-demo-clerk-tools-clerktoolsshowcase-start-clerk-tools-demo-L68",
       "page": "/demo/clerk-tools",
       "route": "/demo/clerk-tools",
       "label": "Start clerk tools demo",
@@ -337,7 +337,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Control responds without unhandled error.",
-      "testId": "inv-demo-clerk-tools-start-clerk-tools-demo",
+      "testId": "inv-demo-clerk-tools-clerktoolsshowcase-start-clerk-tools-demo-L68",
       "smokeSafe": true,
       "writesData": false,
       "knownFailure": null,
@@ -348,7 +348,7 @@
       }
     },
     {
-      "id": "inv-demo-clerk-tools-jump-to-current-act-card",
+      "id": "inv-demo-clerk-tools-clerktoolsshowcase-jump-to-current-act-card-L72",
       "page": "/demo/clerk-tools",
       "route": "/demo/clerk-tools",
       "label": "Jump to current act card",
@@ -358,7 +358,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Control responds without unhandled error.",
-      "testId": "inv-demo-clerk-tools-jump-to-current-act-card",
+      "testId": "inv-demo-clerk-tools-clerktoolsshowcase-jump-to-current-act-card-L72",
       "smokeSafe": true,
       "writesData": false,
       "knownFailure": null,
@@ -369,7 +369,7 @@
       }
     },
     {
-      "id": "inv-documents-route-documents-page-route",
+      "id": "inv-documents-documents-route-documents-page-route-L1",
       "page": "/documents",
       "route": "/documents",
       "label": "Route /documents",
@@ -379,7 +379,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Control responds without unhandled error.",
-      "testId": "inv-documents-route-documents-page-route",
+      "testId": "inv-documents-documents-route-documents-page-route-L1",
       "smokeSafe": true,
       "writesData": false,
       "knownFailure": null,
@@ -389,7 +389,7 @@
       }
     },
     {
-      "id": "inv-documents-library",
+      "id": "inv-documents-documents-library-L36",
       "page": "/documents",
       "route": "/documents",
       "label": "Library",
@@ -399,7 +399,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Control responds without unhandled error.",
-      "testId": "inv-documents-library",
+      "testId": "inv-documents-documents-library-L36",
       "smokeSafe": true,
       "writesData": false,
       "knownFailure": null,
@@ -410,7 +410,7 @@
       }
     },
     {
-      "id": "inv-documents-browse-file-manager",
+      "id": "inv-documents-documents-browse-file-manager-L39",
       "page": "/documents",
       "route": "/documents",
       "label": "Browse (File Manager)",
@@ -420,7 +420,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Control responds without unhandled error.",
-      "testId": "inv-documents-browse-file-manager",
+      "testId": "inv-documents-documents-browse-file-manager-L39",
       "smokeSafe": true,
       "writesData": false,
       "knownFailure": null,
@@ -431,7 +431,7 @@
       }
     },
     {
-      "id": "inv-documents-recycle-bin",
+      "id": "inv-documents-documents-recycle-bin-L42",
       "page": "/documents",
       "route": "/documents",
       "label": "Recycle bin",
@@ -441,7 +441,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Control responds without unhandled error.",
-      "testId": "inv-documents-recycle-bin",
+      "testId": "inv-documents-documents-recycle-bin-L42",
       "smokeSafe": true,
       "writesData": false,
       "knownFailure": null,
@@ -452,7 +452,7 @@
       }
     },
     {
-      "id": "inv-documents-create-folder",
+      "id": "inv-documents-documents-create-folder-L81",
       "page": "/documents",
       "route": "/documents",
       "label": "Create folder",
@@ -464,7 +464,7 @@
       ],
       "permissions": [],
       "expectedResult": "Data saved and UI reflects change.",
-      "testId": "inv-documents-create-folder",
+      "testId": "inv-documents-documents-create-folder-L81",
       "smokeSafe": false,
       "writesData": true,
       "knownFailure": null,
@@ -475,7 +475,7 @@
       }
     },
     {
-      "id": "inv-documents-keep-in-general",
+      "id": "inv-documents-documents-keep-in-general-L82",
       "page": "/documents",
       "route": "/documents",
       "label": "Keep in General",
@@ -485,7 +485,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Control responds without unhandled error.",
-      "testId": "inv-documents-keep-in-general",
+      "testId": "inv-documents-documents-keep-in-general-L82",
       "smokeSafe": true,
       "writesData": false,
       "knownFailure": null,
@@ -496,7 +496,7 @@
       }
     },
     {
-      "id": "inv-documents-looks-good-accept",
+      "id": "inv-documents-documents-looks-good-accept-L108",
       "page": "/documents",
       "route": "/documents",
       "label": "Looks good / Accept",
@@ -506,7 +506,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Control responds without unhandled error.",
-      "testId": "inv-documents-looks-good-accept",
+      "testId": "inv-documents-documents-looks-good-accept-L108",
       "smokeSafe": true,
       "writesData": false,
       "knownFailure": null,
@@ -517,7 +517,7 @@
       }
     },
     {
-      "id": "inv-documents-dismiss",
+      "id": "inv-documents-documents-dismiss-L109",
       "page": "/documents",
       "route": "/documents",
       "label": "Dismiss",
@@ -527,7 +527,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Control responds without unhandled error.",
-      "testId": "inv-documents-dismiss",
+      "testId": "inv-documents-documents-dismiss-L109",
       "smokeSafe": true,
       "writesData": false,
       "knownFailure": null,
@@ -538,7 +538,7 @@
       }
     },
     {
-      "id": "inv-documents-re-tag",
+      "id": "inv-documents-documents-re-tag-L110",
       "page": "/documents",
       "route": "/documents",
       "label": "Re-tag",
@@ -548,7 +548,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Control responds without unhandled error.",
-      "testId": "inv-documents-re-tag",
+      "testId": "inv-documents-documents-re-tag-L110",
       "smokeSafe": false,
       "writesData": false,
       "knownFailure": null,
@@ -559,7 +559,7 @@
       }
     },
     {
-      "id": "inv-documents-create-requirement-from-this-email",
+      "id": "inv-documents-documents-create-requirement-from-this-email-L134",
       "page": "/documents",
       "route": "/documents",
       "label": "Create Requirement from this email",
@@ -571,7 +571,7 @@
       ],
       "permissions": [],
       "expectedResult": "Data saved and UI reflects change.",
-      "testId": "inv-documents-create-requirement-from-this-email",
+      "testId": "inv-documents-documents-create-requirement-from-this-email-L134",
       "smokeSafe": false,
       "writesData": true,
       "knownFailure": null,
@@ -582,7 +582,7 @@
       }
     },
     {
-      "id": "inv-documents-dismiss-2",
+      "id": "inv-documents-documents-dismiss-L139",
       "page": "/documents",
       "route": "/documents",
       "label": "Dismiss",
@@ -592,7 +592,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Control responds without unhandled error.",
-      "testId": "inv-documents-dismiss-2",
+      "testId": "inv-documents-documents-dismiss-L139",
       "smokeSafe": true,
       "writesData": false,
       "knownFailure": null,
@@ -603,7 +603,7 @@
       }
     },
     {
-      "id": "inv-documents-full-text-search",
+      "id": "inv-documents-documents-full-text-search-L148",
       "page": "/documents",
       "route": "/documents",
       "label": "Full-text search",
@@ -615,7 +615,7 @@
       ],
       "permissions": [],
       "expectedResult": "Grid or results update.",
-      "testId": "inv-documents-full-text-search",
+      "testId": "inv-documents-documents-full-text-search-L148",
       "smokeSafe": true,
       "writesData": false,
       "knownFailure": null,
@@ -626,7 +626,7 @@
       }
     },
     {
-      "id": "inv-documents-search-by-meaning",
+      "id": "inv-documents-documents-search-by-meaning-L152",
       "page": "/documents",
       "route": "/documents",
       "label": "Search by meaning",
@@ -638,7 +638,7 @@
       ],
       "permissions": [],
       "expectedResult": "Grid or results update.",
-      "testId": "inv-documents-search-by-meaning",
+      "testId": "inv-documents-documents-search-by-meaning-L152",
       "smokeSafe": true,
       "writesData": false,
       "knownFailure": null,
@@ -649,7 +649,7 @@
       }
     },
     {
-      "id": "inv-documents-delete-selected",
+      "id": "inv-documents-documents-delete-selected-L168",
       "page": "/documents",
       "route": "/documents",
       "label": "Delete selected",
@@ -659,7 +659,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Record removed or confirm dialog shown.",
-      "testId": "inv-documents-delete-selected",
+      "testId": "inv-documents-documents-delete-selected-L168",
       "smokeSafe": false,
       "writesData": true,
       "knownFailure": null,
@@ -670,7 +670,7 @@
       }
     },
     {
-      "id": "inv-documents-re-tag-with-ai",
+      "id": "inv-documents-documents-re-tag-with-ai-L169",
       "page": "/documents",
       "route": "/documents",
       "label": "Re-tag with AI",
@@ -680,7 +680,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Control responds without unhandled error.",
-      "testId": "inv-documents-re-tag-with-ai",
+      "testId": "inv-documents-documents-re-tag-with-ai-L169",
       "smokeSafe": false,
       "writesData": false,
       "knownFailure": null,
@@ -691,7 +691,7 @@
       }
     },
     {
-      "id": "inv-documents-clear-selection",
+      "id": "inv-documents-documents-clear-selection-L170",
       "page": "/documents",
       "route": "/documents",
       "label": "Clear selection",
@@ -701,7 +701,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Control responds without unhandled error.",
-      "testId": "inv-documents-clear-selection",
+      "testId": "inv-documents-documents-clear-selection-L170",
       "smokeSafe": true,
       "writesData": false,
       "knownFailure": null,
@@ -712,7 +712,7 @@
       }
     },
     {
-      "id": "inv-documents-restore",
+      "id": "inv-documents-documents-restore-L351",
       "page": "/documents",
       "route": "/documents",
       "label": "Restore",
@@ -722,7 +722,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Control responds without unhandled error.",
-      "testId": "inv-documents-restore",
+      "testId": "inv-documents-documents-restore-L351",
       "smokeSafe": false,
       "writesData": false,
       "knownFailure": null,
@@ -733,7 +733,7 @@
       }
     },
     {
-      "id": "inv-documents-restore-2",
+      "id": "inv-documents-documents-restore-L414",
       "page": "/documents",
       "route": "/documents",
       "label": "Restore",
@@ -743,7 +743,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Control responds without unhandled error.",
-      "testId": "inv-documents-restore-2",
+      "testId": "inv-documents-documents-restore-L414",
       "smokeSafe": false,
       "writesData": false,
       "knownFailure": null,
@@ -754,7 +754,7 @@
       }
     },
     {
-      "id": "inv-documents-purge-permanently",
+      "id": "inv-documents-documents-purge-permanently-L416",
       "page": "/documents",
       "route": "/documents",
       "label": "Purge permanently",
@@ -764,7 +764,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Control responds without unhandled error.",
-      "testId": "inv-documents-purge-permanently",
+      "testId": "inv-documents-documents-purge-permanently-L416",
       "smokeSafe": true,
       "writesData": false,
       "knownFailure": null,
@@ -775,7 +775,7 @@
       }
     },
     {
-      "id": "inv-documents-re-tag-2",
+      "id": "inv-documents-documents-re-tag-L432",
       "page": "/documents",
       "route": "/documents",
       "label": "Re-tag",
@@ -785,7 +785,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Control responds without unhandled error.",
-      "testId": "inv-documents-re-tag-2",
+      "testId": "inv-documents-documents-re-tag-L432",
       "smokeSafe": false,
       "writesData": false,
       "knownFailure": null,
@@ -796,7 +796,7 @@
       }
     },
     {
-      "id": "inv-documents-delete",
+      "id": "inv-documents-documents-delete-L433",
       "page": "/documents",
       "route": "/documents",
       "label": "Delete",
@@ -806,7 +806,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Record removed or confirm dialog shown.",
-      "testId": "inv-documents-delete",
+      "testId": "inv-documents-documents-delete-L433",
       "smokeSafe": false,
       "writesData": true,
       "knownFailure": null,
@@ -817,7 +817,7 @@
       }
     },
     {
-      "id": "inv-documents-file-upload",
+      "id": "inv-documents-documents-file-upload-L56",
       "page": "/documents",
       "route": "/documents",
       "label": "File upload",
@@ -830,7 +830,7 @@
       ],
       "permissions": [],
       "expectedResult": "File appears in grid after upload.",
-      "testId": "inv-documents-file-upload",
+      "testId": "inv-documents-documents-file-upload-L56",
       "smokeSafe": false,
       "writesData": true,
       "knownFailure": null,
@@ -841,7 +841,7 @@
       }
     },
     {
-      "id": "inv-documents-checkbox",
+      "id": "inv-documents-documents-checkbox-L61",
       "page": "/documents",
       "route": "/documents",
       "label": "Checkbox",
@@ -851,7 +851,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Value binds and persists on save.",
-      "testId": "inv-documents-checkbox",
+      "testId": "inv-documents-documents-checkbox-L61",
       "smokeSafe": false,
       "writesData": true,
       "knownFailure": null,
@@ -862,7 +862,7 @@
       }
     },
     {
-      "id": "inv-documents-text-field",
+      "id": "inv-documents-documents-text-field-L157",
       "page": "/documents",
       "route": "/documents",
       "label": "Text field",
@@ -872,7 +872,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Value binds and persists on save.",
-      "testId": "inv-documents-text-field",
+      "testId": "inv-documents-documents-text-field-L157",
       "smokeSafe": false,
       "writesData": true,
       "knownFailure": null,
@@ -883,7 +883,7 @@
       }
     },
     {
-      "id": "inv-error-route-error-page-route",
+      "id": "inv-error-error-route-error-page-route-L1",
       "page": "/Error",
       "route": "/Error",
       "label": "Route /Error",
@@ -893,7 +893,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Control responds without unhandled error.",
-      "testId": "inv-error-route-error-page-route",
+      "testId": "inv-error-error-route-error-page-route-L1",
       "smokeSafe": true,
       "writesData": false,
       "knownFailure": null,
@@ -903,7 +903,7 @@
       }
     },
     {
-      "id": "inv-control-route-page-route",
+      "id": "inv-control-home-route-page-route-L1",
       "page": "/",
       "route": "/",
       "label": "Route /",
@@ -913,7 +913,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Control responds without unhandled error.",
-      "testId": "inv-control-route-page-route",
+      "testId": "inv-control-home-route-page-route-L1",
       "smokeSafe": true,
       "writesData": false,
       "knownFailure": null,
@@ -923,7 +923,7 @@
       }
     },
     {
-      "id": "inv-control-reset-layout",
+      "id": "inv-control-home-reset-layout-L23",
       "page": "/",
       "route": "/",
       "label": "Reset layout",
@@ -933,7 +933,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Control responds without unhandled error.",
-      "testId": "inv-control-reset-layout",
+      "testId": "inv-control-home-reset-layout-L23",
       "smokeSafe": true,
       "writesData": false,
       "knownFailure": null,
@@ -944,7 +944,7 @@
       }
     },
     {
-      "id": "inv-control-user-guide",
+      "id": "inv-control-home-user-guide-L25",
       "page": "/",
       "route": "/",
       "label": "User guide",
@@ -954,7 +954,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Control responds without unhandled error.",
-      "testId": "inv-control-user-guide",
+      "testId": "inv-control-home-user-guide-L25",
       "smokeSafe": true,
       "writesData": false,
       "knownFailure": null,
@@ -965,7 +965,7 @@
       }
     },
     {
-      "id": "inv-control-add-requirement",
+      "id": "inv-control-home-add-requirement-L87",
       "page": "/",
       "route": "/",
       "label": "Add requirement",
@@ -975,7 +975,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "URL changes or target page loads.",
-      "testId": "inv-control-add-requirement",
+      "testId": "inv-control-home-add-requirement-L87",
       "smokeSafe": true,
       "writesData": false,
       "knownFailure": null,
@@ -986,7 +986,7 @@
       }
     },
     {
-      "id": "inv-control-ai-scan",
+      "id": "inv-control-home-ai-scan-L88",
       "page": "/",
       "route": "/",
       "label": "AI Scan",
@@ -996,7 +996,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "URL changes or target page loads.",
-      "testId": "inv-control-ai-scan",
+      "testId": "inv-control-home-ai-scan-L88",
       "smokeSafe": true,
       "writesData": false,
       "knownFailure": "RB-001",
@@ -1007,7 +1007,7 @@
       }
     },
     {
-      "id": "inv-control-upload-document",
+      "id": "inv-control-home-upload-document-L89",
       "page": "/",
       "route": "/",
       "label": "Upload document",
@@ -1017,7 +1017,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "URL changes or target page loads.",
-      "testId": "inv-control-upload-document",
+      "testId": "inv-control-home-upload-document-L89",
       "smokeSafe": false,
       "writesData": false,
       "knownFailure": null,
@@ -1028,7 +1028,7 @@
       }
     },
     {
-      "id": "inv-control-calendar",
+      "id": "inv-control-home-calendar-L90",
       "page": "/",
       "route": "/",
       "label": "Calendar",
@@ -1038,7 +1038,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "URL changes or target page loads.",
-      "testId": "inv-control-calendar",
+      "testId": "inv-control-home-calendar-L90",
       "smokeSafe": true,
       "writesData": false,
       "knownFailure": null,
@@ -1049,7 +1049,7 @@
       }
     },
     {
-      "id": "inv-control-assistant",
+      "id": "inv-control-home-assistant-L91",
       "page": "/",
       "route": "/",
       "label": "Assistant",
@@ -1059,7 +1059,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "URL changes or target page loads.",
-      "testId": "inv-control-assistant",
+      "testId": "inv-control-home-assistant-L91",
       "smokeSafe": true,
       "writesData": false,
       "knownFailure": null,
@@ -1070,7 +1070,7 @@
       }
     },
     {
-      "id": "inv-control-edit",
+      "id": "inv-control-home-edit-L141",
       "page": "/",
       "route": "/",
       "label": "Edit",
@@ -1080,7 +1080,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Control responds without unhandled error.",
-      "testId": "inv-control-edit",
+      "testId": "inv-control-home-edit-L141",
       "smokeSafe": true,
       "writesData": false,
       "knownFailure": null,
@@ -1091,7 +1091,7 @@
       }
     },
     {
-      "id": "inv-knowledge-route-knowledge-page-route",
+      "id": "inv-knowledge-knowledge-route-knowledge-page-route-L1",
       "page": "/knowledge",
       "route": "/knowledge",
       "label": "Route /knowledge",
@@ -1101,7 +1101,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Control responds without unhandled error.",
-      "testId": "inv-knowledge-route-knowledge-page-route",
+      "testId": "inv-knowledge-knowledge-route-knowledge-page-route-L1",
       "smokeSafe": true,
       "writesData": false,
       "knownFailure": null,
@@ -1111,7 +1111,7 @@
       }
     },
     {
-      "id": "inv-login-route-login-page-route",
+      "id": "inv-login-login-route-login-page-route-L1",
       "page": "/login",
       "route": "/login",
       "label": "Route /login",
@@ -1121,7 +1121,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Control responds without unhandled error.",
-      "testId": "inv-login-route-login-page-route",
+      "testId": "inv-login-login-route-login-page-route-L1",
       "smokeSafe": true,
       "writesData": false,
       "knownFailure": null,
@@ -1131,7 +1131,7 @@
       }
     },
     {
-      "id": "inv-login-text-field",
+      "id": "inv-login-login-text-field-L34",
       "page": "/login",
       "route": "/login",
       "label": "Text field",
@@ -1141,7 +1141,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Value binds and persists on save.",
-      "testId": "inv-login-text-field",
+      "testId": "inv-login-login-text-field-L34",
       "smokeSafe": false,
       "writesData": true,
       "knownFailure": null,
@@ -1152,7 +1152,7 @@
       }
     },
     {
-      "id": "inv-not-found-route-not-found-page-route",
+      "id": "inv-not-found-notfound-route-not-found-page-route-L1",
       "page": "/not-found",
       "route": "/not-found",
       "label": "Route /not-found",
@@ -1162,7 +1162,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Control responds without unhandled error.",
-      "testId": "inv-not-found-route-not-found-page-route",
+      "testId": "inv-not-found-notfound-route-not-found-page-route-L1",
       "smokeSafe": true,
       "writesData": false,
       "knownFailure": null,
@@ -1172,7 +1172,7 @@
       }
     },
     {
-      "id": "inv-requirements-route-requirements-page-route",
+      "id": "inv-requirements-requirements-route-requirements-page-route-L1",
       "page": "/requirements",
       "route": "/requirements",
       "label": "Route /requirements",
@@ -1182,7 +1182,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Control responds without unhandled error.",
-      "testId": "inv-requirements-route-requirements-page-route",
+      "testId": "inv-requirements-requirements-route-requirements-page-route-L1",
       "smokeSafe": true,
       "writesData": false,
       "knownFailure": null,
@@ -1192,7 +1192,7 @@
       }
     },
     {
-      "id": "inv-requirements-add-requirement",
+      "id": "inv-requirements-requirements-add-requirement-L35",
       "page": "/requirements",
       "route": "/requirements",
       "label": "Add requirement",
@@ -1204,7 +1204,7 @@
       ],
       "permissions": [],
       "expectedResult": "Data saved and UI reflects change.",
-      "testId": "inv-requirements-add-requirement",
+      "testId": "inv-requirements-requirements-add-requirement-L35",
       "smokeSafe": false,
       "writesData": true,
       "knownFailure": null,
@@ -1215,7 +1215,7 @@
       }
     },
     {
-      "id": "inv-requirements-export-csv",
+      "id": "inv-requirements-requirements-export-csv-L38",
       "page": "/requirements",
       "route": "/requirements",
       "label": "Export CSV",
@@ -1228,7 +1228,7 @@
       ],
       "permissions": [],
       "expectedResult": "Download/print dialog or PDF bytes returned.",
-      "testId": "inv-requirements-export-csv",
+      "testId": "inv-requirements-requirements-export-csv-L38",
       "smokeSafe": true,
       "writesData": false,
       "knownFailure": null,
@@ -1239,7 +1239,7 @@
       }
     },
     {
-      "id": "inv-requirements-meeting-minutes",
+      "id": "inv-requirements-requirements-meeting-minutes-L45",
       "page": "/requirements",
       "route": "/requirements",
       "label": "Meeting minutes",
@@ -1249,7 +1249,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Control responds without unhandled error.",
-      "testId": "inv-requirements-meeting-minutes",
+      "testId": "inv-requirements-requirements-meeting-minutes-L45",
       "smokeSafe": true,
       "writesData": false,
       "knownFailure": null,
@@ -1260,7 +1260,7 @@
       }
     },
     {
-      "id": "inv-requirements-print-council-packet",
+      "id": "inv-requirements-requirements-print-council-packet-L46",
       "page": "/requirements",
       "route": "/requirements",
       "label": "Print council packet",
@@ -1273,7 +1273,7 @@
       ],
       "permissions": [],
       "expectedResult": "Download/print dialog or PDF bytes returned.",
-      "testId": "inv-requirements-print-council-packet",
+      "testId": "inv-requirements-requirements-print-council-packet-L46",
       "smokeSafe": true,
       "writesData": false,
       "knownFailure": null,
@@ -1284,7 +1284,7 @@
       }
     },
     {
-      "id": "inv-requirements-reset-wiley-view",
+      "id": "inv-requirements-requirements-reset-wiley-view-L79",
       "page": "/requirements",
       "route": "/requirements",
       "label": "Reset Wiley view",
@@ -1294,7 +1294,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Control responds without unhandled error.",
-      "testId": "inv-requirements-reset-wiley-view",
+      "testId": "inv-requirements-requirements-reset-wiley-view-L79",
       "smokeSafe": true,
       "writesData": false,
       "knownFailure": null,
@@ -1305,7 +1305,7 @@
       }
     },
     {
-      "id": "inv-requirements-edit",
+      "id": "inv-requirements-requirements-edit-L197",
       "page": "/requirements",
       "route": "/requirements",
       "label": "Edit",
@@ -1315,7 +1315,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Control responds without unhandled error.",
-      "testId": "inv-requirements-edit",
+      "testId": "inv-requirements-requirements-edit-L197",
       "smokeSafe": true,
       "writesData": false,
       "knownFailure": null,
@@ -1326,7 +1326,7 @@
       }
     },
     {
-      "id": "inv-requirements-delete",
+      "id": "inv-requirements-requirements-delete-L200",
       "page": "/requirements",
       "route": "/requirements",
       "label": "Delete",
@@ -1336,7 +1336,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Record removed or confirm dialog shown.",
-      "testId": "inv-requirements-delete",
+      "testId": "inv-requirements-requirements-delete-L200",
       "smokeSafe": false,
       "writesData": true,
       "knownFailure": null,
@@ -1347,7 +1347,7 @@
       }
     },
     {
-      "id": "inv-requirements-apply-as-primary",
+      "id": "inv-requirements-requirements-apply-as-primary-L268",
       "page": "/requirements",
       "route": "/requirements",
       "label": "Apply as primary",
@@ -1357,7 +1357,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Control responds without unhandled error.",
-      "testId": "inv-requirements-apply-as-primary",
+      "testId": "inv-requirements-requirements-apply-as-primary-L268",
       "smokeSafe": true,
       "writesData": false,
       "knownFailure": null,
@@ -1368,7 +1368,7 @@
       }
     },
     {
-      "id": "inv-requirements-unlink",
+      "id": "inv-requirements-requirements-unlink-L282",
       "page": "/requirements",
       "route": "/requirements",
       "label": "Unlink",
@@ -1378,7 +1378,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Control responds without unhandled error.",
-      "testId": "inv-requirements-unlink",
+      "testId": "inv-requirements-requirements-unlink-L282",
       "smokeSafe": true,
       "writesData": false,
       "knownFailure": null,
@@ -1389,7 +1389,7 @@
       }
     },
     {
-      "id": "inv-requirements-unlink-2",
+      "id": "inv-requirements-requirements-unlink-L318",
       "page": "/requirements",
       "route": "/requirements",
       "label": "Unlink",
@@ -1399,7 +1399,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Control responds without unhandled error.",
-      "testId": "inv-requirements-unlink-2",
+      "testId": "inv-requirements-requirements-unlink-L318",
       "smokeSafe": true,
       "writesData": false,
       "knownFailure": null,
@@ -1410,7 +1410,7 @@
       }
     },
     {
-      "id": "inv-requirements-attach",
+      "id": "inv-requirements-requirements-attach-L332",
       "page": "/requirements",
       "route": "/requirements",
       "label": "Attach",
@@ -1420,7 +1420,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Control responds without unhandled error.",
-      "testId": "inv-requirements-attach",
+      "testId": "inv-requirements-requirements-attach-L332",
       "smokeSafe": true,
       "writesData": false,
       "knownFailure": null,
@@ -1431,7 +1431,7 @@
       }
     },
     {
-      "id": "inv-requirements-save-step",
+      "id": "inv-requirements-requirements-save-step-L367",
       "page": "/requirements",
       "route": "/requirements",
       "label": "Save step",
@@ -1443,7 +1443,7 @@
       ],
       "permissions": [],
       "expectedResult": "Data saved and UI reflects change.",
-      "testId": "inv-requirements-save-step",
+      "testId": "inv-requirements-requirements-save-step-L367",
       "smokeSafe": false,
       "writesData": true,
       "knownFailure": null,
@@ -1454,7 +1454,7 @@
       }
     },
     {
-      "id": "inv-requirements-cancel",
+      "id": "inv-requirements-requirements-cancel-L370",
       "page": "/requirements",
       "route": "/requirements",
       "label": "Cancel",
@@ -1464,7 +1464,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Control responds without unhandled error.",
-      "testId": "inv-requirements-cancel",
+      "testId": "inv-requirements-requirements-cancel-L370",
       "smokeSafe": true,
       "writesData": false,
       "knownFailure": null,
@@ -1475,7 +1475,7 @@
       }
     },
     {
-      "id": "inv-requirements-edit-step",
+      "id": "inv-requirements-requirements-edit-step-L410",
       "page": "/requirements",
       "route": "/requirements",
       "label": "Edit step",
@@ -1485,7 +1485,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Control responds without unhandled error.",
-      "testId": "inv-requirements-edit-step",
+      "testId": "inv-requirements-requirements-edit-step-L410",
       "smokeSafe": true,
       "writesData": false,
       "knownFailure": null,
@@ -1496,7 +1496,7 @@
       }
     },
     {
-      "id": "inv-requirements-remove",
+      "id": "inv-requirements-requirements-remove-L413",
       "page": "/requirements",
       "route": "/requirements",
       "label": "Remove",
@@ -1506,7 +1506,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Record removed or confirm dialog shown.",
-      "testId": "inv-requirements-remove",
+      "testId": "inv-requirements-requirements-remove-L413",
       "smokeSafe": false,
       "writesData": true,
       "knownFailure": null,
@@ -1517,7 +1517,7 @@
       }
     },
     {
-      "id": "inv-requirements-add-step",
+      "id": "inv-requirements-requirements-add-step-L425",
       "page": "/requirements",
       "route": "/requirements",
       "label": "Add step",
@@ -1529,7 +1529,7 @@
       ],
       "permissions": [],
       "expectedResult": "Data saved and UI reflects change.",
-      "testId": "inv-requirements-add-step",
+      "testId": "inv-requirements-requirements-add-step-L425",
       "smokeSafe": false,
       "writesData": true,
       "knownFailure": null,
@@ -1540,7 +1540,7 @@
       }
     },
     {
-      "id": "inv-requirements-cancel-2",
+      "id": "inv-requirements-requirements-cancel-L436",
       "page": "/requirements",
       "route": "/requirements",
       "label": "Cancel",
@@ -1550,7 +1550,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Control responds without unhandled error.",
-      "testId": "inv-requirements-cancel-2",
+      "testId": "inv-requirements-requirements-cancel-L436",
       "smokeSafe": true,
       "writesData": false,
       "knownFailure": null,
@@ -1561,7 +1561,7 @@
       }
     },
     {
-      "id": "inv-requirements-save",
+      "id": "inv-requirements-requirements-save-L437",
       "page": "/requirements",
       "route": "/requirements",
       "label": "Save",
@@ -1573,7 +1573,7 @@
       ],
       "permissions": [],
       "expectedResult": "Data saved and UI reflects change.",
-      "testId": "inv-requirements-save",
+      "testId": "inv-requirements-requirements-save-L437",
       "smokeSafe": false,
       "writesData": true,
       "knownFailure": null,
@@ -1584,7 +1584,7 @@
       }
     },
     {
-      "id": "inv-requirements-load-from-actioned-agenda",
+      "id": "inv-requirements-requirements-load-from-actioned-agenda-L484",
       "page": "/requirements",
       "route": "/requirements",
       "label": "Load from actioned agenda",
@@ -1594,7 +1594,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Control responds without unhandled error.",
-      "testId": "inv-requirements-load-from-actioned-agenda",
+      "testId": "inv-requirements-requirements-load-from-actioned-agenda-L484",
       "smokeSafe": true,
       "writesData": false,
       "knownFailure": null,
@@ -1605,7 +1605,7 @@
       }
     },
     {
-      "id": "inv-requirements-cancel-3",
+      "id": "inv-requirements-requirements-cancel-L519",
       "page": "/requirements",
       "route": "/requirements",
       "label": "Cancel",
@@ -1615,7 +1615,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Control responds without unhandled error.",
-      "testId": "inv-requirements-cancel-3",
+      "testId": "inv-requirements-requirements-cancel-L519",
       "smokeSafe": true,
       "writesData": false,
       "knownFailure": null,
@@ -1626,7 +1626,7 @@
       }
     },
     {
-      "id": "inv-requirements-refresh-preview",
+      "id": "inv-requirements-requirements-refresh-preview-L546",
       "page": "/requirements",
       "route": "/requirements",
       "label": "Refresh preview",
@@ -1636,7 +1636,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Control responds without unhandled error.",
-      "testId": "inv-requirements-refresh-preview",
+      "testId": "inv-requirements-requirements-refresh-preview-L546",
       "smokeSafe": true,
       "writesData": false,
       "knownFailure": null,
@@ -1647,7 +1647,7 @@
       }
     },
     {
-      "id": "inv-requirements-suggest-unfinished-business",
+      "id": "inv-requirements-requirements-suggest-unfinished-business-L547",
       "page": "/requirements",
       "route": "/requirements",
       "label": "Suggest unfinished business",
@@ -1657,7 +1657,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Control responds without unhandled error.",
-      "testId": "inv-requirements-suggest-unfinished-business",
+      "testId": "inv-requirements-requirements-suggest-unfinished-business-L547",
       "smokeSafe": true,
       "writesData": false,
       "knownFailure": null,
@@ -1668,7 +1668,7 @@
       }
     },
     {
-      "id": "inv-requirements-cancel-4",
+      "id": "inv-requirements-requirements-cancel-L583",
       "page": "/requirements",
       "route": "/requirements",
       "label": "Cancel",
@@ -1678,7 +1678,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Control responds without unhandled error.",
-      "testId": "inv-requirements-cancel-4",
+      "testId": "inv-requirements-requirements-cancel-L583",
       "smokeSafe": true,
       "writesData": false,
       "knownFailure": null,
@@ -1689,7 +1689,7 @@
       }
     },
     {
-      "id": "inv-requirements-file-upload",
+      "id": "inv-requirements-requirements-file-upload-L48",
       "page": "/requirements",
       "route": "/requirements",
       "label": "File upload",
@@ -1702,7 +1702,7 @@
       ],
       "permissions": [],
       "expectedResult": "File appears in grid after upload.",
-      "testId": "inv-requirements-file-upload",
+      "testId": "inv-requirements-requirements-file-upload-L48",
       "smokeSafe": false,
       "writesData": true,
       "knownFailure": null,
@@ -1713,7 +1713,7 @@
       }
     },
     {
-      "id": "inv-requirements-text-field",
+      "id": "inv-requirements-requirements-text-field-L59",
       "page": "/requirements",
       "route": "/requirements",
       "label": "Text field",
@@ -1723,7 +1723,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Value binds and persists on save.",
-      "testId": "inv-requirements-text-field",
+      "testId": "inv-requirements-requirements-text-field-L59",
       "smokeSafe": false,
       "writesData": true,
       "knownFailure": null,
@@ -1734,7 +1734,7 @@
       }
     },
     {
-      "id": "inv-requirements-dropdown",
+      "id": "inv-requirements-requirements-dropdown-L63",
       "page": "/requirements",
       "route": "/requirements",
       "label": "Dropdown",
@@ -1744,7 +1744,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Value binds and persists on save.",
-      "testId": "inv-requirements-dropdown",
+      "testId": "inv-requirements-requirements-dropdown-L63",
       "smokeSafe": false,
       "writesData": true,
       "knownFailure": null,
@@ -1755,7 +1755,7 @@
       }
     },
     {
-      "id": "inv-requirements-dropdown-2",
+      "id": "inv-requirements-requirements-dropdown-L69",
       "page": "/requirements",
       "route": "/requirements",
       "label": "Dropdown",
@@ -1765,7 +1765,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Value binds and persists on save.",
-      "testId": "inv-requirements-dropdown-2",
+      "testId": "inv-requirements-requirements-dropdown-L69",
       "smokeSafe": false,
       "writesData": true,
       "knownFailure": null,
@@ -1776,7 +1776,7 @@
       }
     },
     {
-      "id": "inv-requirements-dropdown-3",
+      "id": "inv-requirements-requirements-dropdown-L244",
       "page": "/requirements",
       "route": "/requirements",
       "label": "Dropdown",
@@ -1786,7 +1786,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Value binds and persists on save.",
-      "testId": "inv-requirements-dropdown-3",
+      "testId": "inv-requirements-requirements-dropdown-L244",
       "smokeSafe": false,
       "writesData": true,
       "knownFailure": null,
@@ -1797,7 +1797,7 @@
       }
     },
     {
-      "id": "inv-requirements-dropdown-4",
+      "id": "inv-requirements-requirements-dropdown-L251",
       "page": "/requirements",
       "route": "/requirements",
       "label": "Dropdown",
@@ -1807,7 +1807,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Value binds and persists on save.",
-      "testId": "inv-requirements-dropdown-4",
+      "testId": "inv-requirements-requirements-dropdown-L251",
       "smokeSafe": false,
       "writesData": true,
       "knownFailure": null,
@@ -1818,7 +1818,7 @@
       }
     },
     {
-      "id": "inv-requirements-dropdown-5",
+      "id": "inv-requirements-requirements-dropdown-L260",
       "page": "/requirements",
       "route": "/requirements",
       "label": "Dropdown",
@@ -1828,7 +1828,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Value binds and persists on save.",
-      "testId": "inv-requirements-dropdown-5",
+      "testId": "inv-requirements-requirements-dropdown-L260",
       "smokeSafe": false,
       "writesData": true,
       "knownFailure": null,
@@ -1839,7 +1839,7 @@
       }
     },
     {
-      "id": "inv-requirements-checkbox",
+      "id": "inv-requirements-requirements-checkbox-L297",
       "page": "/requirements",
       "route": "/requirements",
       "label": "Checkbox",
@@ -1849,7 +1849,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Value binds and persists on save.",
-      "testId": "inv-requirements-checkbox",
+      "testId": "inv-requirements-requirements-checkbox-L297",
       "smokeSafe": false,
       "writesData": true,
       "knownFailure": null,
@@ -1860,7 +1860,7 @@
       }
     },
     {
-      "id": "inv-requirements-dropdown-6",
+      "id": "inv-requirements-requirements-dropdown-L325",
       "page": "/requirements",
       "route": "/requirements",
       "label": "Dropdown",
@@ -1870,7 +1870,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Value binds and persists on save.",
-      "testId": "inv-requirements-dropdown-6",
+      "testId": "inv-requirements-requirements-dropdown-L325",
       "smokeSafe": false,
       "writesData": true,
       "knownFailure": null,
@@ -1881,7 +1881,7 @@
       }
     },
     {
-      "id": "inv-requirements-text-field-2",
+      "id": "inv-requirements-requirements-text-field-L360",
       "page": "/requirements",
       "route": "/requirements",
       "label": "Text field",
@@ -1891,7 +1891,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Value binds and persists on save.",
-      "testId": "inv-requirements-text-field-2",
+      "testId": "inv-requirements-requirements-text-field-L360",
       "smokeSafe": false,
       "writesData": true,
       "knownFailure": null,
@@ -1902,7 +1902,7 @@
       }
     },
     {
-      "id": "inv-requirements-text-field-3",
+      "id": "inv-requirements-requirements-text-field-L361",
       "page": "/requirements",
       "route": "/requirements",
       "label": "Text field",
@@ -1912,7 +1912,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Value binds and persists on save.",
-      "testId": "inv-requirements-text-field-3",
+      "testId": "inv-requirements-requirements-text-field-L361",
       "smokeSafe": false,
       "writesData": true,
       "knownFailure": null,
@@ -1923,7 +1923,7 @@
       }
     },
     {
-      "id": "inv-requirements-text-field-4",
+      "id": "inv-requirements-requirements-text-field-L364",
       "page": "/requirements",
       "route": "/requirements",
       "label": "Text field",
@@ -1933,7 +1933,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Value binds and persists on save.",
-      "testId": "inv-requirements-text-field-4",
+      "testId": "inv-requirements-requirements-text-field-L364",
       "smokeSafe": false,
       "writesData": true,
       "knownFailure": null,
@@ -1944,7 +1944,7 @@
       }
     },
     {
-      "id": "inv-requirements-text-field-5",
+      "id": "inv-requirements-requirements-text-field-L423",
       "page": "/requirements",
       "route": "/requirements",
       "label": "Text field",
@@ -1954,7 +1954,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Value binds and persists on save.",
-      "testId": "inv-requirements-text-field-5",
+      "testId": "inv-requirements-requirements-text-field-L423",
       "smokeSafe": false,
       "writesData": true,
       "knownFailure": null,
@@ -1965,7 +1965,7 @@
       }
     },
     {
-      "id": "inv-requirements-dropdown-7",
+      "id": "inv-requirements-requirements-dropdown-L457",
       "page": "/requirements",
       "route": "/requirements",
       "label": "Dropdown",
@@ -1975,7 +1975,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Value binds and persists on save.",
-      "testId": "inv-requirements-dropdown-7",
+      "testId": "inv-requirements-requirements-dropdown-L457",
       "smokeSafe": false,
       "writesData": true,
       "knownFailure": null,
@@ -1986,7 +1986,7 @@
       }
     },
     {
-      "id": "inv-requirements-text-field-6",
+      "id": "inv-requirements-requirements-text-field-L488",
       "page": "/requirements",
       "route": "/requirements",
       "label": "Text field",
@@ -1996,7 +1996,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Value binds and persists on save.",
-      "testId": "inv-requirements-text-field-6",
+      "testId": "inv-requirements-requirements-text-field-L488",
       "smokeSafe": false,
       "writesData": true,
       "knownFailure": null,
@@ -2007,7 +2007,7 @@
       }
     },
     {
-      "id": "inv-requirements-text-field-7",
+      "id": "inv-requirements-requirements-text-field-L492",
       "page": "/requirements",
       "route": "/requirements",
       "label": "Text field",
@@ -2017,7 +2017,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Value binds and persists on save.",
-      "testId": "inv-requirements-text-field-7",
+      "testId": "inv-requirements-requirements-text-field-L492",
       "smokeSafe": false,
       "writesData": true,
       "knownFailure": null,
@@ -2028,7 +2028,7 @@
       }
     },
     {
-      "id": "inv-requirements-text-field-8",
+      "id": "inv-requirements-requirements-text-field-L496",
       "page": "/requirements",
       "route": "/requirements",
       "label": "Text field",
@@ -2038,7 +2038,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Value binds and persists on save.",
-      "testId": "inv-requirements-text-field-8",
+      "testId": "inv-requirements-requirements-text-field-L496",
       "smokeSafe": false,
       "writesData": true,
       "knownFailure": null,
@@ -2049,7 +2049,7 @@
       }
     },
     {
-      "id": "inv-requirements-text-field-9",
+      "id": "inv-requirements-requirements-text-field-L500",
       "page": "/requirements",
       "route": "/requirements",
       "label": "Text field",
@@ -2059,7 +2059,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Value binds and persists on save.",
-      "testId": "inv-requirements-text-field-9",
+      "testId": "inv-requirements-requirements-text-field-L500",
       "smokeSafe": false,
       "writesData": true,
       "knownFailure": null,
@@ -2070,7 +2070,7 @@
       }
     },
     {
-      "id": "inv-requirements-dropdown-8",
+      "id": "inv-requirements-requirements-dropdown-L538",
       "page": "/requirements",
       "route": "/requirements",
       "label": "Dropdown",
@@ -2080,7 +2080,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Value binds and persists on save.",
-      "testId": "inv-requirements-dropdown-8",
+      "testId": "inv-requirements-requirements-dropdown-L538",
       "smokeSafe": false,
       "writesData": true,
       "knownFailure": null,
@@ -2091,7 +2091,7 @@
       }
     },
     {
-      "id": "inv-settings-route-settings-page-route",
+      "id": "inv-settings-settings-route-settings-page-route-L1",
       "page": "/settings",
       "route": "/settings",
       "label": "Route /settings",
@@ -2101,7 +2101,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Control responds without unhandled error.",
-      "testId": "inv-settings-route-settings-page-route",
+      "testId": "inv-settings-settings-route-settings-page-route-L1",
       "smokeSafe": true,
       "writesData": false,
       "knownFailure": null,
@@ -2111,7 +2111,7 @@
       }
     },
     {
-      "id": "inv-settings-save-this-clerk",
+      "id": "inv-settings-settings-save-this-clerk-L58",
       "page": "/settings",
       "route": "/settings",
       "label": "Save this clerk",
@@ -2123,7 +2123,7 @@
       ],
       "permissions": [],
       "expectedResult": "Data saved and UI reflects change.",
-      "testId": "inv-settings-save-this-clerk",
+      "testId": "inv-settings-settings-save-this-clerk-L58",
       "smokeSafe": false,
       "writesData": true,
       "knownFailure": null,
@@ -2134,7 +2134,7 @@
       }
     },
     {
-      "id": "inv-settings-use-the-usual-clerk",
+      "id": "inv-settings-settings-use-the-usual-clerk-L61",
       "page": "/settings",
       "route": "/settings",
       "label": "Use the usual clerk",
@@ -2144,7 +2144,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Control responds without unhandled error.",
-      "testId": "inv-settings-use-the-usual-clerk",
+      "testId": "inv-settings-settings-use-the-usual-clerk-L61",
       "smokeSafe": true,
       "writesData": false,
       "knownFailure": null,
@@ -2155,7 +2155,7 @@
       }
     },
     {
-      "id": "inv-settings-show-me-around-tikr",
+      "id": "inv-settings-settings-show-me-around-tikr-L78",
       "page": "/settings",
       "route": "/settings",
       "label": "Show me around TIKR",
@@ -2165,7 +2165,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Control responds without unhandled error.",
-      "testId": "inv-settings-show-me-around-tikr",
+      "testId": "inv-settings-settings-show-me-around-tikr-L78",
       "smokeSafe": true,
       "writesData": false,
       "knownFailure": null,
@@ -2176,7 +2176,7 @@
       }
     },
     {
-      "id": "inv-settings-open-user-guide",
+      "id": "inv-settings-settings-open-user-guide-L81",
       "page": "/settings",
       "route": "/settings",
       "label": "Open user guide",
@@ -2186,7 +2186,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Control responds without unhandled error.",
-      "testId": "inv-settings-open-user-guide",
+      "testId": "inv-settings-settings-open-user-guide-L81",
       "smokeSafe": true,
       "writesData": false,
       "knownFailure": null,
@@ -2197,17 +2197,17 @@
       }
     },
     {
-      "id": "inv-settings-call-steve-for-help",
+      "id": "inv-settings-settings-call-steve-for-help-L96",
       "page": "/settings",
       "route": "/settings",
       "label": "Call Steve for help",
       "type": "button",
       "fileLine": "src/TIKR.Web/Components/Pages/Settings.razor:96",
-      "intendedBehavior": "Surface IT contact (tel/mailto) or copy support details.",
+      "intendedBehavior": "Contact support (intended: real Steve contact).",
       "dependencies": [],
       "permissions": [],
-      "expectedResult": "Contact action beyond toast-only acknowledgment.",
-      "testId": "inv-settings-call-steve-for-help",
+      "expectedResult": "Support contact surfaced (not toast-only).",
+      "testId": "inv-settings-settings-call-steve-for-help-L96",
       "smokeSafe": true,
       "writesData": false,
       "knownFailure": "RB-002",
@@ -2218,7 +2218,7 @@
       }
     },
     {
-      "id": "inv-settings-need-a-new-advanced-helper-key-call-steve-for-help",
+      "id": "inv-settings-settings-need-a-new-advanced-helper-key-call-steve-for-help-L124",
       "page": "/settings",
       "route": "/settings",
       "label": "Need a new advanced helper key? Call Steve for help",
@@ -2230,7 +2230,7 @@
       ],
       "permissions": [],
       "expectedResult": "Support contact surfaced (not toast-only).",
-      "testId": "inv-settings-need-a-new-advanced-helper-key-call-steve-for-help",
+      "testId": "inv-settings-settings-need-a-new-advanced-helper-key-call-steve-for-help-L124",
       "smokeSafe": true,
       "writesData": false,
       "knownFailure": "RB-002",
@@ -2241,7 +2241,7 @@
       }
     },
     {
-      "id": "inv-settings-need-a-new-license-call-steve-for-help",
+      "id": "inv-settings-settings-need-a-new-license-call-steve-for-help-L139",
       "page": "/settings",
       "route": "/settings",
       "label": "Need a new license? Call Steve for help",
@@ -2253,7 +2253,7 @@
       ],
       "permissions": [],
       "expectedResult": "Support contact surfaced (not toast-only).",
-      "testId": "inv-settings-need-a-new-license-call-steve-for-help",
+      "testId": "inv-settings-settings-need-a-new-license-call-steve-for-help-L139",
       "smokeSafe": true,
       "writesData": false,
       "knownFailure": "RB-002",
@@ -2264,7 +2264,7 @@
       }
     },
     {
-      "id": "inv-settings-helper-not-ready-call-steve-for-help",
+      "id": "inv-settings-settings-helper-not-ready-call-steve-for-help-L156",
       "page": "/settings",
       "route": "/settings",
       "label": "Helper not ready? Call Steve for help",
@@ -2276,7 +2276,7 @@
       ],
       "permissions": [],
       "expectedResult": "Support contact surfaced (not toast-only).",
-      "testId": "inv-settings-helper-not-ready-call-steve-for-help",
+      "testId": "inv-settings-settings-helper-not-ready-call-steve-for-help-L156",
       "smokeSafe": true,
       "writesData": false,
       "knownFailure": "RB-002",
@@ -2287,17 +2287,17 @@
       }
     },
     {
-      "id": "inv-settings-call-steve-for-help-2",
+      "id": "inv-settings-settings-call-steve-for-help-L177",
       "page": "/settings",
       "route": "/settings",
       "label": "Call Steve for help",
       "type": "button",
       "fileLine": "src/TIKR.Web/Components/Pages/Settings.razor:177",
-      "intendedBehavior": "Surface IT contact (tel/mailto) or copy support details.",
+      "intendedBehavior": "Contact support (intended: real Steve contact).",
       "dependencies": [],
       "permissions": [],
-      "expectedResult": "Contact action beyond toast-only acknowledgment.",
-      "testId": "inv-settings-call-steve-for-help-2",
+      "expectedResult": "Support contact surfaced (not toast-only).",
+      "testId": "inv-settings-settings-call-steve-for-help-L177",
       "smokeSafe": true,
       "writesData": false,
       "knownFailure": "RB-002",
@@ -2308,7 +2308,7 @@
       }
     },
     {
-      "id": "inv-settings-need-to-move-files-call-steve-for-help",
+      "id": "inv-settings-settings-need-to-move-files-call-steve-for-help-L192",
       "page": "/settings",
       "route": "/settings",
       "label": "Need to move files? Call Steve for help",
@@ -2318,7 +2318,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Support contact surfaced (not toast-only).",
-      "testId": "inv-settings-need-to-move-files-call-steve-for-help",
+      "testId": "inv-settings-settings-need-to-move-files-call-steve-for-help-L192",
       "smokeSafe": true,
       "writesData": false,
       "knownFailure": "RB-002",
@@ -2329,17 +2329,17 @@
       }
     },
     {
-      "id": "inv-settings-call-steve-for-help-3",
+      "id": "inv-settings-settings-call-steve-for-help-L205",
       "page": "/settings",
       "route": "/settings",
       "label": "Call Steve for help",
       "type": "button",
       "fileLine": "src/TIKR.Web/Components/Pages/Settings.razor:205",
-      "intendedBehavior": "Surface IT contact (tel/mailto) or copy support details.",
+      "intendedBehavior": "Contact support (intended: real Steve contact).",
       "dependencies": [],
       "permissions": [],
-      "expectedResult": "Contact action beyond toast-only acknowledgment.",
-      "testId": "inv-settings-call-steve-for-help-3",
+      "expectedResult": "Support contact surfaced (not toast-only).",
+      "testId": "inv-settings-settings-call-steve-for-help-L205",
       "smokeSafe": true,
       "writesData": false,
       "knownFailure": "RB-002",
@@ -2350,17 +2350,17 @@
       }
     },
     {
-      "id": "inv-settings-call-steve-for-help-4",
+      "id": "inv-settings-settings-call-steve-for-help-L228",
       "page": "/settings",
       "route": "/settings",
       "label": "Call Steve for help",
       "type": "button",
       "fileLine": "src/TIKR.Web/Components/Pages/Settings.razor:228",
-      "intendedBehavior": "Surface IT contact (tel/mailto) or copy support details.",
+      "intendedBehavior": "Contact support (intended: real Steve contact).",
       "dependencies": [],
       "permissions": [],
-      "expectedResult": "Contact action beyond toast-only acknowledgment.",
-      "testId": "inv-settings-call-steve-for-help-4",
+      "expectedResult": "Support contact surfaced (not toast-only).",
+      "testId": "inv-settings-settings-call-steve-for-help-L228",
       "smokeSafe": true,
       "writesData": false,
       "knownFailure": "RB-002",
@@ -2371,7 +2371,7 @@
       }
     },
     {
-      "id": "inv-settings-not-sure-which-folder-call-steve-for-help",
+      "id": "inv-settings-settings-not-sure-which-folder-call-steve-for-help-L252",
       "page": "/settings",
       "route": "/settings",
       "label": "Not sure which folder? Call Steve for help",
@@ -2381,7 +2381,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Support contact surfaced (not toast-only).",
-      "testId": "inv-settings-not-sure-which-folder-call-steve-for-help",
+      "testId": "inv-settings-settings-not-sure-which-folder-call-steve-for-help-L252",
       "smokeSafe": true,
       "writesData": false,
       "knownFailure": "RB-002",
@@ -2392,17 +2392,17 @@
       }
     },
     {
-      "id": "inv-settings-call-steve-for-help-5",
+      "id": "inv-settings-settings-call-steve-for-help-L267",
       "page": "/settings",
       "route": "/settings",
       "label": "Call Steve for help",
       "type": "button",
       "fileLine": "src/TIKR.Web/Components/Pages/Settings.razor:267",
-      "intendedBehavior": "Surface IT contact (tel/mailto) or copy support details.",
+      "intendedBehavior": "Contact support (intended: real Steve contact).",
       "dependencies": [],
       "permissions": [],
-      "expectedResult": "Contact action beyond toast-only acknowledgment.",
-      "testId": "inv-settings-call-steve-for-help-5",
+      "expectedResult": "Support contact surfaced (not toast-only).",
+      "testId": "inv-settings-settings-call-steve-for-help-L267",
       "smokeSafe": true,
       "writesData": false,
       "knownFailure": "RB-002",
@@ -2413,7 +2413,7 @@
       }
     },
     {
-      "id": "inv-settings-save-settings",
+      "id": "inv-settings-settings-save-settings-L296",
       "page": "/settings",
       "route": "/settings",
       "label": "Save settings",
@@ -2425,7 +2425,7 @@
       ],
       "permissions": [],
       "expectedResult": "Data saved and UI reflects change.",
-      "testId": "inv-settings-save-settings",
+      "testId": "inv-settings-settings-save-settings-L296",
       "smokeSafe": false,
       "writesData": true,
       "knownFailure": null,
@@ -2436,7 +2436,7 @@
       }
     },
     {
-      "id": "inv-settings-check-status",
+      "id": "inv-settings-settings-check-status-L297",
       "page": "/settings",
       "route": "/settings",
       "label": "Check status",
@@ -2446,7 +2446,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Control responds without unhandled error.",
-      "testId": "inv-settings-check-status",
+      "testId": "inv-settings-settings-check-status-L297",
       "smokeSafe": true,
       "writesData": false,
       "knownFailure": null,
@@ -2457,7 +2457,7 @@
       }
     },
     {
-      "id": "inv-settings-open-tools-tour",
+      "id": "inv-settings-settings-open-tools-tour-L310",
       "page": "/settings",
       "route": "/settings",
       "label": "Open tools tour",
@@ -2467,7 +2467,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "URL changes or target page loads.",
-      "testId": "inv-settings-open-tools-tour",
+      "testId": "inv-settings-settings-open-tools-tour-L310",
       "smokeSafe": true,
       "writesData": false,
       "knownFailure": null,
@@ -2478,7 +2478,7 @@
       }
     },
     {
-      "id": "inv-settings-replay-sidebar-menu-tour",
+      "id": "inv-settings-settings-replay-sidebar-menu-tour-L311",
       "page": "/settings",
       "route": "/settings",
       "label": "Replay sidebar menu tour",
@@ -2488,7 +2488,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Control responds without unhandled error.",
-      "testId": "inv-settings-replay-sidebar-menu-tour",
+      "testId": "inv-settings-settings-replay-sidebar-menu-tour-L311",
       "smokeSafe": true,
       "writesData": false,
       "knownFailure": null,
@@ -2499,17 +2499,17 @@
       }
     },
     {
-      "id": "inv-settings-call-steve-for-help-6",
+      "id": "inv-settings-settings-call-steve-for-help-L319",
       "page": "/settings",
       "route": "/settings",
       "label": "Call Steve for help",
       "type": "button",
       "fileLine": "src/TIKR.Web/Components/Pages/Settings.razor:319",
-      "intendedBehavior": "Surface IT contact (tel/mailto) or copy support details.",
+      "intendedBehavior": "Contact support (intended: real Steve contact).",
       "dependencies": [],
       "permissions": [],
-      "expectedResult": "Contact action beyond toast-only acknowledgment.",
-      "testId": "inv-settings-call-steve-for-help-6",
+      "expectedResult": "Support contact surfaced (not toast-only).",
+      "testId": "inv-settings-settings-call-steve-for-help-L319",
       "smokeSafe": true,
       "writesData": false,
       "knownFailure": "RB-002",
@@ -2520,17 +2520,17 @@
       }
     },
     {
-      "id": "inv-settings-call-steve-for-help-7",
+      "id": "inv-settings-settings-call-steve-for-help-L330",
       "page": "/settings",
       "route": "/settings",
       "label": "Call Steve for help",
       "type": "button",
       "fileLine": "src/TIKR.Web/Components/Pages/Settings.razor:330",
-      "intendedBehavior": "Surface IT contact (tel/mailto) or copy support details.",
+      "intendedBehavior": "Contact support (intended: real Steve contact).",
       "dependencies": [],
       "permissions": [],
-      "expectedResult": "Contact action beyond toast-only acknowledgment.",
-      "testId": "inv-settings-call-steve-for-help-7",
+      "expectedResult": "Support contact surfaced (not toast-only).",
+      "testId": "inv-settings-settings-call-steve-for-help-L330",
       "smokeSafe": true,
       "writesData": false,
       "knownFailure": "RB-002",
@@ -2541,17 +2541,17 @@
       }
     },
     {
-      "id": "inv-settings-call-steve-for-help-8",
+      "id": "inv-settings-settings-call-steve-for-help-L349",
       "page": "/settings",
       "route": "/settings",
       "label": "Call Steve for help",
       "type": "button",
       "fileLine": "src/TIKR.Web/Components/Pages/Settings.razor:349",
-      "intendedBehavior": "Surface IT contact (tel/mailto) or copy support details.",
+      "intendedBehavior": "Contact support (intended: real Steve contact).",
       "dependencies": [],
       "permissions": [],
-      "expectedResult": "Contact action beyond toast-only acknowledgment.",
-      "testId": "inv-settings-call-steve-for-help-8",
+      "expectedResult": "Support contact surfaced (not toast-only).",
+      "testId": "inv-settings-settings-call-steve-for-help-L349",
       "smokeSafe": true,
       "writesData": false,
       "knownFailure": "RB-002",
@@ -2562,7 +2562,7 @@
       }
     },
     {
-      "id": "inv-settings-dropdown",
+      "id": "inv-settings-settings-dropdown-L49",
       "page": "/settings",
       "route": "/settings",
       "label": "Dropdown",
@@ -2572,7 +2572,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Value binds and persists on save.",
-      "testId": "inv-settings-dropdown",
+      "testId": "inv-settings-settings-dropdown-L49",
       "smokeSafe": false,
       "writesData": true,
       "knownFailure": null,
@@ -2583,7 +2583,7 @@
       }
     },
     {
-      "id": "inv-settings-checkbox",
+      "id": "inv-settings-settings-checkbox-L85",
       "page": "/settings",
       "route": "/settings",
       "label": "Checkbox",
@@ -2593,7 +2593,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Value binds and persists on save.",
-      "testId": "inv-settings-checkbox",
+      "testId": "inv-settings-settings-checkbox-L85",
       "smokeSafe": false,
       "writesData": true,
       "knownFailure": null,
@@ -2604,7 +2604,7 @@
       }
     },
     {
-      "id": "inv-settings-text-field",
+      "id": "inv-settings-settings-text-field-L117",
       "page": "/settings",
       "route": "/settings",
       "label": "Text field",
@@ -2614,7 +2614,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Value binds and persists on save.",
-      "testId": "inv-settings-text-field",
+      "testId": "inv-settings-settings-text-field-L117",
       "smokeSafe": false,
       "writesData": true,
       "knownFailure": null,
@@ -2625,7 +2625,7 @@
       }
     },
     {
-      "id": "inv-settings-checkbox-2",
+      "id": "inv-settings-settings-checkbox-L121",
       "page": "/settings",
       "route": "/settings",
       "label": "Checkbox",
@@ -2635,7 +2635,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Value binds and persists on save.",
-      "testId": "inv-settings-checkbox-2",
+      "testId": "inv-settings-settings-checkbox-L121",
       "smokeSafe": false,
       "writesData": true,
       "knownFailure": null,
@@ -2646,7 +2646,7 @@
       }
     },
     {
-      "id": "inv-settings-text-field-2",
+      "id": "inv-settings-settings-text-field-L135",
       "page": "/settings",
       "route": "/settings",
       "label": "Text field",
@@ -2656,7 +2656,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Value binds and persists on save.",
-      "testId": "inv-settings-text-field-2",
+      "testId": "inv-settings-settings-text-field-L135",
       "smokeSafe": false,
       "writesData": true,
       "knownFailure": null,
@@ -2667,7 +2667,7 @@
       }
     },
     {
-      "id": "inv-settings-text-field-3",
+      "id": "inv-settings-settings-text-field-L167",
       "page": "/settings",
       "route": "/settings",
       "label": "Text field",
@@ -2677,7 +2677,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Value binds and persists on save.",
-      "testId": "inv-settings-text-field-3",
+      "testId": "inv-settings-settings-text-field-L167",
       "smokeSafe": false,
       "writesData": true,
       "knownFailure": null,
@@ -2688,7 +2688,7 @@
       }
     },
     {
-      "id": "inv-settings-text-field-4",
+      "id": "inv-settings-settings-text-field-L171",
       "page": "/settings",
       "route": "/settings",
       "label": "Text field",
@@ -2698,7 +2698,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Value binds and persists on save.",
-      "testId": "inv-settings-text-field-4",
+      "testId": "inv-settings-settings-text-field-L171",
       "smokeSafe": false,
       "writesData": true,
       "knownFailure": null,
@@ -2709,7 +2709,7 @@
       }
     },
     {
-      "id": "inv-settings-text-field-5",
+      "id": "inv-settings-settings-text-field-L175",
       "page": "/settings",
       "route": "/settings",
       "label": "Text field",
@@ -2719,7 +2719,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Value binds and persists on save.",
-      "testId": "inv-settings-text-field-5",
+      "testId": "inv-settings-settings-text-field-L175",
       "smokeSafe": false,
       "writesData": true,
       "knownFailure": null,
@@ -2730,7 +2730,7 @@
       }
     },
     {
-      "id": "inv-settings-text-field-6",
+      "id": "inv-settings-settings-text-field-L201",
       "page": "/settings",
       "route": "/settings",
       "label": "Text field",
@@ -2740,7 +2740,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Value binds and persists on save.",
-      "testId": "inv-settings-text-field-6",
+      "testId": "inv-settings-settings-text-field-L201",
       "smokeSafe": false,
       "writesData": true,
       "knownFailure": null,
@@ -2751,7 +2751,7 @@
       }
     },
     {
-      "id": "inv-settings-checkbox-3",
+      "id": "inv-settings-settings-checkbox-L203",
       "page": "/settings",
       "route": "/settings",
       "label": "Checkbox",
@@ -2761,7 +2761,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Value binds and persists on save.",
-      "testId": "inv-settings-checkbox-3",
+      "testId": "inv-settings-settings-checkbox-L203",
       "smokeSafe": false,
       "writesData": true,
       "knownFailure": null,
@@ -2772,7 +2772,7 @@
       }
     },
     {
-      "id": "inv-settings-text-field-7",
+      "id": "inv-settings-settings-text-field-L216",
       "page": "/settings",
       "route": "/settings",
       "label": "Text field",
@@ -2782,7 +2782,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Value binds and persists on save.",
-      "testId": "inv-settings-text-field-7",
+      "testId": "inv-settings-settings-text-field-L216",
       "smokeSafe": false,
       "writesData": true,
       "knownFailure": null,
@@ -2793,7 +2793,7 @@
       }
     },
     {
-      "id": "inv-settings-text-field-8",
+      "id": "inv-settings-settings-text-field-L222",
       "page": "/settings",
       "route": "/settings",
       "label": "Text field",
@@ -2803,7 +2803,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Value binds and persists on save.",
-      "testId": "inv-settings-text-field-8",
+      "testId": "inv-settings-settings-text-field-L222",
       "smokeSafe": false,
       "writesData": true,
       "knownFailure": null,
@@ -2814,7 +2814,7 @@
       }
     },
     {
-      "id": "inv-settings-text-field-9",
+      "id": "inv-settings-settings-text-field-L227",
       "page": "/settings",
       "route": "/settings",
       "label": "Text field",
@@ -2824,7 +2824,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Value binds and persists on save.",
-      "testId": "inv-settings-text-field-9",
+      "testId": "inv-settings-settings-text-field-L227",
       "smokeSafe": false,
       "writesData": true,
       "knownFailure": null,
@@ -2835,7 +2835,7 @@
       }
     },
     {
-      "id": "inv-settings-text-field-10",
+      "id": "inv-settings-settings-text-field-L242",
       "page": "/settings",
       "route": "/settings",
       "label": "Text field",
@@ -2845,7 +2845,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Value binds and persists on save.",
-      "testId": "inv-settings-text-field-10",
+      "testId": "inv-settings-settings-text-field-L242",
       "smokeSafe": false,
       "writesData": true,
       "knownFailure": null,
@@ -2856,7 +2856,7 @@
       }
     },
     {
-      "id": "inv-settings-text-field-11",
+      "id": "inv-settings-settings-text-field-L249",
       "page": "/settings",
       "route": "/settings",
       "label": "Text field",
@@ -2866,7 +2866,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Value binds and persists on save.",
-      "testId": "inv-settings-text-field-11",
+      "testId": "inv-settings-settings-text-field-L249",
       "smokeSafe": false,
       "writesData": true,
       "knownFailure": null,
@@ -2877,7 +2877,7 @@
       }
     },
     {
-      "id": "inv-settings-checkbox-4",
+      "id": "inv-settings-settings-checkbox-L276",
       "page": "/settings",
       "route": "/settings",
       "label": "Checkbox",
@@ -2887,7 +2887,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Value binds and persists on save.",
-      "testId": "inv-settings-checkbox-4",
+      "testId": "inv-settings-settings-checkbox-L276",
       "smokeSafe": false,
       "writesData": true,
       "knownFailure": null,
@@ -2898,7 +2898,7 @@
       }
     },
     {
-      "id": "inv-settings-checkbox-5",
+      "id": "inv-settings-settings-checkbox-L280",
       "page": "/settings",
       "route": "/settings",
       "label": "Checkbox",
@@ -2908,7 +2908,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Value binds and persists on save.",
-      "testId": "inv-settings-checkbox-5",
+      "testId": "inv-settings-settings-checkbox-L280",
       "smokeSafe": false,
       "writesData": true,
       "knownFailure": null,
@@ -2919,7 +2919,7 @@
       }
     },
     {
-      "id": "inv-settings-checkbox-6",
+      "id": "inv-settings-settings-checkbox-L284",
       "page": "/settings",
       "route": "/settings",
       "label": "Checkbox",
@@ -2929,7 +2929,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Value binds and persists on save.",
-      "testId": "inv-settings-checkbox-6",
+      "testId": "inv-settings-settings-checkbox-L284",
       "smokeSafe": false,
       "writesData": true,
       "knownFailure": null,
@@ -2940,7 +2940,7 @@
       }
     },
     {
-      "id": "inv-settings-users-route-settings-users-page-route",
+      "id": "inv-settings-users-users-route-settings-users-page-route-L1",
       "page": "/settings/users",
       "route": "/settings/users",
       "label": "Route /settings/users",
@@ -2950,7 +2950,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Control responds without unhandled error.",
-      "testId": "inv-settings-users-route-settings-users-page-route",
+      "testId": "inv-settings-users-users-route-settings-users-page-route-L1",
       "smokeSafe": true,
       "writesData": false,
       "knownFailure": null,
@@ -2960,7 +2960,7 @@
       }
     },
     {
-      "id": "inv-settings-users-add-user",
+      "id": "inv-settings-users-users-add-user-L19",
       "page": "/settings/users",
       "route": "/settings/users",
       "label": "Add user",
@@ -2972,7 +2972,7 @@
       ],
       "permissions": [],
       "expectedResult": "Data saved and UI reflects change.",
-      "testId": "inv-settings-users-add-user",
+      "testId": "inv-settings-users-users-add-user-L19",
       "smokeSafe": false,
       "writesData": true,
       "knownFailure": null,
@@ -2983,7 +2983,7 @@
       }
     },
     {
-      "id": "inv-settings-users-cancel",
+      "id": "inv-settings-users-users-cancel-L76",
       "page": "/settings/users",
       "route": "/settings/users",
       "label": "Cancel",
@@ -2993,7 +2993,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Control responds without unhandled error.",
-      "testId": "inv-settings-users-cancel",
+      "testId": "inv-settings-users-users-cancel-L76",
       "smokeSafe": true,
       "writesData": false,
       "knownFailure": null,
@@ -3004,7 +3004,7 @@
       }
     },
     {
-      "id": "inv-settings-users-create",
+      "id": "inv-settings-users-users-create-L77",
       "page": "/settings/users",
       "route": "/settings/users",
       "label": "Create",
@@ -3016,7 +3016,7 @@
       ],
       "permissions": [],
       "expectedResult": "Data saved and UI reflects change.",
-      "testId": "inv-settings-users-create",
+      "testId": "inv-settings-users-users-create-L77",
       "smokeSafe": false,
       "writesData": true,
       "knownFailure": null,
@@ -3027,7 +3027,7 @@
       }
     },
     {
-      "id": "inv-settings-users-text-field",
+      "id": "inv-settings-users-users-text-field-L65",
       "page": "/settings/users",
       "route": "/settings/users",
       "label": "Text field",
@@ -3037,7 +3037,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Value binds and persists on save.",
-      "testId": "inv-settings-users-text-field",
+      "testId": "inv-settings-users-users-text-field-L65",
       "smokeSafe": false,
       "writesData": true,
       "knownFailure": null,
@@ -3048,7 +3048,7 @@
       }
     },
     {
-      "id": "inv-settings-users-dropdown",
+      "id": "inv-settings-users-users-dropdown-L70",
       "page": "/settings/users",
       "route": "/settings/users",
       "label": "Dropdown",
@@ -3058,7 +3058,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Value binds and persists on save.",
-      "testId": "inv-settings-users-dropdown",
+      "testId": "inv-settings-users-users-dropdown-L70",
       "smokeSafe": false,
       "writesData": true,
       "knownFailure": null,
@@ -3069,7 +3069,7 @@
       }
     },
     {
-      "id": "inv-vault-route-vault-page-route",
+      "id": "inv-vault-vault-route-vault-page-route-L1",
       "page": "/vault",
       "route": "/vault",
       "label": "Route /vault",
@@ -3079,7 +3079,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Control responds without unhandled error.",
-      "testId": "inv-vault-route-vault-page-route",
+      "testId": "inv-vault-vault-route-vault-page-route-L1",
       "smokeSafe": true,
       "writesData": false,
       "knownFailure": null,
@@ -3089,7 +3089,7 @@
       }
     },
     {
-      "id": "inv-vault-copy-everything-for-new-clerk",
+      "id": "inv-vault-vault-copy-everything-for-new-clerk-L37",
       "page": "/vault",
       "route": "/vault",
       "label": "Copy Everything for New Clerk",
@@ -3099,7 +3099,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Control responds without unhandled error.",
-      "testId": "inv-vault-copy-everything-for-new-clerk",
+      "testId": "inv-vault-vault-copy-everything-for-new-clerk-L37",
       "smokeSafe": true,
       "writesData": false,
       "knownFailure": null,
@@ -3110,7 +3110,7 @@
       }
     },
     {
-      "id": "inv-vault-generate-complete-handover-package",
+      "id": "inv-vault-vault-generate-complete-handover-package-L43",
       "page": "/vault",
       "route": "/vault",
       "label": "Generate Complete Handover Package",
@@ -3120,7 +3120,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Control responds without unhandled error.",
-      "testId": "inv-vault-generate-complete-handover-package",
+      "testId": "inv-vault-vault-generate-complete-handover-package-L43",
       "smokeSafe": true,
       "writesData": false,
       "knownFailure": null,
@@ -3131,7 +3131,7 @@
       }
     },
     {
-      "id": "inv-vault-delete-selected",
+      "id": "inv-vault-vault-delete-selected-L54",
       "page": "/vault",
       "route": "/vault",
       "label": "Delete selected",
@@ -3141,7 +3141,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Record removed or confirm dialog shown.",
-      "testId": "inv-vault-delete-selected",
+      "testId": "inv-vault-vault-delete-selected-L54",
       "smokeSafe": false,
       "writesData": true,
       "knownFailure": null,
@@ -3152,7 +3152,7 @@
       }
     },
     {
-      "id": "inv-vault-clear-selection",
+      "id": "inv-vault-vault-clear-selection-L55",
       "page": "/vault",
       "route": "/vault",
       "label": "Clear selection",
@@ -3162,7 +3162,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Control responds without unhandled error.",
-      "testId": "inv-vault-clear-selection",
+      "testId": "inv-vault-vault-clear-selection-L55",
       "smokeSafe": true,
       "writesData": false,
       "knownFailure": null,
@@ -3173,7 +3173,7 @@
       }
     },
     {
-      "id": "inv-vault-edit",
+      "id": "inv-vault-vault-edit-L102",
       "page": "/vault",
       "route": "/vault",
       "label": "Edit",
@@ -3183,7 +3183,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Control responds without unhandled error.",
-      "testId": "inv-vault-edit",
+      "testId": "inv-vault-vault-edit-L102",
       "smokeSafe": true,
       "writesData": false,
       "knownFailure": null,
@@ -3194,7 +3194,7 @@
       }
     },
     {
-      "id": "inv-vault-delete",
+      "id": "inv-vault-vault-delete-L103",
       "page": "/vault",
       "route": "/vault",
       "label": "Delete",
@@ -3204,7 +3204,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Record removed or confirm dialog shown.",
-      "testId": "inv-vault-delete",
+      "testId": "inv-vault-vault-delete-L103",
       "smokeSafe": false,
       "writesData": true,
       "knownFailure": null,
@@ -3215,7 +3215,7 @@
       }
     },
     {
-      "id": "inv-vault-add-contact",
+      "id": "inv-vault-vault-add-contact-L139",
       "page": "/vault",
       "route": "/vault",
       "label": "Add contact",
@@ -3227,7 +3227,7 @@
       ],
       "permissions": [],
       "expectedResult": "Data saved and UI reflects change.",
-      "testId": "inv-vault-add-contact",
+      "testId": "inv-vault-vault-add-contact-L139",
       "smokeSafe": false,
       "writesData": true,
       "knownFailure": null,
@@ -3238,7 +3238,7 @@
       }
     },
     {
-      "id": "inv-vault-restore",
+      "id": "inv-vault-vault-restore-L164",
       "page": "/vault",
       "route": "/vault",
       "label": "Restore",
@@ -3248,7 +3248,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Control responds without unhandled error.",
-      "testId": "inv-vault-restore",
+      "testId": "inv-vault-vault-restore-L164",
       "smokeSafe": false,
       "writesData": false,
       "knownFailure": null,
@@ -3259,7 +3259,7 @@
       }
     },
     {
-      "id": "inv-vault-edit-2",
+      "id": "inv-vault-vault-edit-L168",
       "page": "/vault",
       "route": "/vault",
       "label": "Edit",
@@ -3269,7 +3269,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Control responds without unhandled error.",
-      "testId": "inv-vault-edit-2",
+      "testId": "inv-vault-vault-edit-L168",
       "smokeSafe": true,
       "writesData": false,
       "knownFailure": null,
@@ -3280,7 +3280,7 @@
       }
     },
     {
-      "id": "inv-vault-delete-2",
+      "id": "inv-vault-vault-delete-L169",
       "page": "/vault",
       "route": "/vault",
       "label": "Delete",
@@ -3290,7 +3290,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Record removed or confirm dialog shown.",
-      "testId": "inv-vault-delete-2",
+      "testId": "inv-vault-vault-delete-L169",
       "smokeSafe": false,
       "writesData": true,
       "knownFailure": null,
@@ -3301,7 +3301,7 @@
       }
     },
     {
-      "id": "inv-vault-edit-3",
+      "id": "inv-vault-vault-edit-L226",
       "page": "/vault",
       "route": "/vault",
       "label": "Edit",
@@ -3311,7 +3311,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Control responds without unhandled error.",
-      "testId": "inv-vault-edit-3",
+      "testId": "inv-vault-vault-edit-L226",
       "smokeSafe": true,
       "writesData": false,
       "knownFailure": null,
@@ -3322,7 +3322,7 @@
       }
     },
     {
-      "id": "inv-vault-delete-3",
+      "id": "inv-vault-vault-delete-L227",
       "page": "/vault",
       "route": "/vault",
       "label": "Delete",
@@ -3332,7 +3332,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Record removed or confirm dialog shown.",
-      "testId": "inv-vault-delete-3",
+      "testId": "inv-vault-vault-delete-L227",
       "smokeSafe": false,
       "writesData": true,
       "knownFailure": null,
@@ -3343,7 +3343,7 @@
       }
     },
     {
-      "id": "inv-vault-save-as-voice-note",
+      "id": "inv-vault-vault-save-as-voice-note-L273",
       "page": "/vault",
       "route": "/vault",
       "label": "Save as Voice Note",
@@ -3355,7 +3355,7 @@
       ],
       "permissions": [],
       "expectedResult": "Data saved and UI reflects change.",
-      "testId": "inv-vault-save-as-voice-note",
+      "testId": "inv-vault-vault-save-as-voice-note-L273",
       "smokeSafe": false,
       "writesData": true,
       "knownFailure": null,
@@ -3366,7 +3366,7 @@
       }
     },
     {
-      "id": "inv-vault-del",
+      "id": "inv-vault-vault-del-L295",
       "page": "/vault",
       "route": "/vault",
       "label": "Del",
@@ -3376,7 +3376,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Record removed or confirm dialog shown.",
-      "testId": "inv-vault-del",
+      "testId": "inv-vault-vault-del-L295",
       "smokeSafe": false,
       "writesData": true,
       "knownFailure": null,
@@ -3387,7 +3387,7 @@
       }
     },
     {
-      "id": "inv-vault-insert-ai-draft-into-editor",
+      "id": "inv-vault-vault-insert-ai-draft-into-editor-L323",
       "page": "/vault",
       "route": "/vault",
       "label": "Insert AI draft into editor",
@@ -3397,7 +3397,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Control responds without unhandled error.",
-      "testId": "inv-vault-insert-ai-draft-into-editor",
+      "testId": "inv-vault-vault-insert-ai-draft-into-editor-L323",
       "smokeSafe": true,
       "writesData": false,
       "knownFailure": null,
@@ -3408,7 +3408,7 @@
       }
     },
     {
-      "id": "inv-vault-save-changes",
+      "id": "inv-vault-vault-save-changes-L327",
       "page": "/vault",
       "route": "/vault",
       "label": "Save Changes",
@@ -3420,7 +3420,7 @@
       ],
       "permissions": [],
       "expectedResult": "Data saved and UI reflects change.",
-      "testId": "inv-vault-save-changes",
+      "testId": "inv-vault-vault-save-changes-L327",
       "smokeSafe": false,
       "writesData": true,
       "knownFailure": null,
@@ -3431,7 +3431,7 @@
       }
     },
     {
-      "id": "inv-vault-cancel",
+      "id": "inv-vault-vault-cancel-L328",
       "page": "/vault",
       "route": "/vault",
       "label": "Cancel",
@@ -3441,7 +3441,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Control responds without unhandled error.",
-      "testId": "inv-vault-cancel",
+      "testId": "inv-vault-vault-cancel-L328",
       "smokeSafe": true,
       "writesData": false,
       "knownFailure": null,
@@ -3452,7 +3452,7 @@
       }
     },
     {
-      "id": "inv-vault-cancel-2",
+      "id": "inv-vault-vault-cancel-L389",
       "page": "/vault",
       "route": "/vault",
       "label": "Cancel",
@@ -3462,7 +3462,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Control responds without unhandled error.",
-      "testId": "inv-vault-cancel-2",
+      "testId": "inv-vault-vault-cancel-L389",
       "smokeSafe": true,
       "writesData": false,
       "knownFailure": null,
@@ -3473,7 +3473,7 @@
       }
     },
     {
-      "id": "inv-vault-save",
+      "id": "inv-vault-vault-save-L390",
       "page": "/vault",
       "route": "/vault",
       "label": "Save",
@@ -3485,7 +3485,7 @@
       ],
       "permissions": [],
       "expectedResult": "Data saved and UI reflects change.",
-      "testId": "inv-vault-save",
+      "testId": "inv-vault-vault-save-L390",
       "smokeSafe": false,
       "writesData": true,
       "knownFailure": null,
@@ -3496,7 +3496,7 @@
       }
     },
     {
-      "id": "inv-vault-text-field",
+      "id": "inv-vault-vault-text-field-L272",
       "page": "/vault",
       "route": "/vault",
       "label": "Text field",
@@ -3506,7 +3506,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Value binds and persists on save.",
-      "testId": "inv-vault-text-field",
+      "testId": "inv-vault-vault-text-field-L272",
       "smokeSafe": false,
       "writesData": true,
       "knownFailure": null,
@@ -3517,7 +3517,7 @@
       }
     },
     {
-      "id": "inv-vault-text-field-2",
+      "id": "inv-vault-vault-text-field-L345",
       "page": "/vault",
       "route": "/vault",
       "label": "Text field",
@@ -3527,7 +3527,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Value binds and persists on save.",
-      "testId": "inv-vault-text-field-2",
+      "testId": "inv-vault-vault-text-field-L345",
       "smokeSafe": false,
       "writesData": true,
       "knownFailure": null,
@@ -3538,7 +3538,7 @@
       }
     },
     {
-      "id": "inv-vault-text-field-3",
+      "id": "inv-vault-vault-text-field-L349",
       "page": "/vault",
       "route": "/vault",
       "label": "Text field",
@@ -3548,7 +3548,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Value binds and persists on save.",
-      "testId": "inv-vault-text-field-3",
+      "testId": "inv-vault-vault-text-field-L349",
       "smokeSafe": false,
       "writesData": true,
       "knownFailure": null,
@@ -3559,7 +3559,7 @@
       }
     },
     {
-      "id": "inv-vault-text-field-4",
+      "id": "inv-vault-vault-text-field-L353",
       "page": "/vault",
       "route": "/vault",
       "label": "Text field",
@@ -3569,7 +3569,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Value binds and persists on save.",
-      "testId": "inv-vault-text-field-4",
+      "testId": "inv-vault-vault-text-field-L353",
       "smokeSafe": false,
       "writesData": true,
       "knownFailure": null,
@@ -3580,7 +3580,7 @@
       }
     },
     {
-      "id": "inv-vault-text-field-5",
+      "id": "inv-vault-vault-text-field-L357",
       "page": "/vault",
       "route": "/vault",
       "label": "Text field",
@@ -3590,7 +3590,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Value binds and persists on save.",
-      "testId": "inv-vault-text-field-5",
+      "testId": "inv-vault-vault-text-field-L357",
       "smokeSafe": false,
       "writesData": true,
       "knownFailure": null,
@@ -3601,7 +3601,7 @@
       }
     },
     {
-      "id": "inv-vault-text-field-6",
+      "id": "inv-vault-vault-text-field-L361",
       "page": "/vault",
       "route": "/vault",
       "label": "Text field",
@@ -3611,7 +3611,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Value binds and persists on save.",
-      "testId": "inv-vault-text-field-6",
+      "testId": "inv-vault-vault-text-field-L361",
       "smokeSafe": false,
       "writesData": true,
       "knownFailure": null,
@@ -3622,7 +3622,7 @@
       }
     },
     {
-      "id": "inv-vault-text-field-7",
+      "id": "inv-vault-vault-text-field-L366",
       "page": "/vault",
       "route": "/vault",
       "label": "Text field",
@@ -3632,7 +3632,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Value binds and persists on save.",
-      "testId": "inv-vault-text-field-7",
+      "testId": "inv-vault-vault-text-field-L366",
       "smokeSafe": false,
       "writesData": true,
       "knownFailure": null,
@@ -3643,7 +3643,7 @@
       }
     },
     {
-      "id": "inv-vault-text-field-8",
+      "id": "inv-vault-vault-text-field-L370",
       "page": "/vault",
       "route": "/vault",
       "label": "Text field",
@@ -3653,7 +3653,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Value binds and persists on save.",
-      "testId": "inv-vault-text-field-8",
+      "testId": "inv-vault-vault-text-field-L370",
       "smokeSafe": false,
       "writesData": true,
       "knownFailure": null,
@@ -3664,7 +3664,7 @@
       }
     },
     {
-      "id": "inv-vault-text-field-9",
+      "id": "inv-vault-vault-text-field-L375",
       "page": "/vault",
       "route": "/vault",
       "label": "Text field",
@@ -3674,7 +3674,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Value binds and persists on save.",
-      "testId": "inv-vault-text-field-9",
+      "testId": "inv-vault-vault-text-field-L375",
       "smokeSafe": false,
       "writesData": true,
       "knownFailure": null,
@@ -3685,7 +3685,7 @@
       }
     },
     {
-      "id": "inv-vault-checkbox",
+      "id": "inv-vault-vault-checkbox-L380",
       "page": "/vault",
       "route": "/vault",
       "label": "Checkbox",
@@ -3695,7 +3695,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Value binds and persists on save.",
-      "testId": "inv-vault-checkbox",
+      "testId": "inv-vault-vault-checkbox-L380",
       "smokeSafe": false,
       "writesData": true,
       "knownFailure": null,
@@ -3706,7 +3706,7 @@
       }
     },
     {
-      "id": "inv-vault-checkbox-2",
+      "id": "inv-vault-vault-checkbox-L381",
       "page": "/vault",
       "route": "/vault",
       "label": "Checkbox",
@@ -3716,7 +3716,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Value binds and persists on save.",
-      "testId": "inv-vault-checkbox-2",
+      "testId": "inv-vault-vault-checkbox-L381",
       "smokeSafe": false,
       "writesData": true,
       "knownFailure": null,
@@ -3727,7 +3727,7 @@
       }
     },
     {
-      "id": "inv-vault-checkbox-3",
+      "id": "inv-vault-vault-checkbox-L382",
       "page": "/vault",
       "route": "/vault",
       "label": "Checkbox",
@@ -3737,7 +3737,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Value binds and persists on save.",
-      "testId": "inv-vault-checkbox-3",
+      "testId": "inv-vault-vault-checkbox-L382",
       "smokeSafe": false,
       "writesData": true,
       "knownFailure": null,
@@ -3748,7 +3748,7 @@
       }
     },
     {
-      "id": "inv-vault-checkbox-4",
+      "id": "inv-vault-vault-checkbox-L383",
       "page": "/vault",
       "route": "/vault",
       "label": "Checkbox",
@@ -3758,7 +3758,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Value binds and persists on save.",
-      "testId": "inv-vault-checkbox-4",
+      "testId": "inv-vault-vault-checkbox-L383",
       "smokeSafe": false,
       "writesData": true,
       "knownFailure": null,
@@ -3769,7 +3769,7 @@
       }
     },
     {
-      "id": "inv-vault-checkbox-5",
+      "id": "inv-vault-vault-checkbox-L384",
       "page": "/vault",
       "route": "/vault",
       "label": "Checkbox",
@@ -3779,7 +3779,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Value binds and persists on save.",
-      "testId": "inv-vault-checkbox-5",
+      "testId": "inv-vault-vault-checkbox-L384",
       "smokeSafe": false,
       "writesData": true,
       "knownFailure": null,
@@ -3790,7 +3790,7 @@
       }
     },
     {
-      "id": "inv-vault-checkbox-6",
+      "id": "inv-vault-vault-checkbox-L385",
       "page": "/vault",
       "route": "/vault",
       "label": "Checkbox",
@@ -3800,7 +3800,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Value binds and persists on save.",
-      "testId": "inv-vault-checkbox-6",
+      "testId": "inv-vault-vault-checkbox-L385",
       "smokeSafe": false,
       "writesData": true,
       "knownFailure": null,
@@ -3832,7 +3832,7 @@
       }
     },
     {
-      "id": "inv-layout-dashboard-control",
+      "id": "inv-layout-mainlayout-dashboard-control-L34",
       "page": "layout",
       "route": "*",
       "label": "Dashboard",
@@ -3842,7 +3842,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Target route loads with expected heading.",
-      "testId": "inv-layout-dashboard-control",
+      "testId": "inv-layout-mainlayout-dashboard-control-L34",
       "smokeSafe": true,
       "writesData": false,
       "knownFailure": null,
@@ -3852,7 +3852,7 @@
       }
     },
     {
-      "id": "inv-layout-calendar-calendar",
+      "id": "inv-layout-mainlayout-calendar-calendar-L35",
       "page": "layout",
       "route": "*",
       "label": "Calendar",
@@ -3862,7 +3862,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Target route loads with expected heading.",
-      "testId": "inv-layout-calendar-calendar",
+      "testId": "inv-layout-mainlayout-calendar-calendar-L35",
       "smokeSafe": true,
       "writesData": false,
       "knownFailure": null,
@@ -3872,7 +3872,7 @@
       }
     },
     {
-      "id": "inv-layout-requirements-requirements",
+      "id": "inv-layout-mainlayout-requirements-requirements-L36",
       "page": "layout",
       "route": "*",
       "label": "Requirements",
@@ -3882,7 +3882,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Target route loads with expected heading.",
-      "testId": "inv-layout-requirements-requirements",
+      "testId": "inv-layout-mainlayout-requirements-requirements-L36",
       "smokeSafe": true,
       "writesData": false,
       "knownFailure": null,
@@ -3892,7 +3892,7 @@
       }
     },
     {
-      "id": "inv-layout-documents-documents",
+      "id": "inv-layout-mainlayout-documents-documents-L37",
       "page": "layout",
       "route": "*",
       "label": "Documents",
@@ -3902,7 +3902,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Target route loads with expected heading.",
-      "testId": "inv-layout-documents-documents",
+      "testId": "inv-layout-mainlayout-documents-documents-L37",
       "smokeSafe": true,
       "writesData": false,
       "knownFailure": null,
@@ -3912,7 +3912,7 @@
       }
     },
     {
-      "id": "inv-layout-ai-assistant-assistant",
+      "id": "inv-layout-mainlayout-ai-assistant-assistant-L38",
       "page": "layout",
       "route": "*",
       "label": "AI Assistant",
@@ -3922,7 +3922,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Target route loads with expected heading.",
-      "testId": "inv-layout-ai-assistant-assistant",
+      "testId": "inv-layout-mainlayout-ai-assistant-assistant-L38",
       "smokeSafe": true,
       "writesData": false,
       "knownFailure": null,
@@ -3932,7 +3932,7 @@
       }
     },
     {
-      "id": "inv-layout-knowledge-vault-vault",
+      "id": "inv-layout-mainlayout-knowledge-vault-vault-L39",
       "page": "layout",
       "route": "*",
       "label": "Knowledge Vault",
@@ -3942,7 +3942,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Target route loads with expected heading.",
-      "testId": "inv-layout-knowledge-vault-vault",
+      "testId": "inv-layout-mainlayout-knowledge-vault-vault-L39",
       "smokeSafe": true,
       "writesData": false,
       "knownFailure": null,
@@ -3952,7 +3952,7 @@
       }
     },
     {
-      "id": "inv-layout-settings-settings",
+      "id": "inv-layout-mainlayout-settings-settings-L40",
       "page": "layout",
       "route": "*",
       "label": "Settings",
@@ -3962,7 +3962,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Target route loads with expected heading.",
-      "testId": "inv-layout-settings-settings",
+      "testId": "inv-layout-mainlayout-settings-settings-L40",
       "smokeSafe": true,
       "writesData": false,
       "knownFailure": null,
@@ -3972,7 +3972,7 @@
       }
     },
     {
-      "id": "inv-layout-tools-tour-demo-clerk-tools",
+      "id": "inv-layout-mainlayout-tools-tour-demo-clerk-tools-L41",
       "page": "layout",
       "route": "*",
       "label": "Tools tour",
@@ -3982,7 +3982,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Target route loads with expected heading.",
-      "testId": "inv-layout-tools-tour-demo-clerk-tools",
+      "testId": "inv-layout-mainlayout-tools-tour-demo-clerk-tools-L41",
       "smokeSafe": true,
       "writesData": false,
       "knownFailure": null,
@@ -3992,7 +3992,7 @@
       }
     },
     {
-      "id": "inv-layout-users-settings-users",
+      "id": "inv-layout-mainlayout-users-settings-users-L45",
       "page": "layout",
       "route": "*",
       "label": "Users",
@@ -4002,7 +4002,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Target route loads with expected heading.",
-      "testId": "inv-layout-users-settings-users",
+      "testId": "inv-layout-mainlayout-users-settings-users-L45",
       "smokeSafe": true,
       "writesData": false,
       "knownFailure": null,
@@ -4012,7 +4012,7 @@
       }
     },
     {
-      "id": "inv-layout-account-account",
+      "id": "inv-layout-mainlayout-account-account-L57",
       "page": "layout",
       "route": "*",
       "label": "Account",
@@ -4022,7 +4022,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Target route loads with expected heading.",
-      "testId": "inv-layout-account-account",
+      "testId": "inv-layout-mainlayout-account-account-L57",
       "smokeSafe": true,
       "writesData": false,
       "knownFailure": null,
@@ -4032,7 +4032,7 @@
       }
     },
     {
-      "id": "inv-layout-hide-menu",
+      "id": "inv-layout-mainlayout-hide-menu-L23",
       "page": "layout",
       "route": "*",
       "label": "\u00ab Hide menu",
@@ -4042,7 +4042,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Control responds without unhandled error.",
-      "testId": "inv-layout-hide-menu",
+      "testId": "inv-layout-mainlayout-hide-menu-L23",
       "smokeSafe": true,
       "writesData": false,
       "knownFailure": null,
@@ -4053,7 +4053,7 @@
       }
     },
     {
-      "id": "inv-layout-sign-out",
+      "id": "inv-layout-mainlayout-sign-out-L56",
       "page": "layout",
       "route": "*",
       "label": "Sign out",
@@ -4063,7 +4063,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Control responds without unhandled error.",
-      "testId": "inv-layout-sign-out",
+      "testId": "inv-layout-mainlayout-sign-out-L56",
       "smokeSafe": false,
       "writesData": false,
       "knownFailure": null,
@@ -4074,7 +4074,7 @@
       }
     },
     {
-      "id": "inv-layout-menu",
+      "id": "inv-layout-mainlayout-menu-L66",
       "page": "layout",
       "route": "*",
       "label": "\u2630 Menu",
@@ -4084,7 +4084,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Control responds without unhandled error.",
-      "testId": "inv-layout-menu",
+      "testId": "inv-layout-mainlayout-menu-L66",
       "smokeSafe": true,
       "writesData": false,
       "knownFailure": null,
@@ -4095,7 +4095,7 @@
       }
     },
     {
-      "id": "inv-layout-try-again",
+      "id": "inv-layout-mainlayout-try-again-L92",
       "page": "layout",
       "route": "*",
       "label": "Try again",
@@ -4105,7 +4105,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Control responds without unhandled error.",
-      "testId": "inv-layout-try-again",
+      "testId": "inv-layout-mainlayout-try-again-L92",
       "smokeSafe": true,
       "writesData": false,
       "knownFailure": "RB-004",
@@ -4116,7 +4116,7 @@
       }
     },
     {
-      "id": "inv-layout-retry",
+      "id": "inv-layout-reconnectmodal-retry-L18",
       "page": "layout",
       "route": "*",
       "label": "Retry",
@@ -4126,7 +4126,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Control responds without unhandled error.",
-      "testId": "inv-layout-retry",
+      "testId": "inv-layout-reconnectmodal-retry-L18",
       "smokeSafe": true,
       "writesData": false,
       "knownFailure": null,
@@ -4137,7 +4137,7 @@
       }
     },
     {
-      "id": "inv-layout-resume",
+      "id": "inv-layout-reconnectmodal-resume-L27",
       "page": "layout",
       "route": "*",
       "label": "Resume",
@@ -4147,7 +4147,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Control responds without unhandled error.",
-      "testId": "inv-layout-resume",
+      "testId": "inv-layout-reconnectmodal-resume-L27",
       "smokeSafe": true,
       "writesData": false,
       "knownFailure": null,
@@ -4158,7 +4158,7 @@
       }
     },
     {
-      "id": "inv-layout-undo",
+      "id": "inv-layout-clerktoasthost-undo-L10",
       "page": "layout",
       "route": "*",
       "label": "Undo",
@@ -4168,7 +4168,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Control responds without unhandled error.",
-      "testId": "inv-layout-undo",
+      "testId": "inv-layout-clerktoasthost-undo-L10",
       "smokeSafe": true,
       "writesData": false,
       "knownFailure": null,
@@ -4179,7 +4179,7 @@
       }
     },
     {
-      "id": "inv-layout-text-field",
+      "id": "inv-layout-clerkuserguidedialog-text-field-L8",
       "page": "layout",
       "route": "*",
       "label": "Text field",
@@ -4189,7 +4189,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Value binds and persists on save.",
-      "testId": "inv-layout-text-field",
+      "testId": "inv-layout-clerkuserguidedialog-text-field-L8",
       "smokeSafe": false,
       "writesData": true,
       "knownFailure": null,
@@ -4200,7 +4200,7 @@
       }
     },
     {
-      "id": "inv-layout-cancel",
+      "id": "inv-layout-confirmdeletedialog-cancel-L10",
       "page": "layout",
       "route": "*",
       "label": "Cancel",
@@ -4210,8 +4210,8 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Control responds without unhandled error.",
-      "testId": "inv-layout-cancel",
-      "smokeSafe": true,
+      "testId": "inv-layout-confirmdeletedialog-cancel-L10",
+      "smokeSafe": false,
       "writesData": false,
       "knownFailure": null,
       "playwright": {
@@ -4221,7 +4221,7 @@
       }
     },
     {
-      "id": "inv-layout-delete",
+      "id": "inv-layout-confirmdeletedialog-delete-L11",
       "page": "layout",
       "route": "*",
       "label": "Delete",
@@ -4231,7 +4231,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Record removed or confirm dialog shown.",
-      "testId": "inv-layout-delete",
+      "testId": "inv-layout-confirmdeletedialog-delete-L11",
       "smokeSafe": false,
       "writesData": true,
       "knownFailure": null,
@@ -4242,7 +4242,7 @@
       }
     },
     {
-      "id": "inv-layout-close-workspace",
+      "id": "inv-layout-documentworkspacedialog-close-workspace-L52",
       "page": "layout",
       "route": "*",
       "label": "Close workspace",
@@ -4252,7 +4252,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Control responds without unhandled error.",
-      "testId": "inv-layout-close-workspace",
+      "testId": "inv-layout-documentworkspacedialog-close-workspace-L52",
       "smokeSafe": true,
       "writesData": false,
       "knownFailure": null,
@@ -4263,7 +4263,7 @@
       }
     },
     {
-      "id": "inv-layout-delete",
+      "id": "inv-layout-documentworkspacedialog-delete-L70",
       "page": "layout",
       "route": "*",
       "label": "Delete",
@@ -4273,7 +4273,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Record removed or confirm dialog shown.",
-      "testId": "inv-layout-delete",
+      "testId": "inv-layout-documentworkspacedialog-delete-L70",
       "smokeSafe": false,
       "writesData": true,
       "knownFailure": null,
@@ -4284,7 +4284,7 @@
       }
     },
     {
-      "id": "inv-layout-open-in-document-library",
+      "id": "inv-layout-documentworkspacedialog-open-in-document-library-L185",
       "page": "layout",
       "route": "*",
       "label": "Open in Document Library",
@@ -4294,7 +4294,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "URL changes or target page loads.",
-      "testId": "inv-layout-open-in-document-library",
+      "testId": "inv-layout-documentworkspacedialog-open-in-document-library-L185",
       "smokeSafe": true,
       "writesData": false,
       "knownFailure": null,
@@ -4305,7 +4305,7 @@
       }
     },
     {
-      "id": "inv-layout-help-for-this-page",
+      "id": "inv-layout-pagehelp-help-for-this-page-L5",
       "page": "layout",
       "route": "*",
       "label": "Help for this page",
@@ -4315,7 +4315,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Control responds without unhandled error.",
-      "testId": "inv-layout-help-for-this-page",
+      "testId": "inv-layout-pagehelp-help-for-this-page-L5",
       "smokeSafe": true,
       "writesData": false,
       "knownFailure": null,
@@ -4326,7 +4326,7 @@
       }
     },
     {
-      "id": "inv-layout-help-for-this-page-2",
+      "id": "inv-layout-pagehelp-help-for-this-page-L14",
       "page": "layout",
       "route": "*",
       "label": "Help for this page",
@@ -4336,7 +4336,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Control responds without unhandled error.",
-      "testId": "inv-layout-help-for-this-page-2",
+      "testId": "inv-layout-pagehelp-help-for-this-page-L14",
       "smokeSafe": true,
       "writesData": false,
       "knownFailure": null,
@@ -4347,7 +4347,7 @@
       }
     },
     {
-      "id": "inv-layout-tour-this-page",
+      "id": "inv-layout-pagetourbutton-tour-this-page-L4",
       "page": "layout",
       "route": "*",
       "label": "Tour this page",
@@ -4357,7 +4357,7 @@
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Control responds without unhandled error.",
-      "testId": "inv-layout-tour-this-page",
+      "testId": "inv-layout-pagetourbutton-tour-this-page-L4",
       "smokeSafe": true,
       "writesData": false,
       "knownFailure": null,

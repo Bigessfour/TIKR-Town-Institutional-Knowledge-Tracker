@@ -59,7 +59,10 @@ def main() -> int:
     items = load_inventory()
     spec_text = SPEC.read_text(encoding="utf-8")
     if "inventoryItemsForRun()" not in spec_text:
-        print("functions-inventory.spec.ts must iterate inventoryItemsForRun()", file=sys.stderr)
+        print(
+            "functions-inventory.spec.ts must iterate inventoryItemsForRun()",
+            file=sys.stderr,
+        )
         return 1
 
     report_path = Path(sys.argv[1]) if len(sys.argv) > 1 else DEFAULT_REPORT

@@ -33,7 +33,7 @@ test.describe('Functions inventory (per control)', () => {
       });
 
       for (const item of routeItems) {
-        test(`${item.testId} | ${item.label}`, async ({ page }, testInfo) => {
+        test(`${item.testId} | ${item.fileLine} | ${item.label}`, async ({ page }, testInfo) => {
           annotateKnownFailure(testInfo, item);
 
           if (item.knownFailure) {

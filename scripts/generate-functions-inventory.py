@@ -6,7 +6,7 @@ from __future__ import annotations
 import json
 import re
 import sys
-from dataclasses import dataclass, field, asdict
+from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -79,7 +79,9 @@ class InventoryItem:
         patches = overrides.get("intendedBehaviorPatches", {})
         for key, patch in patches.items():
             if self.id == key or self.id.startswith(key):
-                self.intendedBehavior = patch.get("intendedBehavior", self.intendedBehavior)
+                self.intendedBehavior = patch.get(
+                    "intendedBehavior", self.intendedBehavior
+                )
                 self.expectedResult = patch.get("expectedResult", self.expectedResult)
                 self.dependencies = patch.get("dependencies", self.dependencies)
         exclude = [p.lower() for p in overrides.get("smokeExcludePatterns", [])]
@@ -102,7 +104,9 @@ def route_for_file(rel: str, routes: dict[str, str]) -> tuple[str, str]:
     return "unknown", "/"
 
 
-def infer_behavior(label: str, onclick: str | None, ctrl_type: str) -> tuple[str, str, list[str], bool]:
+def infer_behavior(
+    label: str, onclick: str | None, ctrl_type: str
+) -> tuple[str, str, list[str], bool]:
     deps: list[str] = []
     writes = False
     onclick_l = (onclick or "").lower()
@@ -135,7 +139,12 @@ def infer_behavior(label: str, onclick: str | None, ctrl_type: str) -> tuple[str
         expected = "Data saved and UI reflects change."
         deps = ["API"]
         writes = True
-    elif "export" in label_l or "print" in label_l or "pdf" in label_l or "packet" in label_l:
+    elif (
+        "export" in label_l
+        or "print" in label_l
+        or "pdf" in label_l
+        or "packet" in label_l
+    ):
         intended = f"Generate or export document ({label})."
         expected = "Download/print dialog or PDF bytes returned."
         deps = ["SYNCFUSION_LICENSE_KEY", "API"]
@@ -166,13 +175,16 @@ def infer_behavior(label: str, onclick: str | None, ctrl_type: str) -> tuple[str
     return intended, expected, sorted(set(deps)), writes
 
 
-def scan_razor(path: Path, routes: dict[str, str], overrides: dict) -> list[InventoryItem]:
+def scan_razor(
+    path: Path, routes: dict[str, str], overrides: dict
+) -> list[InventoryItem]:
     rel = str(path.relative_to(ROOT)).replace("\\", "/")
     page_name, route = route_for_file(rel, routes)
     text = path.read_text(encoding="utf-8", errors="replace")
     lines = text.splitlines()
     items: list[InventoryItem] = []
     seen_ids: set[str] = set()
+    file_slug = slug(Path(rel).stem)
 
     def add(
         line_no: int,
@@ -184,7 +196,11 @@ def scan_razor(path: Path, routes: dict[str, str], overrides: dict) -> list[Inve
         label = label.strip() or "(unlabeled)"
         if not label or label.startswith("@"):
             return
-        base = f"inv-{slug(page_name)}-{slug(label)}{('-' + slug(extra_id)) if extra_id else ''}"
+        line_suffix = f"-L{line_no}"
+        base = (
+            f"inv-{slug(page_name)}-{file_slug}-{slug(label)}{('-' + slug(extra_id)) if extra_id else ''}"
+            f"{line_suffix}"
+        )
         item_id = base
         n = 2
         while item_id in seen_ids:
@@ -283,7 +299,14 @@ def scan_razor(path: Path, routes: dict[str, str], overrides: dict) -> list[Inve
             add(i, m.group(1), "tab")
 
     if "Assistant.razor" in rel and "SfAIAssistView" in text:
-        line_no = next((i for i, l in enumerate(lines, 1) if "SfAIAssistView" in l), 1)
+        line_no = next(
+            (
+                i
+                for i, line_text in enumerate(lines, 1)
+                if "SfAIAssistView" in line_text
+            ),
+            1,
+        )
         item = InventoryItem(
             id="inv-assistant-chat-stream",
             page="assistant",
@@ -348,8 +371,8 @@ def markdown_report(meta: dict, items: list[dict]) -> str:
         "",
         "## Summary",
         "",
-        f"| Metric | Count |",
-        f"|--------|------:|",
+        "| Metric | Count |",
+        "|--------|------:|",
         f"| Routes / pages | {meta['pageCount']} |",
         f"| Buttons | {meta['buttonCount']} |",
         f"| Links / nav | {meta['linkCount']} |",
@@ -436,7 +459,9 @@ def main() -> int:
         "buttonCount": sum(1 for i in items_dict if i["type"] == "button"),
         "linkCount": sum(1 for i in items_dict if i["type"] in ("link-nav", "route")),
         "fieldCount": sum(
-            1 for i in items_dict if i["type"] in ("input", "dropdown", "checkbox", "file-upload")
+            1
+            for i in items_dict
+            if i["type"] in ("input", "dropdown", "checkbox", "file-upload")
         ),
         "knownFailureCount": sum(1 for i in items_dict if i.get("knownFailure")),
         "smokeSafeCount": sum(1 for i in items_dict if i.get("smokeSafe")),
