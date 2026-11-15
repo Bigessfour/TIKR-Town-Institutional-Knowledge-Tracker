@@ -126,13 +126,13 @@ Shipped: circuit-scoped multi-turn memory + follow-up retrieval rewrite + Clear 
 ### Ship order (v1.0) — do in this sequence
 
 1. **Next (agent):** v1.0 feature backlog below (former deferred / vNext — now required for tag)
-2. Compile `Setup-TIKR.exe` on Windows (Inno) + [clerk-windows-smoke.md](clerk-windows-smoke.md) / [clerk-windows-handoff.md](clerk-windows-handoff.md)
+2. Clerks open TIKR from the Town Hub card at `http://mr-storage:8080` (no sign-in). Windows `Setup-TIKR.exe` is not the clerk path.
 3. Phase 0 PR #4 / T031 — Recorded Deb walkthrough ([demo-deb.md](demo-deb.md) / [clerk-windows-install.md](clerk-windows-install.md)) + Layer 2 bus-factor checkbox
 4. **Done:** Tags `v1.0.0` + `v1.0.1` + GHCR release per [ship-to-production.md](ship-to-production.md)
 
 - [x] Phase 0 PR #3 — Deb NAS install + maintainer ship checklist ([deb-nas-install.md](deb-nas-install.md), [ship-to-production.md](ship-to-production.md)) — 2026-07-09
-- [x] Canonical day-1 deploy = Windows `Setup-TIKR.exe` for Deb + Paige (auth off on trusted PC); NAS = Phase 2 — 2026-07-13
-- [ ] Compile `Setup-TIKR.exe` on Windows (Inno) + run [clerk-windows-smoke.md](clerk-windows-smoke.md); complete [clerk-windows-handoff.md](clerk-windows-handoff.md) (Deb/Paige + backup owner)
+- [x] Canonical clerk path = Town Hub card → `http://mr-storage:8080` (no sign-in). Windows installer is not used. — 2026-11-15
+- [x] ~~Compile `Setup-TIKR.exe`~~ Replaced by the NAS web app.
 - [x] Merge [PR #61](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/61) to `main` — 2026-07-09 (`242b754`, TIKR CI green)
 - [x] Page readiness audit — chrome-devtools-mcp / Playwright pass; log in [ui-readiness-audit.md](ui-readiness-audit.md) — 2026-07-09
 - [ ] Phase 0 PR #4 — Recorded Deb walkthrough ([demo-deb.md](demo-deb.md) / [clerk-windows-install.md](clerk-windows-install.md)) + Layer 2 bus-factor checkbox — **last human gate**
@@ -158,7 +158,7 @@ Do these before Deb walkthrough + tag:
 - [x] Syncfusion UI controls E2E audit **doc refresh** for 34.1.32 + Smart/Editor/Spreadsheet — [syncfusion-control-audit.md](syncfusion-control-audit.md) (full licensed NAS walk still human)
 - [x] Windows installer polish (icon) — `installer/assets/tikr.ico` + `SetupIconFile` in `tikr-setup.iss`
 - [x] Manual NAS licensed smoke for Syncfusion agent tools — 2026-08-08: `document-sdk-status` license probe passed; agent-scan OK on Mr_Storage v1.0.1; full PDF archive path still human (upload licensed PDF in Requirements UI)
-- [ ] Compile `Setup-TIKR.exe` on Windows (Inno) — **needs Windows** (canonical Deb day-1 deploy)
+- [x] ~~Compile `Setup-TIKR.exe`~~ Clerks use the NAS web app, not a Windows installer. — 2026-11-15
 - [ ] Multi-NAS replication + optional Windows Service — **deferred** (needs NAS ops + Deb OK; not blocking tag features beyond icon polish)
 - [ ] SMTP-backed password reset email — **deferred** (local token path ships; SMTP needs NAS mail)
 - [x] Phase 5B GitHub Actions read-only `GITHUB_TOKEN` — verified 2026-07-25 via `gh api .../actions/permissions/workflow`
@@ -421,8 +421,8 @@ Once all checked (incl. the walkthrough items), the phase/project can be declare
 - [x] Dashboard page grows with the Syncfusion layout instead of letting the status footer sit on the panels
 - [ ] Confirm at about 1280px and about 390px on the running app. The NAS page did not load in the browser from this session.
 
-| Function | Proof | Minimal impl |
-| --- | --- | --- |
+| Function         | Proof                                                 | Minimal impl                                                              |
+| ---------------- | ----------------------------------------------------- | ------------------------------------------------------------------------- |
 | Dashboard layout | CSS only. Not yet seen in a browser at desktop width. | `flex: 1 0 auto` on the dashboard content column; panel containers scroll |
 
 ## Issue #139 — Election library paths
@@ -431,10 +431,10 @@ Once all checked (incl. the walkthrough items), the phase/project can be declare
 - [x] A Personnel / HR model answer cannot replace that folder
 - [ ] Re-tag the stored election manual on the NAS
 
-| Function | Proof | Minimal impl |
-| --- | --- | --- |
-| `DocumentTagHeuristics.TryMapNasRelativePath` | `TryMapNasRelativePath_MapsWileyFolders` election rows | Known root, not a proposal |
-| `HybridAiService.TagDocumentAsync` | `TagDocumentAsync_ElectionPath_KeepsGeneralWhenModelSaysPersonnel` | Path seed is applied again after the model answer |
+| Function                                      | Proof                                                              | Minimal impl                                      |
+| --------------------------------------------- | ------------------------------------------------------------------ | ------------------------------------------------- |
+| `DocumentTagHeuristics.TryMapNasRelativePath` | `TryMapNasRelativePath_MapsWileyFolders` election rows             | Known root, not a proposal                        |
+| `HybridAiService.TagDocumentAsync`            | `TagDocumentAsync_ElectionPath_KeepsGeneralWhenModelSaysPersonnel` | Path seed is applied again after the model answer |
 
 ## Issue #138 — Tagging timeout
 

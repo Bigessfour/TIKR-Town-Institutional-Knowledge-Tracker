@@ -31,6 +31,9 @@ services:
       OLLAMA_HOST: ${OLLAMA_HOST:-http://host.docker.internal:11434}
       USE_GROK: ${USE_GROK:-false}
       TIKR_API_URL: http://tikr-api:8080
+      TIKR_AUTH_ENABLED: "false"
+      TIKR_COGNITO_DOMAIN: tow-gov-staff.auth.us-east-2.amazoncognito.com
+      TIKR_COGNITO_CLIENT_ID: 258binbcvsms0rfqj5g20qakki
     ports:
       - "127.0.0.1:${TIKR_API_HOST_PORT:-5000}:8080"
     volumes:
@@ -55,6 +58,9 @@ services:
     environment:
       TIKR_API_URL: http://tikr-api:8080
       TIKR_PUBLIC_API_URL: ${TIKR_PUBLIC_API_URL:-http://localhost:${TIKR_API_HOST_PORT:-5000}}
+      TIKR_AUTH_ENABLED: "false"
+      TIKR_COGNITO_DOMAIN: tow-gov-staff.auth.us-east-2.amazoncognito.com
+      TIKR_COGNITO_CLIENT_ID: 258binbcvsms0rfqj5g20qakki
     ports:
       - ${TIKR_WEB_HOST_PORT:-8080}:8080
     volumes:

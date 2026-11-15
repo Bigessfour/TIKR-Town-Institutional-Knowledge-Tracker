@@ -92,6 +92,8 @@ public static class DependencyInjection
         services.AddScoped<IContactService, ContactService>();
         services.AddScoped<IDashboardService, DashboardService>();
         services.AddScoped<IKnowledgeService, KnowledgeService>();
+        services.AddScoped<ITextEmbedder, OllamaTextEmbedder>();
+        services.AddScoped<IChatTurnMemory, ChatTurnMemory>();
         services.AddScoped<IChatHistoryService, ChatHistoryService>();
         services.AddSyncfusionDocumentGeneration(configuration);
         services.AddScoped<ICouncilPacketService, CouncilPacketService>();

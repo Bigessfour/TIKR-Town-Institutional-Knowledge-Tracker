@@ -172,19 +172,9 @@ docker compose -f docker/docker-compose.prod.yml --env-file docker/.env up -d --
 
 Before the first GHCR release, build from source with `docker/docker-compose.yml` instead. See [docker/README.md](docker/README.md) and [docs/ship-to-production.md](docs/ship-to-production.md).
 
-### Install for clerks (Windows) — canonical day-1
+### Open TIKR (clerks)
 
-**Deb and Paige:** install with **`Setup-TIKR.exe`** on the shared municipal Windows PC. No login required on this trusted machine. Clerk one-pager: [docs/clerk-windows-install.md](docs/clerk-windows-install.md).
-
-| Step             | Who                   | Action                                                                             |
-| ---------------- | --------------------- | ---------------------------------------------------------------------------------- |
-| 1. Build payload | IT                    | `./scripts/package-thumb-drive.sh` → `publish/TIKR-Deploy/`                        |
-| 2. Compile Setup | IT (Windows + Inno 6) | See [installer/README.md](installer/README.md) → `installer/Output/Setup-TIKR.exe` |
-| 3. Install       | Clerk / IT            | Run Setup → Syncfusion license → Start Menu **TIKR - Clerk's Vault**               |
-| 4. Daily use     | Deb / Paige           | Desktop **Start TIKR** → `http://localhost:8080`                                   |
-| 5. Backup        | Named owner           | Copy `C:\ProgramData\TIKR` regularly                                               |
-
-Alternate (no Setup.exe): copy the USB folder and use `Start-TIKR.bat` — [docs/windows-thumb-drive-deploy.md](docs/windows-thumb-drive-deploy.md).
+**Deb and Paige:** open the **TIKR** card in Town Hub, or go to `http://mr-storage:8080` on the office network. No sign-in. The app runs on the NAS the same way ClerkSuite does on port 8082. There is no Windows installer.
 
 Publish binaries only (no deploy scripts):
 

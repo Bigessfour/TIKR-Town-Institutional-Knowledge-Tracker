@@ -787,6 +787,22 @@ public class TikrApiClient(HttpClient http)
         }
     }
 
+    public async Task<IReadOnlyList<string>> SearchChatTurnsAsync(string query)
+    {
+        if (string.IsNullOrWhiteSpace(query))
+            return [];
+
+        try
+        {
+            var encoded = Uri.EscapeDataString(query);
+            return await http.GetFromJsonAsync<List<string>>($"/api/assistant/chat-turns?q={encoded}") ?? [];
+        }
+        catch
+        {
+            return [];
+        }
+    }
+
     public async Task<List<ChatConversationSummaryDto>> ListAssistantConversationsAsync()
     {
         try

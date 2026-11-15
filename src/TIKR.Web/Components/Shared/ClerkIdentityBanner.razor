@@ -10,7 +10,7 @@
     @if (ClerkIdentity.IsResolved)
     {
         <span>
-            This computer’s clerk:
+            @(ClerkIdentity.ResolutionSource == "cognito" ? "Chat for:" : "This computer’s clerk:")
             <strong>@ClerkIdentity.DisplayName</strong>
             @if (ClerkIdentity.IsManualOverride)
             {

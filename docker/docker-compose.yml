@@ -10,6 +10,9 @@ services:
       - .env
     environment:
       - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Production}
+      - TIKR_AUTH_ENABLED=false
+      - TIKR_COGNITO_DOMAIN=tow-gov-staff.auth.us-east-2.amazoncognito.com
+      - TIKR_COGNITO_CLIENT_ID=258binbcvsms0rfqj5g20qakki
     # Loopback only. See docker-compose.prod.yml.
     ports:
       - "127.0.0.1:${TIKR_API_HOST_PORT:-5000}:8080"
@@ -37,6 +40,9 @@ services:
     environment:
       - TIKR_API_URL=http://tikr-api:8080
       - TIKR_DATA_PROTECTION_PATH=/data/.dpkeys
+      - TIKR_AUTH_ENABLED=false
+      - TIKR_COGNITO_DOMAIN=tow-gov-staff.auth.us-east-2.amazoncognito.com
+      - TIKR_COGNITO_CLIENT_ID=258binbcvsms0rfqj5g20qakki
     ports:
       - 8080:8080
     volumes:

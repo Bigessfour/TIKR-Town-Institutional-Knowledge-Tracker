@@ -739,6 +739,18 @@
         searchUnavailable = searchUnavailable || docsDown || vaultDown;
         var productContext = ProductHelpCatalog.FormatForPrompt(ProductHelpCatalog.Search(prompt, topK: 3));
         var citations = AssistantPromptBuilder.CollectCitationLabels(docSearch, vaultSearch);
+        string? chatMemory = null;
+        try
+        {
+            var turns = await Api.SearchChatTurnsAsync(retrievalQuery);
+            if (turns.Count > 0)
+                chatMemory = "Earlier chats for this clerk:\n" + string.Join("\n\n", turns);
+        }
+        catch
+        {
+            /* chat memory is optional */
+        }
+
         return (AssistantPromptBuilder.BuildUserMessageWithRag(
             prompt,
             _contextSummary,
@@ -746,7 +758,8 @@
             vaultContext,
             searchUnavailable,
             citations,
-            productContext), citations);
+            productContext,
+            chatMemory), citations);
     }
 
     public void Dispose()

@@ -26,7 +26,13 @@ public static class ChatUserResolver
         if (string.IsNullOrWhiteSpace(raw))
             return null;
 
-        // Named clerk profiles (preferred for shared trusted PC).
+        if (raw.Contains('@'))
+            return null;
+
+        if (CognitoChatIdentity.TryParse(raw, out var cognitoId))
+            return cognitoId;
+
+        // Named clerk profiles (auth-off fallback, not the primary switch).
         if (ChatClerkProfiles.TryNormalize(raw, out var profileKey))
             return ChatClerkProfiles.ToUserId(profileKey);
 

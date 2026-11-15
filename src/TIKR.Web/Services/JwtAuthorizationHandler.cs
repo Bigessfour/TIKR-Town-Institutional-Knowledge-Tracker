@@ -42,8 +42,8 @@ public class JwtAuthorizationHandler(IHttpContextAccessor httpContextAccessor) :
         if (identity is not null)
         {
             identity.EnsureResolved();
-            if (ChatClerkProfiles.TryNormalize(identity.HeaderValue, out var profile))
-                return profile;
+            if (!string.IsNullOrWhiteSpace(identity.HeaderValue))
+                return identity.HeaderValue;
         }
 
         // Tests / unmapped host isolation cookie (random GUID → local:{guid} on API).

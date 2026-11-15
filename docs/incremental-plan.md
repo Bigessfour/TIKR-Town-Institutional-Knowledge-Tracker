@@ -84,13 +84,13 @@ Living roadmap for TIKR development. Agents and contributors: read the **current
 
 ### 5A — Fix CI (code)
 
-| Step | Action                                                                                         | Status                                                                                         |
-| ---- | ---------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| 1    | Fix `.gitignore`: `data/` → `/data/` so `src/TIKR.Infrastructure/Data/` is tracked             | done                                                                                           |
-| 2    | Commit EF Core `TikrDbContext` + Migrations                                                    | done                                                                                           |
-| 3    | Run `dotnet format TIKR.sln`; verify `dotnet test` + Trunk on PR                               | done                                                                                           |
-| 4    | Merge PR `fix/ci-green-main` with green **TIKR CI** + **Trunk**                                | done ([PR #9](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/9)) |
-| 5    | Triage Dependabot PRs after `main` is green — see [dependabot-policy.md](dependabot-policy.md) | done                                                                                           |
+| Step | Action                                                                             | Status                                                                                         |
+| ---- | ---------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| 1    | Fix `.gitignore`: `data/` → `/data/` so `src/TIKR.Infrastructure/Data/` is tracked | done                                                                                           |
+| 2    | Commit EF Core `TikrDbContext` + Migrations                                        | done                                                                                           |
+| 3    | Run `dotnet format TIKR.sln`; verify `dotnet test` + Trunk on PR                   | done                                                                                           |
+| 4    | Merge PR `fix/ci-green-main` with green **TIKR CI** + **Trunk**                    | done ([PR #9](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/9)) |
+| 5    | Triage dependency PRs after `main` is green                                        | done                                                                                           |
 
 **Verify locally:**
 
@@ -224,7 +224,7 @@ Update this section when env changes.
 
 ## Phase 10 — Requirements Manager + Document Agent
 
-**Status:** in progress — 10C **A1–A3 + document tool coverage** on branch; **10C-C** extraction badge in [#37](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/37)
+**Status:** done on `main` (slices 10A–10C-G merged; extraction badge in [#37](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/37))
 
 **Goal:** `/requirements` CRUD hub + incremental NAS-local document agent without breaking MVP grid.
 
@@ -290,7 +290,7 @@ Update this section when env changes.
 
 ## Phase 13 — Requirement Checklists / Election Playbooks
 
-**Status:** implemented on `feature/requirement-checklists` (Spec Kit `009-requirement-checklists`) — awaiting PR merge to `main`
+**Status:** done on `main` (Spec Kit `009-requirement-checklists`)
 
 **Goal:** Lightweight checklists under a Requirement so Deb can capture multi-step election (and other) playbooks — what documents are due, when, and where they go — beyond a single Description + linked docs.
 
@@ -313,7 +313,7 @@ Update this section when env changes.
 
 ## Phase 13 adjunct — Surface logging (cross-cutting)
 
-**Status:** done on `feature/requirement-checklists` (same ship slice as Phase 13 docs/tests)
+**Status:** done on `main` (same ship slice as Phase 13)
 
 **Goal:** Structured, fail-soft logging so Deb/Paige sessions and AI/agent actions are diagnosable on the NAS (`TikrActionLog`, `AuditService`, Serilog request logs).
 
@@ -500,7 +500,7 @@ Update this section with future agent env changes.
 
 ## Current Next Task for Development (from todos + plan)
 
-**Active product slice:** Phase 13 Requirement Checklists + surface logging — **code/docs/tests complete** on `feature/requirement-checklists`; merge PR next.
+**Active product slice:** none. Phases 10–13 are on `main`. Clerks open TIKR from the Town Hub card (`http://mr-storage:8080`) with no sign-in.
 
 **Ship gates (parallel / after Phase 13 merge):**
 
@@ -511,8 +511,8 @@ Update this section with future agent env changes.
 - [x] NAS deploy v1.0.1 on Mr_Storage — 2026-08-08 (`./scripts/deploy-tikr-nas.sh`)
 - [x] Tag `v1.0.0` + `v1.0.1` + GHCR
 - [x] Phase 12 email → Contacts extract ([#98](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/98))
-- [x] Phase 13 Election playbook checklists + logging + proof tests (branch ready; merge when CI green)
-- [ ] Compile `Setup-TIKR.exe` + clerk Windows smoke/handoff
+- [x] Phase 13 Election playbook checklists + logging + proof tests (on `main`)
+- [x] Clerk path is the NAS web app from the Town Hub card, not `Setup-TIKR.exe`
 - [ ] Phase 0 PR #4 / T031 recorded Deb walkthrough + bus-factor gate (include Vault Contacts + Election playbook + email drop)
 
-**Immediate recommendation:** Open/merge Phase 13 PR → Windows Setup smoke → Deb walkthrough ([demo-deb.md](demo-deb.md) Election flow).
+**Immediate recommendation:** Deb walkthrough in the browser at `http://mr-storage:8080` ([demo-deb.md](demo-deb.md) Election flow).

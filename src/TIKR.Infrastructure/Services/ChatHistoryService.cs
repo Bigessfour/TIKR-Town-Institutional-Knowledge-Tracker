@@ -10,7 +10,10 @@ using TIKR.Shared.Interfaces;
 
 namespace TIKR.Infrastructure.Services;
 
-public class ChatHistoryService(TikrDbContext db, ILogger<ChatHistoryService>? logger = null) : IChatHistoryService
+public class ChatHistoryService(
+    TikrDbContext db,
+    ILogger<ChatHistoryService>? logger = null,
+    IChatTurnMemory? chatTurns = null) : IChatHistoryService
 {
     private readonly ILogger _log = logger ?? NullLogger<ChatHistoryService>.Instance;
 
@@ -109,6 +112,18 @@ public class ChatHistoryService(TikrDbContext db, ILogger<ChatHistoryService>? l
 
         await db.SaveChangesAsync(ct);
 
+        if (chatTurns is not null)
+        {
+            try
+            {
+                await chatTurns.IndexTurnAsync(userId, conversation.Id, userText, assistantText, ct);
+            }
+            catch (Exception ex)
+            {
+                _log.LogWarning(ex, "Chat turn embedding skipped for {ConversationId}", conversation.Id);
+            }
+        }
+
         await db.Entry(conversation).Collection(c => c.Messages).Query()
             .OrderBy(m => m.CreatedAtUtc).LoadAsync(ct);
 
@@ -135,6 +150,20 @@ public class ChatHistoryService(TikrDbContext db, ILogger<ChatHistoryService>? l
             }
 
             await db.SaveChangesAsync(ct);
+            if (chatTurns is not null)
+            {
+                foreach (var active in actives)
+                {
+                    try
+                    {
+                        await chatTurns.DeleteConversationAsync(userId, active.Id, ct);
+                    }
+                    catch (Exception ex)
+                    {
+                        _log.LogWarning(ex, "Chat turn chunk delete skipped for {ConversationId}", active.Id);
+                    }
+                }
+            }
         }
 
         var created = await CreateConversationAsync(userId, ct);

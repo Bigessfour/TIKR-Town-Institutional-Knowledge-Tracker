@@ -679,6 +679,7 @@ else
 
     private string ClerkFacingIdentity() => ClerkIdentity.ResolutionSource switch
     {
+        "cognito" => $"Chat follows {ClerkIdentity.DisplayName}.",
         "machine" => $"This computer is {ClerkIdentity.DisplayName}.",
         "config" => $"This computer is set to {ClerkIdentity.DisplayName}.",
         "override" => $"You chose {ClerkIdentity.DisplayName} for this computer.",

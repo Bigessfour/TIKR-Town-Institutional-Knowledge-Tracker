@@ -8,17 +8,21 @@ namespace TIKR.Web.Services;
 /// Locked model: this Windows machine is Deb Dillon or Paige Lindo (NAS backup inventory).
 /// Optional install env / rare Settings override for unmapped hosts and demos.
 /// </summary>
-public sealed class ChatClerkIdentityService(IConfiguration configuration)
+public sealed class ChatClerkIdentityService(IConfiguration configuration, IHttpContextAccessor? httpContextAccessor = null)
 {
     private bool _initialized;
 
     /// <summary>Normalized profile key: <c>deb</c> or <c>paige</c>, or empty if unresolved.</summary>
     public string ActiveProfileKey { get; private set; } = string.Empty;
 
+    private string _cognitoUserId = string.Empty;
+    private string _displayEmail = string.Empty;
+
     public string DisplayName =>
-        string.IsNullOrEmpty(ActiveProfileKey)
-            ? "Unknown clerk"
-            : ChatClerkProfiles.DisplayName(ActiveProfileKey);
+        !string.IsNullOrWhiteSpace(_displayEmail) ? _displayEmail
+        : !string.IsNullOrEmpty(_cognitoUserId) ? "Signed-in clerk"
+        : string.IsNullOrEmpty(ActiveProfileKey) ? "Unknown clerk"
+        : ChatClerkProfiles.DisplayName(ActiveProfileKey);
 
     /// <summary>Host name used for machine mapping (Windows COMPUTERNAME when Web runs on the PC).</summary>
     public string MachineName { get; private set; } = Environment.MachineName;
@@ -30,18 +34,48 @@ public sealed class ChatClerkIdentityService(IConfiguration configuration)
     /// <summary><c>machine</c>, <c>config</c>, <c>override</c>, or <c>unmapped</c>.</summary>
     public string ResolutionSource { get; private set; } = "unmapped";
 
-    /// <summary>True when chat memory can isolate (known Deb/Paige profile).</summary>
-    public bool IsResolved => ChatClerkProfiles.TryNormalize(ActiveProfileKey, out _);
+    /// <summary>True when chat memory can isolate (Cognito subject or Deb/Paige fallback).</summary>
+    public bool IsResolved =>
+        !string.IsNullOrEmpty(_cognitoUserId) || ChatClerkProfiles.TryNormalize(ActiveProfileKey, out _);
 
     /// <summary>Value for <c>X-Tikr-Chat-User</c> when resolved.</summary>
-    public string? HeaderValue => IsResolved ? ActiveProfileKey : null;
+    public string? HeaderValue =>
+        !string.IsNullOrEmpty(_cognitoUserId) ? _cognitoUserId
+        : ChatClerkProfiles.TryNormalize(ActiveProfileKey, out _) ? ActiveProfileKey
+        : null;
 
     /// <summary>Idempotent host resolution (config → machine map). Safe to call from layout/pages.</summary>
     public void EnsureResolved()
     {
         if (_initialized)
             return;
+
+        if (TryApplyCognitoCookie())
+            return;
+
         ResolveFromHost();
+    }
+
+    private bool TryApplyCognitoCookie()
+    {
+        var http = httpContextAccessor?.HttpContext;
+        if (http is null)
+            return false;
+
+        if (!http.Request.Cookies.TryGetValue(AuthCookie.ChatUserName, out var raw)
+            || !CognitoChatIdentity.TryParse(raw, out var userId))
+            return false;
+
+        _initialized = true;
+        _cognitoUserId = userId;
+        http.Request.Cookies.TryGetValue(AuthCookie.ChatDisplayName, out var email);
+        _displayEmail = email ?? string.Empty;
+        ActiveProfileKey = string.Empty;
+        IsMachineMapped = false;
+        IsManualOverride = false;
+        ResolutionSource = "cognito";
+        MachineName = Environment.MachineName;
+        return true;
     }
 
     /// <summary>
@@ -101,6 +135,10 @@ public sealed class ChatClerkIdentityService(IConfiguration configuration)
 
     public string StatusDetail()
     {
+        if (ResolutionSource == "cognito")
+            return string.IsNullOrWhiteSpace(_displayEmail)
+                ? "Chat follows the ClerkSuite sign-in."
+                : $"Chat follows the ClerkSuite sign-in ({_displayEmail}).";
         if (ResolutionSource == "machine")
             return $"This computer ({MachineName}) is registered as {DisplayName} (NAS backup inventory).";
         if (ResolutionSource == "config")

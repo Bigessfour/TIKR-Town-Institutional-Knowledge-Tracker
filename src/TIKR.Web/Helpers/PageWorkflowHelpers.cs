@@ -227,7 +227,8 @@ public static partial class AssistantPromptBuilder
         string? vaultContext,
         bool searchUnavailable,
         IReadOnlyList<string> citations,
-        string? productHelpContext = null)
+        string? productHelpContext = null,
+        string? chatMemoryContext = null)
     {
         var blocks = new List<string>();
         if (searchUnavailable)
@@ -240,6 +241,8 @@ public static partial class AssistantPromptBuilder
             blocks.Add(docContext);
         if (!string.IsNullOrWhiteSpace(vaultContext))
             blocks.Add(vaultContext);
+        if (!string.IsNullOrWhiteSpace(chatMemoryContext))
+            blocks.Add(chatMemoryContext);
         if (citations.Count > 0)
             blocks.Add(
                 "Required Sources to cite if used (include a short content quote/paraphrase from each Excerpt, not the filename alone):\n" +

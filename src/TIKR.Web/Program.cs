@@ -1,4 +1,5 @@
 using TIKR.Shared.Configuration;
+using TIKR.Shared.Helpers;
 using TIKR.Web;
 using TIKR.Shared.Constants;
 using TIKR.Web.Components;
@@ -144,13 +145,22 @@ builder.Services.AddScoped<IAuthSessionService, AuthSessionService>();
 builder.Services.AddScoped<ChatClerkIdentityService>();
 builder.Services.AddTransient<JwtAuthorizationHandler>();
 
-if (authEnabled)
+builder.Services.AddAuthorization(options =>
 {
-    builder.Services.AddAuthorizationCore(options =>
+    if (authEnabled)
     {
         options.AddPolicy(TikrAuthPolicies.AdminOnly, policy => policy.RequireRole(TikrRoles.Admin));
-    });
-}
+    }
+    else
+    {
+        // Clerk path has no sign-in. [Authorize] pages must still render.
+        var allow = new Microsoft.AspNetCore.Authorization.AuthorizationPolicyBuilder()
+            .RequireAssertion(_ => true)
+            .Build();
+        options.DefaultPolicy = allow;
+        options.AddPolicy(TikrAuthPolicies.AdminOnly, policy => policy.RequireAssertion(_ => true));
+    }
+});
 
 var resourceCatalogPath = Path.Combine(builder.Environment.ContentRootPath, "Data", "colorado-clerk-resources.json");
 builder.Services.AddSingleton(ColoradoResourceCatalog.LoadFromFile(resourceCatalogPath));
@@ -175,6 +185,7 @@ if (!app.Environment.IsDevelopment())
 
 app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
 app.UseHttpsRedirection();
+app.UseAuthorization();
 app.UseAntiforgery();
 
 // Request logging via Serilog (captures HTTP interactions for observability)
@@ -191,6 +202,92 @@ app.UseSerilogRequestLogging(options =>
                 : httpContext.Request.Method is "GET" or "HEAD"
                     ? Serilog.Events.LogEventLevel.Debug
                     : Serilog.Events.LogEventLevel.Information;
+});
+
+app.Use(async (context, next) =>
+{
+    if (CognitoSilentAuth.ShouldProbe(context.Request, context.RequestServices.GetRequiredService<IConfiguration>()))
+    {
+        var returnPath = CognitoSilentAuth.SafeReturnPath(context.Request.Path + context.Request.QueryString);
+        context.Response.Redirect("/auth/cognito-start?return=" + Uri.EscapeDataString(returnPath));
+        return;
+    }
+
+    await next();
+});
+
+app.MapGet("/auth/cognito-start", (HttpContext http, IConfiguration config) =>
+{
+    var returnPath = CognitoSilentAuth.SafeReturnPath(http.Request.Query["return"]);
+    var shortCookie = CognitoSilentAuth.SessionCookie(http.Request);
+    shortCookie.MaxAge = TimeSpan.FromMinutes(10);
+    http.Response.Cookies.Append(AuthCookie.AuthReturn, returnPath, shortCookie);
+
+    var domain = CognitoSilentAuth.HostedUiDomain(config);
+    if (domain is null)
+    {
+        http.Response.Cookies.Append(AuthCookie.CognitoChecked, "1", CognitoSilentAuth.SessionCookie(http.Request));
+        return Results.Redirect(returnPath);
+    }
+
+    var verifier = CognitoSilentAuth.CreateCodeVerifier();
+    var state = CognitoSilentAuth.CreateState();
+    http.Response.Cookies.Append(AuthCookie.PkceVerifier, verifier + "." + state, shortCookie);
+    var url = CognitoSilentAuth.BuildAuthorizeUrl(
+        domain,
+        CognitoSilentAuth.ClientId(config),
+        CognitoSilentAuth.RedirectUri(http.Request),
+        state,
+        CognitoSilentAuth.CreateCodeChallenge(verifier));
+    return Results.Redirect(url);
+});
+
+app.MapGet("/auth/cognito-callback", async (
+    HttpContext http,
+    IConfiguration config,
+    IHttpClientFactory httpFactory,
+    CancellationToken ct) =>
+{
+    var returnPath = http.Request.Cookies.TryGetValue(AuthCookie.AuthReturn, out var saved)
+        ? CognitoSilentAuth.SafeReturnPath(saved)
+        : "/";
+    var session = CognitoSilentAuth.SessionCookie(http.Request);
+    http.Response.Cookies.Append(AuthCookie.CognitoChecked, "1", session);
+    http.Response.Cookies.Delete(AuthCookie.PkceVerifier);
+    http.Response.Cookies.Delete(AuthCookie.AuthReturn);
+
+    var error = http.Request.Query["error"].ToString();
+    var code = http.Request.Query["code"].ToString();
+    var state = http.Request.Query["state"].ToString();
+    var domain = CognitoSilentAuth.HostedUiDomain(config);
+    if (!string.IsNullOrEmpty(error) || domain is null || string.IsNullOrEmpty(code)
+        || !http.Request.Cookies.TryGetValue(AuthCookie.PkceVerifier, out var packed))
+    {
+        return Results.Redirect(returnPath);
+    }
+
+    var dot = packed.IndexOf('.');
+    if (dot <= 0 || !string.Equals(packed[(dot + 1)..], state, StringComparison.Ordinal))
+        return Results.Redirect(returnPath);
+
+    var idToken = await CognitoSilentAuth.ExchangeCodeAsync(
+        httpFactory.CreateClient(),
+        domain,
+        CognitoSilentAuth.ClientId(config),
+        config[CognitoSilentAuth.ClientSecretConfigKey],
+        CognitoSilentAuth.RedirectUri(http.Request),
+        code,
+        packed[..dot],
+        ct);
+    if (idToken is not null
+        && CognitoSilentAuth.TryReadIdentity(idToken, CognitoSilentAuth.ClientId(config), out var sub, out var email))
+    {
+        http.Response.Cookies.Append(AuthCookie.ChatUserName, CognitoChatIdentity.Format(sub), session);
+        if (!string.IsNullOrWhiteSpace(email))
+            http.Response.Cookies.Append(AuthCookie.ChatDisplayName, email, session);
+    }
+
+    return Results.Redirect(returnPath);
 });
 
 app.MapStaticAssets();

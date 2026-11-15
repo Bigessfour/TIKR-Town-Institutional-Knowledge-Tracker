@@ -1,6 +1,8 @@
 using FluentAssertions;
+using Microsoft.EntityFrameworkCore;
 using TIKR.Infrastructure.Services;
 using TIKR.Infrastructure.Tests.Helpers;
+using TIKR.Shared.Enums;
 using TIKR.Shared.TestFixtures;
 
 namespace TIKR.Infrastructure.Tests.Services;
@@ -77,5 +79,35 @@ public class ChatHistoryServiceTests
         var act = () => sut.GetOrCreateSessionAsync("anonymous");
 
         await act.Should().ThrowAsync<ArgumentException>();
+    }
+
+    [Fact]
+    public async Task AppendTurn_WritesChatTurnChunkForThatUser_AndClearRemovesOnlyThatConversation()
+    {
+        await using var db = await TestDbContextFactory.CreateMigratedAsync();
+        var user = "cognito:11111111-1111-1111-1111-111111111111";
+        var other = "cognito:22222222-2222-2222-2222-222222222222";
+        var memory = new ChatTurnMemory(db, new ConstantEmbedder());
+        var sut = new ChatHistoryService(db, chatTurns: memory);
+        var session = await sut.GetOrCreateSessionAsync(user);
+        var otherSession = await sut.GetOrCreateSessionAsync(other);
+        await sut.AppendTurnAsync(user, session.Conversation.Id, "Where is the mill levy file?", "It is in the vault.");
+        await sut.AppendTurnAsync(other, otherSession.Conversation.Id, "Other clerk question", "Other answer");
+
+        var own = await db.EmbeddingChunks.Where(c => c.Facet == user).ToListAsync();
+        own.Should().NotBeEmpty();
+        own.Should().OnlyContain(c => c.SourceType == EmbeddingSourceType.ChatTurn && c.SourceId == session.Conversation.Id);
+
+        await sut.StartNewConversationAsync(user);
+
+        (await db.EmbeddingChunks.CountAsync(c => c.SourceId == session.Conversation.Id && c.Facet == user))
+            .Should().Be(0);
+        (await db.EmbeddingChunks.CountAsync(c => c.Facet == other)).Should().BeGreaterThan(0);
+    }
+
+    private sealed class ConstantEmbedder : ITextEmbedder
+    {
+        public Task<float[]?> EmbedAsync(string text, CancellationToken ct = default) =>
+            Task.FromResult<float[]?>([1f, 0f, 0f]);
     }
 }

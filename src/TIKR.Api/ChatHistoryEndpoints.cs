@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Configuration;
+using TIKR.Infrastructure.Services;
 using TIKR.Shared.DTOs;
 using TIKR.Shared.Helpers;
 using TIKR.Shared.Interfaces;
@@ -109,6 +110,22 @@ public static class ChatHistoryEndpoints
             {
                 return Results.NotFound(new { error = ex.Message });
             }
+        });
+
+        chat.MapGet("/chat-turns", async (
+            string? q,
+            HttpRequest httpRequest,
+            IConfiguration configuration,
+            IChatTurnMemory chatTurns,
+            ICurrentUserService currentUser,
+            CancellationToken ct) =>
+        {
+            var userId = ChatUserResolver.TryResolve(currentUser, httpRequest, configuration);
+            if (userId is null)
+                return Results.Unauthorized();
+
+            var matches = await chatTurns.SearchAsync(userId, q ?? string.Empty, topK: 3, ct);
+            return Results.Ok(matches);
         });
 
         chat.MapGet("/memory", async (
