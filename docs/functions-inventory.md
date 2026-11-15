@@ -1,21 +1,22 @@
 # TIKR functions inventory (user-facing controls)
 
-**Generated:** 2026-11-15T22:48:15Z  
+**Generated:** 2026-11-15T22:50:37Z  
 **Source:** `scripts/generate-functions-inventory.py`  
 **Machine-readable:** [tests/e2e/functions-inventory.json](../tests/e2e/functions-inventory.json)  
-**UX audit baseline:** [tikr-ux-evaluation.md](./tikr-ux-evaluation.md)
+**UX audit baseline:** [tikr-ux-evaluation.md](./tikr-ux-evaluation.md)  
+**Production walkthrough (main e1c5399):** manual items in `scripts/inventory-manual-items.json`
 
 ## Summary
 
 | Metric | Count |
 |--------|------:|
 | Routes / pages | 14 |
-| Buttons | 115 |
-| Links / nav | 24 |
+| Buttons | 122 |
+| Links / nav | 25 |
 | Inputs / fields | 66 |
-| **Total items** | **206** |
-| Known failures (release blockers) | 17 |
-| Smoke-safe (read-only live) | 103 |
+| **Total items** | **226** |
+| Known failures (release blockers) | 36 |
+| Smoke-safe (read-only live) | 112 |
 
 ## Inventory
 
@@ -199,7 +200,21 @@
 | `inv-vault-text-field-7` | /vault | Text field | input | src/TIKR.Web/Components/Pages/Vault.razor:366 | — | Value binds and persists on save. | — |
 | `inv-vault-text-field-8` | /vault | Text field | input | src/TIKR.Web/Components/Pages/Vault.razor:370 | — | Value binds and persists on save. | — |
 | `inv-vault-text-field-9` | /vault | Text field | input | src/TIKR.Web/Components/Pages/Vault.razor:375 | — | Value binds and persists on save. | — |
+| `inv-prod-account-route-auth` | account | /account loads with auth; secrets not ex | route | src/TIKR.Web/Components/Pages/Account.razor:3 Authorize; Settings keys cards | Auth, JWT | No HTTP 500; unauthenticated users blocked from keys. | RB-020 |
 | `inv-assistant-chat-stream` | assistant | Assistant chat (SfAIAssistView) | assistant-chat | src/TIKR.Web/Components/Pages/Assistant.razor:84 | Ollama, API, SYNCFUSION_LICENSE_KEY | User sees thinking/progress immediately; full answer streams | RB-003 |
+| `inv-prod-assistant-grok-fallback-on-timeout` | assistant | Assistant: Grok fallback on timeout (not | assistant-fallback | src/TIKR.Web/Components/Pages/Assistant.razor:496-503 | GROK_API_KEY, Ollama | Grok path invoked after local timeout. | RB-006 |
+| `inv-prod-assistant-prompt-reset` | assistant | Assistant prompt box resets to default a | assistant-input | src/TIKR.Web/Components/Pages/Assistant.razor:87 Prompt=... | SfAIAssistView | Input stays cleared or retains typed text — not default plac | RB-007 |
+| `inv-prod-assistant-timeout-response-stopped` | assistant | Assistant: timeout ends as Response stop | assistant-timeout | src/TIKR.Web/Components/Pages/Assistant.razor:524-529; TikrApiClient HttpClient default 100s | Ollama, API, HttpClient.Timeout | Retry/help text — not 'Response stopped.' from OperationCanc | RB-006 |
+| `inv-prod-calendar-all-day-midnight` | calendar | Deadlines render midnight–1AM not all-da | calendar-display | src/TIKR.Web/Components/Pages/Calendar.razor:81-87 | SfSchedule | All-day events without 12–1AM slot span. | RB-010 |
+| `inv-prod-calendar-create-deadline-ux` | calendar | Create deadline appears enabled until te | button | src/TIKR.Web/Components/Pages/Calendar.razor:53-56 | Ollama | Button visibly disabled OR helper text before typing. | RB-009 |
+| `inv-prod-calendar-recurring-roll` | calendar | Recurring deadlines do not roll forward | calendar-logic | src/TIKR.Infrastructure (recurrence seed/update) | API, EF Core | Next instance appears after due date passes. | RB-011 |
+| `inv-prod-documents-row-click-select` | documents | Document grid row click selects / previe | grid-row | src/TIKR.Web/Components/Pages/Documents.razor:242-245 CheckboxOnly | SfGrid | Row click updates preview without checkbox-only. | RB-012 |
+| `inv-prod-documents-upload-utc-display` | documents | Upload times shown as local not UTC | display-format | src/TIKR.Web/Components/Pages/Documents.razor (grid date column) | — | Displayed time matches local offset. | RB-013 |
+| `inv-prod-a11y-overdue-contrast` | home | Dashboard Overdue pill contrast ≥4.5:1 | accessibility | src/TIKR.Web/Components/Pages/Home.razor:73; priority-overdue CSS | — | Contrast ratio ≥ 4.5:1 (prod walkthrough: 3.06:1). | RB-022 |
+| `inv-prod-home-add-requirement-nav-only` | home | Add requirement navigates only (no creat | button | src/TIKR.Web/Components/Pages/Home.razor:87 | — | Create dialog on Requirements after click. | RB-024 |
+| `inv-prod-home-upload-document-picker` | home | Dashboard Upload document opens file pic | button | src/TIKR.Web/Components/Pages/Home.razor:89 | — | File input focused or chooser opens. | RB-016 |
+| `inv-prod-page-help-click` | home | Page help (i) click opens help (not hove | help | src/TIKR.Web/Components/Shared/PageHelp.razor:4-7 | SfTooltip | Dialog/drawer on click; not tooltip-only. | RB-015 |
+| `inv-prod-user-guide-reopen` | home | User guide opens on repeated clicks | button | src/TIKR.Web/Services/ClerkUserGuideService.cs:10; ClerkUserGuideDialog.razor:49 | — | Dialog visible after second Open user guide click. | RB-014 |
 | `inv-layout-account-account` | layout | Account | link-nav | src/TIKR.Web/Components/Layout/MainLayout.razor:57 | — | Target route loads with expected heading. | — |
 | `inv-layout-ai-assistant-assistant` | layout | AI Assistant | link-nav | src/TIKR.Web/Components/Layout/MainLayout.razor:38 | — | Target route loads with expected heading. | — |
 | `inv-layout-calendar-calendar` | layout | Calendar | link-nav | src/TIKR.Web/Components/Layout/MainLayout.razor:35 | — | Target route loads with expected heading. | — |
@@ -226,6 +241,12 @@
 | `inv-layout-try-again` | layout | Try again | button | src/TIKR.Web/Components/Layout/MainLayout.razor:92 | — | Control responds without unhandled error. | RB-004 |
 | `inv-layout-undo` | layout | Undo | button | src/TIKR.Web/Components/Shared/ClerkToastHost.razor:10 | — | Control responds without unhandled error. | — |
 | `inv-layout-users-settings-users` | layout | Users | link-nav | src/TIKR.Web/Components/Layout/MainLayout.razor:45 | — | Target route loads with expected heading. | — |
+| `inv-prod-guide-ask-advanced-button` | layout | User guide cites nonexistent Ask Advance | help-content | src/TIKR.Web/wwwroot/help/clerk-user-guide.md:41; ClerkTourCatalog.cs:84 | — | No 'Ask Advanced' affordance promised in guide/tour. | RB-008 |
+| `inv-prod-grid-filter-aria` | requirements | Grid filter inputs accessible name | accessibility | Syncfusion SfGrid filter bar | SfGrid | No aria-label _Filter; human-readable column names. | RB-023 |
+| `inv-prod-req-print-council-packet` | requirements | Print council packet prints packet not e | button | src/TIKR.Web/Components/Pages/Requirements.razor (Print council packet) | — | Print job targets packet content, not full SPA chrome. | RB-018 |
+| `inv-prod-settings-duplicate-tour` | settings | Two Settings tour entry points do not du | button | Settings.razor:28 PageTourButton; :311-312 tools vs replay | ClerkTourService | Page tour ≠ tools tour ≠ replay tour. | RB-019 |
+| `inv-prod-settings-reindex-control` | settings | Settings embedding reindex control visib | button | src/TIKR.Web/Components/Pages/Settings.razor:425 | API, Ollama | Reindex embeddings button visible and enabled when connected | — |
+| `inv-prod-settings-status-contradiction` | settings | Town helper status not contradictory | status-display | src/TIKR.Web/Components/Pages/Settings.razor status cards | Ollama, API | Cannot show Ready and Ollama offline together. | RB-021 |
 | `inv-vault-add-howto` | vault | Add how-to / tribal entry (missing contr | button | src/TIKR.Web/Components/Pages/Vault.razor:— | API | New entry dialog or inline editor opens. | RB-005 |
 
 ## Regenerate

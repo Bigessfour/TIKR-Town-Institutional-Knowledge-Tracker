@@ -27,6 +27,8 @@ cd tests/e2e && npm run test:inventory
 python3 scripts/check-functions-inventory-coverage.py tests/e2e/test-results/inventory-results.json
 ```
 
+**Production walkthrough (main e1c5399)** — manual inventory rows in `scripts/inventory-manual-items.json`; assertions in `production-walkthrough.spec.ts` + strategies in `production-walkthrough-runner.ts`; blockers **RB-001…RB-024** in [release-blockers.md](../docs/release-blockers.md).
+
 **Live read-only smoke** (no writes — navigation + visibility only):
 
 ```bash

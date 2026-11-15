@@ -1,13 +1,13 @@
 {
   "meta": {
-    "generatedAt": "2026-11-15T22:48:15Z",
-    "itemCount": 206,
+    "generatedAt": "2026-11-15T22:50:37Z",
+    "itemCount": 226,
     "pageCount": 14,
-    "buttonCount": 115,
-    "linkCount": 24,
+    "buttonCount": 122,
+    "linkCount": 25,
     "fieldCount": 66,
-    "knownFailureCount": 17,
-    "smokeSafeCount": 103
+    "knownFailureCount": 36,
+    "smokeSafeCount": 112
   },
   "items": [
     {
@@ -4365,6 +4365,419 @@
         "strategy": "role",
         "role": "button",
         "name": "Tour this page"
+      }
+    },
+    {
+      "id": "inv-prod-assistant-timeout-response-stopped",
+      "page": "assistant",
+      "route": "/assistant",
+      "label": "Assistant: timeout ends as Response stopped (~140s)",
+      "type": "assistant-timeout",
+      "fileLine": "src/TIKR.Web/Components/Pages/Assistant.razor:524-529; TikrApiClient HttpClient default 100s",
+      "intendedBehavior": "HttpClient/Ollama timeouts surface a friendly retry message; Grok fallback on timeout.",
+      "dependencies": [
+        "Ollama",
+        "API",
+        "HttpClient.Timeout"
+      ],
+      "permissions": [],
+      "expectedResult": "Retry/help text \u2014 not 'Response stopped.' from OperationCanceledException.",
+      "testId": "inv-prod-assistant-timeout-response-stopped",
+      "smokeSafe": false,
+      "writesData": false,
+      "knownFailure": "RB-006",
+      "playwright": {
+        "strategy": "assistant-timeout"
+      }
+    },
+    {
+      "id": "inv-prod-assistant-grok-fallback-on-timeout",
+      "page": "assistant",
+      "route": "/assistant",
+      "label": "Assistant: Grok fallback on timeout (not only empty reply)",
+      "type": "assistant-fallback",
+      "fileLine": "src/TIKR.Web/Components/Pages/Assistant.razor:496-503",
+      "intendedBehavior": "Escalate to Grok when local stream times out or is cancelled.",
+      "dependencies": [
+        "GROK_API_KEY",
+        "Ollama"
+      ],
+      "permissions": [],
+      "expectedResult": "Grok path invoked after local timeout.",
+      "testId": "inv-prod-assistant-grok-fallback-on-timeout",
+      "smokeSafe": false,
+      "writesData": false,
+      "knownFailure": "RB-006",
+      "playwright": {
+        "strategy": "assistant-grok-timeout"
+      }
+    },
+    {
+      "id": "inv-prod-assistant-prompt-reset",
+      "page": "assistant",
+      "route": "/assistant",
+      "label": "Assistant prompt box resets to default after send",
+      "type": "assistant-input",
+      "fileLine": "src/TIKR.Web/Components/Pages/Assistant.razor:87 Prompt=...",
+      "intendedBehavior": "Preserve empty prompt or clerk-typed text after send; do not overwrite with default.",
+      "dependencies": [
+        "SfAIAssistView"
+      ],
+      "permissions": [],
+      "expectedResult": "Input stays cleared or retains typed text \u2014 not default placeholder prompt.",
+      "testId": "inv-prod-assistant-prompt-reset",
+      "smokeSafe": false,
+      "writesData": false,
+      "knownFailure": "RB-007",
+      "playwright": {
+        "strategy": "assistant-prompt-reset"
+      }
+    },
+    {
+      "id": "inv-prod-guide-ask-advanced-button",
+      "page": "layout",
+      "route": "/",
+      "label": "User guide cites nonexistent Ask Advanced button",
+      "type": "help-content",
+      "fileLine": "src/TIKR.Web/wwwroot/help/clerk-user-guide.md:41; ClerkTourCatalog.cs:84",
+      "intendedBehavior": "Guide matches UI (no manual Ask Advanced; auto-Grok only).",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "No 'Ask Advanced' affordance promised in guide/tour.",
+      "testId": "inv-prod-guide-ask-advanced-button",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": "RB-008",
+      "playwright": {
+        "strategy": "guide-ask-advanced"
+      }
+    },
+    {
+      "id": "inv-prod-calendar-create-deadline-ux",
+      "page": "calendar",
+      "route": "/calendar",
+      "label": "Create deadline appears enabled until text entered",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Pages/Calendar.razor:53-56",
+      "intendedBehavior": "Disabled state clearly visible when NL field empty.",
+      "dependencies": [
+        "Ollama"
+      ],
+      "permissions": [],
+      "expectedResult": "Button visibly disabled OR helper text before typing.",
+      "testId": "inv-prod-calendar-create-deadline-ux",
+      "smokeSafe": false,
+      "writesData": false,
+      "knownFailure": "RB-009",
+      "playwright": {
+        "strategy": "calendar-create-deadline"
+      }
+    },
+    {
+      "id": "inv-prod-calendar-all-day-midnight",
+      "page": "calendar",
+      "route": "/calendar",
+      "label": "Deadlines render midnight\u20131AM not all-day",
+      "type": "calendar-display",
+      "fileLine": "src/TIKR.Web/Components/Pages/Calendar.razor:81-87",
+      "intendedBehavior": "Clerk-facing all-day deadlines on calendar.",
+      "dependencies": [
+        "SfSchedule"
+      ],
+      "permissions": [],
+      "expectedResult": "All-day events without 12\u20131AM slot span.",
+      "testId": "inv-prod-calendar-all-day-midnight",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": "RB-010",
+      "playwright": {
+        "strategy": "calendar-all-day"
+      }
+    },
+    {
+      "id": "inv-prod-calendar-recurring-roll",
+      "page": "calendar",
+      "route": "/calendar",
+      "label": "Recurring deadlines do not roll forward",
+      "type": "calendar-logic",
+      "fileLine": "src/TIKR.Infrastructure (recurrence seed/update)",
+      "intendedBehavior": "Recurring CO deadlines advance after occurrence.",
+      "dependencies": [
+        "API",
+        "EF Core"
+      ],
+      "permissions": [],
+      "expectedResult": "Next instance appears after due date passes.",
+      "testId": "inv-prod-calendar-recurring-roll",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": "RB-011",
+      "playwright": {
+        "strategy": "calendar-recurring"
+      }
+    },
+    {
+      "id": "inv-prod-documents-row-click-select",
+      "page": "documents",
+      "route": "/documents",
+      "label": "Document grid row click selects / previews",
+      "type": "grid-row",
+      "fileLine": "src/TIKR.Web/Components/Pages/Documents.razor:242-245 CheckboxOnly",
+      "intendedBehavior": "Clicking row selects document and shows preview.",
+      "dependencies": [
+        "SfGrid"
+      ],
+      "permissions": [],
+      "expectedResult": "Row click updates preview without checkbox-only.",
+      "testId": "inv-prod-documents-row-click-select",
+      "smokeSafe": false,
+      "writesData": false,
+      "knownFailure": "RB-012",
+      "playwright": {
+        "strategy": "documents-row-click"
+      }
+    },
+    {
+      "id": "inv-prod-documents-upload-utc-display",
+      "page": "documents",
+      "route": "/documents",
+      "label": "Upload times shown as local not UTC",
+      "type": "display-format",
+      "fileLine": "src/TIKR.Web/Components/Pages/Documents.razor (grid date column)",
+      "intendedBehavior": "Uploaded timestamps in clerk local timezone.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Displayed time matches local offset.",
+      "testId": "inv-prod-documents-upload-utc-display",
+      "smokeSafe": false,
+      "writesData": false,
+      "knownFailure": "RB-013",
+      "playwright": {
+        "strategy": "documents-utc-time"
+      }
+    },
+    {
+      "id": "inv-prod-user-guide-reopen",
+      "page": "home",
+      "route": "/",
+      "label": "User guide opens on repeated clicks",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Services/ClerkUserGuideService.cs:10; ClerkUserGuideDialog.razor:49",
+      "intendedBehavior": "Open user guide dialog every time.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Dialog visible after second Open user guide click.",
+      "testId": "inv-prod-user-guide-reopen",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": "RB-014",
+      "playwright": {
+        "strategy": "user-guide-reopen"
+      }
+    },
+    {
+      "id": "inv-prod-page-help-click",
+      "page": "home",
+      "route": "/",
+      "label": "Page help (i) click opens help (not hover-only)",
+      "type": "help",
+      "fileLine": "src/TIKR.Web/Components/Shared/PageHelp.razor:4-7",
+      "intendedBehavior": "Click or keyboard opens persistent help panel.",
+      "dependencies": [
+        "SfTooltip"
+      ],
+      "permissions": [],
+      "expectedResult": "Dialog/drawer on click; not tooltip-only.",
+      "testId": "inv-prod-page-help-click",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": "RB-015",
+      "playwright": {
+        "strategy": "page-help-click"
+      }
+    },
+    {
+      "id": "inv-prod-home-upload-document-picker",
+      "page": "home",
+      "route": "/",
+      "label": "Dashboard Upload document opens file picker",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Pages/Home.razor:89",
+      "intendedBehavior": "Navigate to documents and focus uploader / file picker.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "File input focused or chooser opens.",
+      "testId": "inv-prod-home-upload-document-picker",
+      "smokeSafe": false,
+      "writesData": false,
+      "knownFailure": "RB-016",
+      "playwright": {
+        "strategy": "home-upload-picker"
+      }
+    },
+    {
+      "id": "inv-prod-settings-reindex-control",
+      "page": "settings",
+      "route": "/settings",
+      "label": "Settings embedding reindex control visible",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Pages/Settings.razor:425",
+      "intendedBehavior": "Clerk can trigger reindex from Settings when API is up.",
+      "dependencies": [
+        "API",
+        "Ollama"
+      ],
+      "permissions": [],
+      "expectedResult": "Reindex embeddings button visible and enabled when connected (missing on prod e1c5399 walkthrough).",
+      "testId": "inv-prod-settings-reindex-control",
+      "smokeSafe": false,
+      "writesData": false,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "settings-reindex"
+      }
+    },
+    {
+      "id": "inv-prod-req-print-council-packet",
+      "page": "requirements",
+      "route": "/requirements",
+      "label": "Print council packet prints packet not entire page",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Pages/Requirements.razor (Print council packet)",
+      "intendedBehavior": "Print styled council packet PDF/preview.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Print job targets packet content, not full SPA chrome.",
+      "testId": "inv-prod-req-print-council-packet",
+      "smokeSafe": false,
+      "writesData": false,
+      "knownFailure": "RB-018",
+      "playwright": {
+        "strategy": "print-council-packet"
+      }
+    },
+    {
+      "id": "inv-prod-settings-duplicate-tour",
+      "page": "settings",
+      "route": "/settings",
+      "label": "Two Settings tour entry points do not duplicate same tour",
+      "type": "button",
+      "fileLine": "Settings.razor:28 PageTourButton; :311-312 tools vs replay",
+      "intendedBehavior": "Distinct tours or single entry.",
+      "dependencies": [
+        "ClerkTourService"
+      ],
+      "permissions": [],
+      "expectedResult": "Page tour \u2260 tools tour \u2260 replay tour.",
+      "testId": "inv-prod-settings-duplicate-tour",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": "RB-019",
+      "playwright": {
+        "strategy": "settings-duplicate-tour"
+      }
+    },
+    {
+      "id": "inv-prod-account-route-auth",
+      "page": "account",
+      "route": "/account",
+      "label": "/account loads with auth; secrets not exposed",
+      "type": "route",
+      "fileLine": "src/TIKR.Web/Components/Pages/Account.razor:3 Authorize; Settings keys cards",
+      "intendedBehavior": "Auth enforced on LAN; /account 200 for signed-in clerk; keys gated.",
+      "dependencies": [
+        "Auth",
+        "JWT"
+      ],
+      "permissions": [],
+      "expectedResult": "No HTTP 500; unauthenticated users blocked from keys.",
+      "testId": "inv-prod-account-route-auth",
+      "smokeSafe": false,
+      "writesData": false,
+      "knownFailure": "RB-020",
+      "playwright": {
+        "strategy": "account-auth"
+      }
+    },
+    {
+      "id": "inv-prod-settings-status-contradiction",
+      "page": "settings",
+      "route": "/settings",
+      "label": "Town helper status not contradictory",
+      "type": "status-display",
+      "fileLine": "src/TIKR.Web/Components/Pages/Settings.razor status cards",
+      "intendedBehavior": "Ready vs offline mutually exclusive; probe includes model health.",
+      "dependencies": [
+        "Ollama",
+        "API"
+      ],
+      "permissions": [],
+      "expectedResult": "Cannot show Ready and Ollama offline together.",
+      "testId": "inv-prod-settings-status-contradiction",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": "RB-021",
+      "playwright": {
+        "strategy": "settings-status"
+      }
+    },
+    {
+      "id": "inv-prod-a11y-overdue-contrast",
+      "page": "home",
+      "route": "/",
+      "label": "Dashboard Overdue pill contrast \u22654.5:1",
+      "type": "accessibility",
+      "fileLine": "src/TIKR.Web/Components/Pages/Home.razor:73; priority-overdue CSS",
+      "intendedBehavior": "WCAG AA text contrast on urgency counts.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Contrast ratio \u2265 4.5:1 (prod walkthrough: 3.06:1).",
+      "testId": "inv-prod-a11y-overdue-contrast",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": "RB-022",
+      "playwright": {
+        "strategy": "a11y-overdue-contrast"
+      }
+    },
+    {
+      "id": "inv-prod-grid-filter-aria",
+      "page": "requirements",
+      "route": "/requirements",
+      "label": "Grid filter inputs accessible name",
+      "type": "accessibility",
+      "fileLine": "Syncfusion SfGrid filter bar",
+      "intendedBehavior": "Filter inputs labelled for screen readers.",
+      "dependencies": [
+        "SfGrid"
+      ],
+      "permissions": [],
+      "expectedResult": "No aria-label _Filter; human-readable column names.",
+      "testId": "inv-prod-grid-filter-aria",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": "RB-023",
+      "playwright": {
+        "strategy": "grid-filter-aria"
+      }
+    },
+    {
+      "id": "inv-prod-home-add-requirement-nav-only",
+      "page": "home",
+      "route": "/",
+      "label": "Add requirement navigates only (no create dialog)",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Pages/Home.razor:87",
+      "intendedBehavior": "Quick-add opens create requirement dialog or prefilled form.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Create dialog on Requirements after click.",
+      "testId": "inv-prod-home-add-requirement-nav-only",
+      "smokeSafe": false,
+      "writesData": false,
+      "knownFailure": "RB-024",
+      "playwright": {
+        "strategy": "home-add-requirement"
       }
     }
   ]

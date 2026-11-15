@@ -2,6 +2,7 @@ import { expect, type Page, type TestInfo } from '@playwright/test';
 import inventory from './functions-inventory.json';
 import { gotoClerkPage } from './e2e-helpers';
 import type { FunctionsInventory, InventoryItem } from './inventory-types';
+import { runProductionWalkthroughStrategy } from './production-walkthrough-runner';
 
 export const functionsInventory = inventory as FunctionsInventory;
 
@@ -53,6 +54,11 @@ async function ensureOnRoute(page: Page, item: InventoryItem): Promise<void> {
 export async function exerciseInventoryItem(page: Page, item: InventoryItem): Promise<void> {
   const pw = item.playwright ?? { strategy: 'role', role: 'button', name: item.label };
 
+  if (typeof pw === 'object' && 'strategy' in pw) {
+    const handled = await runProductionWalkthroughStrategy(page, item, pw as { strategy: string });
+    if (handled) return;
+  }
+
   if (item.type === 'route' || pw.strategy === 'goto') {
     const path = pw.strategy === 'goto' ? pw.path : item.route;
     await gotoClerkPage(page, path);
@@ -86,12 +92,16 @@ export async function exerciseInventoryItem(page: Page, item: InventoryItem): Pr
     await expect(page.getByRole('heading', { name: 'Assistant' })).toBeVisible();
     const prompt = page.locator('.e-aiassistview textarea, .e-aiassistview [contenteditable="true"]').first();
     await expect(prompt).toBeVisible({ timeout: 25_000 });
-    await prompt.fill('What is a due-out?');
+    const typed = 'What is a due-out in Colorado municipal clerk work?';
+    await prompt.fill(typed);
+    const started = Date.now();
     await page.keyboard.press('Enter');
-    const progress = page.getByText(/thinking|working|searching/i);
-    const answer = page.locator('.e-aiassistview .e-message-content, .e-aiassistview .e-content').last();
+    const progress = page.getByText(/preparing|looking through|thinking|working|searching/i);
     await expect(progress).toBeVisible({ timeout: 3_000 });
-    await expect(answer).toContainText(/.+/, { timeout: 90_000 });
+    const answer = page.locator('.e-aiassistview .e-message-content, .e-aiassistview .e-content').last();
+    await expect(answer).toContainText(/.+/, { timeout: 60_000 });
+    expect(Date.now() - started).toBeLessThan(60_000);
+    await expect(answer).not.toContainText(/response stopped/i);
     return;
   }
 

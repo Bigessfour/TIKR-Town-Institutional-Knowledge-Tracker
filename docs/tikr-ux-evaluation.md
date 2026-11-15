@@ -1,7 +1,8 @@
 # TIKR UX evaluation (clerks on Synology NAS)
 
 **Date:** 2026-11-15  
-**Scope:** Static code audit + Release build/tests on agent VM (no live `mr-storage:8080` session).  
+**Production walkthrough:** Live session on `main` @ `e1c5399` (`mr-storage:8080`) — findings merged into [release-blockers.md](./release-blockers.md) and `scripts/inventory-manual-items.json`.  
+**Scope:** Static code audit + Release build/tests on agent VM; production items above.  
 **Method:** Mapped Blazor routes/components, traced handlers to `TikrApiClient` / `Program.cs` / `HybridAiService`, reviewed `docker/.env.example`, `deploy/windows/*`, and production appsettings overlays.  
 **RAG:** `tikr-rag-mcp` was not available in the audit environment; patterns were taken from repo search and prior docs (`docs/ui-readiness-audit.md`).
 

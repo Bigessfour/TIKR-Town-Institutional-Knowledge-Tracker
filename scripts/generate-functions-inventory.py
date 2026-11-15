@@ -13,6 +13,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 WEB = ROOT / "src" / "TIKR.Web"
 OVERRIDES_PATH = Path(__file__).with_name("inventory-overrides.json")
+MANUAL_PATH = Path(__file__).with_name("inventory-manual-items.json")
 OUT_JSON = ROOT / "tests" / "e2e" / "functions-inventory.json"
 OUT_MD = ROOT / "docs" / "functions-inventory.md"
 
@@ -342,7 +343,8 @@ def markdown_report(meta: dict, items: list[dict]) -> str:
         f"**Generated:** {meta['generatedAt']}  ",
         f"**Source:** `scripts/generate-functions-inventory.py`  ",
         f"**Machine-readable:** [tests/e2e/functions-inventory.json](../tests/e2e/functions-inventory.json)  ",
-        f"**UX audit baseline:** [tikr-ux-evaluation.md](./tikr-ux-evaluation.md)",
+        f"**UX audit baseline:** [tikr-ux-evaluation.md](./tikr-ux-evaluation.md)  ",
+        f"**Production walkthrough (main e1c5399):** manual items in `scripts/inventory-manual-items.json`",
         "",
         "## Summary",
         "",
@@ -398,7 +400,32 @@ def main() -> int:
         for path in sorted(root.rglob("*.razor")):
             all_items.extend(scan_razor(path, routes, overrides))
 
-    # Dedupe call-steve buttons sharing behavior — keep all with unique ids (already unique by line)
+    manual_path = MANUAL_PATH
+    if manual_path.is_file():
+        manual = json.loads(manual_path.read_text(encoding="utf-8")).get("items", [])
+        seen = {x.id for x in all_items}
+        for raw in manual:
+            item = InventoryItem(
+                id=raw["id"],
+                page=raw["page"],
+                route=raw["route"],
+                label=raw["label"],
+                type=raw["type"],
+                fileLine=raw["fileLine"],
+                intendedBehavior=raw["intendedBehavior"],
+                dependencies=raw.get("dependencies", []),
+                permissions=raw.get("permissions", []),
+                expectedResult=raw.get("expectedResult", ""),
+                testId=raw.get("testId", raw["id"]),
+                smokeSafe=raw.get("smokeSafe", True),
+                writesData=raw.get("writesData", False),
+                knownFailure=raw.get("knownFailure"),
+                playwright=raw.get("playwright", {}),
+            )
+            item.finalize(overrides)
+            if item.id not in seen:
+                all_items.append(item)
+                seen.add(item.id)
 
     items_dict = [asdict(x) for x in all_items]
     pages = {i["route"] for i in items_dict if i["type"] == "route"}
