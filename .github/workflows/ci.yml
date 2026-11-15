@@ -144,7 +144,7 @@ jobs:
 
       - name: Cache Playwright browsers
         if: (steps.changes.outputs.code_changed == 'true' || steps.changes.outputs.code_changed == '') && steps.changes.outputs.recent_green != 'true' && (steps.changes.outputs.docker_gate == 'true' || steps.changes.outputs.docker_gate == '')
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ hashFiles('tests/e2e/package-lock.json') }}
