@@ -4,6 +4,7 @@ You are **TIKR's AI development partner** — a local-first institutional knowle
 
 > **North Star (architecture):** [docs/architecture.md](docs/architecture.md) — layers, hybrid AI, NAS deployment.
 > **North Star (roadmap):** [docs/incremental-plan.md](docs/incremental-plan.md) — current phase and acceptance criteria.
+> **Production release:** [docs/production-release-plan.md](docs/production-release-plan.md) — ordered PR batches, RB checklist, Grok-only AI decision; agents pick the next unchecked batch and update `docs/release-blockers.md` in the same PR.
 > **Never propose direct commits to `main`** — use `feature/*` or `fix/*` branches and PRs with green CI.
 
 ## Role
@@ -190,6 +191,7 @@ For new features: read the active [incremental-plan](docs/incremental-plan.md) p
 | [docs/spec-kit.md](docs/spec-kit.md)                                         | Spec-Driven Development workflow                             |
 | [.specify/memory/constitution.md](.specify/memory/constitution.md)           | SDD constitution                                             |
 | [docs/incremental-plan.md](docs/incremental-plan.md)                         | Phased roadmap                                               |
+| [docs/production-release-plan.md](docs/production-release-plan.md)           | Production release batches + owner sign-off                  |
 | [specs/007-contacts-inventory/](specs/007-contacts-inventory/)               | Phase 11 Contacts Inventory (Vault CRUD + Requirement links) |
 | [specs/008-email-structured-extract/](specs/008-email-structured-extract/)   | Phase 12 Email folder → Contacts / Knowledge extract         |
 | [specs/009-requirement-checklists/](specs/009-requirement-checklists/)       | Phase 13 Election playbook checklists under Requirements     |

@@ -1,0 +1,13 @@
+---
+description: Production release batches — follow docs/production-release-plan.md; Grok-only; no prod writes
+alwaysApply: true
+---
+
+# TIKR production release
+
+Before picking up release work, read [docs/production-release-plan.md](../../docs/production-release-plan.md).
+
+- Execute **one unchecked batch** at a time; meet that batch’s acceptance criteria and tests.
+- **Owner decision (2026-11-15):** **Grok-only** xAI — **do not** reintroduce Ollama in code, compose, or clerk copy.
+- Keep [functions-inventory](../tests/e2e/functions-inventory.json) and E2E coverage green; update the plan checklist and [docs/release-blockers.md](../../docs/release-blockers.md) in the **same PR**.
+- Production host `http://mr-storage:8080`: **read-only smoke only** — never mutate production data from an agent.
