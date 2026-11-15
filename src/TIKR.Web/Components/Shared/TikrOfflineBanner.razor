@@ -4,7 +4,9 @@
 @if (Connection.ApiOffline)
 {
     <div class="tikr-offline-banner" role="alert" aria-live="assertive">
-        API offline — your data is still on the NAS. Edits may not save until the API is back.
+        <SfTooltip Content="API offline — your data is still on the NAS. Edits may not save until the API is back." Position="Position.TopCenter">
+            <span>The town server is offline. Your files are still saved. Edits may not save until it is back.</span>
+        </SfTooltip>
     </div>
 }
 

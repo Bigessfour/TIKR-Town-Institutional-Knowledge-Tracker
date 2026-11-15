@@ -75,6 +75,52 @@ public class AssistantAgentRouterTests
     }
 
     [Fact]
+    public void Decide_ThanksPlusDraftAndCompare_StillEscalates()
+    {
+        var d = AssistantAgentRouter.Decide(
+            "Thanks, draft a letter to the board and compare the options step by step.",
+            ollamaAvailable: true,
+            grokEnabled: true);
+
+        d.Route.Should().Be(AiRoute.CloudGrok);
+    }
+
+    [Fact]
+    public void Decide_ThanksAlone_StaysLocal()
+    {
+        var d = AssistantAgentRouter.Decide(
+            "thanks",
+            ollamaAvailable: true,
+            grokEnabled: true);
+
+        d.Route.Should().Be(AiRoute.LocalOllama);
+        d.Reason.Should().Contain("simple local intent");
+    }
+
+    [Fact]
+    public void Decide_ThanksgivingDoesNotCountAsThanks()
+    {
+        var d = AssistantAgentRouter.Decide(
+            "Compare the thanksgiving closure notice with last year's notice and draft a thorough memo.",
+            ollamaAvailable: true,
+            grokEnabled: true);
+
+        d.Route.Should().Be(AiRoute.CloudGrok);
+        d.Reason.Should().NotContain("simple local intent");
+    }
+
+    [Fact]
+    public void Decide_HowDoIUploadAlone_StaysLocal()
+    {
+        var d = AssistantAgentRouter.Decide(
+            "how do I upload a scan?",
+            ollamaAvailable: true,
+            grokEnabled: true);
+
+        d.Route.Should().Be(AiRoute.LocalOllama);
+    }
+
+    [Fact]
     public void EscalateAfterLocalFailure_GoesToGrokWhenEnabled()
     {
         AssistantAgentRouter.EscalateAfterLocalFailure(grokEnabled: true)

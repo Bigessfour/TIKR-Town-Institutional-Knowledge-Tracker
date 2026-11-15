@@ -12,8 +12,17 @@ window.tikrTour = {
         try { localStorage.setItem(key, value ? 'true' : 'false'); } catch { /* ignore */ }
     },
 
-    async run(steps, dotNetBridge) {
+    async run(steps, dotNetBridge, force) {
         if (!steps || steps.length === 0) return;
+        // First open shows the tour and records it. Later visits, including a refresh, do not.
+        // Page and Settings "show me around" pass force=true.
+        const completedKey = 'tikr-tour-completed-version';
+        let seen = false;
+        try { seen = !!localStorage.getItem(completedKey); } catch { /* private mode */ }
+        if (seen && force !== true) return;
+        if (force !== true) {
+            try { localStorage.setItem(completedKey, 'v2'); } catch { /* private mode */ }
+        }
         tikrTour._destroy();
 
         const overlay = document.createElement('div');

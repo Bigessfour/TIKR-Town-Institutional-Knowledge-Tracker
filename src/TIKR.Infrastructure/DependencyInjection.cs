@@ -25,6 +25,9 @@ public static class DependencyInjection
             {
                 options.UseNpgsql(configuration.GetConnectionString("Default")
                     ?? throw new InvalidOperationException("Postgres connection string required."));
+                // Historical migrations were authored for SQLite; keep MigrateAsync usable on Postgres.
+                options.ConfigureWarnings(w =>
+                    w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
             }
             else
             {
@@ -63,6 +66,11 @@ public static class DependencyInjection
 
         services.AddScoped<IAuditService, AuditService>();
         services.AddSingleton<IFileStorageService, LocalFileStorageService>();
+        services.AddSingleton<IFolderClassifier>(sp =>
+            FolderClassifier.Load(
+                sp.GetRequiredService<IConfiguration>()["FolderClassifier:ModelPath"],
+                sp.GetRequiredService<ILogger<FolderClassifier>>()));
+        services.AddScoped<IDocumentFolderCatalog, DocumentFolderCatalog>();
         services.AddScoped<IHybridAiService, HybridAiService>();
         services.AddScoped<IAgentDocumentStorage, NasAgentDocumentStorage>();
         services.AddSingleton<NasSyncfusionDocumentStorage>();

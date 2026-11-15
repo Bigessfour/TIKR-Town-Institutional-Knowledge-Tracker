@@ -47,6 +47,7 @@ public class TikrDbContext : IdentityDbContext<ApplicationUser>
             entity.HasKey(e => e.Id);
             entity.Property(e => e.FileName).HasMaxLength(500).IsRequired();
             entity.Property(e => e.StoragePath).HasMaxLength(1000).IsRequired();
+            entity.Property(e => e.ProposedFolder).HasMaxLength(80);
             entity.HasIndex(e => e.DeletedAt);
         });
 

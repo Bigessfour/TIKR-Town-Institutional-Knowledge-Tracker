@@ -29,7 +29,7 @@ test.describe('TIKR page readiness (nav + primary controls)', () => {
       { path: '/calendar', assert: async (p) => await expect(p.getByRole('heading', { name: 'Deadline Calendar' })).toBeVisible() },
       { path: '/requirements', assert: async (p) => await expect(p.getByRole('heading', { name: 'Requirements Manager' })).toBeVisible() },
       { path: '/documents', assert: async (p) => await expect(p.getByRole('heading', { name: 'Document Library' })).toBeVisible() },
-      { path: '/assistant', assert: async (p) => await expect(p.getByRole('heading', { name: 'AI Assistant' })).toBeVisible() },
+      { path: '/assistant', assert: async (p) => await expect(p.getByRole('heading', { name: 'Assistant' })).toBeVisible() },
       { path: '/vault', assert: async (p) => await expect(p.getByText(/hit by a bus/i)).toBeVisible() },
       { path: '/settings', assert: async (p) => await expect(p.getByRole('heading', { name: 'Settings' })).toBeVisible() },
     ];
@@ -62,7 +62,7 @@ test.describe('TIKR page readiness (nav + primary controls)', () => {
   test('documents search mode toggles and uploader region', async ({ page }) => {
     await gotoClerkPage(page, '/documents');
     await expect(page.getByRole('heading', { name: 'Document Library' })).toBeVisible();
-    const semantic = page.getByRole('button', { name: /Semantic search/i });
+    const semantic = page.getByRole('button', { name: /Search by meaning/i });
     const full = page.getByRole('button', { name: /Full-text search/i });
     if (await semantic.isVisible()) {
       await semantic.click();
@@ -153,7 +153,7 @@ test.describe('TIKR page readiness (nav + primary controls)', () => {
     await expect(page.getByRole('heading', { name: 'Settings' })).toBeVisible();
     // Clerk-facing Settings cards (chat memory redesign + helper/storage).
     // Use exact/role locators — "This computer" also appears in body copy.
-    await expect(page.locator('.e-card-header-title', { hasText: 'Chat memory' }).first()).toBeVisible();
+    await expect(page.locator('.e-card-header-title', { hasText: 'Who uses this computer' }).first()).toBeVisible();
     await expect(page.locator('.e-card-header-title', { hasText: /^This computer$/ })).toBeVisible();
     await expect(
       page
@@ -168,7 +168,7 @@ test.describe('TIKR page readiness (nav + primary controls)', () => {
     await gotoClerkPage(page, '/calendar');
     await expect(page.locator('.e-grid')).toBeVisible({ timeout: 25_000 });
     const schedule = page.locator('.e-schedule');
-    const licenseMsg = page.getByText(/Schedule view needs a valid Syncfusion Blazor license/i);
+    const licenseMsg = page.getByText(/The calendar needs a license before the month view can open/i);
     await expect(schedule.or(licenseMsg)).toBeVisible({ timeout: 25_000 });
   });
 

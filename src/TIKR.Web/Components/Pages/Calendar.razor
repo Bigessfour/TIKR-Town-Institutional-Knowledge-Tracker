@@ -22,7 +22,7 @@
     </div>
     <div class="page-header-actions">
         <PageTourButton Route="/calendar" />
-        <PageHelp DataTour="@ClerkTourIds.HelpCalendar" HelpText="Create, edit, move, or delete appointments here — changes save to Requirements on the NAS. Edit Submit to / contact fields on Requirements for who to call. Colorado default (seeded) deadlines can be moved or edited but not deleted." />
+        <PageHelp DataTour="@ClerkTourIds.HelpCalendar" HelpText="Create, edit, move, or delete appointments here — changes save to Requirements on the NAS. Edit Submit to and contact fields on Requirements for who to call. Colorado default deadlines can be moved or edited but not deleted. “Add from plain English” uses the local helper (Ollama)." />
     </div>
 </div>
 
@@ -41,7 +41,9 @@
 else
 {
     <div class="calendar-nl mb-3">
-        <label for="cal-nl" class="form-label"><strong>Add from plain English</strong> (Ollama)</label>
+        <SfTooltip Content="The local helper (Ollama) reads the sentence and fills in the deadline." Position="Position.TopCenter">
+            <label for="cal-nl" class="form-label"><strong>Add from plain English</strong></label>
+        </SfTooltip>
         <div class="d-flex gap-2 flex-wrap align-items-start">
             <SfTextBox ID="cal-nl"
                        @bind-Value="_nlPrompt"
@@ -61,14 +63,12 @@ else
     <div data-tour="@ClerkTourIds.CalSchedule">
     @if (!BlazorLicense.BlazorLicenseValid)
     {
-        <div class="tikr-empty-state" role="status">
-            <strong>Schedule view needs a valid Syncfusion Blazor license.</strong>
-            <p>Install a <strong>Blazor v34.1.x</strong> key (see Settings → Syncfusion Blazor UI), then restart the Web container. The requirements grid below still works.</p>
-            @if (!string.IsNullOrWhiteSpace(BlazorLicense.Detail))
-            {
-                <p class="text-muted">@BlazorLicense.Detail</p>
-            }
-        </div>
+        <SfTooltip Content="@CalendarLicenseTooltip" Position="Position.TopCenter">
+            <div class="tikr-empty-state" role="status">
+                <strong>The calendar needs a license before the month view can open.</strong>
+                <p>Ask Steve to check the license in Settings. The list of deadlines below still works.</p>
+            </div>
+        </SfTooltip>
     }
     else
     {
@@ -153,6 +153,10 @@ else
     private string? _error;
     private string _nlPrompt = "";
     private string? _nlStatus;
+
+    private string CalendarLicenseTooltip =>
+        "Schedule view needs a valid Syncfusion Blazor license. Install a Blazor v34.1.x key (see Settings), then restart the Web container. "
+        + (BlazorLicense.Detail ?? string.Empty);
     private bool _nlBusy;
     private List<ContactDto> _calContacts = [];
     private Guid? _calRequirementId;
@@ -442,7 +446,7 @@ else
 
             if (string.IsNullOrWhiteSpace(title) || !DateOnly.TryParse(dueRaw, out var dueDate))
             {
-                _nlStatus = "AI JSON missing title or dueDate.";
+                _nlStatus = "Could not read a title and due date. Try a clearer sentence.";
                 TikrActionLog.Failed(Logger, "UI.Calendar.NaturalLanguageCreate", "Missing title or dueDate");
                 return;
             }

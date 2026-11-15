@@ -51,16 +51,83 @@ public class FeatureSettingsServiceTests
         dto.TownName.Should().NotBeNullOrWhiteSpace();
     }
 
+    [Fact]
+    public async Task LoadIntoStateAsync_EnvChatModelWinsWhenDatabaseRowIsMissing()
+    {
+        await using var db = await TestDbContextFactory.CreateMigratedAsync();
+        var state = new FeatureSettingsState();
+        var sut = CreateService(db, state, configuration: ChatModelConfig(), environmentName: "Testing");
+
+        await sut.LoadIntoStateAsync();
+
+        state.Current.OllamaChatModel.Should().Be("qwen2.5:7b");
+    }
+
+    [Fact]
+    public async Task LoadIntoStateAsync_DatabaseChatModelWinsOverEnv()
+    {
+        await using var db = await TestDbContextFactory.CreateMigratedAsync();
+        db.AppSettings.Add(new Shared.Entities.AppSetting
+        {
+            Key = FeatureSettingKeys.OllamaChatModel,
+            Value = "llama3.2:3b",
+            UpdatedAtUtc = DateTime.UtcNow
+        });
+        await db.SaveChangesAsync();
+
+        var state = new FeatureSettingsState();
+        var sut = CreateService(db, state, configuration: ChatModelConfig(), environmentName: "Testing");
+
+        await sut.LoadIntoStateAsync();
+
+        state.Current.OllamaChatModel.Should().Be("llama3.2:3b");
+    }
+
+    [Fact]
+    public async Task UpdateAsync_PersistsTownName()
+    {
+        await using var db = await TestDbContextFactory.CreateMigratedAsync();
+        var state = new FeatureSettingsState();
+        var sut = CreateService(db, state, environmentName: "Testing");
+
+        var dto = await sut.UpdateAsync(new UpdateFeatureSettingsRequest(TownName: "Wiley Test"));
+
+        dto.TownName.Should().Be("Wiley Test");
+        state.Current.TownName.Should().Be("Wiley Test");
+    }
+
+    [Fact]
+    public async Task UpdateAsync_UseGrokWithoutKey_Throws()
+    {
+        await using var db = await TestDbContextFactory.CreateMigratedAsync();
+        var sut = CreateService(db, new FeatureSettingsState(), environmentName: "Testing");
+
+        var act = () => sut.UpdateAsync(new UpdateFeatureSettingsRequest(UseGrok: true));
+
+        await act.Should().ThrowAsync<ArgumentException>();
+    }
+
+    private static IConfiguration ChatModelConfig() =>
+        new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["AI:DefaultModel"] = "llama3.2:3b",
+                ["OLLAMA_CHAT_MODEL"] = "qwen2.5:7b"
+            })
+            .Build();
+
     private static FeatureSettingsService CreateService(
         TikrDbContext db,
         FeatureSettingsState state,
-        IOllamaChatClientFactory? ollama = null)
+        IOllamaChatClientFactory? ollama = null,
+        IConfiguration? configuration = null,
+        string environmentName = "Development")
     {
-        var config = new ConfigurationBuilder()
+        var config = configuration ?? new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>())
             .Build();
         var hostEnv = new Mock<IHostEnvironment>();
-        hostEnv.Setup(h => h.EnvironmentName).Returns(Environments.Development);
+        hostEnv.Setup(h => h.EnvironmentName).Returns(environmentName);
 
         return new FeatureSettingsService(
             db,

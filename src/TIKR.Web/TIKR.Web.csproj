@@ -9,7 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Markdig" Version="1.5.0" />
+    <PackageReference Include="Markdig" Version="1.5.1" />
     <PackageReference Include="Microsoft.Extensions.AI" Version="10.11.0" />
     <PackageReference Include="Syncfusion.Blazor.FileManager" Version="34.2.9" />
     <PackageReference Include="Syncfusion.Blazor.SfPdfViewer" Version="34.2.9" />

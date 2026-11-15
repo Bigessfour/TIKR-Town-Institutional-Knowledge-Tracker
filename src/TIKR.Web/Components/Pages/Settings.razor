@@ -22,38 +22,44 @@
 <div class="page-header">
     <div class="page-header-main">
         <h2>Settings</h2>
-        <p>Your everyday options for TIKR — theme, town name, helper AI, and where files are kept</p>
+        <p>Theme, town name, the local helper, and where files are kept</p>
     </div>
     <div class="page-header-actions">
         <PageTourButton Route="/settings" />
-        <PageHelp DataTour="@ClerkTourIds.HelpSettings" HelpText="Change how TIKR looks, turn the helper AI on or off, and update town details. Chat memory is locked to this computer’s clerk (Deb Dillon or Paige Lindo) from the NAS backup inventory. If something looks confusing, tap Call Steve for help." />
+        <PageHelp DataTour="@ClerkTourIds.HelpSettings" HelpText="Change how TIKR looks and update town details. Chat memory follows this computer’s clerk (Deb Dillon or Paige Lindo) from the NAS backup inventory: DESKTOP-KN6INHL is Deb Dillon, DESKTOP-O9TCKP1 is Paige Lindo. Windows login is not used. A rare override is for an unmapped PC, a demo, or Steve only. The advanced helper key is Grok. The local helper is Ollama. The forms license is Syncfusion. If something looks confusing, tap Call Steve for help." />
     </div>
 </div>
 
 <SfCard CssClass="mb-3">
-    <CardHeader Title="Chat memory — who uses this computer" />
+    <CardHeader Title="Who uses this computer" />
     <CardContent>
         <ClerkIdentityBanner />
-        <p class="text-muted mt-2 mb-2">@ClerkIdentity.StatusDetail()</p>
-        <p class="text-muted mb-2">
-            Town NAS inventory: <code>DESKTOP-KN6INHL</code> → Deb Dillon,
-            <code>DESKTOP-O9TCKP1</code> → Paige Lindo.
-            Windows login is not used (both PCs may share a municipal account).
-        </p>
+        <SfTooltip Content="@ClerkIdentity.StatusDetail()" Position="Position.TopCenter">
+            <p class="text-muted mt-2 mb-2">@ClerkFacingIdentity()</p>
+        </SfTooltip>
+        <SfTooltip Content="Town NAS inventory: DESKTOP-KN6INHL is Deb Dillon, DESKTOP-O9TCKP1 is Paige Lindo. Windows login is not used (both PCs may share a municipal account)." Position="Position.TopCenter">
+            <p class="text-muted mb-2">Deb Dillon and Paige Lindo each keep their own chat on their own computer.</p>
+        </SfTooltip>
         @if (!ClerkIdentity.IsMachineMapped || ClerkIdentity.IsManualOverride || !ClerkIdentity.IsResolved)
         {
             <div class="mt-3">
-                <label class="me-2"><strong>Rare override</strong> (unmapped PC, demo, or Steve only):</label>
+                <SfTooltip Content="Rare override for an unmapped PC, a demo, or Steve only." Position="Position.TopCenter">
+                    <label class="me-2"><strong>Choose a different clerk</strong></label>
+                </SfTooltip>
                 <SfDropDownList TValue="string"
                                 TItem="string"
                                 DataSource="@_clerkOverrideOptions"
                                 @bind-Value="_clerkOverrideSelection"
-                                Placeholder="Use machine mapping"
+                                Placeholder="Use this computer’s usual clerk"
                                 Width="220px"
                                 CssClass="e-outline" />
                 <div class="tikr-settings-help-actions mt-2">
-                    <SfButton CssClass="tikr-action-btn" OnClick="SaveClerkOverrideAsync">Save override</SfButton>
-                    <SfButton CssClass="tikr-action-btn e-outline" OnClick="ClearClerkOverrideAsync">Clear override</SfButton>
+                    <SfTooltip Content="Saves a manual override for this computer." Position="Position.TopCenter">
+                        <SfButton CssClass="tikr-action-btn" OnClick="SaveClerkOverrideAsync">Save this clerk</SfButton>
+                    </SfTooltip>
+                    <SfTooltip Content="Clears the override and uses this computer’s usual clerk." Position="Position.TopCenter">
+                        <SfButton CssClass="tikr-action-btn e-outline" OnClick="ClearClerkOverrideAsync">Use the usual clerk</SfButton>
+                    </SfTooltip>
                 </div>
             </div>
         }
@@ -101,19 +107,21 @@ else
             </p>
 
             <div class="mb-4">
-                <label for="tikr-grok-key"><strong>Advanced helper key (Grok)</strong></label>
+                <SfTooltip Content="This key is for Grok, the advanced helper for harder questions." Position="Position.TopCenter">
+                    <label for="tikr-grok-key"><strong>Advanced helper key</strong></label>
+                </SfTooltip>
                 <p class="text-muted mb-1">
-                    Turns on the “Ask Advanced” button on AI Assistant for harder questions.
+                    Use this when a question needs the advanced helper.
                     Status: @(_features.GrokApiKeyConfigured ? "saved" : "not saved yet")
                 </p>
                 <SfTextBox ID="tikr-grok-key" @bind-Value="_editGrokApiKey"
                            Placeholder="@(_features.GrokApiKeyConfigured ? "(leave blank to keep current)" : "paste key from Steve")"
                            Type="Syncfusion.Blazor.Inputs.InputType.Password" CssClass="e-outline" />
                 <div class="mt-2">
-                    <SfCheckBox @bind-Checked="_editUseGrok" Label="Turn on Advanced helper (Grok)" />
+                    <SfCheckBox @bind-Checked="_editUseGrok" Label="Turn on advanced helper" />
                 </div>
                 <div class="tikr-settings-help-actions mt-2">
-                    <SfButton CssClass="tikr-action-btn e-outline e-small" OnClick="CallSteve">Need a new Grok key? Call Steve for help</SfButton>
+                    <SfButton CssClass="tikr-action-btn e-outline e-small" OnClick="CallSteve">Need a new advanced helper key? Call Steve for help</SfButton>
                 </div>
             </div>
 
@@ -135,12 +143,14 @@ else
     </SfCard>
 
     <SfCard CssClass="mb-3">
-        <CardHeader Title="Town helper (local AI)" />
+        <CardHeader Title="Local helper" />
         <CardContent>
-            <p class="text-muted mb-2">
-                Everyday chat, tagging, and search stay on your town equipment.
-                Status: @(_features.OllamaAvailable ? "Ready" : "Not available right now")
-            </p>
+            <SfTooltip Content="The local helper is Ollama, on town equipment. Everyday chat, tagging, and search stay there." Position="Position.TopCenter">
+                <p class="text-muted mb-2">
+                    Everyday chat, tagging, and search stay on town equipment.
+                    Status: @(_features.OllamaAvailable ? "Ready" : "Not available right now")
+                </p>
+            </SfTooltip>
             <p class="text-muted mb-2">Most days you only need the Ready light above. Changing connection details is rare.</p>
             <div class="tikr-settings-help-actions">
                 <SfButton CssClass="tikr-action-btn e-outline" OnClick="CallSteve">Helper not ready? Call Steve for help</SfButton>
@@ -174,7 +184,9 @@ else
         <CardHeader Title="Where uploaded files live" />
         <CardContent>
             <p class="text-muted mb-2">
-                TIKR saves documents you upload into a folder on the town NAS. Changing this is uncommon — ask Steve before moving things.
+                <SfTooltip Content="Uploaded files are stored on the town NAS (Synology)." Position="Position.TopCenter">
+                    <span>TIKR saves documents you upload into a folder on town storage. Changing this is uncommon — ask Steve before moving things.</span>
+                </SfTooltip>
             </p>
             <div class="tikr-settings-help-actions mb-2">
                 <SfButton CssClass="tikr-action-btn e-outline" OnClick="CallSteve">Need to move files? Call Steve for help</SfButton>
@@ -204,8 +216,10 @@ else
                 <SfTextBox ID="tikr-town-name" @bind-Value="_editTownName" Placeholder="Wiley" CssClass="e-outline" />
             </div>
             <div class="tikr-form-row mb-2">
-                <label for="tikr-storage-label">Where we say files are stored (for example “Town NAS”)</label>
-                <SfTextBox ID="tikr-storage-label" @bind-Value="_editStorageLabel" Placeholder="Town NAS" CssClass="e-outline" />
+                <SfTooltip Content="Example label: Town NAS. This is the wording clerks see. The files themselves stay on the Synology NAS." Position="Position.TopCenter">
+                    <label for="tikr-storage-label">Where the status line says files are kept</label>
+                </SfTooltip>
+                <SfTextBox ID="tikr-storage-label" @bind-Value="_editStorageLabel" Placeholder="Town file room" CssClass="e-outline" />
             </div>
             <div class="tikr-form-row mb-2">
                 <label for="tikr-logo-path">Town seal / logo file (optional)</label>
@@ -229,7 +243,9 @@ else
             </div>
             <div class="tikr-form-row mb-2">
                 <label for="tikr-email-path">Email drop folder (optional)</label>
-                <p class="text-muted mb-1">If you forward mail into a folder on the NAS, put that folder here.</p>
+                <SfTooltip Content="The mail drop folder is on the NAS." Position="Position.TopCenter">
+                    <p class="text-muted mb-1">If you forward mail into a shared folder, put that folder here.</p>
+                </SfTooltip>
                 <SfTextBox ID="tikr-email-path" @bind-Value="_editEmailPath" CssClass="e-outline" />
             </div>
             <div class="tikr-settings-help-actions mb-2">
@@ -287,8 +303,9 @@ else
         <CardHeader Title="Clerk tools tour" />
         <CardContent>
             <p class="text-muted mb-2">
-                Guided walkthrough of every clerk-facing screen and the Syncfusion tools behind it
-                (Dashboard through Settings). This is not the sidebar menu spotlight.
+                <SfTooltip Content="The tour includes the Syncfusion document tools behind each screen." Position="Position.TopCenter">
+                    <span>Guided walkthrough of every clerk screen and the document tools behind it (Dashboard through Settings). This is not the sidebar menu spotlight.</span>
+                </SfTooltip>
             </p>
             <SfButton CssClass="tikr-action-btn" Content="Open tools tour" OnClick="@(() => Navigation.NavigateTo(ClerkToolsShowcaseCatalog.PageRoute))" />
             <SfButton CssClass="tikr-action-btn e-outline ms-2" OnClick="ReplayTourAsync">Replay sidebar menu tour</SfButton>
@@ -317,7 +334,7 @@ else
             <p><strong>Town:</strong> @_localStatus.TownName</p>
             <p><strong>Files kept on:</strong> @_localStatus.StorageLabel</p>
             <p><strong>Last saved:</strong> @LocalStatusFooterHelper.FormatLastSaved(_localStatus.DataLastModifiedUtc, DateTime.UtcNow)</p>
-            <p><strong>Town helper:</strong> @(_localStatus.OllamaAvailable ? "Ready" : "Offline — chat pauses until it returns")</p>
+            <p><strong>Local helper:</strong> @(_localStatus.OllamaAvailable ? "Ready" : "Offline — chat pauses until it returns")</p>
         }
     </CardContent>
 </SfCard>
@@ -360,8 +377,10 @@ else
         }
         else
         {
-            <p><strong>Town helper:</strong> @(_status.OllamaAvailable ? "Ready" : "Not available")</p>
-            <p><strong>Advanced helper (Grok):</strong> @(_status.GrokEnabled ? "On" : "Off")</p>
+            <p><strong>Local helper:</strong> @(_status.OllamaAvailable ? "Ready" : "Not available")</p>
+            <SfTooltip Content="Advanced helper is Grok." Position="Position.TopCenter">
+                <p><strong>Advanced helper:</strong> @(_status.GrokEnabled ? "On" : "Off")</p>
+            </SfTooltip>
         }
     </CardContent>
 </SfCard>
@@ -429,8 +448,9 @@ else
         @if (_embeddingRecovery is not null)
         {
             <div class="mt-3">
+                <SfTooltip Content="Automatic recovery watches Ollama and refreshes embeddings when search coverage is incomplete." Position="Position.TopCenter">
                 <p><strong>Automatic recovery:</strong>
-                    @( _embeddingRecovery.OllamaAvailable ? "Ollama is up" : "Ollama offline" )
+                    @(_embeddingRecovery.OllamaAvailable ? "Local helper is ready" : "Local helper is offline")
                     @if (_embeddingRecovery.RecoveryNeeded)
                     {
                         <span> — memory needs a refresh</span>
@@ -440,16 +460,19 @@ else
                         <span> — coverage OK</span>
                     }
                 </p>
+                </SfTooltip>
                 @if (!string.IsNullOrWhiteSpace(_embeddingRecovery.LastResultSummary))
                 {
+                    <SfTooltip Content="Last reindex trigger and embedding refresh." Position="Position.TopCenter">
                     <p class="text-muted" style="font-size:0.9rem;">
-                        Last reindex (@(_embeddingRecovery.LastTrigger ?? "—")):
+                        Last refresh (@(_embeddingRecovery.LastTrigger ?? "—")):
                         @_embeddingRecovery.LastResultSummary
                         @if (_embeddingRecovery.LastAutoReindexUtc is { } t)
                         {
                             <span> at @t.ToLocalTime().ToString("g")</span>
                         }
                     </p>
+                    </SfTooltip>
                 }
                 @if (!string.IsNullOrWhiteSpace(_embeddingRecovery.LastError))
                 {
@@ -457,10 +480,12 @@ else
                 }
             </div>
         }
-        <p class="text-muted mt-2" style="font-size:0.85rem;">
-            When Ollama comes back online, TIKR automatically refreshes Assistant memory if coverage is incomplete
-            (cooldown 15 minutes). You can always press <strong>Refresh Assistant memory</strong> yourself.
-        </p>
+        <SfTooltip Content="When Ollama comes back online, TIKR refreshes embeddings if coverage is incomplete (cooldown 15 minutes)." Position="Position.TopCenter">
+            <p class="text-muted mt-2" style="font-size:0.85rem;">
+                When the local helper comes back, TIKR refreshes Assistant memory if coverage is incomplete
+                (waits 15 minutes between tries). You can always press <strong>Refresh Assistant memory</strong> yourself.
+            </p>
+        </SfTooltip>
     </CardContent>
 </SfCard>
 
@@ -532,11 +557,11 @@ else
 
     private readonly List<string> _clerkOverrideOptions =
     [
-        "Use machine mapping",
+        "Use this computer’s usual clerk",
         .. ChatClerkProfiles.All.Select(p => p.Label)
     ];
 
-    private string _clerkOverrideSelection = "Use machine mapping";
+    private string _clerkOverrideSelection = "Use this computer’s usual clerk";
 
     protected override async Task OnInitializedAsync()
     {
@@ -590,18 +615,18 @@ else
             {
                 _clerkOverrideSelection = ClerkIdentity.IsResolved
                     ? ClerkIdentity.DisplayName
-                    : "Use machine mapping";
+                    : "Use this computer’s usual clerk";
             }
         }
         catch
         {
-            _clerkOverrideSelection = "Use machine mapping";
+            _clerkOverrideSelection = "Use this computer’s usual clerk";
         }
     }
 
     private async Task SaveClerkOverrideAsync()
     {
-        if (string.Equals(_clerkOverrideSelection, "Use machine mapping", StringComparison.OrdinalIgnoreCase)
+        if (string.Equals(_clerkOverrideSelection, "Use this computer’s usual clerk", StringComparison.OrdinalIgnoreCase)
             || string.IsNullOrWhiteSpace(_clerkOverrideSelection))
         {
             await ClearClerkOverrideAsync();
@@ -627,7 +652,7 @@ else
             /* best effort */
         }
 
-        Toast.Show($"Chat memory override: {ClerkIdentity.DisplayName}.");
+        Toast.Show($"This computer will remember chat for {ClerkIdentity.DisplayName}.");
         StateHasChanged();
     }
 
@@ -645,12 +670,20 @@ else
         ClerkIdentity.ResolveFromHost();
         _clerkOverrideSelection = ClerkIdentity.IsResolved
             ? ClerkIdentity.DisplayName
-            : "Use machine mapping";
+            : "Use this computer’s usual clerk";
         Toast.Show(ClerkIdentity.IsResolved
-            ? $"Using machine mapping: {ClerkIdentity.DisplayName}."
-            : "Override cleared. This computer is still unmapped — pick Deb Dillon or Paige Lindo if needed.");
+            ? $"Using this computer’s usual clerk: {ClerkIdentity.DisplayName}."
+            : "This computer is not assigned yet. Pick Deb Dillon or Paige Lindo.");
         StateHasChanged();
     }
+
+    private string ClerkFacingIdentity() => ClerkIdentity.ResolutionSource switch
+    {
+        "machine" => $"This computer is {ClerkIdentity.DisplayName}.",
+        "config" => $"This computer is set to {ClerkIdentity.DisplayName}.",
+        "override" => $"You chose {ClerkIdentity.DisplayName} for this computer.",
+        _ => "Pick Deb Dillon or Paige Lindo so chat stays with the right clerk."
+    };
 
     private void CallSteve() => Toast.Show(SteveHelpMessage);
 
@@ -719,7 +752,7 @@ else
             ApplyFeatureEdits(_features);
             _featuresMessage = _features is null
                 ? "Could not refresh settings."
-                : (_features.OllamaAvailable ? "Town helper is ready." : "Town helper is not available right now.");
+                : (_features.OllamaAvailable ? "Local helper is ready." : "Local helper is not available right now.");
         }
         catch (Exception)
         {

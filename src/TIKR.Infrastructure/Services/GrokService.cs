@@ -5,6 +5,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using TIKR.Shared.Configuration;
 using TIKR.Shared.Diagnostics;
+using TIKR.Shared.DTOs;
+using TIKR.Shared.Helpers;
 
 namespace TIKR.Infrastructure.Services;
 
@@ -38,7 +40,11 @@ public class GrokService(
         TikrConfiguration.NormalizeGrokModel(
             featureSettings?.Current.GrokModel ?? TikrConfiguration.GetGrokModel(configuration));
 
-    public async Task<string?> CompleteAsync(string prompt, string? systemPrompt = null, CancellationToken cancellationToken = default)
+    public async Task<string?> CompleteAsync(
+        string prompt,
+        string? systemPrompt = null,
+        CancellationToken cancellationToken = default,
+        IReadOnlyList<AssistantTurn>? history = null)
     {
         if (!IsEnabled)
             return null;
@@ -48,7 +54,43 @@ public class GrokService(
             return null;
 
         var model = ResolvedModel;
-        TikrActionLog.Started(logger, "Grok.Complete", $"Model={model} PromptLen={prompt?.Length ?? 0}");
+        TikrActionLog.Started(logger, "Grok.Complete",
+            $"Model={model} PromptLen={prompt?.Length ?? 0} HistoryTurns={history?.Count ?? 0}");
+
+        var messages = new List<GrokMessage>
+        {
+            new()
+            {
+                Role = "system",
+                Content = CloudOutboundGuard.Redact(systemPrompt
+                          ?? "You are a helpful assistant for Colorado municipal clerks. "
+                             + "Answer clearly for non-technical clerks. Prefer grounded facts from the provided context. "
+                             + "Contact details may be replaced with [email], [phone], or [id].")
+            }
+        };
+
+        if (history is not null)
+        {
+            foreach (var turn in history)
+            {
+                if (string.IsNullOrWhiteSpace(turn.Content))
+                    continue;
+                var role = string.Equals(turn.Role, "assistant", StringComparison.OrdinalIgnoreCase)
+                    ? "assistant"
+                    : "user";
+                messages.Add(new GrokMessage
+                {
+                    Role = role,
+                    Content = CloudOutboundGuard.Redact(turn.Content)
+                });
+            }
+        }
+
+        messages.Add(new GrokMessage
+        {
+            Role = "user",
+            Content = CloudOutboundGuard.Redact(prompt)
+        });
 
         var request = new GrokChatRequest
         {
@@ -56,17 +98,7 @@ public class GrokService(
             // Prefer max_completion_tokens (max_tokens is deprecated on xAI chat API).
             MaxCompletionTokens = 8192,
             Temperature = 0.4,
-            Messages =
-            [
-                new GrokMessage
-                {
-                    Role = "system",
-                    Content = systemPrompt
-                              ?? "You are a helpful assistant for Colorado municipal clerks. "
-                                 + "Answer clearly for non-technical clerks. Prefer grounded facts from the provided context."
-                },
-                new GrokMessage { Role = "user", Content = prompt ?? string.Empty }
-            ]
+            Messages = messages
         };
 
         using var httpRequest = new HttpRequestMessage(
