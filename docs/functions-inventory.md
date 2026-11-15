@@ -1,6 +1,6 @@
 # TIKR functions inventory (user-facing controls)
 
-**Generated:** 2026-11-15T22:47:59Z  
+**Generated:** 2026-11-15T22:48:15Z  
 **Source:** `scripts/generate-functions-inventory.py`  
 **Machine-readable:** [tests/e2e/functions-inventory.json](../tests/e2e/functions-inventory.json)  
 **UX audit baseline:** [tikr-ux-evaluation.md](./tikr-ux-evaluation.md)
@@ -220,10 +220,10 @@
 | `inv-layout-retry` | layout | Retry | button | src/TIKR.Web/Components/Layout/ReconnectModal.razor:18 | — | Control responds without unhandled error. | — |
 | `inv-layout-settings-settings` | layout | Settings | link-nav | src/TIKR.Web/Components/Layout/MainLayout.razor:40 | — | Target route loads with expected heading. | — |
 | `inv-layout-sign-out` | layout | Sign out | button | src/TIKR.Web/Components/Layout/MainLayout.razor:56 | — | Control responds without unhandled error. | — |
-| `inv-layout-statehaschanged-try-again` | layout | StateHasChanged()">Try again | button | src/TIKR.Web/Components/Layout/MainLayout.razor:92 | — | Control responds without unhandled error. | RB-004 |
 | `inv-layout-text-field` | layout | Text field | input | src/TIKR.Web/Components/Shared/ClerkUserGuideDialog.razor:8 | — | Value binds and persists on save. | — |
 | `inv-layout-tools-tour-demo-clerk-tools` | layout | Tools tour | link-nav | src/TIKR.Web/Components/Layout/MainLayout.razor:41 | — | Target route loads with expected heading. | — |
 | `inv-layout-tour-this-page` | layout | Tour this page | button | src/TIKR.Web/Components/Shared/PageTourButton.razor:4 | — | Control responds without unhandled error. | — |
+| `inv-layout-try-again` | layout | Try again | button | src/TIKR.Web/Components/Layout/MainLayout.razor:92 | — | Control responds without unhandled error. | RB-004 |
 | `inv-layout-undo` | layout | Undo | button | src/TIKR.Web/Components/Shared/ClerkToastHost.razor:10 | — | Control responds without unhandled error. | — |
 | `inv-layout-users-settings-users` | layout | Users | link-nav | src/TIKR.Web/Components/Layout/MainLayout.razor:45 | — | Target route loads with expected heading. | — |
 | `inv-vault-add-howto` | vault | Add how-to / tribal entry (missing contr | button | src/TIKR.Web/Components/Pages/Vault.razor:— | API | New entry dialog or inline editor opens. | RB-005 |

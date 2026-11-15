@@ -252,8 +252,19 @@ def scan_razor(path: Path, routes: dict[str, str], overrides: dict) -> list[Inve
             add(i, label, "button", onclick_m.group(1) if onclick_m else None)
 
     for i, line in enumerate(lines, start=1):
-        for m in HTML_BUTTON_RE.finditer(line):
-            add(i, m.group(1).strip(), "button")
+        if "<button" not in line.lower():
+            continue
+        start = i - 1
+        chunk = line
+        while "</button>" not in chunk.lower() and start + 1 < len(lines):
+            start += 1
+            chunk += " " + lines[start]
+        end_tag = chunk.lower().rfind("</button>")
+        if end_tag > 0:
+            gt = chunk.rfind(">", 0, end_tag)
+            label = chunk[gt + 1 : end_tag].strip() if gt >= 0 else ""
+            if label and "@" not in label:
+                add(i, label, "button")
 
     for i, line in enumerate(lines, start=1):
         if "<SfTextBox" in line:

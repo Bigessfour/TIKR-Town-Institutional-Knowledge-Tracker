@@ -1,6 +1,6 @@
 {
   "meta": {
-    "generatedAt": "2026-11-15T22:47:59Z",
+    "generatedAt": "2026-11-15T22:48:15Z",
     "itemCount": 206,
     "pageCount": 14,
     "buttonCount": 115,
@@ -4095,24 +4095,24 @@
       }
     },
     {
-      "id": "inv-layout-statehaschanged-try-again",
+      "id": "inv-layout-try-again",
       "page": "layout",
       "route": "*",
-      "label": "StateHasChanged()\">Try again",
+      "label": "Try again",
       "type": "button",
       "fileLine": "src/TIKR.Web/Components/Layout/MainLayout.razor:92",
-      "intendedBehavior": "Clerk action: StateHasChanged()\">Try again.",
+      "intendedBehavior": "Clerk action: Try again.",
       "dependencies": [],
       "permissions": [],
       "expectedResult": "Control responds without unhandled error.",
-      "testId": "inv-layout-statehaschanged-try-again",
+      "testId": "inv-layout-try-again",
       "smokeSafe": true,
       "writesData": false,
       "knownFailure": "RB-004",
       "playwright": {
         "strategy": "role",
         "role": "button",
-        "name": "StateHasChanged()\">Try again"
+        "name": "Try again"
       }
     },
     {
