@@ -3,7 +3,11 @@
   "private": true,
   "scripts": {
     "test": "playwright test",
-    "test:headed": "playwright test --headed"
+    "test:headed": "playwright test --headed",
+    "test:inventory": "playwright test --project=functions-inventory",
+    "test:smoke-live": "playwright test --project=live-smoke",
+    "inventory:generate": "python3 ../../scripts/generate-functions-inventory.py",
+    "inventory:coverage": "python3 ../../scripts/check-functions-inventory-coverage.py test-results/inventory-results.json"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.10.1",

@@ -1,0 +1,38 @@
+{
+  "knownFailures": {
+    "inv-home-quick-ai-scan": "RB-001",
+    "inv-settings-call-steve-*": "RB-002",
+    "inv-assistant-chat-stream": "RB-003",
+    "inv-mainlayout-try-again": "RB-004",
+    "inv-vault-add-howto": "RB-005"
+  },
+  "intendedBehaviorPatches": {
+    "inv-home-quick-ai-scan": {
+      "intendedBehavior": "Start document AI scan workflow (open Requirements uploader or inline scan), not plain navigation.",
+      "expectedResult": "Scan UI visible or agent-scan uploader focused after click.",
+      "dependencies": ["Ollama", "API /api/ai/agent-scan"]
+    },
+    "inv-settings-call-steve": {
+      "intendedBehavior": "Surface IT contact (tel/mailto) or copy support details.",
+      "expectedResult": "Contact action beyond toast-only acknowledgment.",
+      "dependencies": []
+    }
+  },
+  "smokeExcludePatterns": [
+    "delete",
+    "save",
+    "upload",
+    "create",
+    "bulk",
+    "submit",
+    "restore",
+    "trash",
+    "re-tag",
+    "reindex",
+    "scan shared",
+    "voice",
+    "clear conversation",
+    "sign out",
+    "logout"
+  ]
+}

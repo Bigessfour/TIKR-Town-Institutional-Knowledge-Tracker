@@ -136,14 +136,15 @@ done
 if [ -n "$LICENSE_KEY" ]; then
 	SYNCFUSION_LICENSE_KEY=${LICENSE_KEY} TIKR_E2E_BASE_URL=http://localhost:8080 \
 		npx playwright install --with-deps chromium
-	SYNCFUSION_LICENSE_KEY=${LICENSE_KEY} TIKR_E2E_BASE_URL=http://localhost:8080 \
-		npx playwright test --reporter=list --timeout=120000
+	SYNCFUSION_LICENSE_KEY=${LICENSE_KEY} TIKR_E2E_BASE_URL=http://localhost:8080 CI=1 \
+		npx playwright test --timeout=120000
 else
 	TIKR_E2E_BASE_URL=http://localhost:8080 \
 		npx playwright install --with-deps chromium
-	TIKR_E2E_BASE_URL=http://localhost:8080 \
-		npx playwright test --reporter=list --timeout=120000
+	TIKR_E2E_BASE_URL=http://localhost:8080 CI=1 \
+		npx playwright test --timeout=120000
 fi
+python3 ../../scripts/check-functions-inventory-coverage.py test-results/inventory-results.json
 cd -
 
 echo ">>> docker compose down"

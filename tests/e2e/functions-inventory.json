@@ -1,0 +1,4371 @@
+{
+  "meta": {
+    "generatedAt": "2026-11-15T22:47:59Z",
+    "itemCount": 206,
+    "pageCount": 14,
+    "buttonCount": 115,
+    "linkCount": 24,
+    "fieldCount": 66,
+    "knownFailureCount": 17,
+    "smokeSafeCount": 103
+  },
+  "items": [
+    {
+      "id": "inv-account-route-account-page-route",
+      "page": "/account",
+      "route": "/account",
+      "label": "Route /account",
+      "type": "route",
+      "fileLine": "src/TIKR.Web/Components/Pages/Account.razor:1",
+      "intendedBehavior": "Clerk action: Route /account.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Control responds without unhandled error.",
+      "testId": "inv-account-route-account-page-route",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "goto",
+        "path": "/account"
+      }
+    },
+    {
+      "id": "inv-account-text-field",
+      "page": "/account",
+      "route": "/account",
+      "label": "Text field",
+      "type": "input",
+      "fileLine": "src/TIKR.Web/Components/Pages/Account.razor:36",
+      "intendedBehavior": "Edit field: Text field.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Value binds and persists on save.",
+      "testId": "inv-account-text-field",
+      "smokeSafe": false,
+      "writesData": true,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Text field"
+      }
+    },
+    {
+      "id": "inv-account-text-field-2",
+      "page": "/account",
+      "route": "/account",
+      "label": "Text field",
+      "type": "input",
+      "fileLine": "src/TIKR.Web/Components/Pages/Account.razor:41",
+      "intendedBehavior": "Edit field: Text field.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Value binds and persists on save.",
+      "testId": "inv-account-text-field-2",
+      "smokeSafe": false,
+      "writesData": true,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Text field"
+      }
+    },
+    {
+      "id": "inv-account-text-field-3",
+      "page": "/account",
+      "route": "/account",
+      "label": "Text field",
+      "type": "input",
+      "fileLine": "src/TIKR.Web/Components/Pages/Account.razor:46",
+      "intendedBehavior": "Edit field: Text field.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Value binds and persists on save.",
+      "testId": "inv-account-text-field-3",
+      "smokeSafe": false,
+      "writesData": true,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Text field"
+      }
+    },
+    {
+      "id": "inv-assistant-route-assistant-page-route",
+      "page": "/assistant",
+      "route": "/assistant",
+      "label": "Route /assistant",
+      "type": "route",
+      "fileLine": "src/TIKR.Web/Components/Pages/Assistant.razor:1",
+      "intendedBehavior": "Send prompt to hybrid AI (Ollama/Grok) with RAG.",
+      "dependencies": [
+        "API",
+        "Ollama"
+      ],
+      "permissions": [],
+      "expectedResult": "Progress visible; assistant message returned.",
+      "testId": "inv-assistant-route-assistant-page-route",
+      "smokeSafe": false,
+      "writesData": true,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "goto",
+        "path": "/assistant"
+      }
+    },
+    {
+      "id": "inv-assistant-forget",
+      "page": "/assistant",
+      "route": "/assistant",
+      "label": "Forget",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Pages/Assistant.razor:68",
+      "intendedBehavior": "Clerk action: Forget.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Control responds without unhandled error.",
+      "testId": "inv-assistant-forget",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Forget"
+      }
+    },
+    {
+      "id": "inv-assistant-clear-conversation",
+      "page": "/assistant",
+      "route": "/assistant",
+      "label": "Clear conversation",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Pages/Assistant.razor:101",
+      "intendedBehavior": "Clerk action: Clear conversation.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Control responds without unhandled error.",
+      "testId": "inv-assistant-clear-conversation",
+      "smokeSafe": false,
+      "writesData": false,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Clear conversation"
+      }
+    },
+    {
+      "id": "inv-assistant-dropdown",
+      "page": "/assistant",
+      "route": "/assistant",
+      "label": "Dropdown",
+      "type": "dropdown",
+      "fileLine": "src/TIKR.Web/Components/Pages/Assistant.razor:100",
+      "intendedBehavior": "Edit field: Dropdown.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Value binds and persists on save.",
+      "testId": "inv-assistant-dropdown",
+      "smokeSafe": false,
+      "writesData": true,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Dropdown"
+      }
+    },
+    {
+      "id": "inv-assistant-chat-stream",
+      "page": "assistant",
+      "route": "/assistant",
+      "label": "Assistant chat (SfAIAssistView)",
+      "type": "assistant-chat",
+      "fileLine": "src/TIKR.Web/Components/Pages/Assistant.razor:84",
+      "intendedBehavior": "Stream tokens with immediate progress; RAG context prepended.",
+      "dependencies": [
+        "Ollama",
+        "API",
+        "SYNCFUSION_LICENSE_KEY"
+      ],
+      "permissions": [],
+      "expectedResult": "User sees thinking/progress immediately; full answer streams or appears.",
+      "testId": "inv-assistant-chat-stream",
+      "smokeSafe": false,
+      "writesData": true,
+      "knownFailure": "RB-003",
+      "playwright": {
+        "strategy": "assistant-chat"
+      }
+    },
+    {
+      "id": "inv-calendar-route-calendar-page-route",
+      "page": "/calendar",
+      "route": "/calendar",
+      "label": "Route /calendar",
+      "type": "route",
+      "fileLine": "src/TIKR.Web/Components/Pages/Calendar.razor:1",
+      "intendedBehavior": "Clerk action: Route /calendar.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Control responds without unhandled error.",
+      "testId": "inv-calendar-route-calendar-page-route",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "goto",
+        "path": "/calendar"
+      }
+    },
+    {
+      "id": "inv-calendar-text-field",
+      "page": "/calendar",
+      "route": "/calendar",
+      "label": "Text field",
+      "type": "input",
+      "fileLine": "src/TIKR.Web/Components/Pages/Calendar.razor:48",
+      "intendedBehavior": "Edit field: Text field.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Value binds and persists on save.",
+      "testId": "inv-calendar-text-field",
+      "smokeSafe": false,
+      "writesData": true,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Text field"
+      }
+    },
+    {
+      "id": "inv-calendar-dropdown",
+      "page": "/calendar",
+      "route": "/calendar",
+      "label": "Dropdown",
+      "type": "dropdown",
+      "fileLine": "src/TIKR.Web/Components/Pages/Calendar.razor:103",
+      "intendedBehavior": "Edit field: Dropdown.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Value binds and persists on save.",
+      "testId": "inv-calendar-dropdown",
+      "smokeSafe": false,
+      "writesData": true,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Dropdown"
+      }
+    },
+    {
+      "id": "inv-calendar-dropdown-2",
+      "page": "/calendar",
+      "route": "/calendar",
+      "label": "Dropdown",
+      "type": "dropdown",
+      "fileLine": "src/TIKR.Web/Components/Pages/Calendar.razor:111",
+      "intendedBehavior": "Edit field: Dropdown.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Value binds and persists on save.",
+      "testId": "inv-calendar-dropdown-2",
+      "smokeSafe": false,
+      "writesData": true,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Dropdown"
+      }
+    },
+    {
+      "id": "inv-demo-clerk-tools-route-demo-clerk-tools-page-route",
+      "page": "/demo/clerk-tools",
+      "route": "/demo/clerk-tools",
+      "label": "Route /demo/clerk-tools",
+      "type": "route",
+      "fileLine": "src/TIKR.Web/Components/Pages/ClerkToolsShowcase.razor:1",
+      "intendedBehavior": "Clerk action: Route /demo/clerk-tools.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Control responds without unhandled error.",
+      "testId": "inv-demo-clerk-tools-route-demo-clerk-tools-page-route",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "goto",
+        "path": "/demo/clerk-tools"
+      }
+    },
+    {
+      "id": "inv-demo-clerk-tools-end-demo",
+      "page": "/demo/clerk-tools",
+      "route": "/demo/clerk-tools",
+      "label": "End demo",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Pages/ClerkToolsShowcase.razor:35",
+      "intendedBehavior": "Clerk action: End demo.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Control responds without unhandled error.",
+      "testId": "inv-demo-clerk-tools-end-demo",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "End demo"
+      }
+    },
+    {
+      "id": "inv-demo-clerk-tools-start-clerk-tools-demo",
+      "page": "/demo/clerk-tools",
+      "route": "/demo/clerk-tools",
+      "label": "Start clerk tools demo",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Pages/ClerkToolsShowcase.razor:68",
+      "intendedBehavior": "Clerk action: Start clerk tools demo.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Control responds without unhandled error.",
+      "testId": "inv-demo-clerk-tools-start-clerk-tools-demo",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Start clerk tools demo"
+      }
+    },
+    {
+      "id": "inv-demo-clerk-tools-jump-to-current-act-card",
+      "page": "/demo/clerk-tools",
+      "route": "/demo/clerk-tools",
+      "label": "Jump to current act card",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Pages/ClerkToolsShowcase.razor:72",
+      "intendedBehavior": "Clerk action: Jump to current act card.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Control responds without unhandled error.",
+      "testId": "inv-demo-clerk-tools-jump-to-current-act-card",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Jump to current act card"
+      }
+    },
+    {
+      "id": "inv-documents-route-documents-page-route",
+      "page": "/documents",
+      "route": "/documents",
+      "label": "Route /documents",
+      "type": "route",
+      "fileLine": "src/TIKR.Web/Components/Pages/Documents.razor:1",
+      "intendedBehavior": "Clerk action: Route /documents.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Control responds without unhandled error.",
+      "testId": "inv-documents-route-documents-page-route",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "goto",
+        "path": "/documents"
+      }
+    },
+    {
+      "id": "inv-documents-library",
+      "page": "/documents",
+      "route": "/documents",
+      "label": "Library",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Pages/Documents.razor:36",
+      "intendedBehavior": "Clerk action: Library.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Control responds without unhandled error.",
+      "testId": "inv-documents-library",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Library"
+      }
+    },
+    {
+      "id": "inv-documents-browse-file-manager",
+      "page": "/documents",
+      "route": "/documents",
+      "label": "Browse (File Manager)",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Pages/Documents.razor:39",
+      "intendedBehavior": "Clerk action: Browse (File Manager).",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Control responds without unhandled error.",
+      "testId": "inv-documents-browse-file-manager",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Browse (File Manager)"
+      }
+    },
+    {
+      "id": "inv-documents-recycle-bin",
+      "page": "/documents",
+      "route": "/documents",
+      "label": "Recycle bin",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Pages/Documents.razor:42",
+      "intendedBehavior": "Clerk action: Recycle bin.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Control responds without unhandled error.",
+      "testId": "inv-documents-recycle-bin",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Recycle bin"
+      }
+    },
+    {
+      "id": "inv-documents-create-folder",
+      "page": "/documents",
+      "route": "/documents",
+      "label": "Create folder",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Pages/Documents.razor:81",
+      "intendedBehavior": "Persist data via API (Create folder).",
+      "dependencies": [
+        "API"
+      ],
+      "permissions": [],
+      "expectedResult": "Data saved and UI reflects change.",
+      "testId": "inv-documents-create-folder",
+      "smokeSafe": false,
+      "writesData": true,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Create folder"
+      }
+    },
+    {
+      "id": "inv-documents-keep-in-general",
+      "page": "/documents",
+      "route": "/documents",
+      "label": "Keep in General",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Pages/Documents.razor:82",
+      "intendedBehavior": "Clerk action: Keep in General.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Control responds without unhandled error.",
+      "testId": "inv-documents-keep-in-general",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Keep in General"
+      }
+    },
+    {
+      "id": "inv-documents-looks-good-accept",
+      "page": "/documents",
+      "route": "/documents",
+      "label": "Looks good / Accept",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Pages/Documents.razor:108",
+      "intendedBehavior": "Clerk action: Looks good / Accept.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Control responds without unhandled error.",
+      "testId": "inv-documents-looks-good-accept",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Looks good / Accept"
+      }
+    },
+    {
+      "id": "inv-documents-dismiss",
+      "page": "/documents",
+      "route": "/documents",
+      "label": "Dismiss",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Pages/Documents.razor:109",
+      "intendedBehavior": "Clerk action: Dismiss.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Control responds without unhandled error.",
+      "testId": "inv-documents-dismiss",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Dismiss"
+      }
+    },
+    {
+      "id": "inv-documents-re-tag",
+      "page": "/documents",
+      "route": "/documents",
+      "label": "Re-tag",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Pages/Documents.razor:110",
+      "intendedBehavior": "Clerk action: Re-tag.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Control responds without unhandled error.",
+      "testId": "inv-documents-re-tag",
+      "smokeSafe": false,
+      "writesData": false,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Re-tag"
+      }
+    },
+    {
+      "id": "inv-documents-create-requirement-from-this-email",
+      "page": "/documents",
+      "route": "/documents",
+      "label": "Create Requirement from this email",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Pages/Documents.razor:134",
+      "intendedBehavior": "Persist data via API (Create Requirement from this email).",
+      "dependencies": [
+        "API"
+      ],
+      "permissions": [],
+      "expectedResult": "Data saved and UI reflects change.",
+      "testId": "inv-documents-create-requirement-from-this-email",
+      "smokeSafe": false,
+      "writesData": true,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Create Requirement from this email"
+      }
+    },
+    {
+      "id": "inv-documents-dismiss-2",
+      "page": "/documents",
+      "route": "/documents",
+      "label": "Dismiss",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Pages/Documents.razor:139",
+      "intendedBehavior": "Clerk action: Dismiss.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Control responds without unhandled error.",
+      "testId": "inv-documents-dismiss-2",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Dismiss"
+      }
+    },
+    {
+      "id": "inv-documents-full-text-search",
+      "page": "/documents",
+      "route": "/documents",
+      "label": "Full-text search",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Pages/Documents.razor:148",
+      "intendedBehavior": "Search documents or knowledge.",
+      "dependencies": [
+        "Ollama embeddings optional"
+      ],
+      "permissions": [],
+      "expectedResult": "Grid or results update.",
+      "testId": "inv-documents-full-text-search",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Full-text search"
+      }
+    },
+    {
+      "id": "inv-documents-search-by-meaning",
+      "page": "/documents",
+      "route": "/documents",
+      "label": "Search by meaning",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Pages/Documents.razor:152",
+      "intendedBehavior": "Search documents or knowledge.",
+      "dependencies": [
+        "Ollama embeddings optional"
+      ],
+      "permissions": [],
+      "expectedResult": "Grid or results update.",
+      "testId": "inv-documents-search-by-meaning",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Search by meaning"
+      }
+    },
+    {
+      "id": "inv-documents-delete-selected",
+      "page": "/documents",
+      "route": "/documents",
+      "label": "Delete selected",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Pages/Documents.razor:168",
+      "intendedBehavior": "Delete or request delete confirmation.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Record removed or confirm dialog shown.",
+      "testId": "inv-documents-delete-selected",
+      "smokeSafe": false,
+      "writesData": true,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Delete selected"
+      }
+    },
+    {
+      "id": "inv-documents-re-tag-with-ai",
+      "page": "/documents",
+      "route": "/documents",
+      "label": "Re-tag with AI",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Pages/Documents.razor:169",
+      "intendedBehavior": "Clerk action: Re-tag with AI.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Control responds without unhandled error.",
+      "testId": "inv-documents-re-tag-with-ai",
+      "smokeSafe": false,
+      "writesData": false,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Re-tag with AI"
+      }
+    },
+    {
+      "id": "inv-documents-clear-selection",
+      "page": "/documents",
+      "route": "/documents",
+      "label": "Clear selection",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Pages/Documents.razor:170",
+      "intendedBehavior": "Clerk action: Clear selection.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Control responds without unhandled error.",
+      "testId": "inv-documents-clear-selection",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Clear selection"
+      }
+    },
+    {
+      "id": "inv-documents-restore",
+      "page": "/documents",
+      "route": "/documents",
+      "label": "Restore",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Pages/Documents.razor:351",
+      "intendedBehavior": "Clerk action: Restore.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Control responds without unhandled error.",
+      "testId": "inv-documents-restore",
+      "smokeSafe": false,
+      "writesData": false,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Restore"
+      }
+    },
+    {
+      "id": "inv-documents-restore-2",
+      "page": "/documents",
+      "route": "/documents",
+      "label": "Restore",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Pages/Documents.razor:414",
+      "intendedBehavior": "Clerk action: Restore.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Control responds without unhandled error.",
+      "testId": "inv-documents-restore-2",
+      "smokeSafe": false,
+      "writesData": false,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Restore"
+      }
+    },
+    {
+      "id": "inv-documents-purge-permanently",
+      "page": "/documents",
+      "route": "/documents",
+      "label": "Purge permanently",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Pages/Documents.razor:416",
+      "intendedBehavior": "Clerk action: Purge permanently.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Control responds without unhandled error.",
+      "testId": "inv-documents-purge-permanently",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Purge permanently"
+      }
+    },
+    {
+      "id": "inv-documents-re-tag-2",
+      "page": "/documents",
+      "route": "/documents",
+      "label": "Re-tag",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Pages/Documents.razor:432",
+      "intendedBehavior": "Clerk action: Re-tag.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Control responds without unhandled error.",
+      "testId": "inv-documents-re-tag-2",
+      "smokeSafe": false,
+      "writesData": false,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Re-tag"
+      }
+    },
+    {
+      "id": "inv-documents-delete",
+      "page": "/documents",
+      "route": "/documents",
+      "label": "Delete",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Pages/Documents.razor:433",
+      "intendedBehavior": "Delete or request delete confirmation.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Record removed or confirm dialog shown.",
+      "testId": "inv-documents-delete",
+      "smokeSafe": false,
+      "writesData": true,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Delete"
+      }
+    },
+    {
+      "id": "inv-documents-file-upload",
+      "page": "/documents",
+      "route": "/documents",
+      "label": "File upload",
+      "type": "file-upload",
+      "fileLine": "src/TIKR.Web/Components/Pages/Documents.razor:56",
+      "intendedBehavior": "Upload file to document library via API.",
+      "dependencies": [
+        "API",
+        "NAS storage path"
+      ],
+      "permissions": [],
+      "expectedResult": "File appears in grid after upload.",
+      "testId": "inv-documents-file-upload",
+      "smokeSafe": false,
+      "writesData": true,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "File upload"
+      }
+    },
+    {
+      "id": "inv-documents-checkbox",
+      "page": "/documents",
+      "route": "/documents",
+      "label": "Checkbox",
+      "type": "checkbox",
+      "fileLine": "src/TIKR.Web/Components/Pages/Documents.razor:61",
+      "intendedBehavior": "Edit field: Checkbox.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Value binds and persists on save.",
+      "testId": "inv-documents-checkbox",
+      "smokeSafe": false,
+      "writesData": true,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Checkbox"
+      }
+    },
+    {
+      "id": "inv-documents-text-field",
+      "page": "/documents",
+      "route": "/documents",
+      "label": "Text field",
+      "type": "input",
+      "fileLine": "src/TIKR.Web/Components/Pages/Documents.razor:157",
+      "intendedBehavior": "Edit field: Text field.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Value binds and persists on save.",
+      "testId": "inv-documents-text-field",
+      "smokeSafe": false,
+      "writesData": true,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Text field"
+      }
+    },
+    {
+      "id": "inv-error-route-error-page-route",
+      "page": "/Error",
+      "route": "/Error",
+      "label": "Route /Error",
+      "type": "route",
+      "fileLine": "src/TIKR.Web/Components/Pages/Error.razor:1",
+      "intendedBehavior": "Clerk action: Route /Error.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Control responds without unhandled error.",
+      "testId": "inv-error-route-error-page-route",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "goto",
+        "path": "/Error"
+      }
+    },
+    {
+      "id": "inv-control-route-page-route",
+      "page": "/",
+      "route": "/",
+      "label": "Route /",
+      "type": "route",
+      "fileLine": "src/TIKR.Web/Components/Pages/Home.razor:1",
+      "intendedBehavior": "Clerk action: Route /.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Control responds without unhandled error.",
+      "testId": "inv-control-route-page-route",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "goto",
+        "path": "/"
+      }
+    },
+    {
+      "id": "inv-control-reset-layout",
+      "page": "/",
+      "route": "/",
+      "label": "Reset layout",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Pages/Home.razor:23",
+      "intendedBehavior": "Clerk action: Reset layout.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Control responds without unhandled error.",
+      "testId": "inv-control-reset-layout",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Reset layout"
+      }
+    },
+    {
+      "id": "inv-control-user-guide",
+      "page": "/",
+      "route": "/",
+      "label": "User guide",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Pages/Home.razor:25",
+      "intendedBehavior": "Clerk action: User guide.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Control responds without unhandled error.",
+      "testId": "inv-control-user-guide",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "User guide"
+      }
+    },
+    {
+      "id": "inv-control-add-requirement",
+      "page": "/",
+      "route": "/",
+      "label": "Add requirement",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Pages/Home.razor:87",
+      "intendedBehavior": "Navigate via Blazor handler (@(() => Navigation.NavigateTo().",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "URL changes or target page loads.",
+      "testId": "inv-control-add-requirement",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Add requirement"
+      }
+    },
+    {
+      "id": "inv-control-ai-scan",
+      "page": "/",
+      "route": "/",
+      "label": "AI Scan",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Pages/Home.razor:88",
+      "intendedBehavior": "Navigate via Blazor handler (@(() => Navigation.NavigateTo().",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "URL changes or target page loads.",
+      "testId": "inv-control-ai-scan",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": "RB-001",
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "AI Scan"
+      }
+    },
+    {
+      "id": "inv-control-upload-document",
+      "page": "/",
+      "route": "/",
+      "label": "Upload document",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Pages/Home.razor:89",
+      "intendedBehavior": "Navigate via Blazor handler (@(() => Navigation.NavigateTo().",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "URL changes or target page loads.",
+      "testId": "inv-control-upload-document",
+      "smokeSafe": false,
+      "writesData": false,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Upload document"
+      }
+    },
+    {
+      "id": "inv-control-calendar",
+      "page": "/",
+      "route": "/",
+      "label": "Calendar",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Pages/Home.razor:90",
+      "intendedBehavior": "Navigate via Blazor handler (@(() => Navigation.NavigateTo().",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "URL changes or target page loads.",
+      "testId": "inv-control-calendar",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Calendar"
+      }
+    },
+    {
+      "id": "inv-control-assistant",
+      "page": "/",
+      "route": "/",
+      "label": "Assistant",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Pages/Home.razor:91",
+      "intendedBehavior": "Navigate via Blazor handler (@(() => Navigation.NavigateTo().",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "URL changes or target page loads.",
+      "testId": "inv-control-assistant",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Assistant"
+      }
+    },
+    {
+      "id": "inv-control-edit",
+      "page": "/",
+      "route": "/",
+      "label": "Edit",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Pages/Home.razor:141",
+      "intendedBehavior": "Clerk action: Edit.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Control responds without unhandled error.",
+      "testId": "inv-control-edit",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Edit"
+      }
+    },
+    {
+      "id": "inv-knowledge-route-knowledge-page-route",
+      "page": "/knowledge",
+      "route": "/knowledge",
+      "label": "Route /knowledge",
+      "type": "route",
+      "fileLine": "src/TIKR.Web/Components/Pages/Knowledge.razor:1",
+      "intendedBehavior": "Clerk action: Route /knowledge.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Control responds without unhandled error.",
+      "testId": "inv-knowledge-route-knowledge-page-route",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "goto",
+        "path": "/knowledge"
+      }
+    },
+    {
+      "id": "inv-login-route-login-page-route",
+      "page": "/login",
+      "route": "/login",
+      "label": "Route /login",
+      "type": "route",
+      "fileLine": "src/TIKR.Web/Components/Pages/Login.razor:1",
+      "intendedBehavior": "Clerk action: Route /login.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Control responds without unhandled error.",
+      "testId": "inv-login-route-login-page-route",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "goto",
+        "path": "/login"
+      }
+    },
+    {
+      "id": "inv-login-text-field",
+      "page": "/login",
+      "route": "/login",
+      "label": "Text field",
+      "type": "input",
+      "fileLine": "src/TIKR.Web/Components/Pages/Login.razor:34",
+      "intendedBehavior": "Edit field: Text field.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Value binds and persists on save.",
+      "testId": "inv-login-text-field",
+      "smokeSafe": false,
+      "writesData": true,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Text field"
+      }
+    },
+    {
+      "id": "inv-not-found-route-not-found-page-route",
+      "page": "/not-found",
+      "route": "/not-found",
+      "label": "Route /not-found",
+      "type": "route",
+      "fileLine": "src/TIKR.Web/Components/Pages/NotFound.razor:1",
+      "intendedBehavior": "Clerk action: Route /not-found.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Control responds without unhandled error.",
+      "testId": "inv-not-found-route-not-found-page-route",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "goto",
+        "path": "/not-found"
+      }
+    },
+    {
+      "id": "inv-requirements-route-requirements-page-route",
+      "page": "/requirements",
+      "route": "/requirements",
+      "label": "Route /requirements",
+      "type": "route",
+      "fileLine": "src/TIKR.Web/Components/Pages/Requirements.razor:1",
+      "intendedBehavior": "Clerk action: Route /requirements.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Control responds without unhandled error.",
+      "testId": "inv-requirements-route-requirements-page-route",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "goto",
+        "path": "/requirements"
+      }
+    },
+    {
+      "id": "inv-requirements-add-requirement",
+      "page": "/requirements",
+      "route": "/requirements",
+      "label": "Add requirement",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Pages/Requirements.razor:35",
+      "intendedBehavior": "Persist data via API (Add requirement).",
+      "dependencies": [
+        "API"
+      ],
+      "permissions": [],
+      "expectedResult": "Data saved and UI reflects change.",
+      "testId": "inv-requirements-add-requirement",
+      "smokeSafe": false,
+      "writesData": true,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Add requirement"
+      }
+    },
+    {
+      "id": "inv-requirements-export-csv",
+      "page": "/requirements",
+      "route": "/requirements",
+      "label": "Export CSV",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Pages/Requirements.razor:38",
+      "intendedBehavior": "Generate or export document (Export CSV).",
+      "dependencies": [
+        "API",
+        "SYNCFUSION_LICENSE_KEY"
+      ],
+      "permissions": [],
+      "expectedResult": "Download/print dialog or PDF bytes returned.",
+      "testId": "inv-requirements-export-csv",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Export CSV"
+      }
+    },
+    {
+      "id": "inv-requirements-meeting-minutes",
+      "page": "/requirements",
+      "route": "/requirements",
+      "label": "Meeting minutes",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Pages/Requirements.razor:45",
+      "intendedBehavior": "Clerk action: Meeting minutes.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Control responds without unhandled error.",
+      "testId": "inv-requirements-meeting-minutes",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Meeting minutes"
+      }
+    },
+    {
+      "id": "inv-requirements-print-council-packet",
+      "page": "/requirements",
+      "route": "/requirements",
+      "label": "Print council packet",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Pages/Requirements.razor:46",
+      "intendedBehavior": "Generate or export document (Print council packet).",
+      "dependencies": [
+        "API",
+        "SYNCFUSION_LICENSE_KEY"
+      ],
+      "permissions": [],
+      "expectedResult": "Download/print dialog or PDF bytes returned.",
+      "testId": "inv-requirements-print-council-packet",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Print council packet"
+      }
+    },
+    {
+      "id": "inv-requirements-reset-wiley-view",
+      "page": "/requirements",
+      "route": "/requirements",
+      "label": "Reset Wiley view",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Pages/Requirements.razor:79",
+      "intendedBehavior": "Clerk action: Reset Wiley view.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Control responds without unhandled error.",
+      "testId": "inv-requirements-reset-wiley-view",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Reset Wiley view"
+      }
+    },
+    {
+      "id": "inv-requirements-edit",
+      "page": "/requirements",
+      "route": "/requirements",
+      "label": "Edit",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Pages/Requirements.razor:197",
+      "intendedBehavior": "Clerk action: Edit.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Control responds without unhandled error.",
+      "testId": "inv-requirements-edit",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Edit"
+      }
+    },
+    {
+      "id": "inv-requirements-delete",
+      "page": "/requirements",
+      "route": "/requirements",
+      "label": "Delete",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Pages/Requirements.razor:200",
+      "intendedBehavior": "Delete or request delete confirmation.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Record removed or confirm dialog shown.",
+      "testId": "inv-requirements-delete",
+      "smokeSafe": false,
+      "writesData": true,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Delete"
+      }
+    },
+    {
+      "id": "inv-requirements-apply-as-primary",
+      "page": "/requirements",
+      "route": "/requirements",
+      "label": "Apply as primary",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Pages/Requirements.razor:268",
+      "intendedBehavior": "Clerk action: Apply as primary.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Control responds without unhandled error.",
+      "testId": "inv-requirements-apply-as-primary",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Apply as primary"
+      }
+    },
+    {
+      "id": "inv-requirements-unlink",
+      "page": "/requirements",
+      "route": "/requirements",
+      "label": "Unlink",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Pages/Requirements.razor:282",
+      "intendedBehavior": "Clerk action: Unlink.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Control responds without unhandled error.",
+      "testId": "inv-requirements-unlink",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Unlink"
+      }
+    },
+    {
+      "id": "inv-requirements-unlink-2",
+      "page": "/requirements",
+      "route": "/requirements",
+      "label": "Unlink",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Pages/Requirements.razor:318",
+      "intendedBehavior": "Clerk action: Unlink.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Control responds without unhandled error.",
+      "testId": "inv-requirements-unlink-2",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Unlink"
+      }
+    },
+    {
+      "id": "inv-requirements-attach",
+      "page": "/requirements",
+      "route": "/requirements",
+      "label": "Attach",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Pages/Requirements.razor:332",
+      "intendedBehavior": "Clerk action: Attach.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Control responds without unhandled error.",
+      "testId": "inv-requirements-attach",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Attach"
+      }
+    },
+    {
+      "id": "inv-requirements-save-step",
+      "page": "/requirements",
+      "route": "/requirements",
+      "label": "Save step",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Pages/Requirements.razor:367",
+      "intendedBehavior": "Persist data via API (Save step).",
+      "dependencies": [
+        "API"
+      ],
+      "permissions": [],
+      "expectedResult": "Data saved and UI reflects change.",
+      "testId": "inv-requirements-save-step",
+      "smokeSafe": false,
+      "writesData": true,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Save step"
+      }
+    },
+    {
+      "id": "inv-requirements-cancel",
+      "page": "/requirements",
+      "route": "/requirements",
+      "label": "Cancel",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Pages/Requirements.razor:370",
+      "intendedBehavior": "Clerk action: Cancel.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Control responds without unhandled error.",
+      "testId": "inv-requirements-cancel",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Cancel"
+      }
+    },
+    {
+      "id": "inv-requirements-edit-step",
+      "page": "/requirements",
+      "route": "/requirements",
+      "label": "Edit step",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Pages/Requirements.razor:410",
+      "intendedBehavior": "Clerk action: Edit step.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Control responds without unhandled error.",
+      "testId": "inv-requirements-edit-step",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Edit step"
+      }
+    },
+    {
+      "id": "inv-requirements-remove",
+      "page": "/requirements",
+      "route": "/requirements",
+      "label": "Remove",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Pages/Requirements.razor:413",
+      "intendedBehavior": "Delete or request delete confirmation.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Record removed or confirm dialog shown.",
+      "testId": "inv-requirements-remove",
+      "smokeSafe": false,
+      "writesData": true,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Remove"
+      }
+    },
+    {
+      "id": "inv-requirements-add-step",
+      "page": "/requirements",
+      "route": "/requirements",
+      "label": "Add step",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Pages/Requirements.razor:425",
+      "intendedBehavior": "Persist data via API (Add step).",
+      "dependencies": [
+        "API"
+      ],
+      "permissions": [],
+      "expectedResult": "Data saved and UI reflects change.",
+      "testId": "inv-requirements-add-step",
+      "smokeSafe": false,
+      "writesData": true,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Add step"
+      }
+    },
+    {
+      "id": "inv-requirements-cancel-2",
+      "page": "/requirements",
+      "route": "/requirements",
+      "label": "Cancel",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Pages/Requirements.razor:436",
+      "intendedBehavior": "Clerk action: Cancel.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Control responds without unhandled error.",
+      "testId": "inv-requirements-cancel-2",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Cancel"
+      }
+    },
+    {
+      "id": "inv-requirements-save",
+      "page": "/requirements",
+      "route": "/requirements",
+      "label": "Save",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Pages/Requirements.razor:437",
+      "intendedBehavior": "Persist data via API (Save).",
+      "dependencies": [
+        "API"
+      ],
+      "permissions": [],
+      "expectedResult": "Data saved and UI reflects change.",
+      "testId": "inv-requirements-save",
+      "smokeSafe": false,
+      "writesData": true,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Save"
+      }
+    },
+    {
+      "id": "inv-requirements-load-from-actioned-agenda",
+      "page": "/requirements",
+      "route": "/requirements",
+      "label": "Load from actioned agenda",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Pages/Requirements.razor:484",
+      "intendedBehavior": "Clerk action: Load from actioned agenda.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Control responds without unhandled error.",
+      "testId": "inv-requirements-load-from-actioned-agenda",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Load from actioned agenda"
+      }
+    },
+    {
+      "id": "inv-requirements-cancel-3",
+      "page": "/requirements",
+      "route": "/requirements",
+      "label": "Cancel",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Pages/Requirements.razor:519",
+      "intendedBehavior": "Clerk action: Cancel.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Control responds without unhandled error.",
+      "testId": "inv-requirements-cancel-3",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Cancel"
+      }
+    },
+    {
+      "id": "inv-requirements-refresh-preview",
+      "page": "/requirements",
+      "route": "/requirements",
+      "label": "Refresh preview",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Pages/Requirements.razor:546",
+      "intendedBehavior": "Clerk action: Refresh preview.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Control responds without unhandled error.",
+      "testId": "inv-requirements-refresh-preview",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Refresh preview"
+      }
+    },
+    {
+      "id": "inv-requirements-suggest-unfinished-business",
+      "page": "/requirements",
+      "route": "/requirements",
+      "label": "Suggest unfinished business",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Pages/Requirements.razor:547",
+      "intendedBehavior": "Clerk action: Suggest unfinished business.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Control responds without unhandled error.",
+      "testId": "inv-requirements-suggest-unfinished-business",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Suggest unfinished business"
+      }
+    },
+    {
+      "id": "inv-requirements-cancel-4",
+      "page": "/requirements",
+      "route": "/requirements",
+      "label": "Cancel",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Pages/Requirements.razor:583",
+      "intendedBehavior": "Clerk action: Cancel.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Control responds without unhandled error.",
+      "testId": "inv-requirements-cancel-4",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Cancel"
+      }
+    },
+    {
+      "id": "inv-requirements-file-upload",
+      "page": "/requirements",
+      "route": "/requirements",
+      "label": "File upload",
+      "type": "file-upload",
+      "fileLine": "src/TIKR.Web/Components/Pages/Requirements.razor:48",
+      "intendedBehavior": "Upload file to document library via API.",
+      "dependencies": [
+        "API",
+        "NAS storage path"
+      ],
+      "permissions": [],
+      "expectedResult": "File appears in grid after upload.",
+      "testId": "inv-requirements-file-upload",
+      "smokeSafe": false,
+      "writesData": true,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "File upload"
+      }
+    },
+    {
+      "id": "inv-requirements-text-field",
+      "page": "/requirements",
+      "route": "/requirements",
+      "label": "Text field",
+      "type": "input",
+      "fileLine": "src/TIKR.Web/Components/Pages/Requirements.razor:59",
+      "intendedBehavior": "Edit field: Text field.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Value binds and persists on save.",
+      "testId": "inv-requirements-text-field",
+      "smokeSafe": false,
+      "writesData": true,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Text field"
+      }
+    },
+    {
+      "id": "inv-requirements-dropdown",
+      "page": "/requirements",
+      "route": "/requirements",
+      "label": "Dropdown",
+      "type": "dropdown",
+      "fileLine": "src/TIKR.Web/Components/Pages/Requirements.razor:63",
+      "intendedBehavior": "Edit field: Dropdown.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Value binds and persists on save.",
+      "testId": "inv-requirements-dropdown",
+      "smokeSafe": false,
+      "writesData": true,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Dropdown"
+      }
+    },
+    {
+      "id": "inv-requirements-dropdown-2",
+      "page": "/requirements",
+      "route": "/requirements",
+      "label": "Dropdown",
+      "type": "dropdown",
+      "fileLine": "src/TIKR.Web/Components/Pages/Requirements.razor:69",
+      "intendedBehavior": "Edit field: Dropdown.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Value binds and persists on save.",
+      "testId": "inv-requirements-dropdown-2",
+      "smokeSafe": false,
+      "writesData": true,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Dropdown"
+      }
+    },
+    {
+      "id": "inv-requirements-dropdown-3",
+      "page": "/requirements",
+      "route": "/requirements",
+      "label": "Dropdown",
+      "type": "dropdown",
+      "fileLine": "src/TIKR.Web/Components/Pages/Requirements.razor:244",
+      "intendedBehavior": "Edit field: Dropdown.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Value binds and persists on save.",
+      "testId": "inv-requirements-dropdown-3",
+      "smokeSafe": false,
+      "writesData": true,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Dropdown"
+      }
+    },
+    {
+      "id": "inv-requirements-dropdown-4",
+      "page": "/requirements",
+      "route": "/requirements",
+      "label": "Dropdown",
+      "type": "dropdown",
+      "fileLine": "src/TIKR.Web/Components/Pages/Requirements.razor:251",
+      "intendedBehavior": "Edit field: Dropdown.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Value binds and persists on save.",
+      "testId": "inv-requirements-dropdown-4",
+      "smokeSafe": false,
+      "writesData": true,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Dropdown"
+      }
+    },
+    {
+      "id": "inv-requirements-dropdown-5",
+      "page": "/requirements",
+      "route": "/requirements",
+      "label": "Dropdown",
+      "type": "dropdown",
+      "fileLine": "src/TIKR.Web/Components/Pages/Requirements.razor:260",
+      "intendedBehavior": "Edit field: Dropdown.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Value binds and persists on save.",
+      "testId": "inv-requirements-dropdown-5",
+      "smokeSafe": false,
+      "writesData": true,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Dropdown"
+      }
+    },
+    {
+      "id": "inv-requirements-checkbox",
+      "page": "/requirements",
+      "route": "/requirements",
+      "label": "Checkbox",
+      "type": "checkbox",
+      "fileLine": "src/TIKR.Web/Components/Pages/Requirements.razor:297",
+      "intendedBehavior": "Edit field: Checkbox.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Value binds and persists on save.",
+      "testId": "inv-requirements-checkbox",
+      "smokeSafe": false,
+      "writesData": true,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Checkbox"
+      }
+    },
+    {
+      "id": "inv-requirements-dropdown-6",
+      "page": "/requirements",
+      "route": "/requirements",
+      "label": "Dropdown",
+      "type": "dropdown",
+      "fileLine": "src/TIKR.Web/Components/Pages/Requirements.razor:325",
+      "intendedBehavior": "Edit field: Dropdown.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Value binds and persists on save.",
+      "testId": "inv-requirements-dropdown-6",
+      "smokeSafe": false,
+      "writesData": true,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Dropdown"
+      }
+    },
+    {
+      "id": "inv-requirements-text-field-2",
+      "page": "/requirements",
+      "route": "/requirements",
+      "label": "Text field",
+      "type": "input",
+      "fileLine": "src/TIKR.Web/Components/Pages/Requirements.razor:360",
+      "intendedBehavior": "Edit field: Text field.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Value binds and persists on save.",
+      "testId": "inv-requirements-text-field-2",
+      "smokeSafe": false,
+      "writesData": true,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Text field"
+      }
+    },
+    {
+      "id": "inv-requirements-text-field-3",
+      "page": "/requirements",
+      "route": "/requirements",
+      "label": "Text field",
+      "type": "input",
+      "fileLine": "src/TIKR.Web/Components/Pages/Requirements.razor:361",
+      "intendedBehavior": "Edit field: Text field.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Value binds and persists on save.",
+      "testId": "inv-requirements-text-field-3",
+      "smokeSafe": false,
+      "writesData": true,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Text field"
+      }
+    },
+    {
+      "id": "inv-requirements-text-field-4",
+      "page": "/requirements",
+      "route": "/requirements",
+      "label": "Text field",
+      "type": "input",
+      "fileLine": "src/TIKR.Web/Components/Pages/Requirements.razor:364",
+      "intendedBehavior": "Edit field: Text field.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Value binds and persists on save.",
+      "testId": "inv-requirements-text-field-4",
+      "smokeSafe": false,
+      "writesData": true,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Text field"
+      }
+    },
+    {
+      "id": "inv-requirements-text-field-5",
+      "page": "/requirements",
+      "route": "/requirements",
+      "label": "Text field",
+      "type": "input",
+      "fileLine": "src/TIKR.Web/Components/Pages/Requirements.razor:423",
+      "intendedBehavior": "Edit field: Text field.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Value binds and persists on save.",
+      "testId": "inv-requirements-text-field-5",
+      "smokeSafe": false,
+      "writesData": true,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Text field"
+      }
+    },
+    {
+      "id": "inv-requirements-dropdown-7",
+      "page": "/requirements",
+      "route": "/requirements",
+      "label": "Dropdown",
+      "type": "dropdown",
+      "fileLine": "src/TIKR.Web/Components/Pages/Requirements.razor:457",
+      "intendedBehavior": "Edit field: Dropdown.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Value binds and persists on save.",
+      "testId": "inv-requirements-dropdown-7",
+      "smokeSafe": false,
+      "writesData": true,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Dropdown"
+      }
+    },
+    {
+      "id": "inv-requirements-text-field-6",
+      "page": "/requirements",
+      "route": "/requirements",
+      "label": "Text field",
+      "type": "input",
+      "fileLine": "src/TIKR.Web/Components/Pages/Requirements.razor:488",
+      "intendedBehavior": "Edit field: Text field.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Value binds and persists on save.",
+      "testId": "inv-requirements-text-field-6",
+      "smokeSafe": false,
+      "writesData": true,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Text field"
+      }
+    },
+    {
+      "id": "inv-requirements-text-field-7",
+      "page": "/requirements",
+      "route": "/requirements",
+      "label": "Text field",
+      "type": "input",
+      "fileLine": "src/TIKR.Web/Components/Pages/Requirements.razor:492",
+      "intendedBehavior": "Edit field: Text field.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Value binds and persists on save.",
+      "testId": "inv-requirements-text-field-7",
+      "smokeSafe": false,
+      "writesData": true,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Text field"
+      }
+    },
+    {
+      "id": "inv-requirements-text-field-8",
+      "page": "/requirements",
+      "route": "/requirements",
+      "label": "Text field",
+      "type": "input",
+      "fileLine": "src/TIKR.Web/Components/Pages/Requirements.razor:496",
+      "intendedBehavior": "Edit field: Text field.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Value binds and persists on save.",
+      "testId": "inv-requirements-text-field-8",
+      "smokeSafe": false,
+      "writesData": true,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Text field"
+      }
+    },
+    {
+      "id": "inv-requirements-text-field-9",
+      "page": "/requirements",
+      "route": "/requirements",
+      "label": "Text field",
+      "type": "input",
+      "fileLine": "src/TIKR.Web/Components/Pages/Requirements.razor:500",
+      "intendedBehavior": "Edit field: Text field.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Value binds and persists on save.",
+      "testId": "inv-requirements-text-field-9",
+      "smokeSafe": false,
+      "writesData": true,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Text field"
+      }
+    },
+    {
+      "id": "inv-requirements-dropdown-8",
+      "page": "/requirements",
+      "route": "/requirements",
+      "label": "Dropdown",
+      "type": "dropdown",
+      "fileLine": "src/TIKR.Web/Components/Pages/Requirements.razor:538",
+      "intendedBehavior": "Edit field: Dropdown.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Value binds and persists on save.",
+      "testId": "inv-requirements-dropdown-8",
+      "smokeSafe": false,
+      "writesData": true,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Dropdown"
+      }
+    },
+    {
+      "id": "inv-settings-route-settings-page-route",
+      "page": "/settings",
+      "route": "/settings",
+      "label": "Route /settings",
+      "type": "route",
+      "fileLine": "src/TIKR.Web/Components/Pages/Settings.razor:1",
+      "intendedBehavior": "Clerk action: Route /settings.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Control responds without unhandled error.",
+      "testId": "inv-settings-route-settings-page-route",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "goto",
+        "path": "/settings"
+      }
+    },
+    {
+      "id": "inv-settings-save-this-clerk",
+      "page": "/settings",
+      "route": "/settings",
+      "label": "Save this clerk",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Pages/Settings.razor:58",
+      "intendedBehavior": "Persist data via API (Save this clerk).",
+      "dependencies": [
+        "API"
+      ],
+      "permissions": [],
+      "expectedResult": "Data saved and UI reflects change.",
+      "testId": "inv-settings-save-this-clerk",
+      "smokeSafe": false,
+      "writesData": true,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Save this clerk"
+      }
+    },
+    {
+      "id": "inv-settings-use-the-usual-clerk",
+      "page": "/settings",
+      "route": "/settings",
+      "label": "Use the usual clerk",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Pages/Settings.razor:61",
+      "intendedBehavior": "Clerk action: Use the usual clerk.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Control responds without unhandled error.",
+      "testId": "inv-settings-use-the-usual-clerk",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Use the usual clerk"
+      }
+    },
+    {
+      "id": "inv-settings-show-me-around-tikr",
+      "page": "/settings",
+      "route": "/settings",
+      "label": "Show me around TIKR",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Pages/Settings.razor:78",
+      "intendedBehavior": "Clerk action: Show me around TIKR.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Control responds without unhandled error.",
+      "testId": "inv-settings-show-me-around-tikr",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Show me around TIKR"
+      }
+    },
+    {
+      "id": "inv-settings-open-user-guide",
+      "page": "/settings",
+      "route": "/settings",
+      "label": "Open user guide",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Pages/Settings.razor:81",
+      "intendedBehavior": "Clerk action: Open user guide.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Control responds without unhandled error.",
+      "testId": "inv-settings-open-user-guide",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Open user guide"
+      }
+    },
+    {
+      "id": "inv-settings-call-steve-for-help",
+      "page": "/settings",
+      "route": "/settings",
+      "label": "Call Steve for help",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Pages/Settings.razor:96",
+      "intendedBehavior": "Surface IT contact (tel/mailto) or copy support details.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Contact action beyond toast-only acknowledgment.",
+      "testId": "inv-settings-call-steve-for-help",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": "RB-002",
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Call Steve for help"
+      }
+    },
+    {
+      "id": "inv-settings-need-a-new-advanced-helper-key-call-steve-for-help",
+      "page": "/settings",
+      "route": "/settings",
+      "label": "Need a new advanced helper key? Call Steve for help",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Pages/Settings.razor:124",
+      "intendedBehavior": "Contact support (intended: real Steve contact).",
+      "dependencies": [
+        "Ollama"
+      ],
+      "permissions": [],
+      "expectedResult": "Support contact surfaced (not toast-only).",
+      "testId": "inv-settings-need-a-new-advanced-helper-key-call-steve-for-help",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": "RB-002",
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Need a new advanced helper key? Call Steve for help"
+      }
+    },
+    {
+      "id": "inv-settings-need-a-new-license-call-steve-for-help",
+      "page": "/settings",
+      "route": "/settings",
+      "label": "Need a new license? Call Steve for help",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Pages/Settings.razor:139",
+      "intendedBehavior": "Contact support (intended: real Steve contact).",
+      "dependencies": [
+        "SYNCFUSION_LICENSE_KEY"
+      ],
+      "permissions": [],
+      "expectedResult": "Support contact surfaced (not toast-only).",
+      "testId": "inv-settings-need-a-new-license-call-steve-for-help",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": "RB-002",
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Need a new license? Call Steve for help"
+      }
+    },
+    {
+      "id": "inv-settings-helper-not-ready-call-steve-for-help",
+      "page": "/settings",
+      "route": "/settings",
+      "label": "Helper not ready? Call Steve for help",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Pages/Settings.razor:156",
+      "intendedBehavior": "Contact support (intended: real Steve contact).",
+      "dependencies": [
+        "Ollama"
+      ],
+      "permissions": [],
+      "expectedResult": "Support contact surfaced (not toast-only).",
+      "testId": "inv-settings-helper-not-ready-call-steve-for-help",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": "RB-002",
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Helper not ready? Call Steve for help"
+      }
+    },
+    {
+      "id": "inv-settings-call-steve-for-help-2",
+      "page": "/settings",
+      "route": "/settings",
+      "label": "Call Steve for help",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Pages/Settings.razor:177",
+      "intendedBehavior": "Surface IT contact (tel/mailto) or copy support details.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Contact action beyond toast-only acknowledgment.",
+      "testId": "inv-settings-call-steve-for-help-2",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": "RB-002",
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Call Steve for help"
+      }
+    },
+    {
+      "id": "inv-settings-need-to-move-files-call-steve-for-help",
+      "page": "/settings",
+      "route": "/settings",
+      "label": "Need to move files? Call Steve for help",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Pages/Settings.razor:192",
+      "intendedBehavior": "Contact support (intended: real Steve contact).",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Support contact surfaced (not toast-only).",
+      "testId": "inv-settings-need-to-move-files-call-steve-for-help",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": "RB-002",
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Need to move files? Call Steve for help"
+      }
+    },
+    {
+      "id": "inv-settings-call-steve-for-help-3",
+      "page": "/settings",
+      "route": "/settings",
+      "label": "Call Steve for help",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Pages/Settings.razor:205",
+      "intendedBehavior": "Surface IT contact (tel/mailto) or copy support details.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Contact action beyond toast-only acknowledgment.",
+      "testId": "inv-settings-call-steve-for-help-3",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": "RB-002",
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Call Steve for help"
+      }
+    },
+    {
+      "id": "inv-settings-call-steve-for-help-4",
+      "page": "/settings",
+      "route": "/settings",
+      "label": "Call Steve for help",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Pages/Settings.razor:228",
+      "intendedBehavior": "Surface IT contact (tel/mailto) or copy support details.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Contact action beyond toast-only acknowledgment.",
+      "testId": "inv-settings-call-steve-for-help-4",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": "RB-002",
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Call Steve for help"
+      }
+    },
+    {
+      "id": "inv-settings-not-sure-which-folder-call-steve-for-help",
+      "page": "/settings",
+      "route": "/settings",
+      "label": "Not sure which folder? Call Steve for help",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Pages/Settings.razor:252",
+      "intendedBehavior": "Contact support (intended: real Steve contact).",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Support contact surfaced (not toast-only).",
+      "testId": "inv-settings-not-sure-which-folder-call-steve-for-help",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": "RB-002",
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Not sure which folder? Call Steve for help"
+      }
+    },
+    {
+      "id": "inv-settings-call-steve-for-help-5",
+      "page": "/settings",
+      "route": "/settings",
+      "label": "Call Steve for help",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Pages/Settings.razor:267",
+      "intendedBehavior": "Surface IT contact (tel/mailto) or copy support details.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Contact action beyond toast-only acknowledgment.",
+      "testId": "inv-settings-call-steve-for-help-5",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": "RB-002",
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Call Steve for help"
+      }
+    },
+    {
+      "id": "inv-settings-save-settings",
+      "page": "/settings",
+      "route": "/settings",
+      "label": "Save settings",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Pages/Settings.razor:296",
+      "intendedBehavior": "Persist data via API (Save settings).",
+      "dependencies": [
+        "API"
+      ],
+      "permissions": [],
+      "expectedResult": "Data saved and UI reflects change.",
+      "testId": "inv-settings-save-settings",
+      "smokeSafe": false,
+      "writesData": true,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Save settings"
+      }
+    },
+    {
+      "id": "inv-settings-check-status",
+      "page": "/settings",
+      "route": "/settings",
+      "label": "Check status",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Pages/Settings.razor:297",
+      "intendedBehavior": "Clerk action: Check status.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Control responds without unhandled error.",
+      "testId": "inv-settings-check-status",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Check status"
+      }
+    },
+    {
+      "id": "inv-settings-open-tools-tour",
+      "page": "/settings",
+      "route": "/settings",
+      "label": "Open tools tour",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Pages/Settings.razor:310",
+      "intendedBehavior": "Navigate via Blazor handler (@(() => Navigation.NavigateTo(ClerkToolsShowcaseCatalog.PageRoute))).",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "URL changes or target page loads.",
+      "testId": "inv-settings-open-tools-tour",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Open tools tour"
+      }
+    },
+    {
+      "id": "inv-settings-replay-sidebar-menu-tour",
+      "page": "/settings",
+      "route": "/settings",
+      "label": "Replay sidebar menu tour",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Pages/Settings.razor:311",
+      "intendedBehavior": "Clerk action: Replay sidebar menu tour.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Control responds without unhandled error.",
+      "testId": "inv-settings-replay-sidebar-menu-tour",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Replay sidebar menu tour"
+      }
+    },
+    {
+      "id": "inv-settings-call-steve-for-help-6",
+      "page": "/settings",
+      "route": "/settings",
+      "label": "Call Steve for help",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Pages/Settings.razor:319",
+      "intendedBehavior": "Surface IT contact (tel/mailto) or copy support details.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Contact action beyond toast-only acknowledgment.",
+      "testId": "inv-settings-call-steve-for-help-6",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": "RB-002",
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Call Steve for help"
+      }
+    },
+    {
+      "id": "inv-settings-call-steve-for-help-7",
+      "page": "/settings",
+      "route": "/settings",
+      "label": "Call Steve for help",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Pages/Settings.razor:330",
+      "intendedBehavior": "Surface IT contact (tel/mailto) or copy support details.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Contact action beyond toast-only acknowledgment.",
+      "testId": "inv-settings-call-steve-for-help-7",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": "RB-002",
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Call Steve for help"
+      }
+    },
+    {
+      "id": "inv-settings-call-steve-for-help-8",
+      "page": "/settings",
+      "route": "/settings",
+      "label": "Call Steve for help",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Pages/Settings.razor:349",
+      "intendedBehavior": "Surface IT contact (tel/mailto) or copy support details.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Contact action beyond toast-only acknowledgment.",
+      "testId": "inv-settings-call-steve-for-help-8",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": "RB-002",
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Call Steve for help"
+      }
+    },
+    {
+      "id": "inv-settings-dropdown",
+      "page": "/settings",
+      "route": "/settings",
+      "label": "Dropdown",
+      "type": "dropdown",
+      "fileLine": "src/TIKR.Web/Components/Pages/Settings.razor:49",
+      "intendedBehavior": "Edit field: Dropdown.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Value binds and persists on save.",
+      "testId": "inv-settings-dropdown",
+      "smokeSafe": false,
+      "writesData": true,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Dropdown"
+      }
+    },
+    {
+      "id": "inv-settings-checkbox",
+      "page": "/settings",
+      "route": "/settings",
+      "label": "Checkbox",
+      "type": "checkbox",
+      "fileLine": "src/TIKR.Web/Components/Pages/Settings.razor:85",
+      "intendedBehavior": "Edit field: Checkbox.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Value binds and persists on save.",
+      "testId": "inv-settings-checkbox",
+      "smokeSafe": false,
+      "writesData": true,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Checkbox"
+      }
+    },
+    {
+      "id": "inv-settings-text-field",
+      "page": "/settings",
+      "route": "/settings",
+      "label": "Text field",
+      "type": "input",
+      "fileLine": "src/TIKR.Web/Components/Pages/Settings.razor:117",
+      "intendedBehavior": "Edit field: Text field.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Value binds and persists on save.",
+      "testId": "inv-settings-text-field",
+      "smokeSafe": false,
+      "writesData": true,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Text field"
+      }
+    },
+    {
+      "id": "inv-settings-checkbox-2",
+      "page": "/settings",
+      "route": "/settings",
+      "label": "Checkbox",
+      "type": "checkbox",
+      "fileLine": "src/TIKR.Web/Components/Pages/Settings.razor:121",
+      "intendedBehavior": "Edit field: Checkbox.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Value binds and persists on save.",
+      "testId": "inv-settings-checkbox-2",
+      "smokeSafe": false,
+      "writesData": true,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Checkbox"
+      }
+    },
+    {
+      "id": "inv-settings-text-field-2",
+      "page": "/settings",
+      "route": "/settings",
+      "label": "Text field",
+      "type": "input",
+      "fileLine": "src/TIKR.Web/Components/Pages/Settings.razor:135",
+      "intendedBehavior": "Edit field: Text field.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Value binds and persists on save.",
+      "testId": "inv-settings-text-field-2",
+      "smokeSafe": false,
+      "writesData": true,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Text field"
+      }
+    },
+    {
+      "id": "inv-settings-text-field-3",
+      "page": "/settings",
+      "route": "/settings",
+      "label": "Text field",
+      "type": "input",
+      "fileLine": "src/TIKR.Web/Components/Pages/Settings.razor:167",
+      "intendedBehavior": "Edit field: Text field.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Value binds and persists on save.",
+      "testId": "inv-settings-text-field-3",
+      "smokeSafe": false,
+      "writesData": true,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Text field"
+      }
+    },
+    {
+      "id": "inv-settings-text-field-4",
+      "page": "/settings",
+      "route": "/settings",
+      "label": "Text field",
+      "type": "input",
+      "fileLine": "src/TIKR.Web/Components/Pages/Settings.razor:171",
+      "intendedBehavior": "Edit field: Text field.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Value binds and persists on save.",
+      "testId": "inv-settings-text-field-4",
+      "smokeSafe": false,
+      "writesData": true,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Text field"
+      }
+    },
+    {
+      "id": "inv-settings-text-field-5",
+      "page": "/settings",
+      "route": "/settings",
+      "label": "Text field",
+      "type": "input",
+      "fileLine": "src/TIKR.Web/Components/Pages/Settings.razor:175",
+      "intendedBehavior": "Edit field: Text field.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Value binds and persists on save.",
+      "testId": "inv-settings-text-field-5",
+      "smokeSafe": false,
+      "writesData": true,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Text field"
+      }
+    },
+    {
+      "id": "inv-settings-text-field-6",
+      "page": "/settings",
+      "route": "/settings",
+      "label": "Text field",
+      "type": "input",
+      "fileLine": "src/TIKR.Web/Components/Pages/Settings.razor:201",
+      "intendedBehavior": "Edit field: Text field.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Value binds and persists on save.",
+      "testId": "inv-settings-text-field-6",
+      "smokeSafe": false,
+      "writesData": true,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Text field"
+      }
+    },
+    {
+      "id": "inv-settings-checkbox-3",
+      "page": "/settings",
+      "route": "/settings",
+      "label": "Checkbox",
+      "type": "checkbox",
+      "fileLine": "src/TIKR.Web/Components/Pages/Settings.razor:203",
+      "intendedBehavior": "Edit field: Checkbox.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Value binds and persists on save.",
+      "testId": "inv-settings-checkbox-3",
+      "smokeSafe": false,
+      "writesData": true,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Checkbox"
+      }
+    },
+    {
+      "id": "inv-settings-text-field-7",
+      "page": "/settings",
+      "route": "/settings",
+      "label": "Text field",
+      "type": "input",
+      "fileLine": "src/TIKR.Web/Components/Pages/Settings.razor:216",
+      "intendedBehavior": "Edit field: Text field.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Value binds and persists on save.",
+      "testId": "inv-settings-text-field-7",
+      "smokeSafe": false,
+      "writesData": true,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Text field"
+      }
+    },
+    {
+      "id": "inv-settings-text-field-8",
+      "page": "/settings",
+      "route": "/settings",
+      "label": "Text field",
+      "type": "input",
+      "fileLine": "src/TIKR.Web/Components/Pages/Settings.razor:222",
+      "intendedBehavior": "Edit field: Text field.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Value binds and persists on save.",
+      "testId": "inv-settings-text-field-8",
+      "smokeSafe": false,
+      "writesData": true,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Text field"
+      }
+    },
+    {
+      "id": "inv-settings-text-field-9",
+      "page": "/settings",
+      "route": "/settings",
+      "label": "Text field",
+      "type": "input",
+      "fileLine": "src/TIKR.Web/Components/Pages/Settings.razor:227",
+      "intendedBehavior": "Edit field: Text field.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Value binds and persists on save.",
+      "testId": "inv-settings-text-field-9",
+      "smokeSafe": false,
+      "writesData": true,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Text field"
+      }
+    },
+    {
+      "id": "inv-settings-text-field-10",
+      "page": "/settings",
+      "route": "/settings",
+      "label": "Text field",
+      "type": "input",
+      "fileLine": "src/TIKR.Web/Components/Pages/Settings.razor:242",
+      "intendedBehavior": "Edit field: Text field.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Value binds and persists on save.",
+      "testId": "inv-settings-text-field-10",
+      "smokeSafe": false,
+      "writesData": true,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Text field"
+      }
+    },
+    {
+      "id": "inv-settings-text-field-11",
+      "page": "/settings",
+      "route": "/settings",
+      "label": "Text field",
+      "type": "input",
+      "fileLine": "src/TIKR.Web/Components/Pages/Settings.razor:249",
+      "intendedBehavior": "Edit field: Text field.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Value binds and persists on save.",
+      "testId": "inv-settings-text-field-11",
+      "smokeSafe": false,
+      "writesData": true,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Text field"
+      }
+    },
+    {
+      "id": "inv-settings-checkbox-4",
+      "page": "/settings",
+      "route": "/settings",
+      "label": "Checkbox",
+      "type": "checkbox",
+      "fileLine": "src/TIKR.Web/Components/Pages/Settings.razor:276",
+      "intendedBehavior": "Edit field: Checkbox.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Value binds and persists on save.",
+      "testId": "inv-settings-checkbox-4",
+      "smokeSafe": false,
+      "writesData": true,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Checkbox"
+      }
+    },
+    {
+      "id": "inv-settings-checkbox-5",
+      "page": "/settings",
+      "route": "/settings",
+      "label": "Checkbox",
+      "type": "checkbox",
+      "fileLine": "src/TIKR.Web/Components/Pages/Settings.razor:280",
+      "intendedBehavior": "Edit field: Checkbox.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Value binds and persists on save.",
+      "testId": "inv-settings-checkbox-5",
+      "smokeSafe": false,
+      "writesData": true,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Checkbox"
+      }
+    },
+    {
+      "id": "inv-settings-checkbox-6",
+      "page": "/settings",
+      "route": "/settings",
+      "label": "Checkbox",
+      "type": "checkbox",
+      "fileLine": "src/TIKR.Web/Components/Pages/Settings.razor:284",
+      "intendedBehavior": "Edit field: Checkbox.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Value binds and persists on save.",
+      "testId": "inv-settings-checkbox-6",
+      "smokeSafe": false,
+      "writesData": true,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Checkbox"
+      }
+    },
+    {
+      "id": "inv-settings-users-route-settings-users-page-route",
+      "page": "/settings/users",
+      "route": "/settings/users",
+      "label": "Route /settings/users",
+      "type": "route",
+      "fileLine": "src/TIKR.Web/Components/Pages/Users.razor:1",
+      "intendedBehavior": "Clerk action: Route /settings/users.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Control responds without unhandled error.",
+      "testId": "inv-settings-users-route-settings-users-page-route",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "goto",
+        "path": "/settings/users"
+      }
+    },
+    {
+      "id": "inv-settings-users-add-user",
+      "page": "/settings/users",
+      "route": "/settings/users",
+      "label": "Add user",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Pages/Users.razor:19",
+      "intendedBehavior": "Persist data via API (Add user).",
+      "dependencies": [
+        "API"
+      ],
+      "permissions": [],
+      "expectedResult": "Data saved and UI reflects change.",
+      "testId": "inv-settings-users-add-user",
+      "smokeSafe": false,
+      "writesData": true,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Add user"
+      }
+    },
+    {
+      "id": "inv-settings-users-cancel",
+      "page": "/settings/users",
+      "route": "/settings/users",
+      "label": "Cancel",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Pages/Users.razor:76",
+      "intendedBehavior": "Clerk action: Cancel.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Control responds without unhandled error.",
+      "testId": "inv-settings-users-cancel",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Cancel"
+      }
+    },
+    {
+      "id": "inv-settings-users-create",
+      "page": "/settings/users",
+      "route": "/settings/users",
+      "label": "Create",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Pages/Users.razor:77",
+      "intendedBehavior": "Persist data via API (Create).",
+      "dependencies": [
+        "API"
+      ],
+      "permissions": [],
+      "expectedResult": "Data saved and UI reflects change.",
+      "testId": "inv-settings-users-create",
+      "smokeSafe": false,
+      "writesData": true,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Create"
+      }
+    },
+    {
+      "id": "inv-settings-users-text-field",
+      "page": "/settings/users",
+      "route": "/settings/users",
+      "label": "Text field",
+      "type": "input",
+      "fileLine": "src/TIKR.Web/Components/Pages/Users.razor:65",
+      "intendedBehavior": "Edit field: Text field.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Value binds and persists on save.",
+      "testId": "inv-settings-users-text-field",
+      "smokeSafe": false,
+      "writesData": true,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Text field"
+      }
+    },
+    {
+      "id": "inv-settings-users-dropdown",
+      "page": "/settings/users",
+      "route": "/settings/users",
+      "label": "Dropdown",
+      "type": "dropdown",
+      "fileLine": "src/TIKR.Web/Components/Pages/Users.razor:70",
+      "intendedBehavior": "Edit field: Dropdown.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Value binds and persists on save.",
+      "testId": "inv-settings-users-dropdown",
+      "smokeSafe": false,
+      "writesData": true,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Dropdown"
+      }
+    },
+    {
+      "id": "inv-vault-route-vault-page-route",
+      "page": "/vault",
+      "route": "/vault",
+      "label": "Route /vault",
+      "type": "route",
+      "fileLine": "src/TIKR.Web/Components/Pages/Vault.razor:1",
+      "intendedBehavior": "Clerk action: Route /vault.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Control responds without unhandled error.",
+      "testId": "inv-vault-route-vault-page-route",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "goto",
+        "path": "/vault"
+      }
+    },
+    {
+      "id": "inv-vault-copy-everything-for-new-clerk",
+      "page": "/vault",
+      "route": "/vault",
+      "label": "Copy Everything for New Clerk",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Pages/Vault.razor:37",
+      "intendedBehavior": "Clerk action: Copy Everything for New Clerk.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Control responds without unhandled error.",
+      "testId": "inv-vault-copy-everything-for-new-clerk",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Copy Everything for New Clerk"
+      }
+    },
+    {
+      "id": "inv-vault-generate-complete-handover-package",
+      "page": "/vault",
+      "route": "/vault",
+      "label": "Generate Complete Handover Package",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Pages/Vault.razor:43",
+      "intendedBehavior": "Clerk action: Generate Complete Handover Package.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Control responds without unhandled error.",
+      "testId": "inv-vault-generate-complete-handover-package",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Generate Complete Handover Package"
+      }
+    },
+    {
+      "id": "inv-vault-delete-selected",
+      "page": "/vault",
+      "route": "/vault",
+      "label": "Delete selected",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Pages/Vault.razor:54",
+      "intendedBehavior": "Delete or request delete confirmation.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Record removed or confirm dialog shown.",
+      "testId": "inv-vault-delete-selected",
+      "smokeSafe": false,
+      "writesData": true,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Delete selected"
+      }
+    },
+    {
+      "id": "inv-vault-clear-selection",
+      "page": "/vault",
+      "route": "/vault",
+      "label": "Clear selection",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Pages/Vault.razor:55",
+      "intendedBehavior": "Clerk action: Clear selection.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Control responds without unhandled error.",
+      "testId": "inv-vault-clear-selection",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Clear selection"
+      }
+    },
+    {
+      "id": "inv-vault-edit",
+      "page": "/vault",
+      "route": "/vault",
+      "label": "Edit",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Pages/Vault.razor:102",
+      "intendedBehavior": "Clerk action: Edit.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Control responds without unhandled error.",
+      "testId": "inv-vault-edit",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Edit"
+      }
+    },
+    {
+      "id": "inv-vault-delete",
+      "page": "/vault",
+      "route": "/vault",
+      "label": "Delete",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Pages/Vault.razor:103",
+      "intendedBehavior": "Delete or request delete confirmation.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Record removed or confirm dialog shown.",
+      "testId": "inv-vault-delete",
+      "smokeSafe": false,
+      "writesData": true,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Delete"
+      }
+    },
+    {
+      "id": "inv-vault-add-contact",
+      "page": "/vault",
+      "route": "/vault",
+      "label": "Add contact",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Pages/Vault.razor:139",
+      "intendedBehavior": "Persist data via API (Add contact).",
+      "dependencies": [
+        "API"
+      ],
+      "permissions": [],
+      "expectedResult": "Data saved and UI reflects change.",
+      "testId": "inv-vault-add-contact",
+      "smokeSafe": false,
+      "writesData": true,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Add contact"
+      }
+    },
+    {
+      "id": "inv-vault-restore",
+      "page": "/vault",
+      "route": "/vault",
+      "label": "Restore",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Pages/Vault.razor:164",
+      "intendedBehavior": "Clerk action: Restore.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Control responds without unhandled error.",
+      "testId": "inv-vault-restore",
+      "smokeSafe": false,
+      "writesData": false,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Restore"
+      }
+    },
+    {
+      "id": "inv-vault-edit-2",
+      "page": "/vault",
+      "route": "/vault",
+      "label": "Edit",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Pages/Vault.razor:168",
+      "intendedBehavior": "Clerk action: Edit.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Control responds without unhandled error.",
+      "testId": "inv-vault-edit-2",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Edit"
+      }
+    },
+    {
+      "id": "inv-vault-delete-2",
+      "page": "/vault",
+      "route": "/vault",
+      "label": "Delete",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Pages/Vault.razor:169",
+      "intendedBehavior": "Delete or request delete confirmation.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Record removed or confirm dialog shown.",
+      "testId": "inv-vault-delete-2",
+      "smokeSafe": false,
+      "writesData": true,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Delete"
+      }
+    },
+    {
+      "id": "inv-vault-edit-3",
+      "page": "/vault",
+      "route": "/vault",
+      "label": "Edit",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Pages/Vault.razor:226",
+      "intendedBehavior": "Clerk action: Edit.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Control responds without unhandled error.",
+      "testId": "inv-vault-edit-3",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Edit"
+      }
+    },
+    {
+      "id": "inv-vault-delete-3",
+      "page": "/vault",
+      "route": "/vault",
+      "label": "Delete",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Pages/Vault.razor:227",
+      "intendedBehavior": "Delete or request delete confirmation.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Record removed or confirm dialog shown.",
+      "testId": "inv-vault-delete-3",
+      "smokeSafe": false,
+      "writesData": true,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Delete"
+      }
+    },
+    {
+      "id": "inv-vault-save-as-voice-note",
+      "page": "/vault",
+      "route": "/vault",
+      "label": "Save as Voice Note",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Pages/Vault.razor:273",
+      "intendedBehavior": "Persist data via API (Save as Voice Note).",
+      "dependencies": [
+        "API"
+      ],
+      "permissions": [],
+      "expectedResult": "Data saved and UI reflects change.",
+      "testId": "inv-vault-save-as-voice-note",
+      "smokeSafe": false,
+      "writesData": true,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Save as Voice Note"
+      }
+    },
+    {
+      "id": "inv-vault-del",
+      "page": "/vault",
+      "route": "/vault",
+      "label": "Del",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Pages/Vault.razor:295",
+      "intendedBehavior": "Delete or request delete confirmation.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Record removed or confirm dialog shown.",
+      "testId": "inv-vault-del",
+      "smokeSafe": false,
+      "writesData": true,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Del"
+      }
+    },
+    {
+      "id": "inv-vault-insert-ai-draft-into-editor",
+      "page": "/vault",
+      "route": "/vault",
+      "label": "Insert AI draft into editor",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Pages/Vault.razor:323",
+      "intendedBehavior": "Clerk action: Insert AI draft into editor.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Control responds without unhandled error.",
+      "testId": "inv-vault-insert-ai-draft-into-editor",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Insert AI draft into editor"
+      }
+    },
+    {
+      "id": "inv-vault-save-changes",
+      "page": "/vault",
+      "route": "/vault",
+      "label": "Save Changes",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Pages/Vault.razor:327",
+      "intendedBehavior": "Persist data via API (Save Changes).",
+      "dependencies": [
+        "API"
+      ],
+      "permissions": [],
+      "expectedResult": "Data saved and UI reflects change.",
+      "testId": "inv-vault-save-changes",
+      "smokeSafe": false,
+      "writesData": true,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Save Changes"
+      }
+    },
+    {
+      "id": "inv-vault-cancel",
+      "page": "/vault",
+      "route": "/vault",
+      "label": "Cancel",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Pages/Vault.razor:328",
+      "intendedBehavior": "Clerk action: Cancel.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Control responds without unhandled error.",
+      "testId": "inv-vault-cancel",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Cancel"
+      }
+    },
+    {
+      "id": "inv-vault-cancel-2",
+      "page": "/vault",
+      "route": "/vault",
+      "label": "Cancel",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Pages/Vault.razor:389",
+      "intendedBehavior": "Clerk action: Cancel.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Control responds without unhandled error.",
+      "testId": "inv-vault-cancel-2",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Cancel"
+      }
+    },
+    {
+      "id": "inv-vault-save",
+      "page": "/vault",
+      "route": "/vault",
+      "label": "Save",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Pages/Vault.razor:390",
+      "intendedBehavior": "Persist data via API (Save).",
+      "dependencies": [
+        "API"
+      ],
+      "permissions": [],
+      "expectedResult": "Data saved and UI reflects change.",
+      "testId": "inv-vault-save",
+      "smokeSafe": false,
+      "writesData": true,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Save"
+      }
+    },
+    {
+      "id": "inv-vault-text-field",
+      "page": "/vault",
+      "route": "/vault",
+      "label": "Text field",
+      "type": "input",
+      "fileLine": "src/TIKR.Web/Components/Pages/Vault.razor:272",
+      "intendedBehavior": "Edit field: Text field.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Value binds and persists on save.",
+      "testId": "inv-vault-text-field",
+      "smokeSafe": false,
+      "writesData": true,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Text field"
+      }
+    },
+    {
+      "id": "inv-vault-text-field-2",
+      "page": "/vault",
+      "route": "/vault",
+      "label": "Text field",
+      "type": "input",
+      "fileLine": "src/TIKR.Web/Components/Pages/Vault.razor:345",
+      "intendedBehavior": "Edit field: Text field.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Value binds and persists on save.",
+      "testId": "inv-vault-text-field-2",
+      "smokeSafe": false,
+      "writesData": true,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Text field"
+      }
+    },
+    {
+      "id": "inv-vault-text-field-3",
+      "page": "/vault",
+      "route": "/vault",
+      "label": "Text field",
+      "type": "input",
+      "fileLine": "src/TIKR.Web/Components/Pages/Vault.razor:349",
+      "intendedBehavior": "Edit field: Text field.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Value binds and persists on save.",
+      "testId": "inv-vault-text-field-3",
+      "smokeSafe": false,
+      "writesData": true,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Text field"
+      }
+    },
+    {
+      "id": "inv-vault-text-field-4",
+      "page": "/vault",
+      "route": "/vault",
+      "label": "Text field",
+      "type": "input",
+      "fileLine": "src/TIKR.Web/Components/Pages/Vault.razor:353",
+      "intendedBehavior": "Edit field: Text field.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Value binds and persists on save.",
+      "testId": "inv-vault-text-field-4",
+      "smokeSafe": false,
+      "writesData": true,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Text field"
+      }
+    },
+    {
+      "id": "inv-vault-text-field-5",
+      "page": "/vault",
+      "route": "/vault",
+      "label": "Text field",
+      "type": "input",
+      "fileLine": "src/TIKR.Web/Components/Pages/Vault.razor:357",
+      "intendedBehavior": "Edit field: Text field.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Value binds and persists on save.",
+      "testId": "inv-vault-text-field-5",
+      "smokeSafe": false,
+      "writesData": true,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Text field"
+      }
+    },
+    {
+      "id": "inv-vault-text-field-6",
+      "page": "/vault",
+      "route": "/vault",
+      "label": "Text field",
+      "type": "input",
+      "fileLine": "src/TIKR.Web/Components/Pages/Vault.razor:361",
+      "intendedBehavior": "Edit field: Text field.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Value binds and persists on save.",
+      "testId": "inv-vault-text-field-6",
+      "smokeSafe": false,
+      "writesData": true,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Text field"
+      }
+    },
+    {
+      "id": "inv-vault-text-field-7",
+      "page": "/vault",
+      "route": "/vault",
+      "label": "Text field",
+      "type": "input",
+      "fileLine": "src/TIKR.Web/Components/Pages/Vault.razor:366",
+      "intendedBehavior": "Edit field: Text field.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Value binds and persists on save.",
+      "testId": "inv-vault-text-field-7",
+      "smokeSafe": false,
+      "writesData": true,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Text field"
+      }
+    },
+    {
+      "id": "inv-vault-text-field-8",
+      "page": "/vault",
+      "route": "/vault",
+      "label": "Text field",
+      "type": "input",
+      "fileLine": "src/TIKR.Web/Components/Pages/Vault.razor:370",
+      "intendedBehavior": "Edit field: Text field.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Value binds and persists on save.",
+      "testId": "inv-vault-text-field-8",
+      "smokeSafe": false,
+      "writesData": true,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Text field"
+      }
+    },
+    {
+      "id": "inv-vault-text-field-9",
+      "page": "/vault",
+      "route": "/vault",
+      "label": "Text field",
+      "type": "input",
+      "fileLine": "src/TIKR.Web/Components/Pages/Vault.razor:375",
+      "intendedBehavior": "Edit field: Text field.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Value binds and persists on save.",
+      "testId": "inv-vault-text-field-9",
+      "smokeSafe": false,
+      "writesData": true,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Text field"
+      }
+    },
+    {
+      "id": "inv-vault-checkbox",
+      "page": "/vault",
+      "route": "/vault",
+      "label": "Checkbox",
+      "type": "checkbox",
+      "fileLine": "src/TIKR.Web/Components/Pages/Vault.razor:380",
+      "intendedBehavior": "Edit field: Checkbox.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Value binds and persists on save.",
+      "testId": "inv-vault-checkbox",
+      "smokeSafe": false,
+      "writesData": true,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Checkbox"
+      }
+    },
+    {
+      "id": "inv-vault-checkbox-2",
+      "page": "/vault",
+      "route": "/vault",
+      "label": "Checkbox",
+      "type": "checkbox",
+      "fileLine": "src/TIKR.Web/Components/Pages/Vault.razor:381",
+      "intendedBehavior": "Edit field: Checkbox.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Value binds and persists on save.",
+      "testId": "inv-vault-checkbox-2",
+      "smokeSafe": false,
+      "writesData": true,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Checkbox"
+      }
+    },
+    {
+      "id": "inv-vault-checkbox-3",
+      "page": "/vault",
+      "route": "/vault",
+      "label": "Checkbox",
+      "type": "checkbox",
+      "fileLine": "src/TIKR.Web/Components/Pages/Vault.razor:382",
+      "intendedBehavior": "Edit field: Checkbox.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Value binds and persists on save.",
+      "testId": "inv-vault-checkbox-3",
+      "smokeSafe": false,
+      "writesData": true,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Checkbox"
+      }
+    },
+    {
+      "id": "inv-vault-checkbox-4",
+      "page": "/vault",
+      "route": "/vault",
+      "label": "Checkbox",
+      "type": "checkbox",
+      "fileLine": "src/TIKR.Web/Components/Pages/Vault.razor:383",
+      "intendedBehavior": "Edit field: Checkbox.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Value binds and persists on save.",
+      "testId": "inv-vault-checkbox-4",
+      "smokeSafe": false,
+      "writesData": true,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Checkbox"
+      }
+    },
+    {
+      "id": "inv-vault-checkbox-5",
+      "page": "/vault",
+      "route": "/vault",
+      "label": "Checkbox",
+      "type": "checkbox",
+      "fileLine": "src/TIKR.Web/Components/Pages/Vault.razor:384",
+      "intendedBehavior": "Edit field: Checkbox.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Value binds and persists on save.",
+      "testId": "inv-vault-checkbox-5",
+      "smokeSafe": false,
+      "writesData": true,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Checkbox"
+      }
+    },
+    {
+      "id": "inv-vault-checkbox-6",
+      "page": "/vault",
+      "route": "/vault",
+      "label": "Checkbox",
+      "type": "checkbox",
+      "fileLine": "src/TIKR.Web/Components/Pages/Vault.razor:385",
+      "intendedBehavior": "Edit field: Checkbox.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Value binds and persists on save.",
+      "testId": "inv-vault-checkbox-6",
+      "smokeSafe": false,
+      "writesData": true,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Checkbox"
+      }
+    },
+    {
+      "id": "inv-vault-add-howto",
+      "page": "vault",
+      "route": "/vault",
+      "label": "Add how-to / tribal entry (missing control)",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Pages/Vault.razor:\u2014",
+      "intendedBehavior": "Create new vault how-to entry from empty grid.",
+      "dependencies": [
+        "API"
+      ],
+      "permissions": [],
+      "expectedResult": "New entry dialog or inline editor opens.",
+      "testId": "inv-vault-add-howto",
+      "smokeSafe": false,
+      "writesData": true,
+      "knownFailure": "RB-005",
+      "playwright": {
+        "strategy": "missing-control"
+      }
+    },
+    {
+      "id": "inv-layout-dashboard-control",
+      "page": "layout",
+      "route": "*",
+      "label": "Dashboard",
+      "type": "link-nav",
+      "fileLine": "src/TIKR.Web/Components/Layout/MainLayout.razor:34",
+      "intendedBehavior": "Sidebar or in-app navigation.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Target route loads with expected heading.",
+      "testId": "inv-layout-dashboard-control",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "link",
+        "name": "Dashboard"
+      }
+    },
+    {
+      "id": "inv-layout-calendar-calendar",
+      "page": "layout",
+      "route": "*",
+      "label": "Calendar",
+      "type": "link-nav",
+      "fileLine": "src/TIKR.Web/Components/Layout/MainLayout.razor:35",
+      "intendedBehavior": "Sidebar or in-app navigation.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Target route loads with expected heading.",
+      "testId": "inv-layout-calendar-calendar",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "link",
+        "name": "Calendar"
+      }
+    },
+    {
+      "id": "inv-layout-requirements-requirements",
+      "page": "layout",
+      "route": "*",
+      "label": "Requirements",
+      "type": "link-nav",
+      "fileLine": "src/TIKR.Web/Components/Layout/MainLayout.razor:36",
+      "intendedBehavior": "Sidebar or in-app navigation.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Target route loads with expected heading.",
+      "testId": "inv-layout-requirements-requirements",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "link",
+        "name": "Requirements"
+      }
+    },
+    {
+      "id": "inv-layout-documents-documents",
+      "page": "layout",
+      "route": "*",
+      "label": "Documents",
+      "type": "link-nav",
+      "fileLine": "src/TIKR.Web/Components/Layout/MainLayout.razor:37",
+      "intendedBehavior": "Sidebar or in-app navigation.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Target route loads with expected heading.",
+      "testId": "inv-layout-documents-documents",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "link",
+        "name": "Documents"
+      }
+    },
+    {
+      "id": "inv-layout-ai-assistant-assistant",
+      "page": "layout",
+      "route": "*",
+      "label": "AI Assistant",
+      "type": "link-nav",
+      "fileLine": "src/TIKR.Web/Components/Layout/MainLayout.razor:38",
+      "intendedBehavior": "Sidebar or in-app navigation.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Target route loads with expected heading.",
+      "testId": "inv-layout-ai-assistant-assistant",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "link",
+        "name": "AI Assistant"
+      }
+    },
+    {
+      "id": "inv-layout-knowledge-vault-vault",
+      "page": "layout",
+      "route": "*",
+      "label": "Knowledge Vault",
+      "type": "link-nav",
+      "fileLine": "src/TIKR.Web/Components/Layout/MainLayout.razor:39",
+      "intendedBehavior": "Sidebar or in-app navigation.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Target route loads with expected heading.",
+      "testId": "inv-layout-knowledge-vault-vault",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "link",
+        "name": "Knowledge Vault"
+      }
+    },
+    {
+      "id": "inv-layout-settings-settings",
+      "page": "layout",
+      "route": "*",
+      "label": "Settings",
+      "type": "link-nav",
+      "fileLine": "src/TIKR.Web/Components/Layout/MainLayout.razor:40",
+      "intendedBehavior": "Sidebar or in-app navigation.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Target route loads with expected heading.",
+      "testId": "inv-layout-settings-settings",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "link",
+        "name": "Settings"
+      }
+    },
+    {
+      "id": "inv-layout-tools-tour-demo-clerk-tools",
+      "page": "layout",
+      "route": "*",
+      "label": "Tools tour",
+      "type": "link-nav",
+      "fileLine": "src/TIKR.Web/Components/Layout/MainLayout.razor:41",
+      "intendedBehavior": "Sidebar or in-app navigation.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Target route loads with expected heading.",
+      "testId": "inv-layout-tools-tour-demo-clerk-tools",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "link",
+        "name": "Tools tour"
+      }
+    },
+    {
+      "id": "inv-layout-users-settings-users",
+      "page": "layout",
+      "route": "*",
+      "label": "Users",
+      "type": "link-nav",
+      "fileLine": "src/TIKR.Web/Components/Layout/MainLayout.razor:45",
+      "intendedBehavior": "Sidebar or in-app navigation.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Target route loads with expected heading.",
+      "testId": "inv-layout-users-settings-users",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "link",
+        "name": "Users"
+      }
+    },
+    {
+      "id": "inv-layout-account-account",
+      "page": "layout",
+      "route": "*",
+      "label": "Account",
+      "type": "link-nav",
+      "fileLine": "src/TIKR.Web/Components/Layout/MainLayout.razor:57",
+      "intendedBehavior": "Sidebar or in-app navigation.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Target route loads with expected heading.",
+      "testId": "inv-layout-account-account",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "link",
+        "name": "Account"
+      }
+    },
+    {
+      "id": "inv-layout-hide-menu",
+      "page": "layout",
+      "route": "*",
+      "label": "\u00ab Hide menu",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Layout/MainLayout.razor:23",
+      "intendedBehavior": "Clerk action: \u00ab Hide menu.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Control responds without unhandled error.",
+      "testId": "inv-layout-hide-menu",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "\u00ab Hide menu"
+      }
+    },
+    {
+      "id": "inv-layout-sign-out",
+      "page": "layout",
+      "route": "*",
+      "label": "Sign out",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Layout/MainLayout.razor:56",
+      "intendedBehavior": "Clerk action: Sign out.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Control responds without unhandled error.",
+      "testId": "inv-layout-sign-out",
+      "smokeSafe": false,
+      "writesData": false,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Sign out"
+      }
+    },
+    {
+      "id": "inv-layout-menu",
+      "page": "layout",
+      "route": "*",
+      "label": "\u2630 Menu",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Layout/MainLayout.razor:66",
+      "intendedBehavior": "Clerk action: \u2630 Menu.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Control responds without unhandled error.",
+      "testId": "inv-layout-menu",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "\u2630 Menu"
+      }
+    },
+    {
+      "id": "inv-layout-statehaschanged-try-again",
+      "page": "layout",
+      "route": "*",
+      "label": "StateHasChanged()\">Try again",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Layout/MainLayout.razor:92",
+      "intendedBehavior": "Clerk action: StateHasChanged()\">Try again.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Control responds without unhandled error.",
+      "testId": "inv-layout-statehaschanged-try-again",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": "RB-004",
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "StateHasChanged()\">Try again"
+      }
+    },
+    {
+      "id": "inv-layout-retry",
+      "page": "layout",
+      "route": "*",
+      "label": "Retry",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Layout/ReconnectModal.razor:18",
+      "intendedBehavior": "Clerk action: Retry.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Control responds without unhandled error.",
+      "testId": "inv-layout-retry",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Retry"
+      }
+    },
+    {
+      "id": "inv-layout-resume",
+      "page": "layout",
+      "route": "*",
+      "label": "Resume",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Layout/ReconnectModal.razor:27",
+      "intendedBehavior": "Clerk action: Resume.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Control responds without unhandled error.",
+      "testId": "inv-layout-resume",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Resume"
+      }
+    },
+    {
+      "id": "inv-layout-undo",
+      "page": "layout",
+      "route": "*",
+      "label": "Undo",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Shared/ClerkToastHost.razor:10",
+      "intendedBehavior": "Clerk action: Undo.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Control responds without unhandled error.",
+      "testId": "inv-layout-undo",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Undo"
+      }
+    },
+    {
+      "id": "inv-layout-text-field",
+      "page": "layout",
+      "route": "*",
+      "label": "Text field",
+      "type": "input",
+      "fileLine": "src/TIKR.Web/Components/Shared/ClerkUserGuideDialog.razor:8",
+      "intendedBehavior": "Edit field: Text field.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Value binds and persists on save.",
+      "testId": "inv-layout-text-field",
+      "smokeSafe": false,
+      "writesData": true,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Text field"
+      }
+    },
+    {
+      "id": "inv-layout-cancel",
+      "page": "layout",
+      "route": "*",
+      "label": "Cancel",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Shared/ConfirmDeleteDialog.razor:10",
+      "intendedBehavior": "Clerk action: Cancel.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Control responds without unhandled error.",
+      "testId": "inv-layout-cancel",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Cancel"
+      }
+    },
+    {
+      "id": "inv-layout-delete",
+      "page": "layout",
+      "route": "*",
+      "label": "Delete",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Shared/ConfirmDeleteDialog.razor:11",
+      "intendedBehavior": "Delete or request delete confirmation.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Record removed or confirm dialog shown.",
+      "testId": "inv-layout-delete",
+      "smokeSafe": false,
+      "writesData": true,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Delete"
+      }
+    },
+    {
+      "id": "inv-layout-close-workspace",
+      "page": "layout",
+      "route": "*",
+      "label": "Close workspace",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Shared/DocumentWorkspaceDialog.razor:52",
+      "intendedBehavior": "Clerk action: Close workspace.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Control responds without unhandled error.",
+      "testId": "inv-layout-close-workspace",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Close workspace"
+      }
+    },
+    {
+      "id": "inv-layout-delete",
+      "page": "layout",
+      "route": "*",
+      "label": "Delete",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Shared/DocumentWorkspaceDialog.razor:70",
+      "intendedBehavior": "Delete or request delete confirmation.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Record removed or confirm dialog shown.",
+      "testId": "inv-layout-delete",
+      "smokeSafe": false,
+      "writesData": true,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Delete"
+      }
+    },
+    {
+      "id": "inv-layout-open-in-document-library",
+      "page": "layout",
+      "route": "*",
+      "label": "Open in Document Library",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Shared/DocumentWorkspaceDialog.razor:185",
+      "intendedBehavior": "Navigate via Blazor handler (NavigateToDocumentsFallback).",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "URL changes or target page loads.",
+      "testId": "inv-layout-open-in-document-library",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Open in Document Library"
+      }
+    },
+    {
+      "id": "inv-layout-help-for-this-page",
+      "page": "layout",
+      "route": "*",
+      "label": "Help for this page",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Shared/PageHelp.razor:5",
+      "intendedBehavior": "Clerk action: Help for this page.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Control responds without unhandled error.",
+      "testId": "inv-layout-help-for-this-page",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Help for this page"
+      }
+    },
+    {
+      "id": "inv-layout-help-for-this-page-2",
+      "page": "layout",
+      "route": "*",
+      "label": "Help for this page",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Shared/PageHelp.razor:14",
+      "intendedBehavior": "Clerk action: Help for this page.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Control responds without unhandled error.",
+      "testId": "inv-layout-help-for-this-page-2",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Help for this page"
+      }
+    },
+    {
+      "id": "inv-layout-tour-this-page",
+      "page": "layout",
+      "route": "*",
+      "label": "Tour this page",
+      "type": "button",
+      "fileLine": "src/TIKR.Web/Components/Shared/PageTourButton.razor:4",
+      "intendedBehavior": "Clerk action: Tour this page.",
+      "dependencies": [],
+      "permissions": [],
+      "expectedResult": "Control responds without unhandled error.",
+      "testId": "inv-layout-tour-this-page",
+      "smokeSafe": true,
+      "writesData": false,
+      "knownFailure": null,
+      "playwright": {
+        "strategy": "role",
+        "role": "button",
+        "name": "Tour this page"
+      }
+    }
+  ]
+}

@@ -15,7 +15,24 @@ TIKR targets **>90% line coverage** across unit, integration, and component test
 
 | Project | Scope |
 |---------|-------|
-| E2E (Playwright) | Clerk flows against Docker stack — `tests/e2e/` (`clerk-smoke`, `page-readiness`, `requirements-agent-scan`). See [ui-readiness-audit.md](../docs/ui-readiness-audit.md). |
+| E2E (Playwright) | Clerk flows against Docker stack — `tests/e2e/` (`clerk-smoke`, `page-readiness`, `requirements-agent-scan`, **`functions-inventory`**). Inventory: [functions-inventory.md](../docs/functions-inventory.md). See [ui-readiness-audit.md](../docs/ui-readiness-audit.md). |
+
+### Functions inventory E2E
+
+```bash
+python3 scripts/generate-functions-inventory.py
+./scripts/ci-smoke.sh                                    # Docker stack + full Playwright + coverage gate
+cd tests/e2e && CI=1 TIKR_E2E_BASE_URL=http://localhost:8080 npm test  # when stack already up
+cd tests/e2e && npm run test:inventory
+python3 scripts/check-functions-inventory-coverage.py tests/e2e/test-results/inventory-results.json
+```
+
+**Live read-only smoke** (no writes — navigation + visibility only):
+
+```bash
+cd tests/e2e
+TIKR_E2E_SMOKE_MODE=1 TIKR_E2E_BASE_URL=http://mr-storage:8080 npm run test:smoke-live
+```
 
 Fixtures for agent-scan live in **`tests/fixtures/agent-scan/`** (shared by API integration tests, Playwright, and licensed CI workflow).
 
