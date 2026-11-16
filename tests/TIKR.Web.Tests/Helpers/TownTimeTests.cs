@@ -20,6 +20,13 @@ public class TownTimeTests
     }
 
     [Fact]
+    public void ToDenver_ConvertsALocalClockThroughUtc()
+    {
+        var local = new DateTime(2026, 1, 15, 12, 0, 0, DateTimeKind.Local);
+        TownTime.ToDenver(local).Kind.Should().Be(DateTimeKind.Unspecified);
+    }
+
+    [Fact]
     public void ToDenver_TreatsUnspecifiedClockAsUtc()
     {
         var stored = new DateTime(2026, 1, 15, 19, 0, 0, DateTimeKind.Unspecified);

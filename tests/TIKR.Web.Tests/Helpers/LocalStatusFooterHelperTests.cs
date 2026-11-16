@@ -34,6 +34,16 @@ public class LocalStatusFooterHelperTests
     }
 
     [Fact]
+    public void FormatLastSaved_HandlesUnknownAndAFutureStamp()
+    {
+        LocalStatusFooterHelper.FormatLastSaved(null, Now).Should().Be("Last saved time unknown");
+        LocalStatusFooterHelper.FormatLastSaved(Now.AddMinutes(5), Now).Should().Be("Last saved just now");
+        LocalStatusFooterHelper.FormatLastSaved(Now.AddDays(-3), Now).Should().Contain("Last saved");
+        LocalStatusFooterHelper.BuildConnectionHint(apiOffline: false, helperReady: false)
+            .Should().Contain("not ready");
+    }
+
+    [Fact]
     public void BuildConnectionHint_OnlineWithOllama()
     {
         LocalStatusFooterHelper.BuildConnectionHint(apiOffline: false, helperReady: true)
