@@ -6,13 +6,20 @@
 <CascadingAuthenticationState>
     <Router AppAssembly="typeof(Program).Assembly" NotFoundPage="typeof(Pages.NotFound)">
         <Found Context="routeData">
-            @if (Auth.IsEnabled)
+            @if (Auth.IsEnabled || Auth.CognitoGateEnabled)
             {
                 <AuthorizeRouteView RouteData="routeData" DefaultLayout="typeof(Layout.MainLayout)">
                     <NotAuthorized>
                         @if (context.User.Identity?.IsAuthenticated != true)
                         {
-                            <RedirectToLogin ReturnUrl="@GetReturnUrl(routeData)" />
+                            @if (Auth.CognitoGateEnabled)
+                            {
+                                <RedirectToCognito ReturnUrl="@GetReturnUrl(routeData)" />
+                            }
+                            else
+                            {
+                                <RedirectToLogin ReturnUrl="@GetReturnUrl(routeData)" />
+                            }
                         }
                         else
                         {

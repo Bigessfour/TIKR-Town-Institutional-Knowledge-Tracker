@@ -37,7 +37,7 @@ test.describe('TIKR page readiness (nav + primary controls)', () => {
     for (const { path, assert } of routes) {
       await gotoClerkPage(page, path);
       await assert(page);
-      await expect(page.getByRole('contentinfo')).toContainText(/Synology|local|NAS|Ollama/i);
+      await expect(page.getByRole('contentinfo')).toContainText(/town storage|helper/i);
     }
   });
 
@@ -158,7 +158,7 @@ test.describe('TIKR page readiness (nav + primary controls)', () => {
     await expect(
       page
         .locator('.e-card-header-title')
-        .filter({ hasText: /Keys & passwords|Town helper \(local AI\)|Town settings/i })
+        .filter({ hasText: /Helper and license|Local helper|Town settings/i })
         .first(),
     ).toBeVisible({ timeout: 15_000 });
   });

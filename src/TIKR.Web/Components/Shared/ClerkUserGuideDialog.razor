@@ -2,6 +2,7 @@
 @implements IDisposable
 
 <SfDialog @bind-Visible="_visible" Width="920px" CssClass="tikr-guide-dialog" IsModal="true" ShowCloseIcon="true" Header="TIKR user guide">
+    <DialogEvents Closed="OnGuideClosed" />
     <DialogTemplates>
         <Content>
             <div class="tikr-guide-toolbar">
@@ -51,9 +52,13 @@
         _sections = await Guide.GetSectionsAsync();
         _search = string.Empty;
         _activeId = _sections.FirstOrDefault()?.Id ?? string.Empty;
+        _visible = false;
+        await InvokeAsync(StateHasChanged);
         _visible = true;
         await InvokeAsync(StateHasChanged);
     }
+
+    private void OnGuideClosed() => _visible = false;
 
     private void SelectSection(string id) => _activeId = id;
 

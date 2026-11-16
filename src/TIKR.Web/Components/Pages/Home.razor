@@ -84,8 +84,8 @@ else
                                 <div class="dashboard-panel">
                                     <h3 class="dashboard-panel-title">Quick actions</h3>
                                     <div class="dashboard-quick-actions">
-                                        <SfButton CssClass="tikr-action-btn" Content="Add requirement" OnClick="@(() => Navigation.NavigateTo("/requirements"))" />
-                                        <SfButton CssClass="tikr-action-btn" Content="AI Scan" OnClick="@(() => Navigation.NavigateTo("/requirements"))" />
+                                        <SfButton CssClass="tikr-action-btn" Content="Add requirement" OnClick="@(() => Navigation.NavigateTo("/requirements?action=add"))" />
+                                        <SfButton CssClass="tikr-action-btn" Content="AI Scan" OnClick="@(() => Navigation.NavigateTo("/requirements?action=scan"))" />
                                         <SfButton CssClass="tikr-action-btn" Content="Upload document" OnClick="@(() => Navigation.NavigateTo("/documents?action=upload"))" />
                                         <SfButton CssClass="tikr-action-btn" Content="Calendar" OnClick="@(() => Navigation.NavigateTo("/calendar"))" />
                                         <SfButton CssClass="tikr-action-btn" Content="Assistant" OnClick="@(() => Navigation.NavigateTo("/assistant"))" />
@@ -195,7 +195,7 @@ else
                                                     {
                                                         <span> — @detail</span>
                                                     }
-                                                    <span class="text-muted"> @entry.Timestamp.ToLocalTime().ToString("g")</span>
+                                                    <span class="text-muted"> @TownTime.Format(entry.Timestamp)</span>
                                                 </li>
                                             }
                                         </ul>
@@ -207,17 +207,17 @@ else
                                     @if (_corpusAttention is { Count: > 0 })
                                     {
                                         <span>@AuditDetailsFormatter.FormatCorpusAttention(_corpusAttention)</span>
-                                        <a href="/settings">Refresh search in Settings</a>
+                                        <a href="/settings?focus=reindex">Refresh Assistant memory</a>
                                     }
                                     else if (_localStatus is not null)
                                     {
-                                        <SfTooltip Content="@(_localStatus.OllamaAvailable ? "Ollama is ready. Files stay on the Synology NAS." : "Ollama is offline. Files stay on the Synology NAS.")" Position="Position.TopCenter">
-                                            <span>@_localStatus.StorageLabel — local helper @(_localStatus.OllamaAvailable ? "ready" : "offline")</span>
+                                        <SfTooltip Content="@(_localStatus.ModelMismatch ? "The helper needs attention. Files stay on town storage." : _localStatus.OllamaAvailable ? "The helper is ready. Files stay on town storage." : "The helper is not ready. Files stay on town storage.")" Position="Position.TopCenter">
+                                            <span>Town files stay on town storage — helper @(_localStatus.ModelMismatch ? "needs attention" : _localStatus.OllamaAvailable ? "ready" : "not ready")</span>
                                         </SfTooltip>
                                     }
                                     else
                                     {
-                                        <SfTooltip Content="All data stays local on the Synology NAS." Position="Position.TopCenter">
+                                        <SfTooltip Content="Town files stay on town storage." Position="Position.TopCenter">
                                             <span>Town files stay on town storage</span>
                                         </SfTooltip>
                                     }

@@ -4,4 +4,6 @@ public record LocalStorageStatusDto(
     string TownName,
     string StorageLabel,
     DateTime? DataLastModifiedUtc,
-    bool OllamaAvailable);
+    bool OllamaAvailable,
+    bool ModelMismatch = false,
+    string? RunningModel = null);

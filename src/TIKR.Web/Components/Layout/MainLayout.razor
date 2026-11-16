@@ -38,7 +38,6 @@
             <li><NavLink href="/assistant" data-tour="@ClerkTourIds.NavAssistant">AI Assistant</NavLink></li>
             <li><NavLink href="/vault" data-tour="@ClerkTourIds.NavVault">Knowledge Vault</NavLink></li>
             <li><NavLink href="/settings" data-tour="@ClerkTourIds.NavSettings">Settings</NavLink></li>
-            <li><NavLink href="/demo/clerk-tools">Tools tour</NavLink></li>
             @if (Auth.IsEnabled)
             {
                 <AuthorizeView Roles="@TikrRoles.Admin">
@@ -47,7 +46,7 @@
             }
         </ul>
         <TikrThemeSelector />
-        @if (Auth.IsEnabled)
+        @if (Auth.IsEnabled || Auth.CognitoGateEnabled)
         {
             <div class="tikr-user-bar">
                 <AuthorizeView>
@@ -148,6 +147,12 @@
 
     private async Task LogoutAsync()
     {
+        if (Auth.CognitoGateEnabled)
+        {
+            Navigation.NavigateTo("/auth/cognito-logout", forceLoad: true);
+            return;
+        }
+
         await AuthSession.LogoutAsync();
         Navigation.NavigateTo("/login", forceLoad: true);
     }

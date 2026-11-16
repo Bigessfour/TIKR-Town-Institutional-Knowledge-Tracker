@@ -360,11 +360,22 @@
         var token = _streamingCts.Token;
 
         var markdownBuilder = new System.Text.StringBuilder();
+        var pausedIndexing = false;
 
         // Outer protection: the handler must never throw uncaught exceptions to the Blazor
         // circuit, otherwise the "An unhandled error has occurred. Reload" banner appears.
         try
         {
+            try
+            {
+                await Api.HoldInteractiveAiAsync();
+                pausedIndexing = true;
+            }
+            catch (Exception ex)
+            {
+                TikrActionLog.Info(Logger, "UI.Assistant.Prompt", $"Could not pause indexing: {ex.Message}");
+            }
+
             // Production safety: the @ref may not be populated yet when the prompt event fires,
             // or the view may be disposed (e.g. during reconnect after browser reload).
             if (_assistView is null)
@@ -384,6 +395,10 @@
                 var status = await Api.GetAiStatusAsync();
                 ollamaOk = status?.OllamaAvailable ?? false;
                 _grokEnabled = status?.GrokEnabled ?? false;
+                if (status?.ModelMismatch == true)
+                {
+                    _advancedNote = $"The loaded helper is {status.RunningModel}, not {status.OllamaModel}. Answers may be slow.";
+                }
             }
             catch (Exception ex)
             {
@@ -521,43 +536,76 @@
                 $"Path=local-buffered Chunks={streamChunks} RawLen={raw.Length} CleanLen={replyMarkdown.Length} Citations={citations.Count} Route={decision.Reason}",
                 turnSw.ElapsedMilliseconds);
         }
-        catch (OperationCanceledException)
+        catch (OperationCanceledException) when (AssistantTurnStop.IsUserStop(token))
         {
             TikrActionLog.Info(Logger, "UI.Assistant.Prompt", "Cancelled by user or navigation");
             var stopped = "<p><em>Response stopped.</em></p>";
             args.Response = stopped;
             await SafeUpdateResponseAsync(stopped);
         }
+        catch (OperationCanceledException)
+        {
+            TikrActionLog.Info(Logger, "UI.Assistant.Prompt", "Local helper timed out; auto-escalate if Grok on");
+            await ReportLocalFailureAsync(args, prompt, turnSw, token, timedOut: true);
+        }
         catch (Exception ex)
         {
             TikrActionLog.Failed(Logger, "UI.Assistant.Prompt", ex, "Local stream failed; auto-escalate if Grok on");
-            try
+            await ReportLocalFailureAsync(args, prompt, turnSw, token, timedOut: false);
+        }
+        finally
+        {
+            if (pausedIndexing)
             {
-                var escalate = AssistantAgentRouter.EscalateAfterLocalFailure(_grokEnabled);
-                var (fbContext, fbCitations) = await BuildRagContextAsync(prompt);
-                if (escalate.Route == AiRoute.CloudGrok)
+                try
                 {
-                    await CompleteViaGrokAsync(args, prompt, fbContext, escalate, turnSw, token, fbCitations);
-                    return;
+                    await Api.ReleaseInteractiveAiAsync();
                 }
+                catch (Exception ex)
+                {
+                    TikrActionLog.Info(Logger, "UI.Assistant.Prompt", $"Could not resume indexing: {ex.Message}");
+                }
+            }
+        }
+    }
 
-                var err = "<p class='text-danger'>The local helper is not available right now. Try again, or check Settings.</p>";
-                args.Response = err;
-                await SafeUpdateResponseAsync(err);
-            }
-            catch (OperationCanceledException)
+    private async Task ReportLocalFailureAsync(
+        AssistViewPromptRequestedEventArgs args,
+        string prompt,
+        System.Diagnostics.Stopwatch turnSw,
+        CancellationToken token,
+        bool timedOut)
+    {
+        try
+        {
+            var escalate = AssistantAgentRouter.EscalateAfterLocalFailure(_grokEnabled);
+            var (fbContext, fbCitations) = await BuildRagContextAsync(prompt);
+            if (escalate.Route == AiRoute.CloudGrok)
             {
-                var stopped = "<p><em>Response stopped.</em></p>";
-                args.Response = stopped;
-                await SafeUpdateResponseAsync(stopped);
+                await CompleteViaGrokAsync(args, prompt, fbContext, escalate, turnSw, token, fbCitations);
+                return;
             }
-            catch (Exception fbEx)
-            {
-                TikrActionLog.Failed(Logger, "UI.Assistant.Prompt", fbEx, "Grok escalate also failed");
-                var err = "<p class='text-danger'>The local helper is not available right now, and the advanced helper did not answer either. Try again, or check Settings.</p>";
-                args.Response = err;
-                await SafeUpdateResponseAsync(err);
-            }
+
+            var err = timedOut
+                ? "<p class='text-warning'>The local helper ran out of time. Try again in a moment.</p>"
+                : "<p class='text-danger'>The local helper is not available right now. Try again, or check Settings.</p>";
+            args.Response = err;
+            await SafeUpdateResponseAsync(err);
+        }
+        catch (OperationCanceledException) when (AssistantTurnStop.IsUserStop(token))
+        {
+            var stopped = "<p><em>Response stopped.</em></p>";
+            args.Response = stopped;
+            await SafeUpdateResponseAsync(stopped);
+        }
+        catch (Exception fbEx)
+        {
+            TikrActionLog.Failed(Logger, "UI.Assistant.Prompt", fbEx, "Grok escalate also failed");
+            var err = timedOut
+                ? "<p class='text-warning'>The local helper ran out of time, and the advanced helper did not answer either.</p>"
+                : "<p class='text-danger'>The local helper is not available right now, and the advanced helper did not answer either. Try again, or check Settings.</p>";
+            args.Response = err;
+            await SafeUpdateResponseAsync(err);
         }
     }
 

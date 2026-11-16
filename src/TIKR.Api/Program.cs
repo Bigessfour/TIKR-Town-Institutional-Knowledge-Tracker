@@ -221,7 +221,13 @@ api.MapGet("/system/local-status", async (IConfiguration config, IHybridAiServic
         dataModified = File.GetLastWriteTimeUtc(dbPath);
 
     var aiStatus = await ai.GetStatusAsync();
-    return Results.Ok(new LocalStorageStatusDto(town, storageLabel, dataModified, aiStatus.OllamaAvailable));
+    return Results.Ok(new LocalStorageStatusDto(
+        town,
+        storageLabel,
+        dataModified,
+        aiStatus.OllamaAvailable,
+        aiStatus.ModelMismatch,
+        aiStatus.RunningModel));
 });
 
 api.MapGet("/system/document-sdk-status", (IConfiguration config, FeatureSettingsState settings) =>
@@ -1296,6 +1302,19 @@ api.MapPost("/ai/embed-knowledge/{id:guid}", async (Guid id, IHybridAiService ai
     {
         return Results.NotFound(new { error = ex.Message });
     }
+});
+
+api.MapPost("/ai/interactive-hold", (InteractiveAiGate gate, int seconds = 240) =>
+{
+    var hold = TimeSpan.FromSeconds(Math.Clamp(seconds, 5, 600));
+    gate.Hold(hold);
+    return Results.NoContent();
+});
+
+api.MapPost("/ai/interactive-release", (InteractiveAiGate gate) =>
+{
+    gate.Release();
+    return Results.NoContent();
 });
 
 api.MapPost("/ai/reindex-embeddings", async (

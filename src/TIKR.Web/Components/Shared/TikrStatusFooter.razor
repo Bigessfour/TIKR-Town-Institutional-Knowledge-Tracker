@@ -4,7 +4,7 @@
 
 @using TIKR.Web.ClerkTour
 <footer class="tikr-status-footer" data-tour="@ClerkTourIds.FooterStatus" role="contentinfo" aria-live="polite">
-    <SfTooltip Content="Files stay on the town NAS (Synology). Nothing is sent off site for storage." Position="Position.TopCenter">
+    <SfTooltip Content="Town files stay on town storage. Nothing is sent off site for storage." Position="Position.TopCenter">
         <span class="tikr-status-footer-primary">@_primaryMessage</span>
     </SfTooltip>
     <SfTooltip Content="@_connectionTooltip" Position="Position.TopCenter">
@@ -15,7 +15,7 @@
 @code {
     private string _primaryMessage = "Town files stay local";
     private string _connectionHint = "Checking the town server";
-    private string _connectionTooltip = "Local-first on Synology. Ollama status appears when the town server responds.";
+    private string _connectionTooltip = "Town files stay on town storage. Helper status appears when the town server responds.";
     private bool _apiOffline;
     private Timer? _timer;
 
@@ -55,8 +55,10 @@
             _apiOffline = false;
             Connection.SetApiOffline(false);
             _primaryMessage = LocalStatusFooterHelper.BuildFooterMessage(status, DateTime.UtcNow);
-            _connectionHint = status.OllamaAvailable ? "Local helper ready" : "Local helper offline";
-            _connectionTooltip = LocalStatusFooterHelper.BuildConnectionHint(false, status.OllamaAvailable);
+            _connectionHint = status.ModelMismatch
+                ? "Helper needs attention"
+                : status.OllamaAvailable ? "Helper is ready" : "Helper is not ready";
+            _connectionTooltip = LocalStatusFooterHelper.BuildConnectionHint(false, status.OllamaAvailable && !status.ModelMismatch);
         }
         catch
         {

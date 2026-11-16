@@ -60,6 +60,18 @@ public class TikrApiClient(HttpClient http)
     public async Task<AiStatusResponse?> GetAiStatusAsync() =>
         await http.GetFromJsonAsync<AiStatusResponse>("/api/ai/status");
 
+    public async Task HoldInteractiveAiAsync(int seconds = 240)
+    {
+        using var response = await http.PostAsync($"/api/ai/interactive-hold?seconds={seconds}", content: null);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task ReleaseInteractiveAiAsync()
+    {
+        using var response = await http.PostAsync("/api/ai/interactive-release", content: null);
+        response.EnsureSuccessStatusCode();
+    }
+
     public async Task<FeatureSettingsDto?> GetFeatureSettingsAsync() =>
         await http.GetFromJsonAsync<FeatureSettingsDto>("/api/ai/feature-settings");
 

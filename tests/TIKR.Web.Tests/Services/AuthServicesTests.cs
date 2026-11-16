@@ -5,6 +5,7 @@ using System.Text;
 using System.Text.Json;
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Configuration;
 using TIKR.Shared.Constants;
 using TIKR.Shared.DTOs;
 using TIKR.Shared.TestFixtures;
@@ -58,7 +59,7 @@ public class AuthServicesTests
     public async Task TikrAuthenticationStateProvider_ReturnsAuthenticatedWhenValidJwtCookie()
     {
         var token = CreateTestJwt("clerk@town.gov", TikrRoles.Admin);
-        var provider = new TikrAuthenticationStateProvider(new HttpContextAccessor
+        var provider = CreateProvider(new HttpContextAccessor
         {
             HttpContext = CreateHttpContext(token)
         });
@@ -73,7 +74,7 @@ public class AuthServicesTests
     [Fact]
     public async Task TikrAuthenticationStateProvider_ReturnsAnonymousWhenNoCookie()
     {
-        var provider = new TikrAuthenticationStateProvider(new HttpContextAccessor
+        var provider = CreateProvider(new HttpContextAccessor
         {
             HttpContext = new DefaultHttpContext()
         });
@@ -86,7 +87,7 @@ public class AuthServicesTests
     [Fact]
     public async Task TikrAuthenticationStateProvider_ReturnsAnonymousWhenTokenInvalid()
     {
-        var provider = new TikrAuthenticationStateProvider(new HttpContextAccessor
+        var provider = CreateProvider(new HttpContextAccessor
         {
             HttpContext = CreateHttpContext("not-a-jwt")
         });
@@ -101,7 +102,7 @@ public class AuthServicesTests
     {
         var token = CreateTestJwt();
         var accessor = new HttpContextAccessor { HttpContext = CreateHttpContext(token) };
-        var provider = new TikrAuthenticationStateProvider(accessor);
+        var provider = CreateProvider(accessor);
         var sut = new AuthSessionService(new StubHttpClientFactory(), accessor, provider);
 
         sut.GetAccessToken().Should().Be(token);
@@ -112,7 +113,7 @@ public class AuthServicesTests
     {
         var factory = new StubHttpClientFactory(_ => new HttpResponseMessage(HttpStatusCode.Unauthorized));
         var accessor = new HttpContextAccessor { HttpContext = new DefaultHttpContext() };
-        var provider = new TikrAuthenticationStateProvider(accessor);
+        var provider = CreateProvider(accessor);
         var sut = new AuthSessionService(factory, accessor, provider);
 
         var result = await sut.LoginAsync(new LoginRequest("bad@town.gov", "wrong"));
@@ -132,7 +133,7 @@ public class AuthServicesTests
         });
         var context = new DefaultHttpContext();
         var accessor = new HttpContextAccessor { HttpContext = context };
-        var provider = new TikrAuthenticationStateProvider(accessor);
+        var provider = CreateProvider(accessor);
         var sut = new AuthSessionService(factory, accessor, provider);
 
         var result = await sut.LoginAsync(new LoginRequest(TestAuthFixtures.ClerkEmail, TestAuthFixtures.BootstrapPassword));
@@ -147,13 +148,19 @@ public class AuthServicesTests
     {
         var context = CreateHttpContext(CreateTestJwt());
         var accessor = new HttpContextAccessor { HttpContext = context };
-        var provider = new TikrAuthenticationStateProvider(accessor);
+        var provider = CreateProvider(accessor);
         var sut = new AuthSessionService(new StubHttpClientFactory(), accessor, provider);
 
         await sut.LogoutAsync();
 
         context.Response.Headers.SetCookie.ToString().Should().Contain($"{AuthCookie.Name}=");
     }
+
+    private static TikrAuthenticationStateProvider CreateProvider(HttpContextAccessor accessor) =>
+        new(
+            accessor,
+            new AuthSettings { IsEnabled = false },
+            new CognitoIdTokenValidator(new StubHttpClientFactory(), new ConfigurationBuilder().Build()));
 
     private static string CreateTestJwt(string email = "clerk@test.gov", string role = TikrRoles.Clerk)
     {

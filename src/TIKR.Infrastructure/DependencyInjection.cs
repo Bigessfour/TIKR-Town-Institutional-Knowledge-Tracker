@@ -107,11 +107,14 @@ public static class DependencyInjection
         services.AddHostedService<LibraryScanHostedService>();
         services.AddSingleton<EmbeddingRecoveryState>();
         services.AddSingleton<EmbeddingRecoveryStateStore>();
+        services.AddSingleton<InteractiveAiGate>();
         services.AddHostedService<EmbeddingRecoveryHostedService>();
         services.AddSingleton<TownDocumentSearchToolRegistry>();
 
         services.AddSingleton<IOllamaChatClientFactory>(sp =>
-            new OllamaChatClientFactory(sp.GetRequiredService<FeatureSettingsState>()));
+            new OllamaChatClientFactory(
+                sp.GetRequiredService<FeatureSettingsState>(),
+                sp.GetRequiredService<IConfiguration>()));
 
         return services;
     }

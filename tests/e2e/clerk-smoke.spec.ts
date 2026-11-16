@@ -7,7 +7,7 @@ test.describe('TIKR clerk smoke', () => {
     await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Reset layout' })).toBeVisible();
     await expect(page.locator('#due-out-grid')).toBeVisible();
-    await expect(page.getByRole('contentinfo')).toContainText(/Synology|local/i);
+    await expect(page.getByRole('contentinfo')).toContainText(/town storage|helper/i);
   });
 
   test('requirements page has help and print affordance', async ({ page }) => {

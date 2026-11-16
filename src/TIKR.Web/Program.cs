@@ -104,13 +104,20 @@ using (var startupLogFactory = LoggerFactory.Create(b => b.AddConsole()))
 builder.Services.AddSingleton(blazorLicenseStatus);
 
 var authEnabled = TikrConfiguration.IsAuthEnabled(builder.Configuration);
+var cognitoGate = CognitoSilentAuth.HostedUiDomain(builder.Configuration) is not null;
 
 var ollamaHost = TikrConfiguration.GetOllamaHost(builder.Configuration);
 var chatModel = TikrConfiguration.GetChatModel(builder.Configuration);
 var ollamaUri = ollamaHost.EndsWith('/') ? ollamaHost : ollamaHost + "/";
 
-builder.Services.AddChatClient(_ =>
-    new OllamaApiClient(new Uri(ollamaUri), chatModel));
+var chatTimeout = TimeSpan.FromSeconds(
+    TikrConfiguration.GetChatCompletionTimeoutSeconds(builder.Configuration) + 30);
+var ollamaHttp = new HttpClient
+{
+    BaseAddress = new Uri(ollamaUri),
+    Timeout = chatTimeout
+};
+builder.Services.AddChatClient(_ => new OllamaApiClient(ollamaHttp, chatModel));
 
 // Register Syncfusion AI for Smart components (Paste / TextArea) via shared Ollama IChatClient.
 builder.Services.AddSingleton<IChatInferenceService, SyncfusionAIService>();
@@ -131,7 +138,13 @@ builder.Services.AddScoped<Microsoft.AspNetCore.Components.Server.Circuits.Circu
 builder.Services.AddSyncfusionBlazor();
 builder.Services.AddMemoryCache();
 
-builder.Services.AddSingleton(new AuthSettings { IsEnabled = authEnabled });
+builder.Services.AddSingleton(new AuthSettings
+{
+    IsEnabled = authEnabled,
+    CognitoGateEnabled = cognitoGate
+});
+builder.Services.AddHttpClient("CognitoJwks");
+builder.Services.AddSingleton<CognitoIdTokenValidator>();
 builder.Services.AddSingleton<LocalConnectionStateService>();
 builder.Services.AddScoped<ClerkToastService>();
 builder.Services.AddScoped<ClerkUserGuideService>();
@@ -140,6 +153,8 @@ builder.Services.AddScoped<ThemeService>();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<TikrAuthenticationStateProvider>();
 builder.Services.AddScoped<AuthenticationStateProvider>(sp =>
+    sp.GetRequiredService<TikrAuthenticationStateProvider>());
+builder.Services.AddScoped<Microsoft.AspNetCore.Components.Authorization.IHostEnvironmentAuthenticationStateProvider>(sp =>
     sp.GetRequiredService<TikrAuthenticationStateProvider>());
 builder.Services.AddScoped<IAuthSessionService, AuthSessionService>();
 builder.Services.AddScoped<ChatClerkIdentityService>();
@@ -151,9 +166,17 @@ builder.Services.AddAuthorization(options =>
     {
         options.AddPolicy(TikrAuthPolicies.AdminOnly, policy => policy.RequireRole(TikrRoles.Admin));
     }
+    else if (cognitoGate)
+    {
+        options.DefaultPolicy = new Microsoft.AspNetCore.Authorization.AuthorizationPolicyBuilder()
+            .RequireAuthenticatedUser()
+            .Build();
+        options.AddPolicy(TikrAuthPolicies.AdminOnly, policy =>
+            policy.RequireRole("admin", "Admin"));
+    }
     else
     {
-        // Clerk path has no sign-in. [Authorize] pages must still render.
+        // No town sign-in configured. [Authorize] pages must still render.
         var allow = new Microsoft.AspNetCore.Authorization.AuthorizationPolicyBuilder()
             .RequireAssertion(_ => true)
             .Build();
@@ -206,11 +229,34 @@ app.UseSerilogRequestLogging(options =>
 
 app.Use(async (context, next) =>
 {
-    if (CognitoSilentAuth.ShouldProbe(context.Request, context.RequestServices.GetRequiredService<IConfiguration>()))
+    var config = context.RequestServices.GetRequiredService<IConfiguration>();
+    if (CognitoSilentAuth.HostedUiDomain(config) is not null)
     {
-        var returnPath = CognitoSilentAuth.SafeReturnPath(context.Request.Path + context.Request.QueryString);
-        context.Response.Redirect("/auth/cognito-start?return=" + Uri.EscapeDataString(returnPath));
-        return;
+        var validator = context.RequestServices.GetRequiredService<CognitoIdTokenValidator>();
+        if (context.Request.Cookies.TryGetValue(AuthCookie.CognitoSession, out var sessionToken)
+            && !string.IsNullOrWhiteSpace(sessionToken))
+        {
+            var principal = await validator.ValidateAsync(sessionToken, context.RequestAborted);
+            if (principal is not null && CognitoAccess.IsAllowed(principal))
+            {
+                context.User = principal;
+            }
+            else if (CognitoSilentAuth.IsDocumentNavigation(context.Request))
+            {
+                var denied = principal is not null
+                    ? "/auth/cognito-denied?reason=role"
+                    : "/auth/cognito-start?return=" + Uri.EscapeDataString(
+                        CognitoSilentAuth.SafeReturnPath(context.Request.Path + context.Request.QueryString));
+                context.Response.Redirect(denied);
+                return;
+            }
+        }
+        else if (CognitoSilentAuth.ShouldProbe(context.Request, config))
+        {
+            var returnPath = CognitoSilentAuth.SafeReturnPath(context.Request.Path + context.Request.QueryString);
+            context.Response.Redirect("/auth/cognito-start?return=" + Uri.EscapeDataString(returnPath));
+            return;
+        }
     }
 
     await next();
@@ -219,26 +265,30 @@ app.Use(async (context, next) =>
 app.MapGet("/auth/cognito-start", (HttpContext http, IConfiguration config) =>
 {
     var returnPath = CognitoSilentAuth.SafeReturnPath(http.Request.Query["return"]);
+    var interactive = string.Equals(http.Request.Query["mode"], "login", StringComparison.OrdinalIgnoreCase);
     var shortCookie = CognitoSilentAuth.SessionCookie(http.Request);
     shortCookie.MaxAge = TimeSpan.FromMinutes(10);
     http.Response.Cookies.Append(AuthCookie.AuthReturn, returnPath, shortCookie);
 
     var domain = CognitoSilentAuth.HostedUiDomain(config);
     if (domain is null)
-    {
-        http.Response.Cookies.Append(AuthCookie.CognitoChecked, "1", CognitoSilentAuth.SessionCookie(http.Request));
         return Results.Redirect(returnPath);
-    }
 
     var verifier = CognitoSilentAuth.CreateCodeVerifier();
     var state = CognitoSilentAuth.CreateState();
     http.Response.Cookies.Append(AuthCookie.PkceVerifier, verifier + "." + state, shortCookie);
+    if (interactive)
+        http.Response.Cookies.Delete(AuthCookie.CognitoSilent);
+    else
+        http.Response.Cookies.Append(AuthCookie.CognitoSilent, "1", shortCookie);
+
     var url = CognitoSilentAuth.BuildAuthorizeUrl(
         domain,
         CognitoSilentAuth.ClientId(config),
         CognitoSilentAuth.RedirectUri(http.Request),
         state,
-        CognitoSilentAuth.CreateCodeChallenge(verifier));
+        CognitoSilentAuth.CreateCodeChallenge(verifier),
+        prompt: interactive ? null : "none");
     return Results.Redirect(url);
 });
 
@@ -246,29 +296,38 @@ app.MapGet("/auth/cognito-callback", async (
     HttpContext http,
     IConfiguration config,
     IHttpClientFactory httpFactory,
+    CognitoIdTokenValidator validator,
     CancellationToken ct) =>
 {
     var returnPath = http.Request.Cookies.TryGetValue(AuthCookie.AuthReturn, out var saved)
         ? CognitoSilentAuth.SafeReturnPath(saved)
         : "/";
+    var silent = http.Request.Cookies.ContainsKey(AuthCookie.CognitoSilent);
     var session = CognitoSilentAuth.SessionCookie(http.Request);
-    http.Response.Cookies.Append(AuthCookie.CognitoChecked, "1", session);
     http.Response.Cookies.Delete(AuthCookie.PkceVerifier);
     http.Response.Cookies.Delete(AuthCookie.AuthReturn);
+    http.Response.Cookies.Delete(AuthCookie.CognitoSilent);
+    http.Response.Cookies.Delete(AuthCookie.CognitoChecked);
 
     var error = http.Request.Query["error"].ToString();
+    if (silent && CognitoSilentAuth.IsSilentRetry(error))
+    {
+        return Results.Redirect(
+            "/auth/cognito-start?mode=login&return=" + Uri.EscapeDataString(returnPath));
+    }
+
     var code = http.Request.Query["code"].ToString();
     var state = http.Request.Query["state"].ToString();
     var domain = CognitoSilentAuth.HostedUiDomain(config);
     if (!string.IsNullOrEmpty(error) || domain is null || string.IsNullOrEmpty(code)
         || !http.Request.Cookies.TryGetValue(AuthCookie.PkceVerifier, out var packed))
     {
-        return Results.Redirect(returnPath);
+        return Results.Redirect("/auth/cognito-denied");
     }
 
     var dot = packed.IndexOf('.');
     if (dot <= 0 || !string.Equals(packed[(dot + 1)..], state, StringComparison.Ordinal))
-        return Results.Redirect(returnPath);
+        return Results.Redirect("/auth/cognito-denied");
 
     var idToken = await CognitoSilentAuth.ExchangeCodeAsync(
         httpFactory.CreateClient(),
@@ -279,15 +338,71 @@ app.MapGet("/auth/cognito-callback", async (
         code,
         packed[..dot],
         ct);
-    if (idToken is not null
-        && CognitoSilentAuth.TryReadIdentity(idToken, CognitoSilentAuth.ClientId(config), out var sub, out var email))
+    if (string.IsNullOrWhiteSpace(idToken))
+        return Results.Redirect("/auth/cognito-denied");
+
+    var principal = await validator.ValidateAsync(idToken, ct);
+    if (principal is null
+        || !CognitoSilentAuth.TryReadIdentity(idToken, CognitoSilentAuth.ClientId(config), out var sub, out var email))
     {
-        http.Response.Cookies.Append(AuthCookie.ChatUserName, CognitoChatIdentity.Format(sub), session);
-        if (!string.IsNullOrWhiteSpace(email))
-            http.Response.Cookies.Append(AuthCookie.ChatDisplayName, email, session);
+        return Results.Redirect("/auth/cognito-denied");
     }
 
+    if (!CognitoAccess.IsAllowed(principal))
+        return Results.Redirect("/auth/cognito-denied?reason=role");
+
+    http.Response.Cookies.Append(AuthCookie.CognitoSession, idToken, session);
+    http.Response.Cookies.Append(AuthCookie.ChatUserName, CognitoChatIdentity.Format(sub), session);
+    if (!string.IsNullOrWhiteSpace(email))
+        http.Response.Cookies.Append(AuthCookie.ChatDisplayName, email, session);
+
     return Results.Redirect(returnPath);
+});
+
+app.MapGet("/auth/cognito-logout", (HttpContext http, IConfiguration config) =>
+{
+    foreach (var name in new[]
+             {
+                 AuthCookie.CognitoSession,
+                 AuthCookie.ChatUserName,
+                 AuthCookie.ChatDisplayName,
+                 AuthCookie.CognitoSilent,
+                 AuthCookie.CognitoChecked,
+                 AuthCookie.PkceVerifier,
+                 AuthCookie.AuthReturn,
+                 AuthCookie.Name
+             })
+    {
+        http.Response.Cookies.Delete(name);
+    }
+
+    var domain = CognitoSilentAuth.HostedUiDomain(config);
+    if (domain is null)
+        return Results.Redirect("/");
+
+    return Results.Redirect(CognitoSilentAuth.BuildLogoutUrl(
+        domain,
+        CognitoSilentAuth.ClientId(config),
+        CognitoSilentAuth.LogoutUri(http.Request)));
+});
+
+app.MapGet("/auth/cognito-denied", (string? reason) =>
+{
+    var message = string.Equals(reason, "role", StringComparison.OrdinalIgnoreCase)
+        ? "This town account does not include TIKR. Ask Steve if you need it."
+        : "The town sign-in did not finish. Try again from the town home page.";
+    var html = $"""
+        <!DOCTYPE html>
+        <html lang="en">
+        <head><meta charset="utf-8"><title>TIKR sign-in</title></head>
+        <body style="font-family: sans-serif; margin: 2rem;">
+        <h1>TIKR</h1>
+        <p>{message}</p>
+        <p><a href="/auth/cognito-start?mode=login&amp;return=/">Sign in again</a></p>
+        </body>
+        </html>
+        """;
+    return Results.Content(html, "text/html");
 });
 
 app.MapStaticAssets();

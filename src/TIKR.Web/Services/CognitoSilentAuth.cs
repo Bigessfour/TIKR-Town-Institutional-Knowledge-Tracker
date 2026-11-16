@@ -3,12 +3,12 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using Microsoft.AspNetCore.WebUtilities;
-using TIKR.Shared.Helpers;
 
 namespace TIKR.Web.Services;
 
 /// <summary>
-/// One silent ClerkSuite Hosted UI check. No password form. Tokens stay off the URL.
+/// Town Hosted UI sign-in. Tries the existing ClerkSuite session first, then the login page.
+/// Tokens stay off the URL.
 /// </summary>
 public static class CognitoSilentAuth
 {
@@ -40,15 +40,30 @@ public static class CognitoSilentAuth
         if (!IsDocumentNavigation(request))
             return false;
 
-        if (request.Cookies.ContainsKey(AuthCookie.CognitoChecked))
-            return false;
-
-        if (request.Cookies.TryGetValue(AuthCookie.ChatUserName, out var chatUser)
-            && CognitoChatIdentity.TryParse(chatUser, out _))
-            return false;
-
-        return true;
+        return !HasUnexpiredSession(request);
     }
+
+    /// <summary>True when the session cookie is still inside its expiry. Signature is checked separately.</summary>
+    public static bool HasUnexpiredSession(HttpRequest request)
+    {
+        if (!request.Cookies.TryGetValue(AuthCookie.CognitoSession, out var token)
+            || string.IsNullOrWhiteSpace(token))
+            return false;
+
+        try
+        {
+            var jwt = new JwtSecurityTokenHandler().ReadJwtToken(token);
+            return jwt.ValidTo > DateTime.UtcNow.AddMinutes(-1);
+        }
+        catch (Exception)
+        {
+            return false;
+        }
+    }
+
+    public static bool IsSilentRetry(string? error) =>
+        string.Equals(error, "login_required", StringComparison.OrdinalIgnoreCase)
+        || string.Equals(error, "interaction_required", StringComparison.OrdinalIgnoreCase);
 
     public static bool IsDocumentNavigation(HttpRequest request)
     {
@@ -89,7 +104,8 @@ public static class CognitoSilentAuth
         string clientId,
         string redirectUri,
         string state,
-        string codeChallenge)
+        string codeChallenge,
+        string? prompt = "none")
     {
         var domain = hostedUiDomain.StartsWith("http", StringComparison.OrdinalIgnoreCase)
             ? hostedUiDomain
@@ -100,12 +116,26 @@ public static class CognitoSilentAuth
             ["client_id"] = clientId,
             ["redirect_uri"] = redirectUri,
             ["scope"] = "openid email",
-            ["prompt"] = "none",
             ["code_challenge"] = codeChallenge,
             ["code_challenge_method"] = "S256",
             ["state"] = state
         };
+        if (!string.IsNullOrWhiteSpace(prompt))
+            query["prompt"] = prompt;
         return QueryHelpers.AddQueryString(domain.TrimEnd('/') + "/oauth2/authorize", query);
+    }
+
+    public static string BuildLogoutUrl(string hostedUiDomain, string clientId, string logoutUri)
+    {
+        var domain = hostedUiDomain.StartsWith("http", StringComparison.OrdinalIgnoreCase)
+            ? hostedUiDomain
+            : "https://" + hostedUiDomain;
+        var query = new Dictionary<string, string?>
+        {
+            ["client_id"] = clientId,
+            ["logout_uri"] = logoutUri
+        };
+        return QueryHelpers.AddQueryString(domain.TrimEnd('/') + "/logout", query);
     }
 
     public static string CreateCodeVerifier()
@@ -203,6 +233,9 @@ public static class CognitoSilentAuth
 
     public static string RedirectUri(HttpRequest request) =>
         $"{request.Scheme}://{request.Host}/auth/cognito-callback";
+
+    public static string LogoutUri(HttpRequest request) =>
+        $"{request.Scheme}://{request.Host}/";
 
     private static string Base64Url(byte[] bytes) =>
         Convert.ToBase64String(bytes).TrimEnd('=').Replace('+', '-').Replace('/', '_');

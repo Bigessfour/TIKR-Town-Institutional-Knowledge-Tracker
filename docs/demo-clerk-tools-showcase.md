@@ -2,7 +2,7 @@
 
 **Audience:** Deb walkthrough, CML peers, Code Platoon / Syncfusion tech review
 **Duration:** 20–25 minutes (or 12 minutes if skipping Word/Excel + Grok)
-**In-app hub:** [/demo/clerk-tools](../src/TIKR.Web/Components/Pages/ClerkToolsShowcase.razor) (sidebar **Tools tour**, or Settings → Clerk tools tour)
+**In-app hub:** `/demo/clerk-tools` (maintainer URL, not in the clerk menu)
 **Related:** [demo-deb.md](demo-deb.md) (pitch script), [demo-code-platoon.md](demo-code-platoon.md) (API matrix)
 
 ---
@@ -33,7 +33,7 @@ TIKR’s showcase follows that lifecycle **inside clerk jobs**, not as a Syncfus
 | License         | Settings → Forms & documents license check OK               |
 | Sample PDF      | Upload `tests/fixtures/agent-scan/minimal-clerk-report.pdf` |
 | Optional Office | One `.docx` and one `.xlsx` in the library                  |
-| Hub open        | Sidebar → **Tools tour**                                    |
+| Hub open        | Open `/demo/clerk-tools` (not in the clerk menu)            |
 
 ---
 

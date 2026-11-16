@@ -50,11 +50,15 @@ else
                        Placeholder="e.g. Liquor license renewal every year on March 15"
                        CssClass="flex-grow-1"
                        Width="100%" />
-            <SfButton CssClass="tikr-action-btn primary"
+            <SfButton CssClass="@(_nlBusy || string.IsNullOrWhiteSpace(_nlPrompt) ? "tikr-action-btn" : "tikr-action-btn primary")"
                       Content="@(_nlBusy ? "Parsing…" : "Create deadline")"
                       Disabled="@(_nlBusy || string.IsNullOrWhiteSpace(_nlPrompt))"
                       OnClick="CreateFromNaturalLanguageAsync" />
         </div>
+        @if (!_nlBusy && string.IsNullOrWhiteSpace(_nlPrompt))
+        {
+            <div class="text-muted mt-1">Type a deadline first.</div>
+        }
         @if (!string.IsNullOrEmpty(_nlStatus))
         {
             <div class="status-msg mt-1" role="status">@_nlStatus</div>

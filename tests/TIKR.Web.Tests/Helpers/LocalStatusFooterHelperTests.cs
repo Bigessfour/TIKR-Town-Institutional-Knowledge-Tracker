@@ -13,7 +13,7 @@ public class LocalStatusFooterHelperTests
     {
         var status = new LocalStorageStatusDto("Wiley", "Synology NAS", Now.AddMinutes(-12), true);
         LocalStatusFooterHelper.BuildFooterMessage(status, Now)
-            .Should().Be("All data stays in Wiley • Synology NAS • Last saved 12 min ago");
+            .Should().Be("Town files stay on town storage • Wiley • Last saved 12 min ago");
     }
 
     [Theory]
@@ -29,14 +29,14 @@ public class LocalStatusFooterHelperTests
     [Fact]
     public void BuildConnectionHint_OfflineShowsNasMessage()
     {
-        LocalStatusFooterHelper.BuildConnectionHint(apiOffline: true, ollamaAvailable: false)
-            .Should().Be("API offline — your data is still on the NAS");
+        LocalStatusFooterHelper.BuildConnectionHint(apiOffline: true, helperReady: false)
+            .Should().Be("The town server is offline. Files stay on town storage.");
     }
 
     [Fact]
     public void BuildConnectionHint_OnlineWithOllama()
     {
-        LocalStatusFooterHelper.BuildConnectionHint(apiOffline: false, ollamaAvailable: true)
-            .Should().Contain("Ollama ready");
+        LocalStatusFooterHelper.BuildConnectionHint(apiOffline: false, helperReady: true)
+            .Should().Be("Town files stay on town storage. The helper is ready.");
     }
 }

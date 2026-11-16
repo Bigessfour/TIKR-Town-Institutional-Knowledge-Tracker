@@ -113,6 +113,25 @@ public class VaultPageTests : ClerkTestContext
     }
 
     [Fact]
+    public void Vault_AddEntry_OpensABlankEditor()
+    {
+        RegisterApi("[]");
+        SetRendererInfo(new RendererInfo("Server", true));
+
+        var cut = RenderComponent<Vault>();
+        cut.WaitForAssertion(() => cut.Markup.Should().Contain("Add entry"));
+
+        var add = cut.FindAll("button").First(b => b.TextContent.Contains("Add entry", StringComparison.Ordinal));
+        add.Click();
+
+        cut.WaitForAssertion(() =>
+        {
+            cut.Markup.Should().Contain("New entry");
+            cut.Markup.Should().Contain("Save entry");
+        });
+    }
+
+    [Fact]
     public async Task Vault_CopyForNewClerk_InvokesClipboard()
     {
         var json = JsonSerializer.Serialize(new List<KnowledgeEntryDto>

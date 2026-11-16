@@ -25,8 +25,11 @@ public class TikrStatusFooterTests : ClerkTestContext
         SetRendererInfo(new RendererInfo("Server", true));
 
         var cut = RenderComponent<TikrStatusFooter>();
-        cut.WaitForAssertion(() => cut.Markup.Should().Contain("All data stays in Wiley"));
-        cut.Markup.Should().Contain("Synology NAS");
+        cut.WaitForAssertion(() => cut.Markup.Should().Contain("Town files stay on town storage"));
+        cut.Markup.Should().Contain("Helper is ready");
+        cut.Markup.Should().Contain("5:48");
+        cut.Markup.Should().NotContain("Synology");
+        cut.Markup.Should().NotContain("11:48");
     }
 
     private sealed class StubHandler(Func<HttpRequestMessage, CancellationToken, HttpResponseMessage> handler)

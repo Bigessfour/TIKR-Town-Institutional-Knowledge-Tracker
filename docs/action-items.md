@@ -78,6 +78,26 @@ This file owns **status, checkboxes, priorities, verification evidence**. The ge
 
 **Verification (2026-08-14):** `dotnet test TIKR.sln --configuration Release` green (655 passed). Function inventory surfaces **23/23 with proof**. Coverlet floor unchanged. Docs ship-readiness: incremental-plan Phases 11–13 + logging adjunct; demo-deb / demo-code-platoon Election walkthrough; architecture + README API surface; Spec Kit `007`/`008`/`009` tasks closed.
 
+## Cognito gate and live walkthrough
+
+- [x] Town Hosted UI gate when `TIKR_COGNITO_DOMAIN` is set. Local passwords stay off. HTTPS callback is documented and not registered until the host is confirmed.
+- [x] Assistant Stop stays “Response stopped.” A helper timeout escalates when the advanced helper is on. Indexing yields while a question is in flight.
+- [x] Vault Add entry, deadline hint, guide reopen, help click, one Settings help note, dashboard shortcuts.
+- [x] Tools tour stays at `/demo/clerk-tools` and is not in the clerk menu. Footer says town storage and helper status. Times use America/Denver.
+
+| Function                       | Proof                                           | Minimal impl                                       |
+| ------------------------------ | ----------------------------------------------- | -------------------------------------------------- |
+| Cognito session and Staff gate | `CognitoSilentAuthTests`, `AccountPageTests`    | Validate ID token, then one session cookie         |
+| User Stop vs helper timeout    | `AssistantTurnStopTests`                        | Only the clerk token counts as Stop                |
+| Chat ahead of embedding        | `InteractiveAiGateTests`                        | Hold lease; retry the same item after the question |
+| Vault add entry                | `Vault_AddEntry_OpensABlankEditor`              | Existing knowledge create API                      |
+| Guide reopen and help click    | `ClerkHelpControlTests`                         | Reset visible on close; click shows the text       |
+| Footer and Denver time         | `LocalStatusFooterHelperTests`, `TownTimeTests` | One timezone helper                                |
+
+**Still an operator step:** register the HTTPS callback on app client `258binbcvsms0rfqj5g20qakki`, then point Town Hub `TOWN_HUB_TIKR_URL` at that origin. Do not run `update-user-pool-client` before that host is confirmed.
+
+---
+
 ---
 
 ## Spec Kit `001-requirements-document-agent` (2026-07-21)

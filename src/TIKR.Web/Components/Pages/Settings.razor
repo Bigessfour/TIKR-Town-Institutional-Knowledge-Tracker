@@ -10,7 +10,6 @@
 @inject ILogger<Settings> Logger
 @inject NavigationManager Navigation
 
-@using Syncfusion.Licensing
 @using TIKR.Shared.Diagnostics
 @using TIKR.Shared.DTOs
 @using TIKR.Shared.Entities
@@ -26,9 +25,11 @@
     </div>
     <div class="page-header-actions">
         <PageTourButton Route="/settings" />
-        <PageHelp DataTour="@ClerkTourIds.HelpSettings" HelpText="Change how TIKR looks and update town details. Chat memory follows this computer’s clerk (Deb Dillon or Paige Lindo) from the NAS backup inventory: DESKTOP-KN6INHL is Deb Dillon, DESKTOP-O9TCKP1 is Paige Lindo. Windows login is not used. A rare override is for an unmapped PC, a demo, or Steve only. The advanced helper key is Grok. The local helper is Ollama. The forms license is Syncfusion. If something looks confusing, tap Call Steve for help." />
+        <PageHelp DataTour="@ClerkTourIds.HelpSettings" HelpText="Change how TIKR looks and update town details. Chat follows the town sign-in when you are signed in. Keys for the helper and the forms license stay on the town server." />
     </div>
 </div>
+
+<p class="text-muted" id="steve-help-note">If something on Settings is stuck, tell Steve which part it was (helper, license, folders, or refresh) and what you were trying to do. Call Steve for help. This app does not keep a phone number.</p>
 
 <SfCard CssClass="mb-3">
     <CardHeader Title="Who uses this computer" />
@@ -37,9 +38,7 @@
         <SfTooltip Content="@ClerkIdentity.StatusDetail()" Position="Position.TopCenter">
             <p class="text-muted mt-2 mb-2">@ClerkFacingIdentity()</p>
         </SfTooltip>
-        <SfTooltip Content="Town NAS inventory: DESKTOP-KN6INHL is Deb Dillon, DESKTOP-O9TCKP1 is Paige Lindo. Windows login is not used (both PCs may share a municipal account)." Position="Position.TopCenter">
-            <p class="text-muted mb-2">Deb Dillon and Paige Lindo each keep their own chat on their own computer.</p>
-        </SfTooltip>
+        <p class="text-muted mb-2">When you are signed in, chat follows that town account. Otherwise Deb Dillon and Paige Lindo each keep their own chat on their own computer.</p>
         @if (!ClerkIdentity.IsMachineMapped || ClerkIdentity.IsManualOverride || !ClerkIdentity.IsResolved)
         {
             <div class="mt-3">
@@ -93,59 +92,35 @@
         <CardHeader Title="Town settings" />
         <CardContent>
             <p>TIKR can’t reach the town server right now. Try again in a moment, or call Steve for help.</p>
-            <SfButton CssClass="tikr-action-btn e-outline mt-2" OnClick="CallSteve">Call Steve for help</SfButton>
         </CardContent>
     </SfCard>
 }
 else
 {
     <SfCard CssClass="mb-3">
-        <CardHeader Title="Keys &amp; passwords" />
+        <CardHeader Title="Helper and license" />
         <CardContent>
-            <p class="text-muted mb-3">
-                Paste a new key when Steve or the vendor gives you one. Leave the box blank to keep what’s already saved.
+            <p class="text-muted mb-2">Keys stay on the town server. This page does not show or accept them.</p>
+            <p>
+                <strong>Advanced helper:</strong>
+                @(_features.GrokApiKeyConfigured ? "Saved" : "Not saved")
+                · @(_editUseGrok ? "On" : "Off")
             </p>
-
-            <div class="mb-4">
-                <SfTooltip Content="This key is for Grok, the advanced helper for harder questions." Position="Position.TopCenter">
-                    <label for="tikr-grok-key"><strong>Advanced helper key</strong></label>
-                </SfTooltip>
-                <p class="text-muted mb-1">
-                    Use this when a question needs the advanced helper.
-                    Status: @(_features.GrokApiKeyConfigured ? "saved" : "not saved yet")
-                </p>
-                <SfTextBox ID="tikr-grok-key" @bind-Value="_editGrokApiKey"
-                           Placeholder="@(_features.GrokApiKeyConfigured ? "(leave blank to keep current)" : "paste key from Steve")"
-                           Type="Syncfusion.Blazor.Inputs.InputType.Password" CssClass="e-outline" />
-                <div class="mt-2">
-                    <SfCheckBox @bind-Checked="_editUseGrok" Label="Turn on advanced helper" />
-                </div>
-                <div class="tikr-settings-help-actions mt-2">
-                    <SfButton CssClass="tikr-action-btn e-outline e-small" OnClick="CallSteve">Need a new advanced helper key? Call Steve for help</SfButton>
-                </div>
+            <div class="mt-2">
+                <SfCheckBox @bind-Checked="_editUseGrok" Label="Turn on advanced helper" />
             </div>
-
-            <div class="mb-2">
-                <label for="tikr-sf-key"><strong>Forms &amp; documents license</strong></label>
-                <p class="text-muted mb-1">
-                    Keeps calendars, grids, PDF preview, and council packets working without a trial banner.
-                    Status: @(_features.SyncfusionLicenseKeyConfigured ? "saved" : "not saved yet")
-                    · Screens: @(BlazorLicenseStatus.BlazorLicenseValid ? "looking good" : "needs attention")
-                </p>
-                <SfTextBox ID="tikr-sf-key" @bind-Value="_editSyncfusionKey"
-                           Placeholder="@(_features.SyncfusionLicenseKeyConfigured ? "(leave blank to keep current)" : "paste license from Steve")"
-                           Type="Syncfusion.Blazor.Inputs.InputType.Password" CssClass="e-outline" />
-                <div class="tikr-settings-help-actions mt-2">
-                    <SfButton CssClass="tikr-action-btn e-outline e-small" OnClick="CallSteve">Need a new license? Call Steve for help</SfButton>
-                </div>
-            </div>
+            <p class="mt-3 mb-0">
+                <strong>Forms and documents license:</strong>
+                @(_features.SyncfusionLicenseKeyConfigured ? "Saved" : "Not saved")
+                · Screens: @(BlazorLicenseStatus.BlazorLicenseValid ? "looking good" : "needs attention")
+            </p>
         </CardContent>
     </SfCard>
 
     <SfCard CssClass="mb-3">
         <CardHeader Title="Local helper" />
         <CardContent>
-            <SfTooltip Content="The local helper is Ollama, on town equipment. Everyday chat, tagging, and search stay there." Position="Position.TopCenter">
+            <SfTooltip Content="Everyday answers stay on town equipment." Position="Position.TopCenter">
                 <p class="text-muted mb-2">
                     Everyday chat, tagging, and search stay on town equipment.
                     Status: @(_features.OllamaAvailable ? "Ready" : "Not available right now")
@@ -153,7 +128,6 @@ else
             </SfTooltip>
             <p class="text-muted mb-2">Most days you only need the Ready light above. Changing connection details is rare.</p>
             <div class="tikr-settings-help-actions">
-                <SfButton CssClass="tikr-action-btn e-outline" OnClick="CallSteve">Helper not ready? Call Steve for help</SfButton>
                 <SfButton CssClass="tikr-action-btn e-outline" OnClick="ToggleHelperDetails">
                     @(_showHelperDetails ? "Hide connection details" : "Show connection details")
                 </SfButton>
@@ -174,7 +148,6 @@ else
                         <label for="tikr-grok-model">Advanced helper name</label>
                         <SfTextBox ID="tikr-grok-model" @bind-Value="_editGrokModel" CssClass="e-outline" />
                     </div>
-                    <SfButton CssClass="tikr-action-btn e-outline e-small" OnClick="CallSteve">Call Steve for help</SfButton>
                 </div>
             }
         </CardContent>
@@ -184,12 +157,11 @@ else
         <CardHeader Title="Where uploaded files live" />
         <CardContent>
             <p class="text-muted mb-2">
-                <SfTooltip Content="Uploaded files are stored on the town NAS (Synology)." Position="Position.TopCenter">
+                <SfTooltip Content="Uploaded files stay on town storage." Position="Position.TopCenter">
                     <span>TIKR saves documents you upload into a folder on town storage. Changing this is uncommon — ask Steve before moving things.</span>
                 </SfTooltip>
             </p>
             <div class="tikr-settings-help-actions mb-2">
-                <SfButton CssClass="tikr-action-btn e-outline" OnClick="CallSteve">Need to move files? Call Steve for help</SfButton>
                 <SfButton CssClass="tikr-action-btn e-outline" OnClick="ToggleStorageDetails">
                     @(_showStorageDetails ? "Hide folder details" : "Show folder details")
                 </SfButton>
@@ -202,7 +174,6 @@ else
                 </div>
                 <SfCheckBox @bind-Checked="_editMoveDocs" Label="Also move existing uploads into the new folder" />
                 <div class="mt-2">
-                    <SfButton CssClass="tikr-action-btn e-outline e-small" OnClick="CallSteve">Call Steve for help</SfButton>
                 </div>
             }
         </CardContent>
@@ -216,7 +187,7 @@ else
                 <SfTextBox ID="tikr-town-name" @bind-Value="_editTownName" Placeholder="Wiley" CssClass="e-outline" />
             </div>
             <div class="tikr-form-row mb-2">
-                <SfTooltip Content="Example label: Town NAS. This is the wording clerks see. The files themselves stay on the Synology NAS." Position="Position.TopCenter">
+                <SfTooltip Content="This wording can show on status lines. The files stay on town storage." Position="Position.TopCenter">
                     <label for="tikr-storage-label">Where the status line says files are kept</label>
                 </SfTooltip>
                 <SfTextBox ID="tikr-storage-label" @bind-Value="_editStorageLabel" Placeholder="Town file room" CssClass="e-outline" />
@@ -225,7 +196,6 @@ else
                 <label for="tikr-logo-path">Town seal / logo file (optional)</label>
                 <p class="text-muted mb-1">Usually set up once by Steve for council packet covers.</p>
                 <SfTextBox ID="tikr-logo-path" @bind-Value="_editTownLogo" CssClass="e-outline" />
-                <SfButton CssClass="tikr-action-btn e-outline e-small mt-2" OnClick="CallSteve">Call Steve for help</SfButton>
             </div>
         </CardContent>
     </SfCard>
@@ -249,7 +219,6 @@ else
                 <SfTextBox ID="tikr-email-path" @bind-Value="_editEmailPath" CssClass="e-outline" />
             </div>
             <div class="tikr-settings-help-actions mb-2">
-                <SfButton CssClass="tikr-action-btn e-outline" OnClick="CallSteve">Not sure which folder? Call Steve for help</SfButton>
                 <SfButton CssClass="tikr-action-btn e-outline" OnClick="ToggleIngestDetails">
                     @(_showIngestDetails ? "Hide timing options" : "Show timing options")
                 </SfButton>
@@ -264,7 +233,6 @@ else
                     <label for="tikr-library-max">How many new files to bring in at a time (0 = no limit)</label>
                     <SfNumericTextBox TValue="int" ID="tikr-library-max" @bind-Value="_editLibraryMax" Min="0" CssClass="e-outline" />
                 </div>
-                <SfButton CssClass="tikr-action-btn e-outline e-small" OnClick="CallSteve">Call Steve for help</SfButton>
             }
         </CardContent>
     </SfCard>
@@ -316,7 +284,6 @@ else
         <CardHeader Title="Something else?" />
         <CardContent>
             <p class="mb-2">Networking, passwords for multi-user login, and first-time install are handled by Steve — not from this screen.</p>
-            <SfButton CssClass="tikr-action-btn e-outline" OnClick="CallSteve">Call Steve for help</SfButton>
         </CardContent>
     </SfCard>
 </div>
@@ -327,14 +294,13 @@ else
         @if (_localStatus is null)
         {
             <p>Can’t reach the town server right now.</p>
-            <SfButton CssClass="tikr-action-btn e-outline mt-2" OnClick="CallSteve">Call Steve for help</SfButton>
         }
         else
         {
             <p><strong>Town:</strong> @_localStatus.TownName</p>
             <p><strong>Files kept on:</strong> @_localStatus.StorageLabel</p>
             <p><strong>Last saved:</strong> @LocalStatusFooterHelper.FormatLastSaved(_localStatus.DataLastModifiedUtc, DateTime.UtcNow)</p>
-            <p><strong>Local helper:</strong> @(_localStatus.OllamaAvailable ? "Ready" : "Offline — chat pauses until it returns")</p>
+            <p><strong>Local helper:</strong> @HelperStatus(_localStatus)</p>
         }
     </CardContent>
 </SfCard>
@@ -342,11 +308,10 @@ else
 <SfCard CssClass="mb-3">
     <CardHeader Title="Forms &amp; documents license check" />
     <CardContent>
-        <p><strong>License:</strong> @(BlazorLicenseStatus.KeyConfigured || (_features?.SyncfusionLicenseKeyConfigured == true) ? "Saved" : "Not saved — paste under Keys & passwords")</p>
+        <p><strong>License:</strong> @(BlazorLicenseStatus.KeyConfigured || (_features?.SyncfusionLicenseKeyConfigured == true) ? "Saved" : "Not saved — ask Steve")</p>
         <p><strong>Screens:</strong> @(BlazorLicenseStatus.BlazorLicenseValid ? "Looking good" : "Needs attention — call Steve")</p>
         @if (!BlazorLicenseStatus.BlazorLicenseValid)
         {
-            <SfButton CssClass="tikr-action-btn e-outline mt-2" OnClick="CallSteve">Call Steve for help</SfButton>
         }
     </CardContent>
 </SfCard>
@@ -377,8 +342,8 @@ else
         }
         else
         {
-            <p><strong>Local helper:</strong> @(_status.OllamaAvailable ? "Ready" : "Not available")</p>
-            <SfTooltip Content="Advanced helper is Grok." Position="Position.TopCenter">
+            <p><strong>Local helper:</strong> @HelperStatus(_status)</p>
+            <SfTooltip Content="Used when the local helper cannot finish an answer." Position="Position.TopCenter">
                 <p><strong>Advanced helper:</strong> @(_status.GrokEnabled ? "On" : "Off")</p>
             </SfTooltip>
         }
@@ -406,7 +371,7 @@ else
             <p><strong>Automatic check:</strong> @(_libraryStatus.PollerActive ? $"On (about every {_libraryStatus.IntervalSeconds} seconds)" : "Off")</p>
             @if (_libraryStatus.LastResult is { } last)
             {
-                <p><strong>Last scan:</strong> @(_libraryStatus.LastScanUtc?.ToLocalTime().ToString("g") ?? "—")
+                <p><strong>Last scan:</strong> @(_libraryStatus.LastScanUtc is { } scan ? TownTime.Format(scan) : "—")
                     — looked at @last.Scanned, brought in @last.Imported, skipped @last.Skipped, failed @last.Failed</p>
             }
             else
@@ -422,9 +387,11 @@ else
             <SfButton CssClass="tikr-action-btn" Disabled="@(_libraryBusy || _libraryStatus?.Configured != true)" OnClick="ScanLibraryAsync">
                 Scan shared folder now
             </SfButton>
+            <span id="refresh-assistant-memory">
             <SfButton CssClass="tikr-action-btn e-outline" Disabled="@_libraryBusy" OnClick="ReindexEmbeddingsAsync">
                 Refresh Assistant memory
             </SfButton>
+            </span>
             <SfButton CssClass="tikr-action-btn e-outline" Disabled="@_libraryBusy" OnClick="RefreshCorpusHealthAsync">
                 Check document coverage
             </SfButton>
@@ -448,7 +415,7 @@ else
         @if (_embeddingRecovery is not null)
         {
             <div class="mt-3">
-                <SfTooltip Content="Automatic recovery watches Ollama and refreshes embeddings when search coverage is incomplete." Position="Position.TopCenter">
+                <SfTooltip Content="Automatic recovery watches the local helper and refreshes search when coverage is incomplete." Position="Position.TopCenter">
                 <p><strong>Automatic recovery:</strong>
                     @(_embeddingRecovery.OllamaAvailable ? "Local helper is ready" : "Local helper is offline")
                     @if (_embeddingRecovery.RecoveryNeeded)
@@ -469,7 +436,7 @@ else
                         @_embeddingRecovery.LastResultSummary
                         @if (_embeddingRecovery.LastAutoReindexUtc is { } t)
                         {
-                            <span> at @t.ToLocalTime().ToString("g")</span>
+                            <span> at @TownTime.Format(t)</span>
                         }
                     </p>
                     </SfTooltip>
@@ -480,7 +447,7 @@ else
                 }
             </div>
         }
-        <SfTooltip Content="When Ollama comes back online, TIKR refreshes embeddings if coverage is incomplete (cooldown 15 minutes)." Position="Position.TopCenter">
+        <SfTooltip Content="When the local helper comes back, TIKR refreshes search if coverage is incomplete. It waits 15 minutes between tries." Position="Position.TopCenter">
             <p class="text-muted mt-2" style="font-size:0.85rem;">
                 When the local helper comes back, TIKR refreshes Assistant memory if coverage is incomplete
                 (waits 15 minutes between tries). You can always press <strong>Refresh Assistant memory</strong> yourself.
@@ -503,7 +470,7 @@ else
                 {
                     <li>
                         <span>@entry.Action @entry.EntityType @(entry.Details is not null ? $"— {AuditDetailsFormatter.Format(entry.Details)}" : "")</span>
-                        <span>@entry.Timestamp.ToLocalTime().ToString("g")</span>
+                        <span>@TownTime.Format(entry.Timestamp)</span>
                     </li>
                 }
             </ul>
@@ -517,7 +484,6 @@ else
 </div>
 
 @code {
-    private const string SteveHelpMessage = "Call Steve for help";
 
     private AiStatusResponse? _status;
     private FeatureSettingsDto? _features;
@@ -536,12 +502,11 @@ else
     private bool _showStorageDetails;
     private bool _showIngestDetails;
 
+    private const string SteveHelpMessage = "Tell Steve you are on Settings and what you were trying to do.";
     private string _editOllamaHost = "http://127.0.0.1:11434";
     private string _editOllamaModel = "llama3.2:3b";
     private bool _editUseGrok;
-    private string _editGrokApiKey = "";
     private string _editGrokModel = "grok-4.5";
-    private string _editSyncfusionKey = "";
     private string _editStoragePath = "";
     private bool _editMoveDocs;
     private string _editTownName = "Wiley";
@@ -562,9 +527,14 @@ else
     ];
 
     private string _clerkOverrideSelection = "Use this computer’s usual clerk";
+    private bool _focusReindex;
+
+    [SupplyParameterFromQuery(Name = "focus")]
+    public string? Focus { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
+        _focusReindex = string.Equals(Focus, "reindex", StringComparison.OrdinalIgnoreCase);
         await InitializeClerkIdentityAsync();
         TikrActionLog.Started(Logger, "UI.Settings.Load");
 
@@ -596,6 +566,22 @@ else
         }
 
         _autoTourDisabled = await Tour.IsAutoTourDisabledForUiAsync();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!_focusReindex)
+            return;
+
+        _focusReindex = false;
+        try
+        {
+            await JS.InvokeVoidAsync("tikrUi.focusId", "refresh-assistant-memory");
+        }
+        catch (Exception ex)
+        {
+            TikrActionLog.Info(Logger, "UI.Settings.Load", $"Could not focus refresh: {ex.Message}");
+        }
     }
 
     private async Task InitializeClerkIdentityAsync()
@@ -677,6 +663,19 @@ else
         StateHasChanged();
     }
 
+    private static string HelperStatus(AiStatusResponse status) =>
+        FormatHelper(status.OllamaAvailable, status.ModelMismatch, status.RunningModel, status.OllamaModel);
+
+    private static string HelperStatus(LocalStorageStatusDto status) =>
+        FormatHelper(status.OllamaAvailable, status.ModelMismatch, status.RunningModel, "llama3.2:3b");
+
+    private static string FormatHelper(bool available, bool mismatch, string? running, string? configured)
+    {
+        if (mismatch)
+            return $"Needs attention. Loaded model is {running}, not {configured}.";
+        return available ? "Ready" : "Not available";
+    }
+
     private string ClerkFacingIdentity() => ClerkIdentity.ResolutionSource switch
     {
         "cognito" => $"Chat follows {ClerkIdentity.DisplayName}.",
@@ -686,28 +685,12 @@ else
         _ => "Pick Deb Dillon or Paige Lindo so chat stays with the right clerk."
     };
 
-    private void CallSteve() => Toast.Show(SteveHelpMessage);
 
-    private void ToggleHelperDetails()
-    {
-        _showHelperDetails = !_showHelperDetails;
-        if (_showHelperDetails)
-            Toast.Show(SteveHelpMessage);
-    }
+    private void ToggleHelperDetails() => _showHelperDetails = !_showHelperDetails;
 
-    private void ToggleStorageDetails()
-    {
-        _showStorageDetails = !_showStorageDetails;
-        if (_showStorageDetails)
-            Toast.Show(SteveHelpMessage);
-    }
+    private void ToggleStorageDetails() => _showStorageDetails = !_showStorageDetails;
 
-    private void ToggleIngestDetails()
-    {
-        _showIngestDetails = !_showIngestDetails;
-        if (_showIngestDetails)
-            Toast.Show(SteveHelpMessage);
-    }
+    private void ToggleIngestDetails() => _showIngestDetails = !_showIngestDetails;
 
     private void ApplyFeatureEdits(FeatureSettingsDto? features)
     {
@@ -715,9 +698,7 @@ else
         _editOllamaHost = features.OllamaHost;
         _editOllamaModel = features.OllamaChatModel;
         _editUseGrok = features.UseGrok;
-        _editGrokApiKey = "";
         _editGrokModel = features.GrokModel ?? "grok-4.5";
-        _editSyncfusionKey = "";
         _editStoragePath = features.FileStoragePath;
         _editMoveDocs = false;
         _editTownName = features.TownName;
@@ -777,9 +758,9 @@ else
                 OllamaHost: _editOllamaHost,
                 OllamaChatModel: _editOllamaModel,
                 UseGrok: _editUseGrok,
-                GrokApiKey: string.IsNullOrWhiteSpace(_editGrokApiKey) ? null : _editGrokApiKey,
+                GrokApiKey: null,
                 GrokModel: _editGrokModel,
-                SyncfusionLicenseKey: string.IsNullOrWhiteSpace(_editSyncfusionKey) ? null : _editSyncfusionKey,
+                SyncfusionLicenseKey: null,
                 FileStoragePath: _editStoragePath,
                 MoveExistingDocuments: _editMoveDocs,
                 TownName: _editTownName,
@@ -800,23 +781,6 @@ else
                 Toast.Show(SteveHelpMessage);
                 TikrActionLog.Failed(Logger, "UI.Settings.SaveFeatures", "API returned null");
                 return;
-            }
-
-            if (!string.IsNullOrWhiteSpace(_editSyncfusionKey))
-            {
-                try
-                {
-                    SyncfusionLicenseProvider.RegisterLicense(_editSyncfusionKey.Trim());
-                    BlazorLicenseStatus.KeyConfigured = true;
-                    BlazorLicenseStatus.BlazorLicenseValid = SyncfusionLicenseProvider.ValidateLicense(
-                        [Platform.Blazor], out var detail);
-                    BlazorLicenseStatus.Detail = detail;
-                }
-                catch
-                {
-                    BlazorLicenseStatus.Detail = "License could not be applied";
-                    Toast.Show(SteveHelpMessage);
-                }
             }
 
             _features = updated;

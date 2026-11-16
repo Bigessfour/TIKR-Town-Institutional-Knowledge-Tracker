@@ -18,3 +18,17 @@ window.tikrDownload = {
     }
   }
 };
+
+window.tikrUi = {
+  clickFileInput: (selector) => {
+    const input = document.querySelector(selector);
+    if (input) input.click();
+  },
+  focusId: (id) => {
+    const root = document.getElementById(id);
+    const target = root?.querySelector('button, a, input, textarea') ?? root;
+    if (!target) return;
+    target.scrollIntoView({ block: 'center' });
+    if (typeof target.focus === 'function') target.focus();
+  }
+};

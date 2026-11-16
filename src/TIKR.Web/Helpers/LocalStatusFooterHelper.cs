@@ -20,16 +20,16 @@ public static class LocalStatusFooterHelper
         if (age.TotalHours < 24)
             return $"Last saved {(int)age.TotalHours} hr ago";
 
-        return $"Last saved {utc.Value.ToLocalTime():g}";
+        return $"Last saved {TownTime.Format(utc.Value)}";
     }
 
     public static string BuildFooterMessage(LocalStorageStatusDto status, DateTime utcNow) =>
-        $"All data stays in {status.TownName} • {status.StorageLabel} • {FormatLastSaved(status.DataLastModifiedUtc, utcNow)}";
+        $"Town files stay on town storage • {status.TownName} • {FormatLastSaved(status.DataLastModifiedUtc, utcNow)}";
 
-    public static string BuildConnectionHint(bool apiOffline, bool ollamaAvailable) =>
+    public static string BuildConnectionHint(bool apiOffline, bool helperReady) =>
         apiOffline
-            ? "API offline — your data is still on the NAS"
-            : ollamaAvailable
-                ? "Local-first on Synology • Ollama ready"
-                : "Local-first on Synology • Ollama offline";
+            ? "The town server is offline. Files stay on town storage."
+            : helperReady
+                ? "Town files stay on town storage. The helper is ready."
+                : "Town files stay on town storage. The helper is not ready.";
 }

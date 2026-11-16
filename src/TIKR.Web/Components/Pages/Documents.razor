@@ -52,7 +52,7 @@
 }
 
 <!-- Prominent large uploader -->
-<div class="uploader-zone" data-tour="@ClerkTourIds.DocUploader">
+<div class="uploader-zone" id="tikr-doc-uploader" data-tour="@ClerkTourIds.DocUploader">
     <SfUploader AutoUpload="true" Multiple="true" AllowedExtensions=".pdf,.doc,.docx,.txt,.csv,.xlsx,.png,.jpg,.jpeg,.gif,.bmp,.tiff" MaxFileSize="52428800">
         <UploaderEvents ValueChange="OnUpload"></UploaderEvents>
     </SfUploader>
@@ -302,7 +302,7 @@ else
                         <h4 class="preview-title">@d.FileName</h4>
                     </div>
                     <div class="preview-meta">
-                        <div><strong>Uploaded:</strong> @d.UploadedAt.ToLocalTime().ToString("g")</div>
+                        <div><strong>Uploaded:</strong> @TownTime.Format(d.UploadedAt)</div>
                         <div><strong>Size:</strong> @DisplayFormat.FormatBytes(d.FileSizeBytes)</div>
                         <div><strong>Type:</strong> <span class="@DocumentUiMessages.FileTypeIconCss(d.FileName)"></span> @DocumentPreviewHelper.PreviewLabel(_previewKind)</div>
                         @if (!string.IsNullOrWhiteSpace(d.SuggestedFolder))
@@ -346,7 +346,7 @@ else
                                 @foreach (var v in _documentVersions.Take(5))
                                 {
                                     <li>
-                                        v@v.VersionNumber — @v.CreatedAt.ToLocalTime().ToString("g")
+                                        v@v.VersionNumber — @TownTime.Format(v.CreatedAt)
                                         (@DisplayFormat.FormatBytes(v.FileSizeBytes))
                                         <SfButton CssClass="tikr-action-btn" Content="Restore"
                                                   Disabled="@_savingPreview"
@@ -553,6 +553,7 @@ else
         return message;
     }
     private bool _showUploadBanner;
+    private bool _openUploadPicker;
     private TagDocumentResponse? _lastTagSuggestion;
     private List<FolderProposalGroupDto> _folderProposals = [];
     private EmailExtractionNoticeDto? _emailExtractNotice;
@@ -661,6 +662,8 @@ else
     protected override void OnParametersSet()
     {
         _showUploadBanner = string.Equals(Action, "upload", StringComparison.OrdinalIgnoreCase);
+        if (_showUploadBanner)
+            _openUploadPicker = true;
     }
 
     private async Task LoadDocumentsAsync(string? query = null)
@@ -1197,6 +1200,19 @@ else
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+        if (_openUploadPicker)
+        {
+            _openUploadPicker = false;
+            try
+            {
+                await JS.InvokeVoidAsync("tikrUi.clickFileInput", "#tikr-doc-uploader input[type=file]");
+            }
+            catch (Exception ex)
+            {
+                TikrActionLog.Info(Logger, "UI.Documents.Upload", $"Could not open the file picker: {ex.Message}");
+            }
+        }
+
         if (_sidePdfLoadPending && !_sidePdfLoading && _sidePdfViewer is not null && _pdfBytes is { Length: > 0 } && !_fullScreenOpen)
             await OnSidePdfViewerCreated();
     }

@@ -163,7 +163,7 @@ public static class ClerkToolsShowcaseCatalog
             [
                 "Show Ollama Connected and Syncfusion license status.",
                 "Toggle Light / Dark / High contrast from the sidebar.",
-                "Open this Tools tour again from Settings if needed.",
+                "Open /demo/clerk-tools when you need the presenter script.",
             ]),
     ];
 

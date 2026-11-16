@@ -25,7 +25,8 @@ public class HybridAiService(
     FeatureSettingsState? featureSettings = null,
     IConfiguration? configuration = null,
     IFolderClassifier? folderClassifier = null,
-    IDocumentFolderCatalog? folderCatalog = null) : IHybridAiService
+    IDocumentFolderCatalog? folderCatalog = null,
+    InteractiveAiGate? interactiveGate = null) : IHybridAiService
 {
     private const int TagPreviewChars = 4000;
     private const int MaxPersistedExtractChars = 100_000;
@@ -514,7 +515,9 @@ public class HybridAiService(
                             continue;
                         }
 
-                        if (await TryIndexDocumentChunksAsync(doc, cancellationToken))
+                        if (await IndexYieldingToChatAsync(
+                                token => TryIndexDocumentChunksAsync(doc, token),
+                                cancellationToken))
                         {
                             docsOk++;
                             consecutiveFailures = 0;
@@ -572,7 +575,9 @@ public class HybridAiService(
                         lastKnowledgeId = entry.Id;
                         try
                         {
-                            if (await TryIndexKnowledgeChunksAsync(entry, cancellationToken))
+                            if (await IndexYieldingToChatAsync(
+                                    token => TryIndexKnowledgeChunksAsync(entry, token),
+                                    cancellationToken))
                             {
                                 knowledgeOk++;
                                 consecutiveFailures = 0;
@@ -809,13 +814,43 @@ public class HybridAiService(
     {
         var ollamaAvailable = await ollamaFactory.IsAvailableAsync(cancellationToken);
         var keyConfigured = featureSettings?.Current.GrokApiKeyConfigured ?? grokService.IsEnabled;
+        var running = await SafeRunningModelsAsync(cancellationToken);
+        var configured = ollamaFactory.ChatModel;
+        var chatRunning = running
+            .Where(name => !name.Contains("embed", StringComparison.OrdinalIgnoreCase)
+                           && !name.Contains("nomic", StringComparison.OrdinalIgnoreCase))
+            .ToList();
+        var mismatch = chatRunning.Count > 0
+            && chatRunning.All(name => !string.Equals(name, configured, StringComparison.OrdinalIgnoreCase));
         return new AiStatusResponse(
             ollamaAvailable,
-            ollamaFactory.ChatModel,
+            configured,
             grokService.IsEnabled,
             ollamaFactory.OllamaHost,
-            keyConfigured);
+            keyConfigured,
+            chatRunning.FirstOrDefault(),
+            mismatch);
     }
+
+    private async Task<IReadOnlyList<string>> SafeRunningModelsAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            return await ollamaFactory.ListRunningModelNamesAsync(cancellationToken) ?? [];
+        }
+        catch (Exception ex)
+        {
+            logger.LogDebug(ex, "Could not list running Ollama models");
+            return [];
+        }
+    }
+
+    private Task<bool> IndexYieldingToChatAsync(
+        Func<CancellationToken, Task<bool>> index,
+        CancellationToken cancellationToken) =>
+        interactiveGate is null
+            ? index(cancellationToken)
+            : interactiveGate.RunYieldingToChatAsync(index, cancellationToken);
 
     private async Task<string?> GetLocalCompletionAsync(
         string prompt,
@@ -929,6 +964,10 @@ public class HybridAiService(
                 {
                     return null;
                 }
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
             }
             catch (Exception ex)
             {

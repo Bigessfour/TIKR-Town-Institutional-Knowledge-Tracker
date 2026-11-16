@@ -43,7 +43,9 @@ public record AiStatusResponse(
     string OllamaModel,
     bool GrokEnabled,
     string? OllamaHost = null,
-    bool GrokApiKeyConfigured = false);
+    bool GrokApiKeyConfigured = false,
+    string? RunningModel = null,
+    bool ModelMismatch = false);
 
 public record SemanticSearchRequest(
     string Query,

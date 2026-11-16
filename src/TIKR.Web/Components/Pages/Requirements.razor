@@ -44,7 +44,7 @@
     <SfButton CssClass="tikr-action-btn" IconCss="e-icons e-export-excel" Content="@ComplianceExcelButtonLabel" Disabled="@(_generating is not null)" OnClick="DownloadComplianceReportAsync" />
     <SfButton CssClass="tikr-action-btn" IconCss="e-icons e-description" Content="Meeting minutes" OnClick="OpenMinutesDialog" />
     <SfButton CssClass="tikr-action-btn" IconCss="e-icons e-print" Content="Print council packet" OnClick="PrintPacketAsync" />
-    <div class="requirements-agent-upload">
+    <div class="requirements-agent-upload" id="tikr-req-uploader">
         <SfUploader AutoUpload="true"
                     MaxFileCount="1"
                     AllowedExtensions=".pdf,.doc,.docx,.txt,.csv"
@@ -597,6 +597,10 @@ else
     private string _urgencyFilterValue = "All";
     private bool _includeCompleted;
     private bool _loading = true;
+    private bool _pendingDashboardAction;
+
+    [SupplyParameterFromQuery(Name = "action")]
+    public string? Action { get; set; }
     private bool _showDialog;
     private Guid? _editingId;
     private string? _error;
@@ -676,7 +680,39 @@ else
             ParseUrgencyFilter(_urgencyFilterValue),
             _includeCompleted);
 
-    protected override async Task OnInitializedAsync() => await LoadAsync();
+    protected override async Task OnInitializedAsync()
+    {
+        _pendingDashboardAction =
+            string.Equals(Action, "add", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(Action, "scan", StringComparison.OrdinalIgnoreCase);
+        await LoadAsync();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!_pendingDashboardAction)
+            return;
+
+        _pendingDashboardAction = false;
+        if (string.Equals(Action, "add", StringComparison.OrdinalIgnoreCase))
+        {
+            OpenCreateDialog();
+            StateHasChanged();
+            return;
+        }
+
+        if (string.Equals(Action, "scan", StringComparison.OrdinalIgnoreCase))
+        {
+            try
+            {
+                await JS.InvokeVoidAsync("tikrUi.clickFileInput", "#tikr-req-uploader input[type=file]");
+            }
+            catch (Exception ex)
+            {
+                Logger.LogInformation(ex, "Could not open the AI Scan file picker");
+            }
+        }
+    }
 
     private async Task LoadAsync()
     {

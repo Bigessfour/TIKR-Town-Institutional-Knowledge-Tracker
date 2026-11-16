@@ -1,31 +1,36 @@
-# TIKR chat identity (ClerkSuite Cognito)
+# TIKR sign-in (ClerkSuite Cognito)
 
-TIKR sign-in stays off (`TIKR_AUTH_ENABLED=false`). Clerks open `http://mr-storage:8080` from the Town Hub card. That card URL has no access token and no email.
+Local passwords stay off (`TIKR_AUTH_ENABLED=false`). When `TIKR_COGNITO_DOMAIN` is set, a clerk must finish the town Hosted UI before TIKR opens. The first try uses `prompt=none` so an existing ClerkSuite session signs them in without another password. If Cognito returns `login_required` or `interaction_required`, TIKR sends them to the town sign-in page. There is no anonymous fallback.
 
-If the browser already has a ClerkSuite Cognito session, TIKR asks the hosted UI once with `prompt=none` and then keys chat history to `cognito:{sub}`. Email is display-only. If there is no session, TIKR keeps the auth-off path (install profile, then computer name, then a browser id). The computer name is not used once a Cognito subject is stored.
+Chat history is still keyed by `cognito:{sub}`. Email is display-only. Leave `TIKR_COGNITO_DOMAIN` empty only for a machine that is not the town server (local `dotnet run` without that variable).
+
+Staff, admin, and Clerk may enter. Driver may not. A token with no groups is allowed so an unstamped clerk is not locked out. Sign out calls Hosted UI `/logout`, which ends the town session for the other clerk apps too.
+
+`/account` shows the signed-in email and Sign out. It does not change a local password. Grok and Syncfusion keys are not on the Settings page. They stay in the NAS env file.
 
 ## Pool and app client
 
-Do not create a new pool.
+Do not create a new pool. This is the same pool Town Hub and Trash Truck use.
 
-| Item | Value |
-| ---- | ----- |
-| AWS account | `818904800844` (profile `tow`) |
-| Region | `us-east-2` |
-| Pool | `Townofwiley-staff` (`us-east-2_bHk9UcenK`) |
-| App client name | `townofwiley-staff-web` |
-| App client id | `258binbcvsms0rfqj5g20qakki` (`TIKR_COGNITO_CLIENT_ID`) |
-| Hosted UI domain | `tow-gov-staff.auth.us-east-2.amazoncognito.com` (`TIKR_COGNITO_DOMAIN`). Leave the env var empty to skip silent login. |
+| Item             | Value                                                                                                                   |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| AWS account      | `818904800844` (profile `tow`)                                                                                          |
+| Region           | `us-east-2` (`TIKR_COGNITO_REGION`)                                                                                     |
+| Pool             | `Townofwiley-staff` (`us-east-2_bHk9UcenK`, `TIKR_COGNITO_USER_POOL_ID`)                                                |
+| App client name  | `townofwiley-staff-web`                                                                                                 |
+| App client id    | `258binbcvsms0rfqj5g20qakki` (`TIKR_COGNITO_CLIENT_ID`)                                                                 |
+| Hosted UI domain | `tow-gov-staff.auth.us-east-2.amazoncognito.com` (`TIKR_COGNITO_DOMAIN`). Leave the env var empty to skip the gate.     |
 
-## Redirect URIs on `townofwiley-staff-web`
+The ID token is checked against that pool's JWKS (issuer, audience, expiry, signature) before the session cookie is stored.
 
-Registered:
+## HTTPS callback (not registered yet)
 
-- `http://localhost:8080/auth/cognito-callback`
+Cognito rejects `http://mr-storage:8080/auth/cognito-callback`. A direct visit to that HTTP address cannot finish sign-in. Apartments already uses `https://mr-storage.tail57aa13.ts.net`. Put Tailscale Serve or the Synology proxy in front of `tikr-web`, then register that exact origin on `townofwiley-staff-web`:
 
-Cognito rejects non-localhost HTTP callbacks, so `http://mr-storage:8080/auth/cognito-callback` cannot be added. When the NAS web app has an HTTPS name, add that `https://…/auth/cognito-callback` URL on this same client. Until then, a direct NAS visit still loads with no password and uses the auth-off chat id.
+- Callback: `https://<tikr-host>/auth/cognito-callback`
+- Logout: `https://<tikr-host>/`
 
-Allowed OAuth flows: authorization code. Scopes: `openid`, `email`. PKCE is required. The callback exchanges the code on the server and redirects to a clean path. The access token is not placed in the query string.
+Keep `http://localhost:8080/auth/cognito-callback` for dev. Do not run `update-user-pool-client` until the HTTPS host is confirmed. Read the client first:
 
 ```bash
 aws cognito-idp describe-user-pool-client \
@@ -34,12 +39,17 @@ aws cognito-idp describe-user-pool-client \
   --client-id 258binbcvsms0rfqj5g20qakki
 ```
 
-Append the two callback URLs to `CallbackURLs` and set `TIKR_COGNITO_DOMAIN` to the pool's hosted UI domain (for example `your-prefix.auth.us-east-2.amazoncognito.com`). Optional client secret, if the client is confidential, belongs in the NAS env as `TIKR_COGNITO_CLIENT_SECRET` and must not be committed.
+Allowed OAuth flow: authorization code. Scopes: `openid`, `email`. PKCE is required. The callback exchanges the code on the server and redirects to a clean path. Tokens are not placed in the query string or the Town Hub card URL.
+
+After the HTTPS callback works, point the Town Hub TIKR card at that URL (`TOWN_HUB_TIKR_URL`). Until then the card cannot complete SSO.
+
+Optional client secret, if the client is confidential, belongs in the NAS env as `TIKR_COGNITO_CLIENT_SECRET` and must not be committed. `tikr-api` stays on `127.0.0.1` only.
 
 ## Cookies
 
-| Cookie | Contents |
-| ------ | -------- |
-| `tikr-chat-user` | `cognito:{sub}` when a session exists; otherwise the existing auth-off id |
-| `tikr-chat-display` | Email for the banner only |
-| `tikr-cognito-checked` | Present after one silent attempt so the browser does not redirect again |
+| Cookie                 | Contents                                                                 |
+| ---------------------- | ------------------------------------------------------------------------ |
+| `tikr-cognito-session` | Validated Cognito ID token. HttpOnly. This is the sign-in.              |
+| `tikr-chat-user`       | `cognito:{sub}` when a session exists; otherwise the auth-off chat id   |
+| `tikr-chat-display`    | Email for the banner only                                                |
+| `tikr-cognito-silent`  | Short-lived. Marks a `prompt=none` attempt so login can be shown next.  |

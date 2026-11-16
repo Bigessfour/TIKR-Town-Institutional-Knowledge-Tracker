@@ -81,6 +81,9 @@
             </ChildContent>
             <ContentTemplate>
                 <div class="vault-section">
+                    <div class="mb-2">
+                        <SfButton CssClass="tikr-action-btn primary" Content="Add entry" OnClick="@(() => StartNewEntry(KnowledgeCategory.HowTo, voice: false))" />
+                    </div>
                     <div class="vault-grid-host">
                     <SfGrid @ref="HowToGridRef" DataSource="@HowToEntries" AllowPaging="true" PageSize="8" Height="100%" AllowSorting="true" AllowSelection="true" CssClass="vault-grid">
                         <GridSelectionSettings Type="Syncfusion.Blazor.Grids.SelectionType.Multiple" />
@@ -206,6 +209,9 @@
             </ChildContent>
             <ContentTemplate>
                 <div class="vault-section">
+                    <div class="mb-2">
+                        <SfButton CssClass="tikr-action-btn primary" Content="Add entry" OnClick="@(() => StartNewEntry(KnowledgeCategory.TribalKnowledge, voice: false))" />
+                    </div>
                     <div class="vault-grid-host">
                     <SfGrid @ref="TribalGridRef" DataSource="@TribalEntries" AllowPaging="true" PageSize="8" Height="100%" AllowSorting="true" AllowSelection="true" CssClass="vault-grid">
                         <GridSelectionSettings Type="Syncfusion.Blazor.Grids.SelectionType.Multiple" />
@@ -257,6 +263,9 @@
             </ChildContent>
             <ContentTemplate>
                 <div class="voice-section">
+                    <div class="mb-2">
+                        <SfButton CssClass="tikr-action-btn primary" Content="Add entry" OnClick="@(() => StartNewEntry(KnowledgeCategory.TribalKnowledge, voice: true))" />
+                    </div>
                     <div class="voice-recorder">
                         <SfSpeechToText @bind-Transcript="PendingTranscription"
                                         Language="en-US"
@@ -309,7 +318,8 @@
 @if (SelectedEntry is not null)
 {
     <div class="editor-section">
-        <h4>Editing: @SelectedEntry.Title</h4>
+        <h4>@(SelectedEntry.Id == Guid.Empty ? "New entry" : $"Editing: {SelectedEntry.Title}")</h4>
+        <SfTextBox @bind-Value="_entryTitle" Placeholder="Title" CssClass="mb-2" />
         <SfTooltip Content="Sentence suggestions use the local helper (Ollama). Press Tab to accept one, then insert it into the note." Position="Position.TopCenter">
             <p class="text-muted" style="margin:0.25rem 0 0.5rem;">Suggestions appear as you type. Press Tab to accept one, then insert it into the note.</p>
         </SfTooltip>
@@ -324,7 +334,7 @@
         </div>
         <SfRichTextEditor @bind-Value="EditorContent" Height="220px" />
         <div class="editor-actions">
-            <SfButton CssClass="tikr-action-btn primary" Content="Save Changes" OnClick="SaveSelectedEntryAsync" />
+            <SfButton CssClass="tikr-action-btn primary" Content="@(SelectedEntry.Id == Guid.Empty ? "Save entry" : "Save Changes")" OnClick="SaveSelectedEntryAsync" />
             <SfButton CssClass="tikr-action-btn" Content="Cancel" OnClick="CancelEdit" />
         </div>
     </div>
@@ -412,6 +422,8 @@
     private bool _loading = true;
 
     private KnowledgeEntryDto? SelectedEntry;
+    private string _entryTitle = "";
+    private bool _newVoice;
     private string EditorContent = "";
     private string _smartDraft = "";
     private const string _smartVaultRole =
@@ -572,7 +584,19 @@
     private void SelectEntry(KnowledgeEntryDto entry)
     {
         SelectedEntry = entry;
+        _entryTitle = entry.Title;
+        _newVoice = false;
         EditorContent = entry.Content;
+        _smartDraft = "";
+    }
+
+    private void StartNewEntry(KnowledgeCategory category, bool voice)
+    {
+        var title = voice ? VaultVoiceNoteSimulator.BuildDefaultTitle(DateTime.Now) : "";
+        SelectedEntry = new KnowledgeEntryDto(Guid.Empty, title, "", category, _allEntries.Count);
+        _entryTitle = title;
+        _newVoice = voice;
+        EditorContent = "";
         _smartDraft = "";
     }
 
@@ -593,12 +617,34 @@
         if (SelectedEntry is null) return;
 
         var entryId = SelectedEntry.Id;
-        var title = SelectedEntry.Title;
+        var title = _entryTitle.Trim();
+        if (_newVoice && !title.StartsWith(VaultVoiceNoteSimulator.TitlePrefix, StringComparison.Ordinal))
+            title = $"{VaultVoiceNoteSimulator.TitlePrefix}{title}".Trim();
+        if (string.IsNullOrWhiteSpace(title))
+        {
+            Toast.Show("Type a title first.");
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(EditorContent))
+        {
+            Toast.Show("Type the entry first.");
+            return;
+        }
+
         TikrActionLog.Started(Logger, "UI.Vault.SaveEntry", $"EntryId={entryId} Title={title}");
         try
         {
-            await Api.UpdateKnowledgeEntryAsync(entryId, new UpdateKnowledgeEntryRequest(
-                title, EditorContent, SelectedEntry.Category, SelectedEntry.SortOrder));
+            if (entryId == Guid.Empty)
+            {
+                await Api.CreateKnowledgeEntryAsync(new CreateKnowledgeEntryRequest(
+                    title, EditorContent, SelectedEntry.Category, SelectedEntry.SortOrder));
+            }
+            else
+            {
+                await Api.UpdateKnowledgeEntryAsync(entryId, new UpdateKnowledgeEntryRequest(
+                    title, EditorContent, SelectedEntry.Category, SelectedEntry.SortOrder));
+            }
 
             await LoadEntriesAsync();
             CancelEdit();
@@ -614,6 +660,8 @@
     private void CancelEdit()
     {
         SelectedEntry = null;
+        _entryTitle = "";
+        _newVoice = false;
         EditorContent = "";
         _smartDraft = "";
     }

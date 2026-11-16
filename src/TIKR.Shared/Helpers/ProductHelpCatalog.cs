@@ -95,14 +95,14 @@ public static class ProductHelpCatalog
         new(
             "clerk-tools-tour",
             "Clerk tools tour",
-            "Open /demo/clerk-tools (Tools tour in the sidebar or Settings) for a guided walkthrough of every clerk screen and the Syncfusion packages behind it: File Manager, Smart PDF AssistView, Word, Spreadsheet, Smart Paste/TextArea, AI AssistView, Schedule, and themes. Follow docs/demo-clerk-tools-showcase.md for the presenter script.",
+            "Maintainers open /demo/clerk-tools directly. It is a presenter walkthrough of the clerk screens. It is not in the clerk menu.",
             "/demo/clerk-tools",
             ["demo", "tour", "showcase", "syncfusion", "tools", "walkthrough", "clerk"]),
 
         new(
             "chat-memory",
             "Chat memory for Deb Dillon and Paige Lindo",
-            "Chat history and remembered facts follow this computer. DESKTOP-KN6INHL is Deb Dillon; DESKTOP-O9TCKP1 is Paige Lindo (from NAS computer backups). Windows login is not used. See the Chat memory banner on Dashboard, Settings, and Assistant. Rare override is under Settings.",
+            "Chat history and remembered facts follow the town sign-in when you are signed in. Otherwise they follow this computer’s usual clerk. See the chat banner on Dashboard, Settings, and Assistant.",
             "/settings",
             ["memory", "history", "deb", "paige", "dillon", "lindo", "who", "clerk", "identity"]),
 
@@ -228,7 +228,7 @@ public static class ProductHelpCatalog
         new(
             "call-steve",
             "Call Steve for help",
-            "When the app is stuck, license fails, or NAS paths look wrong, use Call Steve for help on Settings or status toasts. Record what screen you were on and any error text.",
+            "When the app is stuck, the license is missing, or a folder looks wrong, the note at the top of Settings says what to tell Steve. This app does not keep a phone number.",
             "/settings",
             ["steve", "help", "support", "stuck", "error"]),
     ];
