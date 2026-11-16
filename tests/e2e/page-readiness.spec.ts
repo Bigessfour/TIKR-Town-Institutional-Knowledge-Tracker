@@ -51,7 +51,7 @@ test.describe('TIKR page readiness (nav + primary controls)', () => {
   test('requirements toolbar buttons render and create dialog opens/closes', async ({ page }) => {
     await gotoClerkPage(page, '/requirements');
     await expect(page.getByRole('button', { name: /Add requirement/i })).toBeVisible();
-    await expect(page.getByRole('button', { name: /Export CSV/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /Spreadsheet/i })).toBeVisible();
     await expect(page.getByRole('button', { name: /Print council packet/i })).toBeVisible();
     await page.getByRole('button', { name: /Add requirement/i }).click();
     await expect(page.getByRole('dialog')).toBeVisible({ timeout: 15_000 });
@@ -63,12 +63,13 @@ test.describe('TIKR page readiness (nav + primary controls)', () => {
     await gotoClerkPage(page, '/documents');
     await expect(page.getByRole('heading', { name: 'Document Library' })).toBeVisible();
     const semantic = page.getByRole('button', { name: /Search by meaning/i });
-    const full = page.getByRole('button', { name: /Full-text search/i });
+    const full = page.getByRole('button', { name: /Search words/i });
     if (await semantic.isVisible()) {
       await semantic.click();
       await full.click();
     }
-    await expect(page.locator('.e-upload')).toBeVisible({ timeout: 20_000 });
+    await page.getByRole('button', { name: /Add files/i }).click();
+    await expect(page.locator('.uploader-zone .e-upload')).toBeVisible({ timeout: 20_000 });
   });
 
   test('documents row checkbox selects and shows preview pane', async ({ page }) => {
@@ -77,6 +78,7 @@ test.describe('TIKR page readiness (nav + primary controls)', () => {
     await expect(page.getByRole('heading', { name: 'Document Library' })).toBeVisible();
 
     // Fresh Docker DBs have no seed docs — upload a fixture so selection/preview can run.
+    await page.getByRole('button', { name: /Add files/i }).click();
     const uploader = page.locator('.uploader-zone');
     await expect(uploader.locator('input[type="file"]')).toBeAttached({ timeout: 20_000 });
     await page.waitForTimeout(500);
@@ -108,7 +110,7 @@ test.describe('TIKR page readiness (nav + primary controls)', () => {
     await expect(page.getByRole('heading', { name: 'Requirements Manager' })).toBeVisible();
 
     // Reset filters then find Canvass (PageSize=12; many council-cycle rows sort before Nov).
-    await page.getByRole('button', { name: /Reset Wiley view/i }).click();
+    await page.getByRole('button', { name: /Clear filters/i }).click();
     const search = page.locator('.requirements-search input').first();
     await expect(search).toBeVisible({ timeout: 15_000 });
     await search.click();

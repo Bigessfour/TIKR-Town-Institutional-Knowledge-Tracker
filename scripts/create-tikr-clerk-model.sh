@@ -12,15 +12,15 @@ MODELFILE="${ROOT}/docker/ollama/Modelfile.tikr-clerk"
 MODEL_NAME="${TIKR_CLERK_MODEL_NAME:-tikr-clerk}"
 BASE_MODEL="${TIKR_CLERK_BASE_MODEL:-llama3.2:3b}"
 
-if [[ ! -f "$MODELFILE" ]]; then
-  echo "Modelfile not found: $MODELFILE" >&2
-  exit 1
+if [[ ! -f $MODELFILE ]]; then
+	echo "Modelfile not found: $MODELFILE" >&2
+	exit 1
 fi
 
 if ! command -v ollama >/dev/null 2>&1; then
-  echo "ollama CLI not found on PATH. Install from https://ollama.com or use:" >&2
-  echo "  docker exec -i tikr-ollama ollama create ${MODEL_NAME} -f - < ${MODELFILE}" >&2
-  exit 1
+	echo "ollama CLI not found on PATH. Install from https://ollama.com or use:" >&2
+	echo "  docker exec -i tikr-ollama ollama create ${MODEL_NAME} -f - < ${MODELFILE}" >&2
+	exit 1
 fi
 
 echo "Ensuring base model ${BASE_MODEL} is available..."

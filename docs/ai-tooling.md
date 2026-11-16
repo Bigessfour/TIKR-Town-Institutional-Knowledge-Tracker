@@ -177,8 +177,9 @@ API: `GET /api/library/scan-status`, `POST /api/library/scan`.
 - **Machine-locked clerk identity (auth off):** Chat history and memory follow **this computer**, not Windows login. NAS backup inventory maps `DESKTOP-KN6INHL` → **Deb Dillon** (`local:deb`) and `DESKTOP-O9TCKP1` → **Paige Lindo** (`local:paige`) via `ChatClerkProfiles.MachineNameMap` / `Environment.MachineName`. Optional install env `TIKR_CLERK_PROFILE=deb|paige`. Rare Settings override stored in `localStorage` (`tikr-chat-clerk-override`). Dashboard, Settings, and Assistant show a **Chat memory** banner. Header `X-Tikr-Chat-User` carries the resolved profile.
 - **Durable memory facts:** Lightweight extractors persist facts like birthday / preferred name / “remember that …” into `UserMemoryFacts` and inject them into the system prompt. Facts survive Clear conversation and are never shared across users. Multiple “remember that” notes use distinct keys (`note:{hash}`). The Assistant page lists facts with **Forget** (DELETE `/api/assistant/memory/{id}`).
 - **Ask Advanced AI:** POST to `/api/ai/ask-advanced` → Grok when `USE_GROK=true` on the API
+- **Document intake scan (Phase 14):** After Documents upload (or **Scan for deadlines**), `DocumentIntakeScanService` builds a clerk-confirm brief (due dates, contacts, action items) from heuristics + local Ollama JSON. Accept writes Contacts + Requirements (Calendar). Optional Grok path requires Settings **Use advanced AI for document deadline scans** (default off) and sends a `CloudOutboundGuard.Redact` excerpt only (~10k chars)—never raw PDF/bytes. UI labels “Advanced AI (redacted)” vs “On this NAS only.”
 
-Business AI logic (tagging, audit, Grok gating, indexing) stays in `TIKR.Api` / `HybridAiService`. The Web chat is conversational UX only.
+Business AI logic (tagging, audit, Grok gating, indexing, intake) stays in `TIKR.Api` / Infrastructure services. The Web chat is conversational UX only.
 
 ### Packages (TIKR.Web)
 

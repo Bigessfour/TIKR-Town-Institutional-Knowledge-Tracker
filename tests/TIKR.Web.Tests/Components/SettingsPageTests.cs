@@ -1,6 +1,7 @@
 using System.Net;
 using Bunit;
 using FluentAssertions;
+using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.DependencyInjection;
 using TIKR.Web.Components.Pages;
 using TIKR.Web.Services;
@@ -13,6 +14,11 @@ public class SettingsPageTests : ClerkTestContext
     // which calls OnAfterRenderAsync -> InitializeAsync and change handlers -> SetThemeAsync.
     // Proof reference for function inventory (bUnit + JS interop defaulted in test context).
 
+    public SettingsPageTests()
+    {
+        JSInterop.Mode = JSRuntimeMode.Loose;
+    }
+
     [Fact]
     public void Settings_RendersOllamaStatusWhenApiResponds()
     {
@@ -23,11 +29,11 @@ public class SettingsPageTests : ClerkTestContext
             {
                 "/api/ai/status" =>
                     """
-                    {"ollamaAvailable":true,"ollamaModel":"llama3.2:3b","grokEnabled":false,"ollamaHost":"http://127.0.0.1:11434","grokApiKeyConfigured":false}
+                    {"ollamaAvailable":true,"ollamaModel":"llama3.2:3b","grokEnabled":false,"ollamaHost":"http://127.0.0.1:11434","grokApiKeyConfigured":false,"runningModel":"llama3.1:8b","modelMismatch":true}
                     """,
                 "/api/ai/feature-settings" =>
                     """
-                    {"ollamaHost":"http://127.0.0.1:11434","ollamaChatModel":"llama3.2:3b","useGrok":false,"grokApiKeyConfigured":false,"ollamaAvailable":true,"statusMessage":null,"grokModel":"grok-4.5","syncfusionLicenseKeyConfigured":true,"syncfusionLicenseHint":"…abcd","grokApiKeyHint":null,"fileStoragePath":"/data/documents","townName":"Wiley","storageLabel":"Synology NAS","townLogoPath":null,"ocrEnabled":true,"useSyncfusionAgentTools":true,"useSyncfusionAgentOrchestration":false,"libraryScanPath":null,"libraryScanIntervalSeconds":300,"libraryScanMaxImports":500,"emailInboxPath":null}
+                    {"ollamaHost":"http://127.0.0.1:11434","ollamaChatModel":"llama3.2:3b","useGrok":false,"grokApiKeyConfigured":false,"ollamaAvailable":true,"statusMessage":null,"grokModel":"grok-4.5","syncfusionLicenseKeyConfigured":true,"syncfusionLicenseHint":"…abcd","grokApiKeyHint":null,"fileStoragePath":"/data/documents","townName":"Wiley","storageLabel":"Synology NAS","townLogoPath":null,"ocrEnabled":true,"useSyncfusionAgentTools":true,"useSyncfusionAgentOrchestration":false,"libraryScanPath":null,"libraryScanIntervalSeconds":300,"libraryScanMaxImports":500,"emailInboxPath":null,"useGrokForDocumentIntake":false}
                     """,
                 "/api/system/local-status" =>
                     """
@@ -61,16 +67,25 @@ public class SettingsPageTests : ClerkTestContext
 
         var http = new HttpClient(handler) { BaseAddress = new Uri("http://localhost/") };
         Services.AddSingleton(new TikrApiClient(http));
+        SetRendererInfo(new RendererInfo("Server", true));
 
         var cut = RenderComponent<Settings>();
-        cut.WaitForAssertion(() => cut.Markup.Should().Contain("Ready"));
+        cut.WaitForAssertion(() => cut.Markup.Should().Contain("Needs attention. Loaded model is llama3.1:8b, not llama3.2:3b."));
         cut.Markup.Should().Contain("Wiley");
         cut.Markup.Should().Contain("This computer");
-        cut.Markup.Should().Contain("Keys");
+        cut.Markup.Should().Contain("Forms and documents license");
         cut.Markup.Should().Contain("Save settings");
-        cut.Markup.Should().Contain("Where uploaded files live");
-        cut.Markup.Should().Contain("Call Steve for help");
-        cut.Markup.Should().Contain("/assistant");
+        cut.Markup.Should().NotContain("Open tools tour");
+        cut.Markup.Should().Contain("Replay screen tour");
+        cut.Markup.Should().Contain("Helper and license");
+        cut.Markup.Should().NotContain("At a glance");
+        cut.Markup.Should().NotContain("Something else?");
+        cut.Find("button[aria-label='Help for this page']").Click();
+        cut.Markup.Should().Contain("If something on Settings is stuck, tell Steve which part it was.");
+        cut.Markup.Should().Contain("Where TIKR keeps Document library files");
+        cut.Markup.Should().Contain("Existing town documents");
+        cut.Markup.Should().Contain("Shared documents folder");
+        cut.Markup.Should().Contain("Browse…");
         cut.Markup.Should().Contain("Bring in shared town documents");
         cut.Markup.Should().Contain("Scan shared folder now");
         cut.Markup.Should().Contain("Refresh Assistant memory");
@@ -101,7 +116,7 @@ public class SettingsPageTests : ClerkTestContext
                 "/api/ai/status" =>
                     """{"ollamaAvailable":true,"ollamaModel":"llama3.2:3b","grokEnabled":false,"ollamaHost":"http://127.0.0.1:11434","grokApiKeyConfigured":false}""",
                 "/api/ai/feature-settings" =>
-                    """{"ollamaHost":"http://127.0.0.1:11434","ollamaChatModel":"llama3.2:3b","useGrok":false,"grokApiKeyConfigured":false,"ollamaAvailable":true,"statusMessage":null,"grokModel":"grok-4.5","syncfusionLicenseKeyConfigured":true,"syncfusionLicenseHint":"…abcd","grokApiKeyHint":null,"fileStoragePath":"/data/documents","townName":"Wiley","storageLabel":"Synology NAS","townLogoPath":null,"ocrEnabled":true,"useSyncfusionAgentTools":true,"useSyncfusionAgentOrchestration":false,"libraryScanPath":null,"libraryScanIntervalSeconds":300,"libraryScanMaxImports":500,"emailInboxPath":null}""",
+                    """{"ollamaHost":"http://127.0.0.1:11434","ollamaChatModel":"llama3.2:3b","useGrok":false,"grokApiKeyConfigured":false,"ollamaAvailable":true,"statusMessage":null,"grokModel":"grok-4.5","syncfusionLicenseKeyConfigured":true,"syncfusionLicenseHint":"…abcd","grokApiKeyHint":null,"fileStoragePath":"/data/documents","townName":"Wiley","storageLabel":"Synology NAS","townLogoPath":null,"ocrEnabled":true,"useSyncfusionAgentTools":true,"useSyncfusionAgentOrchestration":false,"libraryScanPath":null,"libraryScanIntervalSeconds":300,"libraryScanMaxImports":500,"emailInboxPath":null,"useGrokForDocumentIntake":false}""",
                 "/api/system/local-status" =>
                     """{"townName":"Wiley","storageLabel":"Synology NAS","dataLastModifiedUtc":"2026-06-28T11:48:00Z","ollamaAvailable":true}""",
                 "/api/system/document-sdk-status" =>
@@ -123,6 +138,7 @@ public class SettingsPageTests : ClerkTestContext
         });
 
         Services.AddSingleton(new TikrApiClient(new HttpClient(handler) { BaseAddress = new Uri("http://localhost/") }));
+        SetRendererInfo(new RendererInfo("Server", true));
 
         var cut = RenderComponent<Settings>();
         cut.WaitForAssertion(() => cut.Markup.Should().Contain("Scan shared folder now"));
@@ -140,6 +156,7 @@ public class SettingsPageTests : ClerkTestContext
         var handler = new StubHandler((_, _) => new HttpResponseMessage(HttpStatusCode.ServiceUnavailable));
         var http = new HttpClient(handler) { BaseAddress = new Uri("http://localhost/") };
         Services.AddSingleton(new TikrApiClient(http));
+        SetRendererInfo(new RendererInfo("Server", true));
 
         var cut = RenderComponent<Settings>();
         cut.WaitForAssertion(() => cut.Markup.Should().Contain("town server"));

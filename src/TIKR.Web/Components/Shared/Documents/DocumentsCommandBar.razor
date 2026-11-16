@@ -1,0 +1,117 @@
+@using Microsoft.AspNetCore.Components.Forms
+@using Syncfusion.Blazor.Buttons
+@using Syncfusion.Blazor.Inputs
+@using Syncfusion.Blazor.Popups
+@using TIKR.Web.ClerkTour
+
+<div class="documents-command-bar" role="region" aria-label="Document library controls">
+    <div class="documents-command-bar-row">
+        <div class="mode-toggle" role="group" aria-label="Documents view mode">
+            <SfButton CssClass="@(ViewMode == "library" && !ShowRecycleBin ? "tikr-action-btn active" : "tikr-action-btn")"
+                      Content="Library"
+                      OnClick="@(() => OnSetViewMode.InvokeAsync("library"))" />
+            <SfTooltip Content="Double-click a file to open it." Position="Position.TopCenter">
+                <SfButton CssClass="@(ViewMode == "browse" && !ShowRecycleBin ? "tikr-action-btn active" : "tikr-action-btn")"
+                          Content="Folders"
+                          OnClick="@(() => OnSetViewMode.InvokeAsync("browse"))" />
+            </SfTooltip>
+            <SfButton CssClass="@(ShowRecycleBin ? "tikr-action-btn active" : "tikr-action-btn")"
+                      Content="Recycle bin"
+                      OnClick="OnToggleRecycleBin" />
+        </div>
+
+        <div class="documents-command-search" data-tour="@ClerkTourIds.DocSearch">
+            <div class="mode-toggle documents-search-mode" role="group" aria-label="Search mode">
+                <SfButton CssClass="@(SearchMode == "full" ? "tikr-action-btn active" : "tikr-action-btn")"
+                          Content="Search words"
+                          OnClick="@(() => OnSetSearchMode.InvokeAsync("full"))" />
+                <SfTooltip Content="Finds files by what they are about." Position="Position.TopCenter">
+                    <SfButton CssClass="@(SearchMode == "semantic" ? "tikr-action-btn active" : "tikr-action-btn")"
+                              Content="Search by meaning"
+                              OnClick="@(() => OnSetSearchMode.InvokeAsync("semantic"))" />
+                </SfTooltip>
+            </div>
+            <SfTextBox CssClass="search-box"
+                       Placeholder="@(SearchMode == "semantic" ? "Describe the document (e.g. '2025 budget resolution')" : "Search filename, tags, or content...")"
+                       Value="@SearchQuery"
+                       ValueChanged="OnSearchQueryChanged"
+                       Input="OnSearchInput" />
+        </div>
+
+        <div class="documents-command-actions" data-tour="@ClerkTourIds.DocUploader">
+            <SfButton CssClass="@(_uploadExpanded ? "tikr-action-btn active" : "tikr-action-btn")"
+                      Content="@(_uploadExpanded ? "Hide upload" : "Add files")"
+                      OnClick="ToggleUpload" />
+            @if (SelectedCount > 0)
+            {
+                <span class="bulk-count">@SelectedCount selected</span>
+                <SfButton CssClass="tikr-action-btn" Content="More…" OnClick="ToggleBulk" />
+            }
+        </div>
+    </div>
+
+    @if (_bulkExpanded && SelectedCount > 0)
+    {
+        <div class="documents-command-bulk bulk-toolbar" role="toolbar" aria-label="Bulk document actions">
+            <SfButton CssClass="tikr-action-btn danger" IconCss="e-icons e-trash" Content="Delete selected" OnClick="OnBulkDelete" />
+            <SfButton CssClass="tikr-action-btn" IconCss="e-icons e-reload" Content="Re-tag with AI" OnClick="OnBulkRetag" />
+            <SfButton CssClass="tikr-action-btn" Content="Clear selection" OnClick="OnClearSelection" />
+        </div>
+    }
+
+    @if (_uploadExpanded)
+    {
+        <div class="uploader-zone documents-uploader-compact" id="tikr-doc-uploader">
+            <SfUploader AutoUpload="true" Multiple="true" AllowedExtensions=".pdf,.doc,.docx,.txt,.csv,.xlsx,.png,.jpg,.jpeg,.gif,.bmp,.tiff" MaxFileSize="52428800">
+                <UploaderEvents ValueChange="OnUpload"></UploaderEvents>
+            </SfUploader>
+            <div class="uploader-hint">Drag &amp; drop today's mail here or click to browse (PDF, Office, text supported)</div>
+            <div class="mt-2">
+                <SfTooltip Content="Uncheck for a one-time filing." Position="Position.TopCenter">
+                    <SfCheckBox Checked="@KeepForAssistant"
+                                CheckedChanged="OnKeepForAssistantChanged"
+                                Label="Keep for future Assistant context" />
+                </SfTooltip>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public string ViewMode { get; set; } = "library";
+    [Parameter] public bool ShowRecycleBin { get; set; }
+    [Parameter] public EventCallback<string> OnSetViewMode { get; set; }
+    [Parameter] public EventCallback OnToggleRecycleBin { get; set; }
+
+    [Parameter] public string SearchMode { get; set; } = "full";
+    [Parameter] public string SearchQuery { get; set; } = "";
+    [Parameter] public EventCallback<string> OnSearchQueryChanged { get; set; }
+    [Parameter] public EventCallback<InputEventArgs> OnSearchInput { get; set; }
+    [Parameter] public EventCallback<string> OnSetSearchMode { get; set; }
+
+    [Parameter] public bool KeepForAssistant { get; set; } = true;
+    [Parameter] public EventCallback<bool> OnKeepForAssistantChanged { get; set; }
+    [Parameter] public EventCallback<UploadChangeEventArgs> OnUpload { get; set; }
+
+    [Parameter] public int SelectedCount { get; set; }
+    [Parameter] public EventCallback OnBulkDelete { get; set; }
+    [Parameter] public EventCallback OnBulkRetag { get; set; }
+    [Parameter] public EventCallback OnClearSelection { get; set; }
+
+    [Parameter] public bool ExpandUpload { get; set; }
+
+    private bool _uploadExpanded;
+    private bool _bulkExpanded;
+
+    protected override void OnParametersSet()
+    {
+        if (ExpandUpload)
+            _uploadExpanded = true;
+        if (SelectedCount == 0)
+            _bulkExpanded = false;
+    }
+
+    private void ToggleUpload() => _uploadExpanded = !_uploadExpanded;
+
+    private void ToggleBulk() => _bulkExpanded = !_bulkExpanded;
+}

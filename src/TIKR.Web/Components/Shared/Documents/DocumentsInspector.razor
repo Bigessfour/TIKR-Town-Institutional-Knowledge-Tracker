@@ -1,0 +1,200 @@
+@using Syncfusion.Blazor.Buttons
+@using Syncfusion.Blazor.Popups
+@using TIKR.Shared.DTOs
+@using TIKR.Shared.Helpers
+@using TIKR.Web.Helpers
+
+<div class="preview-pane doc-workspace documents-inspector">
+    @if (Document is null)
+    {
+        <div class="tikr-empty-state" style="margin:0.5rem 0;">Select a document in the list, then open it to edit.</div>
+    }
+    else
+    {
+        var d = Document;
+        <div class="doc-workspace-header">
+            <h4 class="preview-title">@d.FileName</h4>
+        </div>
+        <div class="preview-meta">
+            <div><strong>Uploaded:</strong> @TownTime.Format(d.UploadedAt)</div>
+            <div><strong>Size:</strong> @DisplayFormat.FormatBytes(d.FileSizeBytes)</div>
+            <div><strong>Type:</strong> <span class="@DocumentUiMessages.FileTypeIconCss(d.FileName)"></span> @DocumentPreviewHelper.PreviewLabel(PreviewKind)</div>
+            @if (!string.IsNullOrWhiteSpace(d.SuggestedFolder))
+            {
+                <div><strong>Folder:</strong> @d.SuggestedFolder</div>
+            }
+            @if (d.VersionCount > 0)
+            {
+                <div><strong>Prior versions:</strong> @d.VersionCount</div>
+            }
+            @if (d.LinkedRequirementCount > 0)
+            {
+                <div><strong>Linked requirements:</strong> @d.LinkedRequirementCount</div>
+            }
+        </div>
+
+        <div class="preview-tags">
+            <strong>Tags:</strong>
+            @foreach (var t in DisplayFormat.ParseTags(d.AiTags))
+            {
+                <span class="doc-tag">@t</span>
+            }
+            @if (DisplayFormat.ParseTags(d.AiTags).Length == 0)
+            {
+                <span class="text-muted">None yet</span>
+            }
+        </div>
+
+        @if (LinkedRequirements.Count > 0)
+        {
+            <div class="preview-tags" style="margin-top:0.5rem;">
+                <strong>Requirements:</strong>
+                <ul class="mt-1" style="margin:0; padding-left:1.2rem;">
+                    @foreach (var link in LinkedRequirements.Take(5))
+                    {
+                        <li>
+                            <a href="@($"/requirements?highlight={link.RequirementId}")">@link.Title</a>
+                            @if (link.DueDate is { } due)
+                            {
+                                <span class="text-muted"> — due @due.ToString("MMM d")</span>
+                            }
+                        </li>
+                    }
+                </ul>
+            </div>
+        }
+
+        @if (!ShowRecycleBin)
+        {
+            <div class="doc-open-hero">
+                <SfTooltip Content="Mark up a PDF, edit Word, or use a spreadsheet, then save. Saving also refreshes Assistant context." Position="Position.TopCenter">
+                    <span class="tikr-tip-host tikr-tip-host-block">
+                        <SfButton CssClass="tikr-action-btn primary doc-open-fullscreen-btn"
+                                  Content="@(PreviewLoading ? "Preparing…" : "Open & edit")"
+                                  Disabled="@(PreviewLoading || !CanOpen)"
+                                  OnClick="OnOpenEdit" />
+                    </span>
+                </SfTooltip>
+            </div>
+        }
+
+        <div class="documents-inspector-more">
+            <SfButton CssClass="tikr-action-btn e-outline"
+                      Content="@(_moreOpen ? "▲ Hide actions" : "▼ More actions")"
+                      OnClick="ToggleMore" />
+            @if (_moreOpen)
+            {
+                <div class="doc-tools" role="toolbar" aria-label="Document actions">
+                    <div class="doc-tools-group">
+                        @if (ShowRecycleBin)
+                        {
+                            <SfButton CssClass="tikr-action-btn primary" Content="Restore" OnClick="OnRestore" />
+                            <SfButton CssClass="tikr-action-btn danger" Content="Purge permanently" OnClick="OnPurge" />
+                        }
+                        else
+                        {
+                            <SfButton CssClass="tikr-action-btn"
+                                      Content="@(DownloadingDocId == d.Id ? "Downloading…" : "Download")"
+                                      Disabled="@(DownloadingDocId == d.Id)"
+                                      OnClick="OnDownload" />
+                            @if (DocumentUiMessages.CanConvertToPdf(d.FileName))
+                            {
+                                <SfButton CssClass="tikr-action-btn"
+                                          Content="@(ConvertingDocId == d.Id ? "Converting…" : "Convert to PDF")"
+                                          Disabled="@(ConvertingDocId == d.Id)"
+                                          OnClick="OnConvert" />
+                            }
+                            <SfButton CssClass="tikr-action-btn" Content="Re-tag" OnClick="OnRetag" />
+                            <SfButton CssClass="tikr-action-btn"
+                                      Content="@(IntakeScanBusy ? "Scanning…" : "Scan for deadlines")"
+                                      Disabled="@IntakeScanBusy"
+                                      OnClick="OnIntakeScan" />
+                            <SfButton CssClass="tikr-action-btn danger" Content="Delete" OnClick="OnDelete" />
+                        }
+                    </div>
+
+                    @if (Versions.Count > 0 && !ShowRecycleBin)
+                    {
+                        <div class="doc-tools-group" style="flex-direction:column; align-items:stretch;">
+                            <span class="doc-tools-label">Versions</span>
+                            <ul class="mt-1" style="margin:0; padding-left:1.2rem;">
+                                @foreach (var v in Versions.Take(5))
+                                {
+                                    <li>
+                                        v@v.VersionNumber — @TownTime.Format(v.CreatedAt)
+                                        (@DisplayFormat.FormatBytes(v.FileSizeBytes))
+                                        <SfButton CssClass="tikr-action-btn" Content="Restore"
+                                                  Disabled="@SavingPreview"
+                                                  OnClick="@(() => OnRestoreVersion.InvokeAsync(v))" />
+                                    </li>
+                                }
+                            </ul>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+
+        @if (PreviewLoading && PreviewDocId == d.Id)
+        {
+            <div class="tikr-loading-state" style="margin:0.5rem 0;" role="status" aria-live="polite" aria-busy="true">
+                <div class="tikr-loading-spinner" aria-hidden="true"></div>
+                <span>Preparing document…</span>
+            </div>
+        }
+        else if (!string.IsNullOrEmpty(PreviewError))
+        {
+            <div class="tikr-empty-state" style="margin:0.5rem 0;">@PreviewError</div>
+        }
+        else if (!string.IsNullOrEmpty(TextPreview))
+        {
+            <div class="preview-text">
+                <div class="preview-sdk-label">Text preview</div>
+                <pre class="preview-text-body">@TextPreview</pre>
+            </div>
+        }
+        else if (PreviewKind == DocumentPreviewHelper.PreviewKind.ConvertHint)
+        {
+            <div class="tikr-empty-state" style="margin:0.5rem 0;">
+                Convert this file to PDF, then open &amp; edit to view it.
+            </div>
+        }
+        else if (CanOpen && !ShowRecycleBin)
+        {
+            <div class="tikr-empty-state" style="margin:0.5rem 0;">
+                Ready. Press <strong>Open &amp; edit</strong> to work with this document.
+            </div>
+        }
+    }
+</div>
+
+@code {
+    [Parameter] public DocumentDto? Document { get; set; }
+    [Parameter] public DocumentPreviewHelper.PreviewKind PreviewKind { get; set; }
+    [Parameter] public bool PreviewLoading { get; set; }
+    [Parameter] public Guid? PreviewDocId { get; set; }
+    [Parameter] public string? PreviewError { get; set; }
+    [Parameter] public string? TextPreview { get; set; }
+    [Parameter] public bool ShowRecycleBin { get; set; }
+    [Parameter] public bool CanOpen { get; set; }
+    [Parameter] public bool SavingPreview { get; set; }
+    [Parameter] public Guid? DownloadingDocId { get; set; }
+    [Parameter] public Guid? ConvertingDocId { get; set; }
+    [Parameter] public IReadOnlyList<DocumentRequirementLinkDto> LinkedRequirements { get; set; } = [];
+    [Parameter] public IReadOnlyList<DocumentVersionDto> Versions { get; set; } = [];
+
+    [Parameter] public EventCallback OnOpenEdit { get; set; }
+    [Parameter] public EventCallback OnDownload { get; set; }
+    [Parameter] public EventCallback OnConvert { get; set; }
+    [Parameter] public EventCallback OnRetag { get; set; }
+    [Parameter] public EventCallback OnIntakeScan { get; set; }
+    [Parameter] public bool IntakeScanBusy { get; set; }
+    [Parameter] public EventCallback OnDelete { get; set; }
+    [Parameter] public EventCallback OnRestore { get; set; }
+    [Parameter] public EventCallback OnPurge { get; set; }
+    [Parameter] public EventCallback<DocumentVersionDto> OnRestoreVersion { get; set; }
+
+    private bool _moreOpen;
+
+    private void ToggleMore() => _moreOpen = !_moreOpen;
+}

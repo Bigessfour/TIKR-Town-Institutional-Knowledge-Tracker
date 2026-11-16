@@ -6,6 +6,7 @@ using TIKR.Infrastructure.Data;
 using TIKR.Shared.Configuration;
 using TIKR.Shared.DTOs;
 using TIKR.Shared.Entities;
+using TIKR.Shared.Helpers;
 using TIKR.Shared.Interfaces;
 using TIKR.SyncfusionDocuments;
 
@@ -245,6 +246,9 @@ public sealed class FeatureSettingsService(
                 preview[FeatureSettingKeys.EmailInboxPath] = path;
             }
         }
+
+        if (request.UseGrokForDocumentIntake is { } intakeGrok)
+            preview[FeatureSettingKeys.UseGrokForDocumentIntake] = intakeGrok ? "true" : "false";
     }
 
     private async Task PersistPreviewAsync(
@@ -325,6 +329,11 @@ public sealed class FeatureSettingsService(
                 cancellationToken);
         if (request.EmailInboxPath is not null)
             await UpsertPlain(FeatureSettingKeys.EmailInboxPath, snapshot.EmailInboxPath, clearIfMissing: true);
+        if (request.UseGrokForDocumentIntake is not null)
+            await UpsertAsync(
+                FeatureSettingKeys.UseGrokForDocumentIntake,
+                snapshot.UseGrokForDocumentIntake ? "true" : "false",
+                cancellationToken);
 
         _ = preview; // preview already applied into snapshot
     }
@@ -485,7 +494,8 @@ public sealed class FeatureSettingsService(
                 FeatureSettingKeys.LibraryScanIntervalSeconds,
                 TikrConfiguration.GetLibraryScanIntervalSeconds(configuration)),
             LibraryScanMaxImports = ResolveLibraryMaxImports(overrides, configuration),
-            EmailInboxPath = string.IsNullOrWhiteSpace(emailPath) ? null : emailPath
+            EmailInboxPath = string.IsNullOrWhiteSpace(emailPath) ? null : emailPath,
+            UseGrokForDocumentIntake = ResolveBool(overrides, FeatureSettingKeys.UseGrokForDocumentIntake, false)
         };
     }
 
@@ -554,7 +564,8 @@ public sealed class FeatureSettingsService(
             LibraryScanPath: snap.LibraryScanPath,
             LibraryScanIntervalSeconds: snap.LibraryScanIntervalSeconds,
             LibraryScanMaxImports: snap.LibraryScanMaxImports == int.MaxValue ? 0 : snap.LibraryScanMaxImports,
-            EmailInboxPath: snap.EmailInboxPath);
+            EmailInboxPath: snap.EmailInboxPath,
+            UseGrokForDocumentIntake: snap.UseGrokForDocumentIntake);
 
     private static string? Hint(string? secret)
     {
@@ -585,38 +596,13 @@ public sealed class FeatureSettingsService(
             || full.EndsWith($"{Path.DirectorySeparatorChar}..", StringComparison.Ordinal))
             throw new ArgumentException($"{label} path must not contain '..' segments.");
 
-        var roots = GetAllowedPathRoots().Select(Path.GetFullPath).ToList();
+        var roots = TikrDataPathRoots.Resolve(configuration);
         if (roots.Count == 0)
             return; // Dev without known roots — still require absolute/parseable path above.
 
-        var allowed = roots.Any(root =>
-            full.Equals(root, StringComparison.OrdinalIgnoreCase)
-            || full.StartsWith(root.TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar,
-                StringComparison.OrdinalIgnoreCase));
-
-        if (!allowed)
+        if (!TikrDataPathRoots.IsUnderAllowedRoot(full, roots))
             throw new ArgumentException(
-                $"{label} path must be under the TIKR data folder (e.g. /data/... on the NAS). Asked IT to bind-mount the share there.");
-    }
-
-    private IEnumerable<string> GetAllowedPathRoots()
-    {
-        var dataPath = configuration["TIKR_DATA_PATH"];
-        if (!string.IsNullOrWhiteSpace(dataPath))
-            yield return dataPath.Trim();
-
-        if (Directory.Exists("/data"))
-            yield return "/data";
-
-        // Local Mac/Windows development under repo .local-data
-        var cwd = Directory.GetCurrentDirectory();
-        var localData = Path.GetFullPath(Path.Combine(cwd, "..", "..", ".local-data"));
-        if (Directory.Exists(localData))
-            yield return localData;
-
-        localData = Path.GetFullPath(Path.Combine(cwd, ".local-data"));
-        if (Directory.Exists(localData))
-            yield return localData;
+                $"{label} path must be under town storage, a mounted network/external drive, or the TIKR data folder. Use Browse… in Settings, or ask IT to mount the share.");
     }
 
     private static void MoveDirectoryContents(string sourceRoot, string destRoot)

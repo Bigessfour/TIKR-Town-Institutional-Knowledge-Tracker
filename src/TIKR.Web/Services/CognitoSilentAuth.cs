@@ -15,6 +15,7 @@ public static class CognitoSilentAuth
     public const string ClientIdConfigKey = "TIKR_COGNITO_CLIENT_ID";
     public const string DomainConfigKey = "TIKR_COGNITO_DOMAIN";
     public const string ClientSecretConfigKey = "TIKR_COGNITO_CLIENT_SECRET";
+    public const string PublicOriginConfigKey = "TIKR_PUBLIC_ORIGIN";
     public const string DefaultClientId = "258binbcvsms0rfqj5g20qakki";
 
     public static string? HostedUiDomain(IConfiguration configuration)
@@ -221,21 +222,53 @@ public static class CognitoSilentAuth
         return doc.RootElement.TryGetProperty("id_token", out var token) ? token.GetString() : null;
     }
 
-    public static CookieOptions SessionCookie(HttpRequest request) => new()
+    /// <summary>
+    /// HTTPS origin clerks use when Tailscale Serve terminates TLS in front of the container.
+    /// HTTP values are ignored so a plain NAS address cannot become the Cognito callback.
+    /// </summary>
+    public static string? PublicOrigin(IConfiguration? configuration)
+    {
+        var value = configuration?[PublicOriginConfigKey];
+        if (string.IsNullOrWhiteSpace(value))
+            return null;
+
+        if (!Uri.TryCreate(value.Trim(), UriKind.Absolute, out var uri))
+            return null;
+
+        if (!string.Equals(uri.Scheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase))
+            return null;
+
+        if (string.IsNullOrEmpty(uri.Host))
+            return null;
+
+        return uri.GetLeftPart(UriPartial.Authority).TrimEnd('/');
+    }
+
+    public static CookieOptions SessionCookie(HttpRequest request, IConfiguration? configuration = null) => new()
     {
         HttpOnly = true,
         IsEssential = true,
         SameSite = SameSiteMode.Lax,
-        Secure = request.IsHttps,
+        Secure = request.IsHttps || PublicOrigin(configuration) is not null,
         MaxAge = TimeSpan.FromDays(30),
         Path = "/"
     };
 
-    public static string RedirectUri(HttpRequest request) =>
-        $"{request.Scheme}://{request.Host}/auth/cognito-callback";
+    public static string RedirectUri(HttpRequest request, IConfiguration? configuration = null)
+    {
+        var origin = PublicOrigin(configuration);
+        return origin is null
+            ? $"{request.Scheme}://{request.Host}/auth/cognito-callback"
+            : $"{origin}/auth/cognito-callback";
+    }
 
-    public static string LogoutUri(HttpRequest request) =>
-        $"{request.Scheme}://{request.Host}/";
+    public static string LogoutUri(HttpRequest request, IConfiguration? configuration = null)
+    {
+        var origin = PublicOrigin(configuration);
+        return origin is null
+            ? $"{request.Scheme}://{request.Host}/"
+            : $"{origin}/";
+    }
 
     private static string Base64Url(byte[] bytes) =>
         Convert.ToBase64String(bytes).TrimEnd('=').Replace('+', '-').Replace('/', '_');

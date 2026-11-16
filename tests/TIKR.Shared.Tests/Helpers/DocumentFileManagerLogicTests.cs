@@ -38,17 +38,24 @@ public class DocumentFileManagerLogicTests
     }
 
     [Fact]
-    public void GetChildren_RootListsFoldersOnly()
+    public void GetChildren_RootListsFoldersAndAllFiles()
     {
         var docs = new[]
         {
-            new DocumentDto(Guid.NewGuid(), "a.pdf", null, 1, null, "Finance", DateTime.UtcNow)
+            new DocumentDto(Guid.NewGuid(), "a.pdf", null, 1, null, "Finance", DateTime.UtcNow),
+            new DocumentDto(Guid.NewGuid(), "b.pdf", null, 1, null, "Minutes", DateTime.UtcNow),
         };
         var nodes = DocumentFileManagerLogic.BuildNodes(docs);
         var children = DocumentFileManagerLogic.GetChildren(nodes, DocumentFileManagerLogic.RootId);
 
-        children.Should().OnlyContain(n => !n.IsFile);
-        children.Should().Contain(n => n.Name == "Finance");
+        children.Should().Contain(n => n.Name == "Finance" && !n.IsFile);
+        children.Should().Contain(n => n.Name == "Minutes" && !n.IsFile);
+        children.Should().Contain(n => n.IsFile && n.Name == "a.pdf");
+        children.Should().Contain(n => n.IsFile && n.Name == "b.pdf");
+        children.Count(n => n.IsFile).Should().Be(2);
+        // Folders sort before files
+        children.TakeWhile(n => !n.IsFile).Should().NotBeEmpty();
+        children.SkipWhile(n => !n.IsFile).Should().OnlyContain(n => n.IsFile);
     }
 
     [Fact]

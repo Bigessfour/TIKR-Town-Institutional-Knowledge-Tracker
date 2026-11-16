@@ -20,6 +20,7 @@ public sealed class FeatureSettingsSnapshot
     public int LibraryScanIntervalSeconds { get; init; } = 300;
     public int LibraryScanMaxImports { get; init; } = 500;
     public string? EmailInboxPath { get; init; }
+    public bool UseGrokForDocumentIntake { get; init; }
 
     public bool GrokApiKeyConfigured => !string.IsNullOrWhiteSpace(GrokApiKey);
     public bool GrokEnabled => UseGrok && GrokApiKeyConfigured;

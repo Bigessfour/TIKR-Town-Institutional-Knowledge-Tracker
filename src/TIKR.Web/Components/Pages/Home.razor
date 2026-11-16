@@ -26,7 +26,7 @@
         </TourAnchor>
         <PageTourButton Route="/" />
         <PageHelp DataTour="@ClerkTourIds.HelpDashboard"
-                  HelpText="Your command center for Colorado due-outs, linked town documents, and quick actions. Drag panels to rearrange them. Reset layout puts them back. Chat memory follows this computer’s clerk (Deb Dillon or Paige Lindo). Linked files live on the town NAS (Synology). The status line shows whether the local helper (Ollama) is ready. If the dashboard does not load, Settings shows NAS and API status." />
+                  HelpText="Deadlines, linked documents, and quick actions. Drag panels to rearrange them." />
     </div>
 </div>
 
@@ -203,25 +203,22 @@ else
                                 </div>
                                 break;
                             case "corpus-attention":
+                                @if (_corpusAttention is { Count: > 0 } || HelperNeedsAttention)
+                                {
                                 <div class="dashboard-panel dashboard-corpus-banner">
                                     @if (_corpusAttention is { Count: > 0 })
                                     {
                                         <span>@AuditDetailsFormatter.FormatCorpusAttention(_corpusAttention)</span>
                                         <a href="/settings?focus=reindex">Refresh Assistant memory</a>
                                     }
-                                    else if (_localStatus is not null)
+                                    else if (HelperNeedsAttention)
                                     {
-                                        <SfTooltip Content="@(_localStatus.ModelMismatch ? "The helper needs attention. Files stay on town storage." : _localStatus.OllamaAvailable ? "The helper is ready. Files stay on town storage." : "The helper is not ready. Files stay on town storage.")" Position="Position.TopCenter">
-                                            <span>Town files stay on town storage — helper @(_localStatus.ModelMismatch ? "needs attention" : _localStatus.OllamaAvailable ? "ready" : "not ready")</span>
-                                        </SfTooltip>
-                                    }
-                                    else
-                                    {
-                                        <SfTooltip Content="Town files stay on town storage." Position="Position.TopCenter">
-                                            <span>Town files stay on town storage</span>
+                                        <SfTooltip Content="The helper needs attention. Files stay on town storage." Position="Position.TopCenter">
+                                            <span>Helper needs attention</span>
                                         </SfTooltip>
                                     }
                                 </div>
+                                }
                                 break;
                         }
                     </ContentTemplate>
@@ -244,6 +241,9 @@ else
     private IReadOnlyList<string> _corpusAttention = [];
     private LocalStorageStatusDto? _localStatus;
     private bool _loading = true;
+
+    private bool HelperNeedsAttention =>
+        _localStatus is { ModelMismatch: true } || _localStatus is { OllamaAvailable: false };
 
     private bool _workspaceVisible;
     private DocumentDto? _workspaceDocument;

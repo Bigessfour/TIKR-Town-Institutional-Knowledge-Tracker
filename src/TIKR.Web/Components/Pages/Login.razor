@@ -14,7 +14,7 @@
         <CardContent>
             @if (!Auth.IsEnabled)
             {
-                <p>Authentication is not enabled for this deployment.</p>
+                <p>Sign-in is off.</p>
             }
             else
             {
@@ -23,10 +23,11 @@
                     <div class="login-error">@_error</div>
                 }
 
-                <EditForm Model="_model" OnValidSubmit="HandleLoginAsync">
-                    <DataAnnotationsValidator />
+                <SfDataForm ID="login-form" Model="_model" ColumnCount="1" Width="100%" OnValidSubmit="HandleLoginAsync">
+                    <FormValidator>
+                        <DataAnnotationsValidator />
+                    </FormValidator>
                     <ValidationSummary />
-                    <SfDataForm Model="_model" ColumnCount="1" Width="100%">
                         <FormItems>
                             <FormItem Field="@nameof(LoginFormModel.Email)" LabelText="Email" />
                             <FormItem Field="@nameof(LoginFormModel.Password)" LabelText="Password">
@@ -35,13 +36,12 @@
                                 </Template>
                             </FormItem>
                         </FormItems>
+                        <FormButtons>
+                            <SfButton Type="ButtonType.Submit" CssClass="tikr-action-btn primary" Disabled="_busy">
+                                @(_busy ? "Signing in..." : "Sign in")
+                            </SfButton>
+                        </FormButtons>
                     </SfDataForm>
-                    <div class="mt-3">
-                        <SfButton Type="ButtonType.Submit" CssClass="tikr-action-btn primary" Disabled="_busy">
-                            @(_busy ? "Signing in..." : "Sign in")
-                        </SfButton>
-                    </div>
-                </EditForm>
             }
         </CardContent>
     </SfCard>

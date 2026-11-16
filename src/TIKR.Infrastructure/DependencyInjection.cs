@@ -72,6 +72,8 @@ public static class DependencyInjection
                 sp.GetRequiredService<ILogger<FolderClassifier>>()));
         services.AddScoped<IDocumentFolderCatalog, DocumentFolderCatalog>();
         services.AddScoped<IHybridAiService, HybridAiService>();
+        services.AddScoped<IDocumentIntakeScanService, DocumentIntakeScanService>();
+        services.AddSingleton<IDataFolderBrowseService, DataFolderBrowseService>();
         services.AddScoped<IAgentDocumentStorage, NasAgentDocumentStorage>();
         services.AddSingleton<NasSyncfusionDocumentStorage>();
         services.AddSingleton<SyncfusionDocumentAgentToolRegistry>();

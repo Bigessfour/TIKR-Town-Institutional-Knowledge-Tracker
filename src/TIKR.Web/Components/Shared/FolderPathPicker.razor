@@ -1,0 +1,174 @@
+@using Syncfusion.Blazor.Buttons
+@using Syncfusion.Blazor.Inputs
+@using Syncfusion.Blazor.Popups
+@using TIKR.Shared.DTOs
+@inject TikrApiClient Api
+@inject ILogger<FolderPathPicker> Logger
+
+<div class="folder-path-picker">
+    <div class="folder-path-picker-row">
+        <SfTextBox ID="@InputId"
+                   Value="@Value"
+                   ValueChanged="OnTextChanged"
+                   Placeholder="@Placeholder"
+                   CssClass="e-outline folder-path-picker-input" />
+        <SfButton CssClass="tikr-action-btn e-outline"
+                  Content="Browse…"
+                  Disabled="@_busy"
+                  OnClick="OpenBrowseAsync" />
+    </div>
+</div>
+
+<SfDialog @bind-Visible="_dialogOpen"
+          Width="520px"
+          IsModal="true"
+          ShowCloseIcon="true"
+          Header="@DialogTitle"
+          CssClass="folder-path-picker-dialog">
+    <DialogTemplates>
+        <Content>
+            <p class="text-muted mb-2">
+                Browse town storage, local data, and mounted network or external drives (for example under /Volumes on this Mac, or /volume1 on the NAS).
+            </p>
+            <div class="tikr-form-row mb-2">
+                <label for="@($"{InputId}-search")">Search folders</label>
+                <SfTextBox ID="@($"{InputId}-search")"
+                           @bind-Value="_search"
+                           Placeholder="Type part of a folder name"
+                           CssClass="e-outline"
+                           Input="OnSearchInput" />
+            </div>
+            <div class="folder-path-picker-current mb-2">
+                <strong>Looking in:</strong>
+                @(string.IsNullOrWhiteSpace(_browse?.CurrentPath) ? "(top of allowed folders)" : _browse!.CurrentPath)
+            </div>
+            @if (!string.IsNullOrWhiteSpace(_browse?.Error))
+            {
+                <p class="mb-2">@_browse!.Error</p>
+            }
+            <div class="folder-path-picker-actions mb-2">
+                <SfButton CssClass="tikr-action-btn e-outline"
+                          Content="Top folders"
+                          Disabled="@_busy"
+                          OnClick="GoRootsAsync" />
+                <SfButton CssClass="tikr-action-btn e-outline"
+                          Content="Up one level"
+                          Disabled="@(_busy || string.IsNullOrWhiteSpace(_browse?.ParentPath))"
+                          OnClick="GoParentAsync" />
+            </div>
+            <ul class="folder-path-picker-list" role="listbox" aria-label="Folders">
+                @if (_busy)
+                {
+                    <li class="text-muted">Loading…</li>
+                }
+                else if (_browse?.Entries is { Count: 0 })
+                {
+                    <li class="text-muted">No matching folders here.</li>
+                }
+                else if (_browse is not null)
+                {
+                    @foreach (var entry in _browse.Entries)
+                    {
+                        <li>
+                            <button type="button"
+                                    class="folder-path-picker-item"
+                                    @onclick="() => OpenFolderAsync(entry.FullPath)">
+                                @entry.Name
+                            </button>
+                        </li>
+                    }
+                }
+            </ul>
+        </Content>
+    </DialogTemplates>
+    <DialogButtons>
+        <DialogButton Content="Use this folder"
+                      IsPrimary="true"
+                      Disabled="@(_busy || string.IsNullOrWhiteSpace(_browse?.CurrentPath))"
+                      OnClick="@SelectCurrentAsync" />
+        <DialogButton Content="Cancel" OnClick="@CloseDialog" />
+    </DialogButtons>
+</SfDialog>
+
+@code {
+    [Parameter] public string InputId { get; set; } = "tikr-folder-path";
+    [Parameter] public string? Value { get; set; }
+    [Parameter] public EventCallback<string?> ValueChanged { get; set; }
+    [Parameter] public string? Placeholder { get; set; }
+    [Parameter] public string DialogTitle { get; set; } = "Choose folder";
+
+    private bool _dialogOpen;
+    private bool _busy;
+    private string _search = "";
+    private FolderBrowseResultDto? _browse;
+    private CancellationTokenSource? _searchCts;
+
+    private async Task OnTextChanged(string? value) =>
+        await ValueChanged.InvokeAsync(value);
+
+    private async Task OpenBrowseAsync()
+    {
+        _dialogOpen = true;
+        _search = "";
+        await LoadAsync(string.IsNullOrWhiteSpace(Value) ? null : Value);
+    }
+
+    private void CloseDialog() => _dialogOpen = false;
+
+    private async Task GoRootsAsync() => await LoadAsync(null);
+
+    private async Task GoParentAsync()
+    {
+        if (_browse?.ParentPath is { } parent)
+            await LoadAsync(parent);
+    }
+
+    private async Task OpenFolderAsync(string path) => await LoadAsync(path);
+
+    private async Task SelectCurrentAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_browse?.CurrentPath))
+            return;
+        await ValueChanged.InvokeAsync(_browse.CurrentPath);
+        _dialogOpen = false;
+    }
+
+    private async Task OnSearchInput(InputEventArgs args)
+    {
+        _search = args.Value?.ToString() ?? "";
+        _searchCts?.Cancel();
+        _searchCts = new CancellationTokenSource();
+        var token = _searchCts.Token;
+        try
+        {
+            await Task.Delay(250, token);
+            await LoadAsync(_browse?.CurrentPath, _search, token);
+        }
+        catch (OperationCanceledException)
+        {
+            // newer keystroke
+        }
+    }
+
+    private async Task LoadAsync(string? path, string? query = null, CancellationToken ct = default)
+    {
+        _busy = true;
+        try
+        {
+            _browse = await Api.BrowseFoldersAsync(path, query ?? _search);
+            if (_browse is null)
+                _browse = new FolderBrowseResultDto([], path, null, [], "Could not load folders.");
+        }
+        catch (Exception ex)
+        {
+            Logger.LogDebug(ex, "Folder browse failed");
+            _browse = new FolderBrowseResultDto([], path, null, [], "Could not load folders.");
+        }
+        finally
+        {
+            if (!ct.IsCancellationRequested)
+                _busy = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+}

@@ -83,6 +83,22 @@ public class TikrApiClient(HttpClient http)
         return await response.Content.ReadFromJsonAsync<FeatureSettingsDto>();
     }
 
+    public async Task<FolderBrowseResultDto?> BrowseFoldersAsync(string? path = null, string? query = null)
+    {
+        var qs = new List<string>();
+        if (!string.IsNullOrWhiteSpace(path))
+            qs.Add($"path={Uri.EscapeDataString(path)}");
+        if (!string.IsNullOrWhiteSpace(query))
+            qs.Add($"q={Uri.EscapeDataString(query)}");
+        var url = qs.Count == 0
+            ? "/api/settings/browse-folders"
+            : "/api/settings/browse-folders?" + string.Join('&', qs);
+        var response = await http.GetAsync(url);
+        return response.IsSuccessStatusCode
+            ? await response.Content.ReadFromJsonAsync<FolderBrowseResultDto>()
+            : null;
+    }
+
     public async Task<LocalStorageStatusDto?> GetLocalStorageStatusAsync() =>
         await http.GetFromJsonAsync<LocalStorageStatusDto>("/api/system/local-status");
 
@@ -105,6 +121,42 @@ public class TikrApiClient(HttpClient http)
         return response.IsSuccessStatusCode
             ? await response.Content.ReadFromJsonAsync<TagDocumentResponse>()
             : null;
+    }
+
+    public async Task<DocumentIntakeBriefDto?> ScanDocumentIntakeAsync(Guid documentId)
+    {
+        var response = await http.PostAsync($"/api/documents/{documentId}/intake-scan", null);
+        return response.IsSuccessStatusCode
+            ? await response.Content.ReadFromJsonAsync<DocumentIntakeBriefDto>()
+            : null;
+    }
+
+    public async Task<DocumentIntakeBriefDto?> GetPendingDocumentIntakeBriefAsync(Guid documentId)
+    {
+        var response = await http.GetAsync($"/api/documents/{documentId}/intake-brief");
+        if (response.StatusCode == System.Net.HttpStatusCode.NoContent)
+            return null;
+        return response.IsSuccessStatusCode
+            ? await response.Content.ReadFromJsonAsync<DocumentIntakeBriefDto>()
+            : null;
+    }
+
+    public async Task<AcceptDocumentIntakeBriefResponse?> AcceptDocumentIntakeBriefAsync(
+        Guid documentId,
+        AcceptDocumentIntakeBriefRequest? request = null)
+    {
+        var response = await http.PostAsJsonAsync(
+            $"/api/documents/{documentId}/intake-brief/accept",
+            request ?? new AcceptDocumentIntakeBriefRequest());
+        return response.IsSuccessStatusCode
+            ? await response.Content.ReadFromJsonAsync<AcceptDocumentIntakeBriefResponse>()
+            : null;
+    }
+
+    public async Task<bool> DismissDocumentIntakeBriefAsync(Guid documentId)
+    {
+        var response = await http.PostAsync($"/api/documents/{documentId}/intake-brief/dismiss", null);
+        return response.IsSuccessStatusCode;
     }
 
     public async Task<List<FolderProposalGroupDto>> GetFolderProposalsAsync() =>

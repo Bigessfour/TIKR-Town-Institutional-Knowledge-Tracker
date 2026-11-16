@@ -10,27 +10,27 @@ MCP="$ROOT/.cursor/mcp.json"
 WITH_CHROME=false
 
 for arg in "$@"; do
-  case "$arg" in
-    --with-chrome-devtools) WITH_CHROME=true ;;
-    -h | --help)
-      echo "Usage: $0 [--with-chrome-devtools]"
-      echo "  --with-chrome-devtools  Enable chrome-devtools-mcp (disables ollama MCP to stay ≤4 servers)."
-      exit 0
-      ;;
-  esac
+	case "$arg" in
+	--with-chrome-devtools) WITH_CHROME=true ;;
+	-h | --help)
+		echo "Usage: $0 [--with-chrome-devtools]"
+		echo "  --with-chrome-devtools  Enable chrome-devtools-mcp (disables ollama MCP to stay ≤4 servers)."
+		exit 0
+		;;
+	esac
 done
 
 mkdir -p "$ROOT/.cursor"
 
 SF_ENV='{"Syncfusion_API_Key": "${env:SYNCFUSION_API_KEY}"}'
-if [[ -f "$MCP" ]] && grep -q 'Syncfusion_API_Key_Path' "$MCP" 2>/dev/null; then
-  SF_ENV='{"Syncfusion_API_Key_Path": "'"$ROOT/.cursor/syncfusion-api-key"'"}'
+if [[ -f $MCP ]] && grep -q 'Syncfusion_API_Key_Path' "$MCP" 2>/dev/null; then
+	SF_ENV='{"Syncfusion_API_Key_Path": "'"$ROOT/.cursor/syncfusion-api-key"'"}'
 fi
 
 OLLAMA_BLOCK=""
 CHROME_BLOCK=""
-if [[ "$WITH_CHROME" == true ]]; then
-  CHROME_BLOCK='    "chrome-devtools": {
+if [[ $WITH_CHROME == true ]]; then
+	CHROME_BLOCK='    "chrome-devtools": {
       "command": "npx",
       "args": [
         "-y",
@@ -44,7 +44,7 @@ if [[ "$WITH_CHROME" == true ]]; then
       }
     },'
 else
-  OLLAMA_BLOCK='    "ollama": {
+	OLLAMA_BLOCK='    "ollama": {
       "command": "npx",
       "args": ["-y", "ollama-mcp"],
       "env": {
@@ -53,7 +53,7 @@ else
     },'
 fi
 
-cat > "$MCP" <<EOF
+cat >"$MCP" <<EOF
 {
   "mcpServers": {
     "sf-blazor-mcp": {
@@ -77,7 +77,7 @@ ${OLLAMA_BLOCK}${CHROME_BLOCK}
 EOF
 
 echo "Wrote $MCP (tikr-rag-mcp → $PYTHON)"
-if [[ "$WITH_CHROME" == true ]]; then
-  echo "chrome-devtools-mcp enabled (ollama MCP omitted). Prefetch: npx -y chrome-devtools-mcp@latest --help"
+if [[ $WITH_CHROME == true ]]; then
+	echo "chrome-devtools-mcp enabled (ollama MCP omitted). Prefetch: npx -y chrome-devtools-mcp@latest --help"
 fi
 echo "Restart Cursor or reload MCP servers in Settings → Tools & MCP."

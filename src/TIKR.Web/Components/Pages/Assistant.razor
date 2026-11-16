@@ -20,11 +20,10 @@
 <div class="page-header">
     <div class="page-header-main">
         <h2>Assistant</h2>
-        <p>Your local deputy for town documents, the vault, and how to use TIKR.</p>
     </div>
     <div class="page-header-actions">
         <PageTourButton Route="/assistant" />
-        <PageHelp DataTour="@ClerkTourIds.HelpAssistant" HelpText="Ask about deadlines, documents, how TIKR works, or full-screen PDF tools (Syncfusion). Chat memory follows this computer’s clerk (Deb Dillon or Paige Lindo). Ordinary answers use the local helper (Ollama on the NAS). Harder questions can use the advanced helper (Grok) when it is turned on in Settings. Clear conversation keeps remembered facts." />
+        <PageHelp DataTour="@ClerkTourIds.HelpAssistant" HelpText="Ask about deadlines, documents, or how TIKR works. Clear conversation keeps remembered facts." />
     </div>
 </div>
 
@@ -71,9 +70,6 @@
                     </li>
                 }
             </ul>
-            <p class="text-muted mb-0" style="font-size:0.85rem;">
-                Say “my birthday is…”, “call me…”, or “remember that…” to teach the assistant. Facts survive Clear conversation.
-            </p>
         </CardContent>
     </SfCard>
 }
@@ -96,15 +92,11 @@
 </div>
 
 <div class="mt-3" data-tour="@ClerkTourIds.AsstAdvanced">
-    <label class="me-2">Vault search scope:</label>
+    <SfTooltip Content="Limits answers to one kind of note." Position="Position.TopCenter">
+        <label class="me-2">Which notes to search</label>
+    </SfTooltip>
     <SfDropDownList TValue="string" TItem="string" DataSource="@_vaultCategoryOptions" @bind-Value="_vaultCategoryFilter" Width="220px" />
     <SfButton CssClass="tikr-action-btn ms-2" IsPrimary="false" Content="Clear conversation" OnClick="ClearConversationAsync"></SfButton>
-    @if (!string.IsNullOrEmpty(_routeNote))
-    {
-        <SfTooltip Content="Local answers use Ollama on the NAS. Harder questions can use Grok when it is turned on in Settings." Position="Position.TopCenter">
-            <p class="mt-2 text-muted" data-tour="assistant-route-note">@_routeNote</p>
-        </SfTooltip>
-    }
     @if (!string.IsNullOrEmpty(_advancedNote))
     {
         <p class="mt-2 text-muted">@_advancedNote</p>
@@ -162,7 +154,6 @@
     private string? _proactiveBrief;
     private List<string> _suggestionChips = ProductHelpCatalog.DefaultSuggestionChips.ToList();
     private string _advancedNote = "";
-    private string _routeNote = "";
     private string? _lastPrompt;
     private bool _grokEnabled;
     private CancellationTokenSource? _streamingCts;
@@ -387,7 +378,6 @@
 
             // Initialize the response so the SfAIAssistView knows to render an assistant message for this prompt.
             args.Response = string.Empty;
-            _routeNote = "";
 
             bool ollamaOk = true;
             try
@@ -528,7 +518,6 @@
             var html = Markdown.ToHtml(replyMarkdown);
             args.Response = html;
             await SafeUpdateResponseAsync(html);
-            _routeNote = "Answered by the local helper.";
 
             AssistantPromptBuilder.AppendTurn(_modelHistory, prompt, replyMarkdown);
             await PersistTurnAsync(prompt, replyMarkdown);
@@ -656,15 +645,6 @@
         await SafeUpdateResponseAsync(html);
 
         var usedGrok = result?.UsedGrok == true;
-        var localDidAnswer = usedLocalStream || (result is { GrokAttemptFailed: true } && !IsNoModelAnswer(result.Answer));
-        _routeNote = result switch
-        {
-            { UsedGrok: true } => "Answered by the advanced helper.",
-            _ when localDidAnswer => "The advanced helper did not answer. This reply is from the local helper.",
-            null => "Neither helper could answer.",
-            { GrokAttemptFailed: true } => "Neither helper could answer.",
-            _ => "Answered by the local helper."
-        };
 
         AssistantPromptBuilder.AppendTurn(_modelHistory, prompt, replyMarkdown);
         await PersistTurnAsync(prompt, replyMarkdown);
@@ -732,7 +712,6 @@
         _modelHistory.Clear();
         _assistPrompts = [];
         _lastPrompt = null;
-        _routeNote = "";
 
         try
         {

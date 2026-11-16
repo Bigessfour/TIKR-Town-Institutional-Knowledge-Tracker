@@ -75,7 +75,7 @@ public class CalendarPageTests : ClerkTestContext
         SetRendererInfo(new RendererInfo("Server", true));
 
         var cut = RenderComponent<Calendar>();
-        cut.WaitForAssertion(() => cut.Markup.Should().Contain("Apply inventory contact"));
+        cut.WaitForAssertion(() => cut.Markup.Should().Contain("Add a contact to a deadline"));
         cut.Markup.Should().Contain("calendar-contact-picker");
     }
 

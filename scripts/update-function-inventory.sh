@@ -22,12 +22,12 @@ cd "$REPO_ROOT"
 
 PERSONAL_PY="$HOME/.cursor/skills/function-inventory/scripts/update-function-inventory.py"
 
-if [[ -x "$PERSONAL_PY" ]] || [[ -f "$PERSONAL_PY" && -x "$(command -v python3)" ]]; then
-  echo "[function-inventory] Using personal Python lightweight tracker..."
-  python3 "$PERSONAL_PY" . --output "docs/function-inventory.generated.md"
-  echo ""
-  echo "Tip: when the summary shows 0 without proof, run ./scripts/done-detector.sh for the final system gate."
-  exit $?
+if [[ -x $PERSONAL_PY ]] || [[ -f $PERSONAL_PY && -x "$(command -v python3)" ]]; then
+	echo "[function-inventory] Using personal Python lightweight tracker..."
+	python3 "$PERSONAL_PY" . --output "docs/function-inventory.generated.md"
+	echo ""
+	echo "Tip: when the summary shows 0 without proof, run ./scripts/done-detector.sh for the final system gate."
+	exit $?
 fi
 
 echo "[function-inventory] Personal Python scanner not found."
@@ -39,15 +39,15 @@ OUTPUT="docs/function-inventory.generated.md"
 mkdir -p "$(dirname "$OUTPUT")"
 
 {
-  echo "# TIKR Function Inventory (fallback)"
-  echo "Generated: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
-  echo ""
-  echo "Run the personal Python scanner for full function + proof tracking."
-  echo ""
-  if command -v rg >/dev/null; then
-    echo "## Quick API surface"
-    rg --type cs 'app\.Map(Get|Post|Put|Delete)|MapGroup' src/TIKR.Api --no-heading | head -30 || true
-  fi
-} > "$OUTPUT"
+	echo "# TIKR Function Inventory (fallback)"
+	echo "Generated: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+	echo ""
+	echo "Run the personal Python scanner for full function + proof tracking."
+	echo ""
+	if command -v rg >/dev/null; then
+		echo "## Quick API surface"
+		rg --type cs 'app\.Map(Get|Post|Put|Delete)|MapGroup' src/TIKR.Api --no-heading | head -30 || true
+	fi
+} >"$OUTPUT"
 
 echo "Wrote $OUTPUT (limited fallback)"

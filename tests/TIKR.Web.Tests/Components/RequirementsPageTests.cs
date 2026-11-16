@@ -42,7 +42,7 @@ public class RequirementsPageTests : ClerkTestContext
 
         var cut = RenderComponent<Requirements>();
 
-        cut.Markup.Should().Contain("AI Scan uploaded doc");
+        cut.Markup.Should().Contain("Scan a form");
         cut.Markup.Should().Contain("e-upload");
     }
 

@@ -137,23 +137,23 @@ public static class ProductHelpCatalog
         new(
             "documents-upload",
             "Upload today's mail",
-            "Open Document Library. Use the large uploader at the top (drag and drop). Files save to NAS storage. AI can suggest tags and folders after upload. Keep for Assistant context unless the filing is one-time/transitory.",
+            "Open Document Library. Use Add files (or drag and drop). Files save to town storage. AI can suggest tags and folders after upload. Keep for Assistant context unless the filing is one-time/transitory.",
             "/documents",
             ["upload", "mail", "document", "library", "drag", "drop", "tag"]),
 
         new(
             "documents-fullscreen",
-            "Open document full screen workspace",
-            "In Document Library, select a document, then Open Full Screen (or double-click). This opens the Syncfusion document workspace for PDF (Smart PDF), Word, or Spreadsheet. Home dashboard can open linked docs in a lighter workspace.",
+            "Open document workspace to edit",
+            "In Document Library, select a document, then Open & edit (or double-click). This opens the Syncfusion document workspace for PDF (Smart PDF), Word, or Spreadsheet. Home dashboard can open linked docs in a lighter workspace.",
             "/documents",
-            ["full", "screen", "workspace", "open", "pdf", "word", "excel", "spreadsheet"]),
+            ["edit", "workspace", "open", "pdf", "word", "excel", "spreadsheet", "full", "screen"]),
 
         new(
             "save-to-nas",
-            "Save PDF or Office edits to the NAS",
-            "In Full Screen workspace, make annotations or edits, then click Save to NAS (or Save changes to NAS). Wait for the success toast. Closing with unsaved changes asks you to confirm discard. Do not use browser refresh mid-edit.",
+            "Save PDF or Office edits and refresh Assistant",
+            "In the document workspace, make annotations or edits, then click Save. Wait for the success toast — the file is written to the library and Assistant context is refreshed. Closing with unsaved changes asks you to confirm discard. Do not use browser refresh mid-edit.",
             "/documents",
-            ["save", "nas", "persist", "annotation", "edit", "unsaved"]),
+            ["save", "nas", "persist", "annotation", "edit", "unsaved", "assistant", "rag"]),
 
         new(
             "smart-redact",
@@ -189,6 +189,13 @@ public static class ProductHelpCatalog
             "Select a document → Re-tag with AI (or bulk re-tag). Ollama suggests tags and folder. Accept or dismiss. Needs Ollama running. Heuristics fill gaps when the model is thin.",
             "/documents",
             ["retag", "tag", "folder", "ai", "classify"]),
+
+        new(
+            "document-intake-scan",
+            "Scan a document for deadlines and contacts",
+            "After upload (or More actions → Scan for deadlines), TIKR builds a confirm brief of due dates, contacts, and action items. Add to Calendar writes Requirements (shown on Calendar); Save contacts updates Vault. Scans run on the NAS by default. Settings → Use advanced AI for document deadline scans (off by default) may send a redacted text excerpt only — never the raw PDF.",
+            "/documents",
+            ["intake", "deadline", "scan", "due", "contact", "calendar", "grok", "redacted"]),
 
         new(
             "vault",

@@ -3,7 +3,4 @@ title = "TIKR gitleaks config"
 
 [allowlist]
 description = "Test fixtures and docker env template placeholders"
-paths = [
-  '''tests/''',
-  '''docker/\.env\.example''',
-]
+paths = ['''tests/''', '''docker/\.env\.example''']

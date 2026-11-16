@@ -6,25 +6,25 @@ cd "$ROOT"
 
 LICENSE_KEY="${SYNCFUSION_LICENSE_KEY:-}"
 if [ -z "$LICENSE_KEY" ]; then
-  echo "SYNCFUSION_LICENSE_KEY required" >&2
-  exit 1
+	echo "SYNCFUSION_LICENSE_KEY required" >&2
+	exit 1
 fi
 
 BACKUP="$(mktemp)"
 cp "$ROOT/docker/.env" "$BACKUP"
 restore_env() {
-  cp "$BACKUP" "$ROOT/docker/.env"
-  rm -f "$BACKUP"
-  docker compose -f "$ROOT/docker/docker-compose.yml" -f "$ROOT/docker/docker-compose.ship-proof.yml" down >/dev/null 2>&1 || true
+	cp "$BACKUP" "$ROOT/docker/.env"
+	rm -f "$BACKUP"
+	docker compose -f "$ROOT/docker/docker-compose.yml" -f "$ROOT/docker/docker-compose.ship-proof.yml" down >/dev/null 2>&1 || true
 }
 trap restore_env EXIT
 
 cp "$ROOT/docker/.env.example" "$ROOT/docker/.env"
 {
-  echo "SYNCFUSION_LICENSE_KEY=${LICENSE_KEY}"
-  echo "USE_SYNCFUSION_AGENT_TOOLS=true"
-  echo 'TIKR_STORAGE_LABEL="Synology NAS"'
-} >> "$ROOT/docker/.env"
+	echo "SYNCFUSION_LICENSE_KEY=${LICENSE_KEY}"
+	echo "USE_SYNCFUSION_AGENT_TOOLS=true"
+	echo 'TIKR_STORAGE_LABEL="Synology NAS"'
+} >>"$ROOT/docker/.env"
 
 API_URL="http://localhost:15000"
 WEB_URL="http://localhost:18080"
@@ -71,7 +71,7 @@ cd "$ROOT/tests/e2e"
 npm ci
 npx playwright install chromium
 TIKR_E2E_BASE_URL="$WEB_URL" SYNCFUSION_LICENSE_KEY="$LICENSE_KEY" \
-  npx playwright test requirements-agent-scan.spec.ts clerk-smoke.spec.ts --reporter=list --timeout=120000
+	npx playwright test requirements-agent-scan.spec.ts clerk-smoke.spec.ts --reporter=list --timeout=120000
 cd "$ROOT"
 
 docker compose -f "$ROOT/docker/docker-compose.yml" -f "$ROOT/docker/docker-compose.ship-proof.yml" down

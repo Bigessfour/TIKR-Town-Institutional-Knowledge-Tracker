@@ -1,6 +1,5 @@
 using Bunit;
 using FluentAssertions;
-using Microsoft.AspNetCore.Http;
 using TIKR.Web.Components.Pages;
 
 namespace TIKR.Web.Tests.Components;
@@ -8,14 +7,13 @@ namespace TIKR.Web.Tests.Components;
 public class ErrorPageTests : TestContext
 {
     [Fact]
-    public void Error_ShowsRequestIdFromHttpContext()
+    public void Error_ShowsAClerkSentence()
     {
-        var httpContext = new DefaultHttpContext();
-        httpContext.TraceIdentifier = "trace-abc-123";
+        var cut = RenderComponent<Error>();
 
-        var cut = RenderComponent<Error>(p => p.AddCascadingValue(httpContext));
-
-        cut.Markup.Should().Contain("trace-abc-123");
-        cut.Markup.Should().Contain("Request ID");
+        cut.Markup.Should().Contain("Something went wrong.");
+        cut.Markup.Should().Contain("Go back and try again.");
+        cut.Markup.Should().NotContain("Request ID");
+        cut.Markup.Should().NotContain("Development Mode");
     }
 }

@@ -3,11 +3,11 @@
 set -euo pipefail
 
 env_file_upsert() {
-  local file="$1"
-  local key="$2"
-  local value="$3"
+	local file="$1"
+	local key="$2"
+	local value="$3"
 
-  python3 - "$file" "$key" "$value" <<'PY'
+	python3 - "$file" "$key" "$value" <<'PY'
 import os
 import re
 import sys
@@ -42,20 +42,20 @@ PY
 }
 
 ensure_docker_env_file() {
-  local root="$1"
-  local env_file="$root/docker/.env"
-  local example="$root/docker/.env.example"
+	local root="$1"
+	local env_file="$root/docker/.env"
+	local example="$root/docker/.env.example"
 
-  if [[ -f "$env_file" ]]; then
-    printf '%s' "$env_file"
-    return 0
-  fi
+	if [[ -f $env_file ]]; then
+		printf '%s' "$env_file"
+		return 0
+	fi
 
-  if [[ ! -f "$example" ]]; then
-    echo "Missing $example — cannot create docker/.env." >&2
-    return 1
-  fi
+	if [[ ! -f $example ]]; then
+		echo "Missing $example — cannot create docker/.env." >&2
+		return 1
+	fi
 
-  cp "$example" "$env_file"
-  printf '%s' "$env_file"
+	cp "$example" "$env_file"
+	printf '%s' "$env_file"
 }

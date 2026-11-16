@@ -58,7 +58,7 @@ public static class ClerkTourCatalog
     [
         new(Sel(ClerkTourIds.HelpRequirements), "Page help", "How exports, AI scan, and Colorado seeds work on this page.", "/requirements"),
         new(Sel(ClerkTourIds.ReqAdd), "Add requirement", "Create town-specific deadlines beyond pre-seeded Colorado items.", "/requirements"),
-        new(Sel(ClerkTourIds.ReqExportCsv), "Export CSV", "Download the grid for council packets or your own tracking.", "/requirements"),
+        new(Sel(ClerkTourIds.ReqExportCsv), "Spreadsheet", "Download the grid for council packets or your own tracking.", "/requirements"),
         new(Sel(ClerkTourIds.ReqFilters), "Search and filters", "Narrow by title, category, urgency, or show completed items.", "/requirements"),
         new(Sel(ClerkTourIds.ReqGrid), "Requirements grid", "Select a row to edit, mark complete, or delete.", "/requirements"),
     ];
@@ -71,10 +71,10 @@ public static class ClerkTourCatalog
 
     private static IReadOnlyList<ClerkTourStep> GetDocumentsPageSteps() =>
     [
-        new(Sel(ClerkTourIds.HelpDocuments), "Page help", "Upload, AI tagging, and NAS storage explained.", "/documents"),
-        new(Sel(ClerkTourIds.DocUploader), "Upload documents", "Drag and drop or browse — files stay on your Synology.", "/documents"),
+        new(Sel(ClerkTourIds.HelpDocuments), "Page help", "Add files, search, Open & edit, then Save to refresh Assistant context.", "/documents"),
+        new(Sel(ClerkTourIds.DocUploader), "Add files", "Open Add files to drag and drop or browse — files stay on town storage.", "/documents"),
         new(Sel(ClerkTourIds.DocSearch), "Search mode", "Full-text keyword search or semantic (meaning-based) search.", "/documents"),
-        new(Sel(ClerkTourIds.DocLibrary), "Folders and grid", "Browse folders, select rows, and preview on the right — PDF Viewer, Word, or Spreadsheet by file type.", "/documents"),
+        new(Sel(ClerkTourIds.DocLibrary), "Folders and grid", "Browse folders, select a row, then Open & edit to work in the document workspace.", "/documents"),
     ];
 
     private static IReadOnlyList<ClerkTourStep> GetAssistantPageSteps() =>

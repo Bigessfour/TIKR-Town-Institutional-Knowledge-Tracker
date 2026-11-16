@@ -152,6 +152,33 @@ public class CognitoGateCoverageTests
     }
 
     [Fact]
+    public void PublicOrigin_UsesHttpsForTheCallbackAndIgnoresPlainHttp()
+    {
+        var http = new DefaultHttpContext();
+        http.Request.Scheme = "http";
+        http.Request.Host = new HostString("127.0.0.1", 8080);
+        var config = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
+        {
+            [CognitoSilentAuth.PublicOriginConfigKey] = "https://mr-storage.tail57aa13.ts.net:8444/"
+        }).Build();
+
+        CognitoSilentAuth.PublicOrigin(config).Should().Be("https://mr-storage.tail57aa13.ts.net:8444");
+        CognitoSilentAuth.RedirectUri(http.Request, config)
+            .Should().Be("https://mr-storage.tail57aa13.ts.net:8444/auth/cognito-callback");
+        CognitoSilentAuth.LogoutUri(http.Request, config)
+            .Should().Be("https://mr-storage.tail57aa13.ts.net:8444/");
+        CognitoSilentAuth.SessionCookie(http.Request, config).Secure.Should().BeTrue();
+
+        var plain = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
+        {
+            [CognitoSilentAuth.PublicOriginConfigKey] = "http://mr-storage:8080"
+        }).Build();
+        CognitoSilentAuth.PublicOrigin(plain).Should().BeNull();
+        CognitoSilentAuth.RedirectUri(http.Request, plain)
+            .Should().Be("http://127.0.0.1:8080/auth/cognito-callback");
+    }
+
+    [Fact]
     public void CognitoAccess_RejectsAnonymousAndCopiesGroupsOntoRoles()
     {
         CognitoAccess.IsAllowed((ClaimsPrincipal?)null).Should().BeFalse();

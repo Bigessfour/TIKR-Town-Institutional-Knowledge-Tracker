@@ -19,6 +19,7 @@ public static class FeatureSettingKeys
     public const string LibraryScanIntervalSeconds = "LibraryScanIntervalSeconds";
     public const string LibraryScanMaxImports = "LibraryScanMaxImports";
     public const string EmailInboxPath = "EmailInboxPath";
+    public const string UseGrokForDocumentIntake = "UseGrokForDocumentIntake";
 }
 
 public static class DocumentFolderSettingKeys

@@ -739,9 +739,10 @@ public static class DocumentUiMessages
     public static string ExtractToVaultInProgress(string fileName) => $"Extracting text/tables from {fileName}…";
     public static string ExtractToVaultSuccess(string fileName) => $"Extracted text/tables from {fileName} into Knowledge Vault.";
 
-    public static string WorkspaceSaveSuccess(string fileName) => $"Saved \"{fileName}\" to NAS.";
+    public static string WorkspaceSaveSuccess(string fileName) =>
+        $"Saved \"{fileName}\" to the library. Assistant context was refreshed.";
     public static string WorkspaceSaveFailed(string? detail = null) =>
-        string.IsNullOrWhiteSpace(detail) ? "Could not save document to NAS." : $"Could not save to NAS: {detail}";
+        string.IsNullOrWhiteSpace(detail) ? "Could not save document to the library." : $"Could not save: {detail}";
     public static string WorkspaceDirtyDiscardPrompt() =>
         "You have unsaved changes. Discard them and close?";
     public static string PdfSaveInProgress() => "Saving PDF annotations to NAS…";

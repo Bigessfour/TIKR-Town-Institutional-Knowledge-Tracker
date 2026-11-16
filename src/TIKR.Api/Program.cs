@@ -1227,6 +1227,10 @@ api.MapPut("/ai/feature-settings", async (UpdateFeatureSettingsRequest request, 
         return Results.BadRequest(new { error = ex.Message });
     }
 });
+api.MapGet("/settings/browse-folders", (
+    string? path,
+    string? q,
+    IDataFolderBrowseService browse) => Results.Ok(browse.Browse(path, q)));
 api.MapGet("/ai/dashboard-priorities", async (IHybridAiService ai) => await ai.GetDashboardPrioritiesAsync());
 api.MapGet("/dashboard/summary", async (IDashboardService dashboard) =>
     Results.Ok(await dashboard.GetSummaryAsync()));
@@ -1241,6 +1245,67 @@ api.MapPost("/ai/tag-document", async (TagDocumentRequest request, IHybridAiServ
         return Results.NotFound(new { error = ex.Message });
     }
 });
+
+api.MapPost("/documents/{id:guid}/intake-scan", async (
+    Guid id,
+    IDocumentIntakeScanService intake,
+    CancellationToken ct) =>
+{
+    try
+    {
+        return Results.Ok(await intake.ScanAsync(id, ct));
+    }
+    catch (KeyNotFoundException ex)
+    {
+        return Results.NotFound(new { error = ex.Message });
+    }
+    catch (InvalidOperationException ex)
+    {
+        return Results.BadRequest(new { error = ex.Message });
+    }
+});
+
+api.MapGet("/documents/{id:guid}/intake-brief", async (
+    Guid id,
+    IDocumentIntakeScanService intake,
+    CancellationToken ct) =>
+{
+    var brief = await intake.GetPendingAsync(id, ct);
+    return brief is null ? Results.NoContent() : Results.Ok(brief);
+});
+
+api.MapPost("/documents/{id:guid}/intake-brief/accept", async (
+    Guid id,
+    AcceptDocumentIntakeBriefRequest? request,
+    IDocumentIntakeScanService intake,
+    IAuditService audit,
+    ICurrentUserService currentUser,
+    CancellationToken ct) =>
+{
+    try
+    {
+        return Results.Ok(await intake.AcceptAsync(
+            id,
+            request ?? new AcceptDocumentIntakeBriefRequest(),
+            audit,
+            currentUser,
+            ct));
+    }
+    catch (KeyNotFoundException ex)
+    {
+        return Results.NotFound(new { error = ex.Message });
+    }
+});
+
+api.MapPost("/documents/{id:guid}/intake-brief/dismiss", async (
+    Guid id,
+    IDocumentIntakeScanService intake,
+    CancellationToken ct) =>
+{
+    await intake.DismissAsync(id, ct);
+    return Results.NoContent();
+});
+
 api.MapGet("/documents/folder-proposals", async (IDocumentFolderCatalog catalog, CancellationToken ct) =>
     Results.Ok(await catalog.ListProposalsAsync(ct)));
 api.MapPost("/documents/folder-proposals/accept", async (

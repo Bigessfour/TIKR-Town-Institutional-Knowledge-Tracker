@@ -1039,6 +1039,71 @@ html[data-theme="high-contrast"] .tikr-skeleton-row {
    No clipping on common sizes (320px phone -> 1024 tablet); desktop + print preserved.
    ========================================================= */
 
+/* Documents command bar: view + search + upload in one band */
+.documents-command-bar {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+}
+
+.documents-command-bar-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.65rem 1rem;
+}
+
+.documents-command-bar .mode-toggle {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.documents-command-search {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem 0.65rem;
+    flex: 1 1 18rem;
+    min-width: 0;
+}
+
+.documents-command-search .search-box,
+.documents-command-search .e-input-group {
+    flex: 1 1 14rem;
+    min-width: 12rem;
+}
+
+.documents-command-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem;
+    margin-left: auto;
+}
+
+.documents-command-bulk {
+    margin: 0;
+}
+
+.documents-uploader-compact {
+    margin: 0;
+    padding: 0.75rem 1rem;
+}
+
+.documents-ai-banners {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.documents-inspector-more {
+    margin-top: 0.5rem;
+}
+
 /* Flex hosts for 100% propagation (Documents, Requirements, Vault, Assistant) */
 .documents-splitter-host,
 .requirements-grid-host,
@@ -1112,6 +1177,19 @@ html[data-theme="high-contrast"] .tikr-skeleton-row {
     border: 1px solid var(--tikr-border, #dee2e6);
     border-radius: 10px;
     background: var(--tikr-surface-alt, rgba(13, 110, 253, 0.06));
+}
+
+.tikr-tip-host {
+    display: inline-block;
+}
+
+.tikr-tip-host-block {
+    display: block;
+}
+
+.tikr-tip-host .e-btn:disabled,
+.tikr-tip-host .e-disabled {
+    pointer-events: none;
 }
 
 .doc-open-fullscreen-btn {
@@ -1788,4 +1866,53 @@ html .tikr-theme-bar select {
     min-height: 44px;
     font-size: 14px;
     line-height: 20px;
+}
+
+/* Settings folder path picker (browse under allowlisted data roots) */
+.folder-path-picker-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: flex-start;
+}
+
+.folder-path-picker-row .folder-path-picker-input,
+.folder-path-picker-row .e-control-wrapper {
+    flex: 1 1 12rem;
+    min-width: 0;
+}
+
+.folder-path-picker-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    max-height: 16rem;
+    overflow: auto;
+    border: 1px solid var(--color-border, #444);
+    border-radius: 0.35rem;
+}
+
+.folder-path-picker-item {
+    display: block;
+    width: 100%;
+    text-align: left;
+    background: transparent;
+    border: 0;
+    border-bottom: 1px solid var(--color-border, #444);
+    color: inherit;
+    padding: 0.65rem 0.85rem;
+    cursor: pointer;
+    font: inherit;
+}
+
+.folder-path-picker-item:hover,
+.folder-path-picker-item:focus-visible {
+    background: color-mix(in srgb, var(--color-accent, #5b8def) 18%, transparent);
+    outline: none;
+}
+
+.folder-path-picker-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
 }

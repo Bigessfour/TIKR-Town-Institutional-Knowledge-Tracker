@@ -2,13 +2,13 @@
 <!-- Do NOT edit manually. Lightweight correctness-surface tracker. -->
 
 # Function Inventory — tikr-town-institutional-knowledge-tracker
-Generated: 2026-11-15T23:29:33.866551+00:00
+Generated: 2026-11-16T18:18:23.915987+00:00
 **Stack:** C#/Blazor
 **Tracking mode:** `surfaces`
 **Scan roots:** `src`
-**Configured surfaces:** 23 (from `.function-inventory.json` `surfaces` allowlist)
+**Configured surfaces:** 24 (from `.function-inventory.json` `surfaces` allowlist)
 
-**Summary:** 23 correctness surfaces | 23 with proof | 0 without proof
+**Summary:** 24 correctness surfaces | 24 with proof | 0 without proof
 This list is the **correctness queue** — resident/clerk-critical pages, services, and handlers only. Tiny helpers, Angular route paths, and demoted UI shells are omitted.
 
 Ship gate remains project acceptance / smoke checklists — inventory count alone is not “done.”
@@ -47,8 +47,9 @@ Ship gate remains project acceptance / smoke checklists — inventory count alon
 | P1 | Core Service | DashboardService.DashboardService | src/TIKR.Infrastructure/Services/DashboardService.cs:9 | tests/TIKR.Infrastructure.Tests/Services/DashboardServiceTes... | has logic |
 | P1 | Core Service | FeatureSettingsService.FeatureSettingsService | src/TIKR.Infrastructure/Services/FeatureSettingsService.cs:20 | tests/TIKR.Infrastructure.Tests/Services/FeatureSettingsServ... | has logic |
 | P1 | Core Service | HybridAiService.HybridAiService | src/TIKR.Infrastructure/Services/HybridAiService.cs:17 | tests/TIKR.Infrastructure.Tests/Services/HybridAiServiceTest... | has logic |
+| P1 | Core Service | DocumentIntakeScanService.DocumentIntakeScanService | src/TIKR.Infrastructure/Services/DocumentIntakeScanService.cs:17 | tests/TIKR.Infrastructure.Tests/Services/DocumentIntakeScanS... | has logic |
 | P1 | Core Service | ContactService.ContactService | src/TIKR.Infrastructure/Services/ContactService.cs:13 | tests/TIKR.Infrastructure.Tests/Services/ContactServiceTests... | has logic |
-| P1 | Core Service | RuntimeSecretsStore.RuntimeSecretsStore | src/TIKR.Infrastructure/Services/RuntimeSecretsStore.cs:21 | tests/TIKR.Infrastructure.Tests/Services/RuntimeSecretsStore... | has logic |
+| P2 | Core Service | RuntimeSecretsStore.RuntimeSecretsStore | src/TIKR.Infrastructure/Services/RuntimeSecretsStore.cs:21 | tests/TIKR.Infrastructure.Tests/Services/RuntimeSecretsStore... | has logic |
 | P2 | Other Public | Login.Login | src/TIKR.Web/Components/Pages/Login.razor:1 | tests/TIKR.Api.Tests/Endpoints/ChatHistoryEndpointTests.cs, ... | has logic |
 | P2 | Other Public | Requirements.Requirements | src/TIKR.Web/Components/Pages/Requirements.razor:1 | tests/e2e/page-readiness.spec.ts, tests/e2e/clerk-smoke.spec... | has logic |
 | P2 | Other Public | Documents.Documents | src/TIKR.Web/Components/Pages/Documents.razor:1 | tests/TIKR.SyncfusionDocuments.Tests/SyncfusionDocumentOcrSe... | has logic |
@@ -60,7 +61,7 @@ Ship gate remains project acceptance / smoke checklists — inventory count alon
 | P2 | Other Public | Home.Home | src/TIKR.Web/Components/Pages/Home.razor:1 | tests/TIKR.Web.Tests/Components/HomePageTests.cs | has logic |
 | P2 | Other Public | Calendar.Calendar | src/TIKR.Web/Components/Pages/Calendar.razor:1 | tests/e2e/page-readiness.spec.ts, tests/TIKR.Web.Tests/Compo... | has logic |
 | P2 | Core Service | ChatClerkIdentityService.ChatClerkIdentityService | src/TIKR.Web/Services/ChatClerkIdentityService.cs:11 | tests/TIKR.Web.Tests/Services/WebServicesProofTests.cs | small body |
-| P2 | Core Service | ClerkUserGuideService.ClerkUserGuideService | src/TIKR.Web/Services/ClerkUserGuideService.cs:2 | tests/TIKR.Web.Tests/Services/WebServicesProofTests.cs | has logic |
+| P2 | Core Service | ClerkUserGuideService.ClerkUserGuideService | src/TIKR.Web/Services/ClerkUserGuideService.cs:2 | tests/TIKR.Web.Tests/Components/ClerkHelpControlTests.cs, te... | has logic |
 | P2 | Core Service | ClerkTourService.ClerkTourService | src/TIKR.Web/Services/ClerkTourService.cs:7 | tests/TIKR.Web.Tests/ClerkTour/ClerkTourServiceTests.cs | has logic |
 
 ## Philosophy (solo superpower)

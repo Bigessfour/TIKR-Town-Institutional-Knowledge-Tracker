@@ -311,6 +311,26 @@ Update this section when env changes.
 
 ---
 
+## Phase 14 — Document Intake AI Scan
+
+**Status:** done (local)
+
+**Goal:** After Documents import (upload / email / manual scan), produce a clerk-confirm brief of due dates, contacts, and action items. Accept writes Contacts + Requirements (Calendar). Local Ollama + heuristics by default; opt-in redacted Grok when Settings allow.
+
+**Acceptance criteria:**
+
+- [x] `DocumentIntakeBrief` persistence + scan/accept/dismiss API
+- [x] Local heuristics + Ollama JSON; optional `CloudOutboundGuard` Grok path
+- [x] Documents banner + **Scan for deadlines**; upload triggers scan after tag
+- [x] Settings: **Use advanced AI for document deadline scans** (default off)
+- [x] Tests + Spec Kit `010-document-intake-scan`
+
+**Spec:** [specs/010-document-intake-scan/](../specs/010-document-intake-scan/)
+
+**Key paths:** `DocumentIntakeScanService.cs`, `Documents.razor`, `Program.cs` intake routes, `FeatureSettings*`
+
+---
+
 ## Phase 13 adjunct — Surface logging (cross-cutting)
 
 **Status:** done on `main` (same ship slice as Phase 13)
@@ -500,7 +520,7 @@ Update this section with future agent env changes.
 
 ## Current Next Task for Development (from todos + plan)
 
-**Active product slice:** none. Phases 10–13 are on `main`. Clerks open TIKR from the Town Hub card (`http://mr-storage:8080`) with no sign-in.
+**Active product slice:** Phase 14 — Document Intake AI Scan (`specs/010-document-intake-scan/`) implemented locally; merge when CI is green. Phases 10–13 are on `main`. Clerks open TIKR from the Town Hub card at `https://mr-storage.tail57aa13.ts.net:8444` and finish the town sign-in.
 
 **Ship gates (parallel / after Phase 13 merge):**
 
@@ -515,4 +535,4 @@ Update this section with future agent env changes.
 - [x] Clerk path is the NAS web app from the Town Hub card, not `Setup-TIKR.exe`
 - [ ] Phase 0 PR #4 / T031 recorded Deb walkthrough + bus-factor gate (include Vault Contacts + Election playbook + email drop)
 
-**Immediate recommendation:** Deb walkthrough in the browser at `http://mr-storage:8080` ([demo-deb.md](demo-deb.md) Election flow).
+**Immediate recommendation:** Deb walkthrough in the browser at `https://mr-storage.tail57aa13.ts.net:8444` ([demo-deb.md](demo-deb.md) Election flow). The town sign-in finishes after the next `tikr-web` image deploy.

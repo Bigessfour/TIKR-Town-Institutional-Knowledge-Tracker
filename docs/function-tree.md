@@ -16,7 +16,7 @@ flowchart TB
     subgraph ClerkWorkflows["Clerk Workflows"]
         Dashboard["/ (Home)\nUrgency pills • AI summary • Quick actions • Due grid"]
         Requirements["/requirements\nGrid CRUD • CSV • AI Scan • Council agenda builder • Minutes close-out • Packet export • Print"]
-        Documents["/documents\nUpload • Folders/Tree • Semantic search • Download/Preview • Convert"]
+        Documents["/documents\nUpload • Intake scan • Folders/Tree • Semantic search • Download/Preview • Convert"]
         Assistant["/assistant\nSfAIAssistView + per-user DB history\n+ memory facts + RAG"]
         Vault["/vault\nHow-To • Contacts inventory • Tribal • RTE • Copy for new clerk • Voice"]
         Calendar["/calendar\nSfSchedule timeline"]
@@ -70,6 +70,7 @@ flowchart LR
 flowchart TB
     subgraph AILayer["AI / RAG / Agent Layer"]
         Tag["TagDocument (auto on upload)"]
+        Intake["DocumentIntakeScan (heuristics + Ollama; opt-in redacted Grok)"]
         Embed["Embed* (auto on knowledge write + explicit)"]
         Search["SemanticSearch (docs + knowledge)"]
         Advanced["AskAdvanced (Grok when enabled)"]
@@ -80,6 +81,7 @@ flowchart TB
     end
 
     Tag & Embed & Search & Advanced & Priorities & AgentScan --> Hybrid["HybridAiService"]
+    Intake --> IntakeSvc["DocumentIntakeScanService"]
     AgentScan --> Orchestrator
     Orchestrator --> Registry
 ```
@@ -87,6 +89,7 @@ flowchart TB
 ## Key Workflows (High-Level)
 
 - **AI Scan flow**: Upload (Requirements) → agent ProcessUpload → pre-fill dialog (see 05b-requirements-agent-scan.mmd + action-items).
+- **Document intake (Phase 14)**: Upload/email/manual Scan → confirm brief → Accept writes Contacts + Requirements (Calendar); Grok intake opt-in + redacted excerpt only.
 - **Semantic + RAG**: Write triggers embed → search prepends context in Assistant + Documents toggle (05c, 05d).
 - **Generation + persist**: Packet / agenda / minutes / memo / compliance → NAS store + audit.
 - **Council meeting cycle (Feature 006)**: Seeded requirements (Post Agenda / Draft Minutes) → agenda builder PDF → link actioned agenda → minutes preview from linked doc text → structured DOCX → link + optional mark complete.

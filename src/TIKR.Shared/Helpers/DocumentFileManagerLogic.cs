@@ -140,8 +140,28 @@ public static class DocumentFileManagerLogic
     public static Node? GetRoot(IReadOnlyList<Node> nodes) =>
         nodes.FirstOrDefault(n => n.Id == RootId);
 
-    public static IReadOnlyList<Node> GetChildren(IReadOnlyList<Node> nodes, string parentId) =>
-        nodes.Where(n => string.Equals(n.ParentId, parentId, StringComparison.Ordinal)).ToList();
+    public static IReadOnlyList<Node> GetChildren(IReadOnlyList<Node> nodes, string parentId)
+    {
+        var direct = nodes
+            .Where(n => string.Equals(n.ParentId, parentId, StringComparison.Ordinal))
+            .ToList();
+
+        // Root browse: show every file alongside folders so clerks see a full listing
+        // without opening each AI folder. Files remain nested under folders too.
+        if (string.Equals(parentId, RootId, StringComparison.Ordinal))
+        {
+            var files = nodes.Where(n => n.IsFile);
+            return direct
+                .Concat(files)
+                .GroupBy(n => n.Id, StringComparer.Ordinal)
+                .Select(g => g.First())
+                .OrderBy(n => n.IsFile) // folders first
+                .ThenBy(n => n.Name, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+        }
+
+        return direct;
+    }
 
     /// <summary>
     /// Resolve OnRead path ("/", "/Finance/") to the CWD node.

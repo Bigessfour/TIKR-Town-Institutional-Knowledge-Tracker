@@ -17,14 +17,12 @@
     <div class="banner-icon">🚌❤️</div>
     <div>
         <strong>This section protects the town if I get hit by a bus ❤️</strong>
-        <p class="banner-sub">Everything a new clerk needs to keep things running. If anything happens to me, start here.</p>
     </div>
 </div>
 
 <div class="page-header">
     <div class="page-header-main">
         <h2>Knowledge Vault</h2>
-        <p>Institutional memory and succession handoff</p>
     </div>
     <div class="page-header-actions">
         <PageTourButton Route="/vault" />
@@ -39,10 +37,10 @@
           Content="Copy Everything for New Clerk"
           OnClick="CopyAllForNewClerkAsync" />
 </TourAnchor>
-<SfTooltip Content="Builds the handover PDF. If this fails, the Syncfusion document license in Settings may need attention." Position="Position.TopCenter">
+<SfTooltip Content="Builds the handover PDF. If this fails, check the forms license in Settings." Position="Position.TopCenter">
 <SfButton CssClass="tikr-action-btn"
           IconCss="e-icons e-export-pdf"
-          Content="Generate Complete Handover Package"
+          Content="Handover PDF"
           OnClick="GenerateHandoverPackageAsync" />
 </SfTooltip>
 
@@ -180,7 +178,7 @@
                     @if (LegacyContactEntries.Count > 0)
                     {
                         <details class="mt-3">
-                            <summary class="fw-semibold">Legacy vault notes (@LegacyContactEntries.Count)</summary>
+                            <summary class="fw-semibold">Older notes (@LegacyContactEntries.Count)</summary>
                             <SfAccordion>
                                 <AccordionItems>
                                 @foreach (var e in LegacyContactEntries)
@@ -320,8 +318,8 @@
     <div class="editor-section">
         <h4>@(SelectedEntry.Id == Guid.Empty ? "New entry" : $"Editing: {SelectedEntry.Title}")</h4>
         <SfTextBox @bind-Value="_entryTitle" Placeholder="Title" CssClass="mb-2" />
-        <SfTooltip Content="Sentence suggestions use the local helper (Ollama). Press Tab to accept one, then insert it into the note." Position="Position.TopCenter">
-            <p class="text-muted" style="margin:0.25rem 0 0.5rem;">Suggestions appear as you type. Press Tab to accept one, then insert it into the note.</p>
+        <SfTooltip Content="Press Tab to accept a suggestion." Position="Position.TopCenter">
+            <label class="form-label">Draft</label>
         </SfTooltip>
         <SfSmartTextArea UserRole="@_smartVaultRole"
                          UserPhrases="@_smartVaultPhrases"
@@ -330,7 +328,7 @@
                          RowCount="4"
                          Width="100%" />
         <div class="editor-actions" style="margin:0.35rem 0;">
-            <SfButton CssClass="tikr-action-btn" Content="Insert AI draft into editor" OnClick="InsertSmartDraftAsync" Disabled="@(string.IsNullOrWhiteSpace(_smartDraft))" />
+            <SfButton CssClass="tikr-action-btn" Content="Add this to the note" OnClick="InsertSmartDraftAsync" Disabled="@(string.IsNullOrWhiteSpace(_smartDraft))" />
         </div>
         <SfRichTextEditor @bind-Value="EditorContent" Height="220px" />
         <div class="editor-actions">
@@ -396,7 +394,7 @@
                     </div>
                 </div>
                 <div class="d-flex flex-wrap gap-2">
-                    <SfButton CssClass="tikr-action-btn" OnClick="CloseContactDialog">Cancel</SfButton>
+                    <SfButton Type="ButtonType.Button" CssClass="tikr-action-btn" OnClick="CloseContactDialog">Cancel</SfButton>
                     <SfButton Type="ButtonType.Submit" CssClass="tikr-action-btn primary">Save</SfButton>
                 </div>
             </EditForm>

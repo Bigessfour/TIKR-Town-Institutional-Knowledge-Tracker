@@ -22,7 +22,7 @@
     </div>
     <div class="page-header-actions">
         <PageTourButton Route="/calendar" />
-        <PageHelp DataTour="@ClerkTourIds.HelpCalendar" HelpText="Create, edit, move, or delete appointments here — changes save to Requirements on the NAS. Edit Submit to and contact fields on Requirements for who to call. Colorado default deadlines can be moved or edited but not deleted. “Add from plain English” uses the local helper (Ollama)." />
+        <PageHelp DataTour="@ClerkTourIds.HelpCalendar" HelpText="Create, edit, or move deadlines. Built-in Colorado deadlines can be moved, but not deleted." />
     </div>
 </div>
 
@@ -41,7 +41,7 @@
 else
 {
     <div class="calendar-nl mb-3">
-        <SfTooltip Content="The local helper (Ollama) reads the sentence and fills in the deadline." Position="Position.TopCenter">
+        <SfTooltip Content="Reads the sentence and fills in the deadline." Position="Position.TopCenter">
             <label for="cal-nl" class="form-label"><strong>Add from plain English</strong></label>
         </SfTooltip>
         <div class="d-flex gap-2 flex-wrap align-items-start">
@@ -51,7 +51,7 @@ else
                        CssClass="flex-grow-1"
                        Width="100%" />
             <SfButton CssClass="@(_nlBusy || string.IsNullOrWhiteSpace(_nlPrompt) ? "tikr-action-btn" : "tikr-action-btn primary")"
-                      Content="@(_nlBusy ? "Parsing…" : "Create deadline")"
+                      Content="@(_nlBusy ? "Reading…" : "Create deadline")"
                       Disabled="@(_nlBusy || string.IsNullOrWhiteSpace(_nlPrompt))"
                       OnClick="CreateFromNaturalLanguageAsync" />
         </div>
@@ -76,7 +76,7 @@ else
     }
     else
     {
-    <SfSchedule TValue="CalendarEvent" Height="650px" AllowDragAndDrop="true" AllowResizing="true">
+    <SfSchedule TValue="CalendarEvent" Height="650px" Timezone="America/Denver" AllowDragAndDrop="true" AllowResizing="true">
         <ScheduleViews>
             <ScheduleView Option="View.Month"></ScheduleView>
             <ScheduleView Option="View.Week"></ScheduleView>
@@ -87,6 +87,7 @@ else
                 <FieldSubject Name="@nameof(CalendarEvent.Subject)" Validation="@_subjectValidation"></FieldSubject>
                 <FieldStartTime Name="@nameof(CalendarEvent.StartTime)"></FieldStartTime>
                 <FieldEndTime Name="@nameof(CalendarEvent.EndTime)"></FieldEndTime>
+                <FieldIsAllDay Name="@nameof(CalendarEvent.IsAllDay)"></FieldIsAllDay>
                 <FieldDescription Name="@nameof(CalendarEvent.Description)"></FieldDescription>
             </ScheduleField>
         </ScheduleEventSettings>
@@ -101,8 +102,9 @@ else
     @if (_loaded)
     {
         <div class="calendar-contact-picker border rounded p-3 mt-3 mb-2" data-tour="calendar-contact-picker">
-            <label class="form-label fw-semibold">Apply inventory contact to a requirement</label>
-            <p class="text-muted small mb-2">Fills contact name/email/phone and links as primary. Submit-to stays editable on Requirements.</p>
+            <SfTooltip Content="Fills the name, email, and phone." Position="Position.TopCenter">
+                <label class="form-label fw-semibold">Add a contact to a deadline</label>
+            </SfTooltip>
             <div class="d-flex flex-wrap gap-2 align-items-center">
                 <SfDropDownList TValue="Guid?" TItem="RequirementDto"
                                 DataSource="@_requirements"
@@ -142,7 +144,7 @@ else
             <GridColumn Field="@nameof(RequirementDto.ContactName)" HeaderText="Contact" Width="140"></GridColumn>
             <GridColumn Field="@nameof(RequirementDto.Category)" HeaderText="Category" Width="120"></GridColumn>
             <GridColumn Field="@nameof(RequirementDto.IsCompleted)" HeaderText="Done" DisplayAsCheckBox="true" Width="80"></GridColumn>
-            <GridColumn Field="@nameof(RequirementDto.IsSystemSeeded)" HeaderText="CO Default" DisplayAsCheckBox="true" Width="100"></GridColumn>
+            <GridColumn Field="@nameof(RequirementDto.IsSystemSeeded)" HeaderText="Built-in" DisplayAsCheckBox="true" Width="100"></GridColumn>
         </GridColumns>
     </SfGrid>
 }
@@ -159,8 +161,7 @@ else
     private string? _nlStatus;
 
     private string CalendarLicenseTooltip =>
-        "Schedule view needs a valid Syncfusion Blazor license. Install a Blazor v34.1.x key (see Settings), then restart the Web container. "
-        + (BlazorLicense.Detail ?? string.Empty);
+        "The month view needs a forms license. Ask Steve to check Settings.";
     private bool _nlBusy;
     private List<ContactDto> _calContacts = [];
     private Guid? _calRequirementId;
@@ -270,6 +271,21 @@ else
     private static bool IsCalendarRoute(string location) =>
         location.Contains("/calendar", StringComparison.OrdinalIgnoreCase);
 
+    /// <summary>
+    /// All-day deadlines stay on the date Syncfusion stored. Timed edits are converted
+    /// back from the server zone into America/Denver, because the schedule reverses
+    /// that zone before <c>ActionCompleted</c>.
+    /// </summary>
+    private static DateOnly DueDate(CalendarEvent evt)
+    {
+        if (evt.IsAllDay)
+            return DateOnly.FromDateTime(evt.StartTime);
+
+        var denver = TimeZoneInfo.FindSystemTimeZoneById("America/Denver");
+        var wall = DateTime.SpecifyKind(evt.StartTime, DateTimeKind.Unspecified);
+        return DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(wall, TimeZoneInfo.Local, denver));
+    }
+
     private static CalendarEvent ToCalendarEvent(RequirementDto r)
     {
         var start = r.DueDate.ToDateTime(TimeOnly.MinValue);
@@ -290,7 +306,8 @@ else
             Subject = subject,
             Description = description,
             StartTime = start,
-            EndTime = start.AddHours(1),
+            EndTime = start.AddDays(1),
+            IsAllDay = true,
             IsSystemSeeded = r.IsSystemSeeded,
             SubmitTo = r.SubmitTo,
             ContactName = r.ContactName,
@@ -355,14 +372,14 @@ else
         await Api.CreateRequirementAsync(new CreateRequirementRequest(
             title,
             evt.Description,
-            DateOnly.FromDateTime(evt.StartTime),
+            DueDate(evt),
             RecurrenceType.Annual,
             RequirementCategory.Custom,
             evt.SubmitTo,
             evt.ContactName,
             evt.ContactEmail,
             evt.ContactPhone));
-        TikrActionLog.Completed(Logger, "UI.Calendar.Create", $"Title={title} Due={DateOnly.FromDateTime(evt.StartTime):yyyy-MM-dd}");
+        TikrActionLog.Completed(Logger, "UI.Calendar.Create", $"Title={title} Due={DueDate(evt):yyyy-MM-dd}");
     }
 
     private async Task UpdateFromEventAsync(CalendarEvent evt)
@@ -379,7 +396,7 @@ else
         await Api.UpdateRequirementAsync(id, new UpdateRequirementRequest(
             title,
             evt.Description,
-            DateOnly.FromDateTime(evt.StartTime),
+            DueDate(evt),
             existing.Recurrence,
             existing.Category,
             existing.IsCompleted,
@@ -492,6 +509,7 @@ else
         public string? Description { get; set; }
         public DateTime StartTime { get; set; }
         public DateTime EndTime { get; set; }
+        public bool IsAllDay { get; set; }
         public bool IsSystemSeeded { get; set; }
         public string? SubmitTo { get; set; }
         public string? ContactName { get; set; }

@@ -38,7 +38,7 @@ public class LoginPageTests : TestContext
         Services.AddScoped<IAuthSessionService>(_ => new FakeAuthSessionService());
 
         var cut = RenderComponent<Login>();
-        cut.Markup.Should().Contain("Authentication is not enabled");
+        cut.Markup.Should().Contain("Sign-in is off.");
     }
 
     [Fact]

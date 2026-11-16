@@ -8,7 +8,7 @@ namespace TIKR.Web.Tests.Helpers;
 public class DocumentFileManagerMapperTests
 {
     [Fact]
-    public void BuildReadResponse_RootListsFolders()
+    public void BuildReadResponse_RootListsFoldersAndFiles()
     {
         var docs = new List<DocumentDto>
         {
@@ -22,6 +22,7 @@ public class DocumentFileManagerMapperTests
         response.CWD!.Id.Should().Be(DocumentFileManagerLogic.RootId);
         response.Files.Should().NotBeNull();
         response.Files!.Should().Contain(f => f.Name == "Finance" && !f.IsFile);
+        response.Files!.Should().Contain(f => f.IsFile && f.Name == "fee.pdf");
     }
 
     [Fact]

@@ -2,3 +2,5 @@
 ignored:
     - SC1090
     - SC1091
+    # Dockerfiles intentionally use named USER for Synology/NAS friendliness.
+    - DL3066

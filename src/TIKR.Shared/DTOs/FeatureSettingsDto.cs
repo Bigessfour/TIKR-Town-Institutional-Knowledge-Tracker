@@ -22,7 +22,8 @@ public record FeatureSettingsDto(
     string? LibraryScanPath = null,
     int LibraryScanIntervalSeconds = 300,
     int LibraryScanMaxImports = 500,
-    string? EmailInboxPath = null);
+    string? EmailInboxPath = null,
+    bool UseGrokForDocumentIntake = false);
 
 public record UpdateFeatureSettingsRequest(
     string? OllamaHost = null,
@@ -44,4 +45,5 @@ public record UpdateFeatureSettingsRequest(
     string? LibraryScanPath = null,
     int? LibraryScanIntervalSeconds = null,
     int? LibraryScanMaxImports = null,
-    string? EmailInboxPath = null);
+    string? EmailInboxPath = null,
+    bool? UseGrokForDocumentIntake = null);

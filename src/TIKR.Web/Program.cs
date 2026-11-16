@@ -266,7 +266,7 @@ app.MapGet("/auth/cognito-start", (HttpContext http, IConfiguration config) =>
 {
     var returnPath = CognitoSilentAuth.SafeReturnPath(http.Request.Query["return"]);
     var interactive = string.Equals(http.Request.Query["mode"], "login", StringComparison.OrdinalIgnoreCase);
-    var shortCookie = CognitoSilentAuth.SessionCookie(http.Request);
+    var shortCookie = CognitoSilentAuth.SessionCookie(http.Request, config);
     shortCookie.MaxAge = TimeSpan.FromMinutes(10);
     http.Response.Cookies.Append(AuthCookie.AuthReturn, returnPath, shortCookie);
 
@@ -285,7 +285,7 @@ app.MapGet("/auth/cognito-start", (HttpContext http, IConfiguration config) =>
     var url = CognitoSilentAuth.BuildAuthorizeUrl(
         domain,
         CognitoSilentAuth.ClientId(config),
-        CognitoSilentAuth.RedirectUri(http.Request),
+        CognitoSilentAuth.RedirectUri(http.Request, config),
         state,
         CognitoSilentAuth.CreateCodeChallenge(verifier),
         prompt: interactive ? null : "none");
@@ -303,7 +303,7 @@ app.MapGet("/auth/cognito-callback", async (
         ? CognitoSilentAuth.SafeReturnPath(saved)
         : "/";
     var silent = http.Request.Cookies.ContainsKey(AuthCookie.CognitoSilent);
-    var session = CognitoSilentAuth.SessionCookie(http.Request);
+    var session = CognitoSilentAuth.SessionCookie(http.Request, config);
     http.Response.Cookies.Delete(AuthCookie.PkceVerifier);
     http.Response.Cookies.Delete(AuthCookie.AuthReturn);
     http.Response.Cookies.Delete(AuthCookie.CognitoSilent);
@@ -334,7 +334,7 @@ app.MapGet("/auth/cognito-callback", async (
         domain,
         CognitoSilentAuth.ClientId(config),
         config[CognitoSilentAuth.ClientSecretConfigKey],
-        CognitoSilentAuth.RedirectUri(http.Request),
+        CognitoSilentAuth.RedirectUri(http.Request, config),
         code,
         packed[..dot],
         ct);
@@ -383,7 +383,7 @@ app.MapGet("/auth/cognito-logout", (HttpContext http, IConfiguration config) =>
     return Results.Redirect(CognitoSilentAuth.BuildLogoutUrl(
         domain,
         CognitoSilentAuth.ClientId(config),
-        CognitoSilentAuth.LogoutUri(http.Request)));
+        CognitoSilentAuth.LogoutUri(http.Request, config)));
 });
 
 app.MapGet("/auth/cognito-denied", (string? reason) =>

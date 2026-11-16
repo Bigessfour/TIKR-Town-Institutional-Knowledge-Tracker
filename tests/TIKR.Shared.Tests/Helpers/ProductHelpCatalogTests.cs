@@ -28,6 +28,13 @@ public class ProductHelpCatalogTests
     }
 
     [Fact]
+    public void Search_DeadlineScan_ReturnsIntakeHelp()
+    {
+        var hits = ProductHelpCatalog.Search("scan document for deadlines", topK: 3);
+        hits.Should().Contain(h => h.Id == "document-intake-scan");
+    }
+
+    [Fact]
     public void FormatForPrompt_IncludesProductHeader()
     {
         var hits = ProductHelpCatalog.Search("full screen", topK: 2);

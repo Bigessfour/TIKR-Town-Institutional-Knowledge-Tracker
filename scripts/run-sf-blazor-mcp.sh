@@ -5,15 +5,15 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 KEYFILE="$ROOT/.cursor/syncfusion-api-key"
 
-if [[ -f "$KEYFILE" ]]; then
-  Syncfusion_API_Key="$(tr -d '\r\n' < "$KEYFILE")"
-  export Syncfusion_API_Key
+if [[ -f $KEYFILE ]]; then
+	Syncfusion_API_Key="$(tr -d '\r\n' <"$KEYFILE")"
+	export Syncfusion_API_Key
 elif [[ -x "$ROOT/scripts/sync-syncfusion-mcp-key.sh" ]]; then
-  "$ROOT/scripts/sync-syncfusion-mcp-key.sh" >/dev/null 2>&1 || true
-  if [[ -f "$KEYFILE" ]]; then
-    Syncfusion_API_Key="$(tr -d '\r\n' < "$KEYFILE")"
-    export Syncfusion_API_Key
-  fi
+	"$ROOT/scripts/sync-syncfusion-mcp-key.sh" >/dev/null 2>&1 || true
+	if [[ -f $KEYFILE ]]; then
+		Syncfusion_API_Key="$(tr -d '\r\n' <"$KEYFILE")"
+		export Syncfusion_API_Key
+	fi
 fi
 
 exec npx -y @syncfusion/blazor-assistant@latest "$@"

@@ -15,7 +15,7 @@ namespace TIKR.Infrastructure.Data.Migrations
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "10.0.10");
+            modelBuilder.HasAnnotation("ProductVersion", "10.0.14");
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
                 {
@@ -471,6 +471,43 @@ namespace TIKR.Infrastructure.Data.Migrations
                     b.HasIndex("DeletedAt");
 
                     b.ToTable("Documents");
+                });
+
+            modelBuilder.Entity("TIKR.Shared.Entities.DocumentIntakeBrief", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("DocumentId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("JsonPayload")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("ProcessedLocally")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("UsedGrok")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DocumentId");
+
+                    b.HasIndex("DocumentId", "Status");
+
+                    b.ToTable("DocumentIntakeBriefs");
                 });
 
             modelBuilder.Entity("TIKR.Shared.Entities.DocumentVersion", b =>

@@ -15,14 +15,12 @@
     <div class="banner-icon">📋❤️</div>
     <div>
         <strong>Colorado statutory deadlines — your deputy clerk needs this list</strong>
-        <p class="banner-sub">Track what must be filed, when, and with whom. If anything happens to you, this page is the compliance lifeline.</p>
     </div>
 </div>
 
 <div class="page-header">
     <div class="page-header-main">
         <h2>Requirements Manager</h2>
-        <p>Colorado municipal obligations and custom deadlines</p>
     </div>
     <div class="page-header-actions">
         <PageTourButton Route="/requirements" />
@@ -35,10 +33,12 @@
         <SfButton CssClass="tikr-action-btn primary" IsPrimary="true" IconCss="e-icons e-plus" Content="Add requirement" OnClick="OpenCreateDialog" />
     </TourAnchor>
     <TourAnchor TourId="@ClerkTourIds.ReqExportCsv">
-        <SfButton CssClass="tikr-action-btn" IconCss="e-icons e-export" Content="Export CSV" OnClick="ExportCsvAsync" />
+        <SfButton CssClass="tikr-action-btn" IconCss="e-icons e-export" Content="Spreadsheet" OnClick="ExportCsvAsync" />
     </TourAnchor>
-    <SfTooltip Content="Council packet, agenda PDF, compliance spreadsheet, and meeting minutes need the Syncfusion Document SDK license (see Settings)." Position="Position.TopCenter">
-        <SfButton CssClass="tikr-action-btn primary" IsPrimary="true" IconCss="e-icons e-export-pdf" Content="@CouncilPacketButtonLabel" Disabled="@(_generating is not null)" OnClick="GenerateCouncilPacketAsync" />
+    <SfTooltip Content="Council packet, agenda, spreadsheet, and minutes need the forms license in Settings." Position="Position.TopCenter">
+        <span class="tikr-tip-host">
+            <SfButton CssClass="tikr-action-btn primary" IsPrimary="true" IconCss="e-icons e-export-pdf" Content="@CouncilPacketButtonLabel" Disabled="@(_generating is not null)" OnClick="GenerateCouncilPacketAsync" />
+        </span>
     </SfTooltip>
     <SfButton CssClass="tikr-action-btn" IconCss="e-icons e-export-pdf" Content="@AgendaPdfButtonLabel" Disabled="@(_generating is not null)" OnClick="OpenAgendaBuilderDialogAsync" />
     <SfButton CssClass="tikr-action-btn" IconCss="e-icons e-export-excel" Content="@ComplianceExcelButtonLabel" Disabled="@(_generating is not null)" OnClick="DownloadComplianceReportAsync" />
@@ -51,7 +51,7 @@
                     MaxFileSize="52428800">
             <UploaderEvents ValueChange="OnAgentUploadAsync" />
         </SfUploader>
-        <span class="requirements-agent-hint">AI Scan uploaded doc</span>
+        <span class="requirements-agent-hint">Scan a form</span>
     </div>
 </div>
 
@@ -76,7 +76,7 @@
         <input type="checkbox" @bind="_includeCompleted" @bind:after="OnFilterChangedAsync" />
         Show completed
     </label>
-    <SfButton CssClass="tikr-action-btn" Content="Reset Wiley view" OnClick="ResetFiltersToWileyDefaults" />
+    <SfButton CssClass="tikr-action-btn" Content="Clear filters" OnClick="ResetFiltersToWileyDefaults" />
 </div>
 
 @if (_loading)
@@ -117,10 +117,9 @@ else
     {
         <AiSuggestionBanner CssClass="mb-3" aria-busy="true" aria-live="polite">
             <ChildContent>
-                <SfTooltip Content="The scan runs on the Synology NAS (agent-scan). It reads the text and any tables into the requirement form." Position="Position.TopCenter">
+                <SfTooltip Content="Reads the text and tables into the form." Position="Position.TopCenter">
                     <strong>Scanning the document…</strong>
                 </SfTooltip>
-                <div class="banner-body">Reading the text and tables into the requirement form.</div>
             </ChildContent>
         </AiSuggestionBanner>
     }
@@ -130,7 +129,7 @@ else
             <ChildContent>
                 @if (_lastAgentResult is not null)
                 {
-                    <SfTooltip Content="@RequirementWorkflowHelpers.GetExtractionSourceLabel(_lastAgentResult)" Position="Position.TopCenter">
+                    <SfTooltip Content="How this form was read." Position="Position.TopCenter">
                         <span class="extraction-badge @RequirementWorkflowHelpers.GetExtractionBadgeCssClass(_lastAgentResult)">
                             @(_lastAgentResult.UsedSyncfusionTools ? "Full document read" : "Text read")
                         </span>
@@ -172,7 +171,7 @@ else
         <GridColumn Field="@nameof(RequirementDto.ContactName)" HeaderText="Contact" Width="140" />
         <GridColumn Field="@nameof(RequirementDto.Category)" HeaderText="Category" Width="120" />
         <GridColumn Field="@nameof(RequirementDto.Recurrence)" HeaderText="Recurrence" Width="110" />
-        <GridColumn Field="@nameof(RequirementDto.IsSystemSeeded)" HeaderText="CO Default" DisplayAsCheckBox="true" Width="100" />
+        <GridColumn Field="@nameof(RequirementDto.IsSystemSeeded)" HeaderText="Built-in" DisplayAsCheckBox="true" Width="100" />
         <GridColumn Field="@nameof(RequirementDto.IsCompleted)" HeaderText="Done" DisplayAsCheckBox="true" Width="80" />
         <GridColumn HeaderText="Playbook" Width="100">
             <Template>
@@ -209,16 +208,16 @@ else
 <SfDialog @bind-Visible="_showDialog" Width="640px" IsModal="true" ShowCloseIcon="true" Header="@(_editingId is null ? "Add requirement" : "Edit requirement")">
     <DialogTemplates>
         <Content>
-            <p class="text-muted" style="margin-top:0;">Copy notes from email or clipboard, then use <strong>Smart Paste</strong> to fill fields.</p>
             <div class="mb-2">
-                <SfTooltip Content="Smart Paste needs the local helper (Ollama)." Position="Position.TopCenter">
+                <SfTooltip Content="Copy notes from email or a clipboard, then fill the fields." Position="Position.TopCenter">
                     <SfSmartPasteButton Content="Smart Paste from clipboard" CssClass="tikr-action-btn" />
                 </SfTooltip>
             </div>
-            <EditForm Model="_form" OnValidSubmit="SaveAsync">
-                <DataAnnotationsValidator />
+            <SfDataForm ID="requirement-form" Model="_form" ColumnCount="1" Width="100%" OnValidSubmit="SaveAsync">
+                <FormValidator>
+                    <DataAnnotationsValidator />
+                </FormValidator>
                 <ValidationSummary />
-                <SfDataForm Model="_form" ColumnCount="1" Width="100%">
                     <FormItems>
                         <FormItem Field="@nameof(RequirementFormModel.Title)" LabelText="Title" />
                         <FormItem Field="@nameof(RequirementFormModel.Description)" LabelText="Description">
@@ -265,7 +264,7 @@ else
                                                 Width="280px">
                                     <DropDownListFieldSettings Value="Id" Text="Name" />
                                 </SfDropDownList>
-                                <SfButton CssClass="tikr-action-btn" Content="Apply as primary"
+                                <SfButton Type="ButtonType.Button" CssClass="tikr-action-btn" Content="Apply as primary"
                                           Disabled="@(_pickedContactId is null || _contactPickBusy)"
                                           OnClick="ApplyPickedContactAsync" />
                             </div>
@@ -279,7 +278,7 @@ else
                                             @if (linked.IsPrimary == true) { <span class="text-muted">(primary)</span> }
                                             @if (_editingId is not null)
                                             {
-                                                <SfButton CssClass="tikr-action-btn e-small ms-1" Content="Unlink"
+                                                <SfButton Type="ButtonType.Button" CssClass="tikr-action-btn e-small ms-1" Content="Unlink"
                                                           OnClick="() => UnlinkContactAsync(linked.Id)" />
                                             }
                                         </li>
@@ -299,7 +298,6 @@ else
                             </FormItem>
                         }
                     </FormItems>
-                </SfDataForm>
                 @if (_editingId is not null)
                 {
                     <div class="mt-3 border-top pt-3">
@@ -315,7 +313,7 @@ else
                                 {
                                     <li class="d-flex justify-content-between align-items-center gap-2 mb-1">
                                         <span>@linked.FileName</span>
-                                        <SfButton CssClass="tikr-action-btn e-small" Content="Unlink"
+                                        <SfButton Type="ButtonType.Button" CssClass="tikr-action-btn e-small" Content="Unlink"
                                                   OnClick="() => UnlinkDocumentAsync(linked.DocumentId)" />
                                     </li>
                                 }
@@ -329,7 +327,7 @@ else
                                             Width="280px">
                                 <DropDownListFieldSettings Value="Id" Text="@nameof(DocumentDto.FileName)" />
                             </SfDropDownList>
-                            <SfButton CssClass="tikr-action-btn" Content="Attach"
+                            <SfButton Type="ButtonType.Button" CssClass="tikr-action-btn" Content="Attach"
                                       Disabled="@(_attachDocumentId is null || _attachBusy)"
                                       OnClick="AttachDocumentAsync" />
                         </div>
@@ -364,10 +362,10 @@ else
                                                     <SfTextBox @bind-Value="_editChecklistSubmitTo" Placeholder="Submit to" Width="200px" />
                                                 </div>
                                                 <div class="d-flex flex-wrap gap-2">
-                                                    <SfButton CssClass="tikr-action-btn primary e-small" Content="Save step"
+                                                    <SfButton Type="ButtonType.Button" CssClass="tikr-action-btn primary e-small" Content="Save step"
                                                               Disabled="@(string.IsNullOrWhiteSpace(_editChecklistTitle) || _checklistBusy)"
                                                               OnClick="SaveChecklistItemEditAsync" />
-                                                    <SfButton CssClass="tikr-action-btn e-small" Content="Cancel"
+                                                    <SfButton Type="ButtonType.Button" CssClass="tikr-action-btn e-small" Content="Cancel"
                                                               Disabled="@_checklistBusy"
                                                               OnClick="CancelChecklistItemEdit" />
                                                 </div>
@@ -407,10 +405,10 @@ else
                                                     </label>
                                                 </div>
                                                 <div class="d-flex flex-wrap gap-1">
-                                                    <SfButton CssClass="tikr-action-btn e-small" Content="Edit step"
+                                                    <SfButton Type="ButtonType.Button" CssClass="tikr-action-btn e-small" Content="Edit step"
                                                               Disabled="@_checklistBusy"
                                                               OnClick="() => BeginChecklistItemEdit(step)" />
-                                                    <SfButton CssClass="tikr-action-btn e-small danger" Content="Remove"
+                                                    <SfButton Type="ButtonType.Button" CssClass="tikr-action-btn e-small danger" Content="Remove"
                                                               OnClick="() => DeleteChecklistItemAsync(step.Id)" />
                                                 </div>
                                             </div>
@@ -422,7 +420,7 @@ else
                         <div class="d-flex flex-wrap gap-2 align-items-center">
                             <SfTextBox @bind-Value="_newChecklistTitle" Placeholder="New step title" Width="220px" />
                             <SfNumericTextBox TValue="int?" @bind-Value="_newChecklistOffset" Placeholder="Days before due" Width="140px" />
-                            <SfButton CssClass="tikr-action-btn" Content="Add step"
+                            <SfButton Type="ButtonType.Button" CssClass="tikr-action-btn" Content="Add step"
                                       Disabled="@(string.IsNullOrWhiteSpace(_newChecklistTitle) || _checklistBusy)"
                                       OnClick="AddChecklistItemAsync" />
                         </div>
@@ -432,11 +430,11 @@ else
                         }
                     </div>
                 }
-                <div class="mt-3">
-                    <SfButton CssClass="tikr-action-btn" OnClick="CloseDialog">Cancel</SfButton>
-                    <SfButton Type="ButtonType.Submit" CssClass="tikr-action-btn primary">Save</SfButton>
-                </div>
-            </EditForm>
+                    <FormButtons>
+                        <SfButton Type="ButtonType.Button" CssClass="tikr-action-btn" OnClick="CloseDialog">Cancel</SfButton>
+                        <SfButton Type="ButtonType.Submit" CssClass="tikr-action-btn primary">Save</SfButton>
+                    </FormButtons>
+                </SfDataForm>
         </Content>
     </DialogTemplates>
 </SfDialog>
@@ -1697,7 +1695,7 @@ else
         if (ext is ".txt" or ".md" or ".csv")
             return "AI scan failed. Confirm TIKR.Api is running and the file is plain text.";
 
-        return "AI scan failed. For PDF or Office files, set USE_SYNCFUSION_AGENT_TOOLS=true with a valid Syncfusion license — or upload a .txt file.";
+        return "Scan failed. Try a text file, or ask Steve to check the document license in Settings.";
     }
 
     private sealed class RequirementFormModel

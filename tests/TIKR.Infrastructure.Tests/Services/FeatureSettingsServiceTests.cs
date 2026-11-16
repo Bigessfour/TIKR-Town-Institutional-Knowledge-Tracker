@@ -107,6 +107,21 @@ public class FeatureSettingsServiceTests
         await act.Should().ThrowAsync<ArgumentException>();
     }
 
+    [Fact]
+    public async Task UpdateAsync_UseGrokForDocumentIntake_DefaultsOffAndPersists()
+    {
+        await using var db = await TestDbContextFactory.CreateMigratedAsync();
+        var state = new FeatureSettingsState();
+        var sut = CreateService(db, state, environmentName: "Testing");
+
+        var before = await sut.GetAsync();
+        before.UseGrokForDocumentIntake.Should().BeFalse();
+
+        var dto = await sut.UpdateAsync(new UpdateFeatureSettingsRequest(UseGrokForDocumentIntake: true));
+        dto.UseGrokForDocumentIntake.Should().BeTrue();
+        state.Current.UseGrokForDocumentIntake.Should().BeTrue();
+    }
+
     private static IConfiguration ChatModelConfig() =>
         new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>

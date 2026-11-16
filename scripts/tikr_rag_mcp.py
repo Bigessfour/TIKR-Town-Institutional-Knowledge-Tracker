@@ -22,7 +22,9 @@ from typing import Any
 try:
     import requests
 except ImportError:
-    print("Error: 'requests' required. Run ./scripts/setup-python-rag.sh", file=sys.stderr)
+    print(
+        "Error: 'requests' required. Run ./scripts/setup-python-rag.sh", file=sys.stderr
+    )
     sys.exit(1)
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -221,7 +223,9 @@ def build_index(force: bool = False, full: bool = False) -> dict[str, Any]:
     # Old indexes had no fingerprints — one-time migrate: reuse existing vectors, only embed new paths.
     legacy_index = not full and bool(existing.get("chunks")) and not prev_fp
     if legacy_index:
-        log("Legacy index detected (no fingerprints). Migrating: reuse existing embeddings, embed new files only.")
+        log(
+            "Legacy index detected (no fingerprints). Migrating: reuse existing embeddings, embed new files only."
+        )
     if not full:
         for item in existing.get("chunks") or []:
             p = item.get("path") or ""
@@ -243,7 +247,9 @@ def build_index(force: bool = False, full: bool = False) -> dict[str, Any]:
         fp = file_fingerprint(fpath)
         new_fp[rel] = fp
 
-        has_prev = rel in prev_by_path and any((c.get("embedding") or []) for c in prev_by_path[rel])
+        has_prev = rel in prev_by_path and any(
+            (c.get("embedding") or []) for c in prev_by_path[rel]
+        )
         unchanged = prev_fp.get(rel) == fp
         # Reuse prior embeddings when file unchanged, or when migrating a legacy index entry.
         if not full and has_prev and (unchanged or legacy_index):
@@ -262,7 +268,9 @@ def build_index(force: bool = False, full: bool = False) -> dict[str, Any]:
         embeddings: list[list[float]] = [[] for _ in parts]
         if parts:
             with ThreadPoolExecutor(max_workers=EMBED_WORKERS) as pool:
-                futures = {pool.submit(get_embedding, part): i for i, part in enumerate(parts)}
+                futures = {
+                    pool.submit(get_embedding, part): i for i, part in enumerate(parts)
+                }
                 for fut in as_completed(futures):
                     i = futures[fut]
                     try:
@@ -511,7 +519,10 @@ def main() -> None:
                     {
                         "jsonrpc": "2.0",
                         "id": msg_id,
-                        "error": {"code": -32601, "message": f"Unsupported method: {method}"},
+                        "error": {
+                            "code": -32601,
+                            "message": f"Unsupported method: {method}",
+                        },
                     }
                 )
                 continue

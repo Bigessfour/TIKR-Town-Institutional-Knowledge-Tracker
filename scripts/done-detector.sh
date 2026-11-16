@@ -24,22 +24,22 @@ echo "=== Done Detector: Layer 1 (Function Inventory) ==="
 ./scripts/update-function-inventory.sh || true
 
 GEN="docs/function-inventory.generated.md"
-if [[ -f "$GEN" ]]; then
-  if grep -q "0 without proof" "$GEN"; then
-    echo "✅ Function inventory clean (0 without proof found in summary)"
-  else
-    echo "⚠️  Function inventory not yet clean. Review the 'Functions without proof' section before proceeding."
-    echo "   (Run again after curating action-items.md)"
-  fi
+if [[ -f $GEN ]]; then
+	if grep -q "0 without proof" "$GEN"; then
+		echo "✅ Function inventory clean (0 without proof found in summary)"
+	else
+		echo "⚠️  Function inventory not yet clean. Review the 'Functions without proof' section before proceeding."
+		echo "   (Run again after curating action-items.md)"
+	fi
 else
-  echo "⚠️  $GEN not found — run inventory first."
+	echo "⚠️  $GEN not found — run inventory first."
 fi
 
 echo ""
 echo "=== Layer 1.5: Core tests ==="
 dotnet test TIKR.sln --configuration Release --no-build --verbosity minimal || {
-  echo "❌ Tests failed. Fix before gate."
-  exit 1
+	echo "❌ Tests failed. Fix before gate."
+	exit 1
 }
 echo "✅ dotnet test --configuration Release passed"
 

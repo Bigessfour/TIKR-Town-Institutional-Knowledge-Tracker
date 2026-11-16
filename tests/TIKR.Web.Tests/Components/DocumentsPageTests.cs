@@ -45,7 +45,7 @@ public class DocumentsPageTests : ClerkTestContext
 
         var cut = RenderComponent<Documents>();
         cut.Markup.Should().Contain("Search by meaning");
-        cut.Markup.Should().Contain("Full-text search");
+        cut.Markup.Should().Contain("Search words");
     }
 
     [Fact]
@@ -57,6 +57,39 @@ public class DocumentsPageTests : ClerkTestContext
         var cut = RenderComponent<Documents>();
         cut.Markup.Should().Contain("preview-pane");
         cut.Markup.Should().Contain("Select a document in the list");
+        cut.Markup.Should().Contain("Add files");
+    }
+
+    [Fact]
+    public void Documents_ShowsIntakeBannerWhenBriefPending()
+    {
+        var docId = Guid.NewGuid();
+        var brief = new DocumentIntakeBriefDto(
+            Guid.NewGuid(),
+            docId,
+            "notice.pdf",
+            "Pending",
+            [new DocumentIntakeDueDateDto(new DateOnly(2027, 6, 1), "Hearing")],
+            [new DocumentIntakeContactDto("Casey Clerk")],
+            [new DocumentIntakeActionItemDto("Post notice")],
+            ProcessedLocally: true,
+            UsedGrok: false,
+            CreatedAtUtc: DateTime.UtcNow);
+
+        RegisterApi("[]");
+        SetRendererInfo(new RendererInfo("Server", true));
+
+        var cut = RenderComponent<Documents>();
+        var field = typeof(Documents).GetField("_intakeBrief",
+            System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+        field.Should().NotBeNull();
+        field!.SetValue(cut.Instance, brief);
+        cut.Render();
+
+        cut.Markup.Should().Contain("Document intake");
+        cut.Markup.Should().Contain("On this NAS only");
+        cut.Markup.Should().Contain("Add to Calendar");
+        cut.Markup.Should().Contain("Save contacts");
     }
 
     [Fact]
@@ -67,7 +100,7 @@ public class DocumentsPageTests : ClerkTestContext
 
         var cut = RenderComponent<Documents>();
         cut.Markup.Should().Contain("Library");
-        cut.Markup.Should().Contain("Browse (File Manager)");
+        cut.Markup.Should().Contain("Folders");
         cut.Markup.Should().Contain("Recycle bin");
     }
 
@@ -78,15 +111,13 @@ public class DocumentsPageTests : ClerkTestContext
         SetRendererInfo(new RendererInfo("Server", true));
 
         var cut = RenderComponent<Documents>();
-        // Click the Browse mode toggle (Syncfusion SfButton Content)
-        var browseBtn = cut.FindAll("button").FirstOrDefault(b => b.TextContent.Contains("Browse", StringComparison.OrdinalIgnoreCase));
-        browseBtn.Should().NotBeNull("Browse mode toggle should render");
+        var browseBtn = cut.FindAll("button").FirstOrDefault(b => b.TextContent.Contains("Folders", StringComparison.OrdinalIgnoreCase));
+        browseBtn.Should().NotBeNull("Folders toggle should render");
         browseBtn!.Click();
 
-        // Mode switch shows browse copy even if SfFileManager JS hosts are limited under bUnit.
         cut.WaitForAssertion(() =>
         {
-            cut.Markup.Should().Contain("Folders for your library");
+            cut.Markup.Should().Contain("documents-browse-host");
         }, TimeSpan.FromSeconds(5));
     }
 
@@ -105,7 +136,7 @@ public class DocumentsPageTests : ClerkTestContext
         });
     }
 
-    private void RegisterApi(string docsJson, string? searchJson = null)
+    private void RegisterApi(string docsJson, string? searchJson = null, string? intakeBriefJson = null)
     {
         searchJson ??= JsonSerializer.Serialize(new SemanticSearchResponse("q", 0, []));
         var handler = new StubHandler((req, _) =>
@@ -124,6 +155,27 @@ public class DocumentsPageTests : ClerkTestContext
                 return new HttpResponseMessage(HttpStatusCode.OK)
                 {
                     Content = new StringContent("[]", Encoding.UTF8, "application/json")
+                };
+            }
+
+            if (path.Contains("intake-brief", StringComparison.OrdinalIgnoreCase))
+            {
+                if (intakeBriefJson is null)
+                {
+                    return new HttpResponseMessage(HttpStatusCode.NoContent);
+                }
+
+                return new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent(intakeBriefJson, Encoding.UTF8, "application/json")
+                };
+            }
+
+            if (path.Contains("intake-scan", StringComparison.OrdinalIgnoreCase) && intakeBriefJson is not null)
+            {
+                return new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent(intakeBriefJson, Encoding.UTF8, "application/json")
                 };
             }
 

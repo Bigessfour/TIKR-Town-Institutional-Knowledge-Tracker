@@ -78,23 +78,41 @@ This file owns **status, checkboxes, priorities, verification evidence**. The ge
 
 **Verification (2026-08-14):** `dotnet test TIKR.sln --configuration Release` green (655 passed). Function inventory surfaces **23/23 with proof**. Coverlet floor unchanged. Docs ship-readiness: incremental-plan Phases 11–13 + logging adjunct; demo-deb / demo-code-platoon Election walkthrough; architecture + README API surface; Spec Kit `007`/`008`/`009` tasks closed.
 
+## Spec Kit `010-document-intake-scan` (Phase 14)
+
+- [x] `DocumentIntakeBrief` entity + migration + DTOs + prompt builder
+- [x] `DocumentIntakeScanService` heuristics + Ollama JSON + opt-in redacted Grok merge
+- [x] API `intake-scan` / `intake-brief` GET + accept + dismiss
+- [x] Documents banner + inspector **Scan for deadlines**; upload/email hooks
+- [x] Settings **Use advanced AI for document deadline scans** (default off)
+- [x] Proof: `DocumentIntakePromptBuilderTests`, `DocumentIntakeScanServiceMergeTests`, `DocumentIntakeEndpointTests`, `DocumentsPageTests` banner, `DocumentsInspectorIntakeTests`
+
+| Function                                                 | Proof                                                  | Minimal impl                               |
+| -------------------------------------------------------- | ------------------------------------------------------ | ------------------------------------------ |
+| `DocumentIntakeScanService.ScanAsync` / Accept / Dismiss | Merge unit tests + `DocumentIntakeEndpointTests`       | Heuristics fail-soft; confirm-before-write |
+| `POST …/intake-scan` + accept/dismiss                    | `DocumentIntakeEndpointTests`                          | Thin API → service                         |
+| Documents intake banner + Scan                           | `DocumentsPageTests` + `DocumentsInspectorIntakeTests` | Same banner family as email                |
+| `UseGrokForDocumentIntake`                               | FeatureSettings DTO/keys + Settings checkbox           | Default off even when Grok on              |
+
+**Next pass (human):** Upload a notice with a labeled due date → Accept → Requirement on Calendar + Contact in Vault; confirm Settings advanced intake stays off by default.
+
 ## Cognito gate and live walkthrough
 
-- [x] Town Hosted UI gate when `TIKR_COGNITO_DOMAIN` is set. Local passwords stay off. HTTPS callback is documented and not registered until the host is confirmed.
+- [x] Town Hosted UI gate when `TIKR_COGNITO_DOMAIN` is set. Local passwords stay off. HTTPS origin is `https://mr-storage.tail57aa13.ts.net:8444` (Tailscale Serve to `127.0.0.1:8080`). Callback and logout are registered on `258binbcvsms0rfqj5g20qakki`.
 - [x] Assistant Stop stays “Response stopped.” A helper timeout escalates when the advanced helper is on. Indexing yields while a question is in flight.
 - [x] Vault Add entry, deadline hint, guide reopen, help click, one Settings help note, dashboard shortcuts.
 - [x] Tools tour stays at `/demo/clerk-tools` and is not in the clerk menu. Footer says town storage and helper status. Times use America/Denver.
 
-| Function                       | Proof                                           | Minimal impl                                       |
-| ------------------------------ | ----------------------------------------------- | -------------------------------------------------- |
-| Cognito session and Staff gate | `CognitoSilentAuthTests`, `AccountPageTests`    | Validate ID token, then one session cookie         |
-| User Stop vs helper timeout    | `AssistantTurnStopTests`                        | Only the clerk token counts as Stop                |
-| Chat ahead of embedding        | `InteractiveAiGateTests`                        | Hold lease; retry the same item after the question |
-| Vault add entry                | `Vault_AddEntry_OpensABlankEditor`              | Existing knowledge create API                      |
-| Guide reopen and help click    | `ClerkHelpControlTests`                         | Reset visible on close; click shows the text       |
-| Footer and Denver time         | `LocalStatusFooterHelperTests`, `TownTimeTests` | One timezone helper                                |
+| Function                       | Proof                                                          | Minimal impl                                              |
+| ------------------------------ | -------------------------------------------------------------- | --------------------------------------------------------- |
+| Cognito session and Staff gate | `CognitoSilentAuthTests`, `PublicOrigin_*`, `AccountPageTests` | ID token cookie. `TIKR_PUBLIC_ORIGIN` sets HTTPS callback |
+| User Stop vs helper timeout    | `AssistantTurnStopTests`                                       | Only the clerk token counts as Stop                       |
+| Chat ahead of embedding        | `InteractiveAiGateTests`                                       | Hold lease; retry the same item after the question        |
+| Vault add entry                | `Vault_AddEntry_OpensABlankEditor`                             | Existing knowledge create API                             |
+| Guide reopen and help click    | `ClerkHelpControlTests`                                        | Reset visible on close; click shows the text              |
+| Footer and Denver time         | `LocalStatusFooterHelperTests`, `TownTimeTests`                | One timezone helper                                       |
 
-**Still an operator step:** register the HTTPS callback on app client `258binbcvsms0rfqj5g20qakki`, then point Town Hub `TOWN_HUB_TIKR_URL` at that origin. Do not run `update-user-pool-client` before that host is confirmed.
+**Deploy note:** the running NAS image starts using `TIKR_PUBLIC_ORIGIN` on the next `tikr-web` deploy. Republish Town Hub so the TIKR card uses `https://mr-storage.tail57aa13.ts.net:8444` instead of `http://mr-storage:8080`.
 
 ---
 
@@ -146,12 +164,13 @@ Shipped: circuit-scoped multi-turn memory + follow-up retrieval rewrite + Clear 
 ### Ship order (v1.0) — do in this sequence
 
 1. **Next (agent):** v1.0 feature backlog below (former deferred / vNext — now required for tag)
-2. Clerks open TIKR from the Town Hub card at `http://mr-storage:8080` (no sign-in). Windows `Setup-TIKR.exe` is not the clerk path.
+2. Clerks open TIKR from the Town Hub card at `https://mr-storage.tail57aa13.ts.net:8444` and finish the town sign-in. Windows `Setup-TIKR.exe` is not the clerk path.
 3. Phase 0 PR #4 / T031 — Recorded Deb walkthrough ([demo-deb.md](demo-deb.md) / [clerk-windows-install.md](clerk-windows-install.md)) + Layer 2 bus-factor checkbox
 4. **Done:** Tags `v1.0.0` + `v1.0.1` + GHCR release per [ship-to-production.md](ship-to-production.md)
 
 - [x] Phase 0 PR #3 — Deb NAS install + maintainer ship checklist ([deb-nas-install.md](deb-nas-install.md), [ship-to-production.md](ship-to-production.md)) — 2026-07-09
 - [x] Canonical clerk path = Town Hub card → `http://mr-storage:8080` (no sign-in). Windows installer is not used. — 2026-11-15
+- [x] Canonical clerk path = Town Hub card → `https://mr-storage.tail57aa13.ts.net:8444` with the town sign-in. — 2026-11-16
 - [x] ~~Compile `Setup-TIKR.exe`~~ Replaced by the NAS web app.
 - [x] Merge [PR #61](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/61) to `main` — 2026-07-09 (`242b754`, TIKR CI green)
 - [x] Page readiness audit — chrome-devtools-mcp / Playwright pass; log in [ui-readiness-audit.md](ui-readiness-audit.md) — 2026-07-09

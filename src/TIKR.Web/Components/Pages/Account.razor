@@ -20,8 +20,9 @@
             <AuthorizeView>
                 <Authorized>
                     <p>Signed in as <strong>@(context.User.Identity?.Name ?? "your town account")</strong>.</p>
-                    <p class="text-muted">This is the same sign-in as the other town clerk tools.</p>
-                    <a class="tikr-action-btn e-btn" href="/auth/cognito-logout">Sign out</a>
+                    <SfTooltip Content="This is the same sign-in as the other town clerk tools." Position="Position.TopCenter">
+                        <a class="tikr-action-btn e-btn" href="/auth/cognito-logout">Sign out</a>
+                    </SfTooltip>
                 </Authorized>
                 <NotAuthorized>
                     <p>Sign in with your town account to use TIKR.</p>

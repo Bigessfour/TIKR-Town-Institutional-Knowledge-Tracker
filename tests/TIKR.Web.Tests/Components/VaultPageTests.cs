@@ -26,7 +26,7 @@ public class VaultPageTests : ClerkTestContext
         var cut = RenderComponent<Vault>();
         cut.Markup.Should().Contain("hit by a bus");
         cut.Markup.Should().Contain("Copy Everything for New Clerk");
-        cut.Markup.Should().Contain("Generate Complete Handover Package");
+        cut.Markup.Should().Contain("Handover PDF");
     }
 
     [Fact]

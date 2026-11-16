@@ -26,6 +26,7 @@ public class TikrDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<ChatConversation> ChatConversations => Set<ChatConversation>();
     public DbSet<ChatMessageRecord> ChatMessages => Set<ChatMessageRecord>();
     public DbSet<UserMemoryFact> UserMemoryFacts => Set<UserMemoryFact>();
+    public DbSet<DocumentIntakeBrief> DocumentIntakeBriefs => Set<DocumentIntakeBrief>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -58,6 +59,14 @@ public class TikrDbContext : IdentityDbContext<ApplicationUser>
             entity.Property(e => e.StoragePath).HasMaxLength(1000).IsRequired();
             entity.Property(e => e.Note).HasMaxLength(500);
             entity.HasIndex(e => new { e.DocumentId, e.VersionNumber }).IsUnique();
+            entity.HasIndex(e => e.DocumentId);
+        });
+
+        modelBuilder.Entity<DocumentIntakeBrief>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.JsonPayload).IsRequired();
+            entity.HasIndex(e => new { e.DocumentId, e.Status });
             entity.HasIndex(e => e.DocumentId);
         });
 

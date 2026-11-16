@@ -12,7 +12,7 @@
         <h2>Users</h2>
         <p>Manage clerk and viewer accounts for this town</p>
     </div>
-    <PageHelp HelpText="Add admin or clerk accounts for multi-user towns. All accounts authenticate against the local NAS database." />
+    <PageHelp HelpText="Town accounts on this server." />
 </div>
 
 <div class="mb-3">
@@ -53,10 +53,11 @@
 <SfDialog @bind-Visible="_showDialog" Width="480px" IsModal="true" ShowCloseIcon="true" Header="Add user">
     <DialogTemplates>
         <Content>
-            <EditForm Model="_createModel" OnValidSubmit="CreateUserAsync">
-                <DataAnnotationsValidator />
+            <SfDataForm ID="user-create-form" Model="_createModel" ColumnCount="1" Width="100%" OnValidSubmit="CreateUserAsync">
+                <FormValidator>
+                    <DataAnnotationsValidator />
+                </FormValidator>
                 <ValidationSummary />
-                <SfDataForm Model="_createModel" ColumnCount="1" Width="100%">
                     <FormItems>
                         <FormItem Field="@nameof(CreateUserFormModel.Email)" LabelText="Email" />
                         <FormItem Field="@nameof(CreateUserFormModel.DisplayName)" LabelText="Display name" />
@@ -71,12 +72,11 @@
                             </Template>
                         </FormItem>
                     </FormItems>
+                    <FormButtons>
+                        <SfButton Type="ButtonType.Button" CssClass="tikr-action-btn" OnClick="CloseCreateDialog">Cancel</SfButton>
+                        <SfButton Type="ButtonType.Submit" CssClass="tikr-action-btn primary">Create</SfButton>
+                    </FormButtons>
                 </SfDataForm>
-                <div class="mt-3">
-                    <SfButton CssClass="tikr-action-btn" OnClick="CloseCreateDialog">Cancel</SfButton>
-                    <SfButton Type="ButtonType.Submit" CssClass="tikr-action-btn primary">Create</SfButton>
-                </div>
-            </EditForm>
         </Content>
     </DialogTemplates>
 </SfDialog>

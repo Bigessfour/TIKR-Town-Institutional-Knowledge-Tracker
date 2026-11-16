@@ -13,7 +13,7 @@ The **Dashboard** shows what needs attention today: statutory deadlines and open
 - **Add requirement** — create a custom deadline or recurring task for your municipality.
 - **Edit** — select a row, then edit title, due date, priority, or completion.
 - **Show completed** — toggle to include finished work in the grid.
-- **Export CSV** — spreadsheet for council packets or your own tracking.
+- **Spreadsheet** — download the grid for council packets or your own tracking.
 - **Print / PDF exports** — council packet, agenda, compliance Excel, and meeting minutes when Document SDK is licensed (see Settings).
 - **AI Scan file upload** — upload a PDF or Word file; TIKR extracts candidate requirements (review before saving).
 
@@ -29,7 +29,8 @@ Statutory dates also appear on the **Calendar**. You can create, edit, move, or 
 
 - **Folder tree** — browse by category; AI may suggest folders on upload.
 - **Upload** — drag files or use Browse; supported types include PDF and Office formats.
-- **Full-text / Semantic search** — keyword search vs meaning-based search (needs embeddings).
+- **Deadline scan** — after upload (or **More actions → Scan for deadlines**), review due dates, contacts, and actions. **Add to Calendar** creates Requirements; **Save contacts** updates Vault. Runs on the NAS by default; advanced AI for scans stays off unless you enable it in Settings.
+- **Search words / Search by meaning** — match the words in a file, or find files by what they are about.
 - **Row checkbox** — select a document to preview in the right pane.
 - **Context menu** — tag with AI, download, or delete (with confirmation).
 

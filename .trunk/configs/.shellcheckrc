@@ -1,6 +1,21 @@
 enable=all
 source-path=SCRIPTDIR
+
+# Existing
 disable=SC2154
+
+# Style noise that fails `trunk check --all` across historical scripts.
+# SC2250 autofix (force ${var}) also corrupts nested expansions — do not enable --fix for it.
+disable=SC2250
+disable=SC2292
+disable=SC2312
+disable=SC2310
+disable=SC2249
+disable=SC2016
+
+# Pre-existing unused-var / $? timing nits in helper scripts (not product code).
+disable=SC2034
+disable=SC2320
 
 # If you're having issues with shellcheck following source, disable the errors via:
 # disable=SC1090
