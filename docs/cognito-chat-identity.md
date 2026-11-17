@@ -2,7 +2,7 @@
 
 Local passwords stay off (`TIKR_AUTH_ENABLED=false`). When `TIKR_COGNITO_DOMAIN` is set, a clerk must finish the town Hosted UI before TIKR opens. The first try uses `prompt=none` so an existing ClerkSuite session signs them in without another password. If Cognito returns `login_required` or `interaction_required`, TIKR sends them to the town sign-in page. There is no anonymous fallback.
 
-Chat history is still keyed by `cognito:{sub}`. Email is display-only. Leave `TIKR_COGNITO_DOMAIN` empty only for a machine that is not the town server (local `dotnet run` without that variable).
+Chat history is still keyed by `cognito:{sub}`. Email is display-only. Leave `TIKR_COGNITO_DOMAIN` empty for local `dotnet run`, CI (`docker/docker-compose.yml`), and any machine that is not the town server. Prod compose sets the domain so the NAS gate stays on.
 
 Staff, admin, and Clerk may enter. Driver may not. A token with no groups is allowed so an unstamped clerk is not locked out. Sign out calls Hosted UI `/logout`, which ends the town session for the other clerk apps too.
 
