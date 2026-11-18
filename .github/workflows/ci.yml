@@ -1,4 +1,4 @@
-# Primary CI gate: build, test, lint, and Ollama failure triage (on failure only).
+# Primary CI gate: build, test, lint, and Docker smoke.
 # One workflow run per push/PR — no workflow_run chains or child workflow spawns.
 name: TIKR CI
 
@@ -191,7 +191,7 @@ jobs:
           dotnet test TIKR.sln --no-build --configuration Release --verbosity normal \
             > failure-context/last-test-output.txt 2>&1 || true
 
-          # Emit small structured artifact for ollama diagnosis (resilient when gh logs are empty)
+          # Structured coverage snippet when the gate fails (helps when gh logs are empty)
           python3 scripts/check_coverage.py coverage > failure-context/coverage-raw.txt 2>&1 || true
           if grep -qi 'FAIL\|coverage' failure-context/coverage-raw.txt 2>/dev/null; then
             {
@@ -272,21 +272,3 @@ jobs:
           name: ci-failure-snapshot-trunk-${{ github.run_id }}
           path: failure-context/
           retention-days: 14
-
-  ollama-diagnosis:
-    needs: [build-and-test, trunk-check]
-    if: failure()
-    runs-on: ubuntu-latest
-    permissions:
-      actions: read
-      contents: read
-      pull-requests: write
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Run Ollama failure diagnosis
-        uses: ./.github/actions/ollama-ci-diagnosis
-        with:
-          run_id: ${{ github.run_id }}
-          workflow_name: TIKR CI

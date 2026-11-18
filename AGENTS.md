@@ -201,6 +201,6 @@ For new features: read the active [incremental-plan](docs/incremental-plan.md) p
 | [scripts/update-function-inventory.sh](scripts/update-function-inventory.sh) | Legacy bash scanner (project specific)                       |
 | `~/.cursor/skills/function-inventory/scripts/update-function-inventory.py`   | Personal Python lightweight function tracker (preferred)     |
 | [.github/workflows/ci.yml](.github/workflows/ci.yml)                         | Build, test, Docker smoke                                    |
-| [.github/workflows/ci.yml](.github/workflows/ci.yml)                         | Build, test, Trunk lint, Ollama failure triage               |
+| [.github/workflows/ci.yml](.github/workflows/ci.yml)                         | Build, test, Trunk lint, Docker smoke                        |
 | [.github/SECURITY.md](.github/SECURITY.md)                                   | Vulnerability reporting                                      |
 | [.cursor/rules/tikr.mdc](.cursor/rules/tikr.mdc)                             | Always-on Cursor rule                                        |
