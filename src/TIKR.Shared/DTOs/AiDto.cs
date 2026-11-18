@@ -38,12 +38,22 @@ public record AskAdvancedRequest(
 /// <param name="GrokAttemptFailed">True when a cloud call was attempted and returned nothing.</param>
 public record AskAdvancedResponse(string Answer, bool UsedGrok, bool GrokAttemptFailed = false);
 
+/// <param name="StatusMessage">Clerk-facing note when models are missing, circuit is open, or Ollama is down.</param>
+/// <param name="ChatModelPresent">True when the configured chat model appears in Ollama /api/tags.</param>
+/// <param name="EmbeddingModelPresent">True when nomic-embed-text appears in Ollama /api/tags.</param>
+/// <param name="CircuitOpen">True when the Ollama circuit breaker is open (fail-soft pause).</param>
+/// <param name="LoadedModelCount">Models currently loaded in Ollama RAM (/api/ps).</param>
 public record AiStatusResponse(
     bool OllamaAvailable,
     string OllamaModel,
     bool GrokEnabled,
     string? OllamaHost = null,
-    bool GrokApiKeyConfigured = false);
+    bool GrokApiKeyConfigured = false,
+    string? StatusMessage = null,
+    bool ChatModelPresent = true,
+    bool EmbeddingModelPresent = true,
+    bool CircuitOpen = false,
+    int LoadedModelCount = 0);
 
 public record SemanticSearchRequest(
     string Query,

@@ -25,16 +25,21 @@ public class HybridAiService(
     FeatureSettingsState? featureSettings = null,
     IConfiguration? configuration = null,
     IFolderClassifier? folderClassifier = null,
-    IDocumentFolderCatalog? folderCatalog = null) : IHybridAiService
+    IDocumentFolderCatalog? folderCatalog = null,
+    OllamaCircuitBreaker? circuitBreaker = null,
+    EmbeddingReindexGate? reindexGate = null) : IHybridAiService
 {
     private const int TagPreviewChars = 4000;
-    private const int MaxPersistedExtractChars = 100_000;
     internal const double DefaultMinScore = 0.38;
     private const double VectorWeight = 0.7;
     private const double KeywordWeight = 0.3;
     private const int PassageSnippetChars = 1000;
 
     private bool _bulkReindexActive;
+    private bool _holdsReindexGate;
+
+    private int MaxPersistedExtractChars =>
+        TikrConfiguration.GetMaxEmbeddingSourceChars(configuration);
 
     public async Task<TagDocumentResponse> TagDocumentAsync(
         Guid documentId,
@@ -455,6 +460,22 @@ public class HybridAiService(
     {
         var sw = Stopwatch.StartNew();
         var triggerLabel = string.IsNullOrWhiteSpace(trigger) ? "manual" : trigger.Trim();
+
+        if (reindexGate is not null && !await reindexGate.TryEnterAsync(cancellationToken))
+        {
+            TikrActionLog.Info(logger, "AI.ReindexEmbeddings",
+                $"Skipped — already in progress (Trigger={triggerLabel})");
+            return new ReindexEmbeddingsResponse(
+                DocumentsAttempted: 0,
+                DocumentsEmbedded: 0,
+                KnowledgeAttempted: 0,
+                KnowledgeEmbedded: 0,
+                Errors: ["Reindex already in progress — try again when the current run finishes."],
+                DocumentsSkipped: 0,
+                Trigger: triggerLabel);
+        }
+
+        _holdsReindexGate = reindexGate is not null;
         TikrActionLog.Started(logger, "AI.ReindexEmbeddings", $"Trigger={triggerLabel}");
 
         var batchSize = TikrConfiguration.GetEmbeddingReindexBatchSize(configuration);
@@ -613,6 +634,11 @@ public class HybridAiService(
         {
             _bulkReindexActive = false;
             db.ChangeTracker.Clear();
+            if (_holdsReindexGate)
+            {
+                reindexGate!.Exit();
+                _holdsReindexGate = false;
+            }
         }
 
         var errorSummary = totalErrorCount == errors.Count
@@ -807,14 +833,30 @@ public class HybridAiService(
 
     public async Task<AiStatusResponse> GetStatusAsync(CancellationToken cancellationToken = default)
     {
-        var ollamaAvailable = await ollamaFactory.IsAvailableAsync(cancellationToken);
+        var inventory = await ollamaFactory.GetModelInventoryAsync(cancellationToken)
+            ?? new OllamaModelInventoryDto(
+                HostReachable: await ollamaFactory.IsAvailableAsync(cancellationToken),
+                ChatModelPresent: true,
+                EmbeddingModelPresent: true,
+                LoadedModelCount: 0,
+                StatusMessage: "Local helper status unavailable.");
         var keyConfigured = featureSettings?.Current.GrokApiKeyConfigured ?? grokService.IsEnabled;
+        var circuitOpen = circuitBreaker?.IsOpen == true;
+        var statusMessage = circuitBreaker?.StatusHint;
+        if (string.IsNullOrWhiteSpace(statusMessage))
+            statusMessage = inventory.StatusMessage;
+
         return new AiStatusResponse(
-            ollamaAvailable,
+            inventory.HostReachable,
             ollamaFactory.ChatModel,
             grokService.IsEnabled,
             ollamaFactory.OllamaHost,
-            keyConfigured);
+            keyConfigured,
+            StatusMessage: statusMessage,
+            ChatModelPresent: inventory.ChatModelPresent,
+            EmbeddingModelPresent: inventory.EmbeddingModelPresent,
+            CircuitOpen: circuitOpen,
+            LoadedModelCount: inventory.LoadedModelCount);
     }
 
     private async Task<string?> GetLocalCompletionAsync(
@@ -823,6 +865,12 @@ public class HybridAiService(
         ChatOptions? options = null,
         IReadOnlyList<AssistantTurn>? history = null)
     {
+        if (circuitBreaker?.IsOpen == true)
+        {
+            logger.LogDebug("Ollama completion skipped — circuit open");
+            return null;
+        }
+
         var timeoutSeconds = TikrConfiguration.GetChatCompletionTimeoutSeconds(configuration);
         using var attemptCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         attemptCts.CancelAfter(TimeSpan.FromSeconds(timeoutSeconds));
@@ -830,6 +878,7 @@ public class HybridAiService(
         {
             var client = ollamaFactory.CreateChatClient();
             var response = await client.GetResponseAsync(BuildLocalMessages(prompt, history), options, attemptCts.Token);
+            circuitBreaker?.NoteSuccess();
             return response.Text;
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
@@ -842,11 +891,13 @@ public class HybridAiService(
                 ex,
                 "Ollama completion timed out after {TimeoutSeconds}s",
                 timeoutSeconds);
+            circuitBreaker?.NoteTimeout("chat timeout");
             return null;
         }
         catch (Exception ex)
         {
             logger.LogWarning(ex, "Ollama completion failed");
+            circuitBreaker?.NoteFailure("chat failure");
             return null;
         }
     }
@@ -894,6 +945,12 @@ public class HybridAiService(
         if (string.IsNullOrWhiteSpace(text))
             return null;
 
+        if (circuitBreaker?.IsOpen == true)
+        {
+            logger.LogDebug("Embedding generation skipped — circuit open");
+            return null;
+        }
+
         var maxAttempts = _bulkReindexActive ? 3 : 1;
         var attemptTimeout = TimeSpan.FromSeconds(
             TikrConfiguration.GetEmbeddingGenerationTimeoutSeconds(configuration));
@@ -910,10 +967,39 @@ public class HybridAiService(
                 var trimmed = text.Length > 4000 ? text[..4000] : text;
                 var result = await generator.GenerateAsync([trimmed], cancellationToken: attemptCts.Token);
                 var first = result.FirstOrDefault();
-                return first?.Vector.ToArray();
+                var vector = first?.Vector.ToArray();
+                if (vector is not null)
+                    circuitBreaker?.NoteSuccess();
+                else
+                    circuitBreaker?.NoteFailure("empty embedding");
+                return vector;
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (OperationCanceledException ex) when (attempt < maxAttempts)
+            {
+                circuitBreaker?.NoteTimeout("embedding timeout");
+                var delay = TimeSpan.FromSeconds(Math.Pow(2, attempt));
+                logger.LogWarning(
+                    ex,
+                    "Embedding generation attempt {Attempt}/{Max} timed out; retry in {DelaySec}s",
+                    attempt,
+                    maxAttempts,
+                    delay.TotalSeconds);
+                try
+                {
+                    await Task.Delay(delay, cancellationToken);
+                }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                {
+                    return null;
+                }
             }
             catch (Exception ex) when (attempt < maxAttempts && !cancellationToken.IsCancellationRequested)
             {
+                circuitBreaker?.NoteFailure("embedding failure");
                 var delay = TimeSpan.FromSeconds(Math.Pow(2, attempt));
                 logger.LogWarning(
                     ex,
@@ -930,9 +1016,16 @@ public class HybridAiService(
                     return null;
                 }
             }
+            catch (OperationCanceledException ex)
+            {
+                logger.LogWarning(ex, "Embedding generation timed out (Ollama may be overloaded)");
+                circuitBreaker?.NoteTimeout("embedding timeout");
+                return null;
+            }
             catch (Exception ex)
             {
                 logger.LogWarning(ex, "Embedding generation failed (Ollama may be offline or model missing)");
+                circuitBreaker?.NoteFailure("embedding failure");
                 return null;
             }
         }
@@ -1011,12 +1104,24 @@ public class HybridAiService(
             .Where(t => t.Length > 1)
             .ToHashSet(StringComparer.Ordinal);
 
+    private string CapEmbeddingSource(string sourceText)
+    {
+        var max = MaxPersistedExtractChars;
+        return sourceText.Length > max ? sourceText[..max] : sourceText;
+    }
+
+    private IReadOnlyList<string> CapPassages(IReadOnlyList<string> passages)
+    {
+        var maxChunks = TikrConfiguration.GetMaxEmbeddingChunksPerDocument(configuration);
+        return passages.Count <= maxChunks ? passages : passages.Take(maxChunks).ToList();
+    }
+
     private async Task<bool> TryIndexDocumentChunksAsync(Document document, CancellationToken cancellationToken)
     {
         if (document.IsTransient)
             return true; // Transitory filings are kept on disk but excluded from long-term Assistant RAG.
 
-        var sourceText = BuildEmbeddingText(document);
+        var sourceText = CapEmbeddingSource(BuildEmbeddingText(document));
         if (string.IsNullOrWhiteSpace(sourceText) || IsSparseForEmbedding(sourceText))
         {
             // Sparse / missing text: do not pretend the corpus is complete until OCR/backfill succeeds.
@@ -1052,7 +1157,7 @@ public class HybridAiService(
             return true;
         }
 
-        var passages = TextChunker.Chunk(sourceText);
+        var passages = CapPassages(TextChunker.Chunk(sourceText));
         if (passages.Count == 0)
             return false;
 
@@ -1092,7 +1197,7 @@ public class HybridAiService(
 
     private async Task<bool> TryIndexKnowledgeChunksAsync(KnowledgeEntry entry, CancellationToken cancellationToken)
     {
-        var sourceText = BuildKnowledgeEmbeddingText(entry);
+        var sourceText = CapEmbeddingSource(BuildKnowledgeEmbeddingText(entry));
         if (string.IsNullOrWhiteSpace(sourceText))
             return false;
 
@@ -1104,7 +1209,7 @@ public class HybridAiService(
         if (existing.Count > 0 && existing.All(c => c.ContentHash == sourceHash))
             return true;
 
-        var passages = TextChunker.Chunk(sourceText);
+        var passages = CapPassages(TextChunker.Chunk(sourceText));
         if (passages.Count == 0)
             return false;
 

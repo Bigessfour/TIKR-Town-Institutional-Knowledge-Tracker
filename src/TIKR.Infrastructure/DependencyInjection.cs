@@ -35,6 +35,7 @@ public static class DependencyInjection
                 connectionString = TikrConfiguration.RewriteContainerOnlySqliteConnectionString(
                     connectionString,
                     configuration["TIKR_DATA_PATH"]);
+                connectionString = TikrConfiguration.EnsureSqliteConnectionDefaults(connectionString);
                 options.UseSqlite(connectionString);
             }
         });
@@ -108,8 +109,12 @@ public static class DependencyInjection
         services.AddHostedService<EmbeddingRecoveryHostedService>();
         services.AddSingleton<TownDocumentSearchToolRegistry>();
 
+        services.AddSingleton<OllamaCircuitBreaker>();
+        services.AddSingleton<EmbeddingReindexGate>();
         services.AddSingleton<IOllamaChatClientFactory>(sp =>
-            new OllamaChatClientFactory(sp.GetRequiredService<FeatureSettingsState>()));
+            new OllamaChatClientFactory(
+                sp.GetRequiredService<FeatureSettingsState>(),
+                sp.GetRequiredService<IConfiguration>()));
 
         return services;
     }
@@ -119,6 +124,7 @@ public static class DependencyInjection
         using var scope = services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<TikrDbContext>();
         await db.Database.MigrateAsync();
+        await EnsureSqliteDurabilityAsync(db);
         await DbSeeder.SeedAsync(db);
         await ContactSeeder.SeedAsync(db);
         await RequirementChecklistSeeder.SeedAsync(db);
@@ -135,5 +141,18 @@ public static class DependencyInjection
             var logger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("IdentitySeeder");
             await IdentitySeeder.SeedAsync(db, userManager, roleManager, configuration, logger);
         }
+    }
+
+    /// <summary>
+    /// Enforce WAL + busy_timeout on SQLite (NAS-friendly). No-op for Postgres.
+    /// </summary>
+    internal static async Task EnsureSqliteDurabilityAsync(TikrDbContext db)
+    {
+        if (!db.Database.IsSqlite())
+            return;
+
+        await db.Database.ExecuteSqlRawAsync("PRAGMA journal_mode=WAL;");
+        await db.Database.ExecuteSqlRawAsync("PRAGMA busy_timeout=5000;");
+        await db.Database.ExecuteSqlRawAsync("PRAGMA synchronous=NORMAL;");
     }
 }

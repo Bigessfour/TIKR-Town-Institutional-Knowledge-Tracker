@@ -41,6 +41,39 @@ public class FolderEmailIngestionServiceTests
             Directory.GetFiles(Path.Combine(inbox, "processed")).Should().ContainSingle();
             (await db.Documents.CountAsync()).Should().Be(1);
             (await db.Documents.SingleAsync()).FileName.Should().Be("council-note.txt");
+
+            var status = sut.GetStatus();
+            status.Configured.Should().BeTrue();
+            status.LastIngestUtc.Should().NotBeNull();
+            status.LastResult!.Ingested.Should().Be(1);
+        }
+        finally
+        {
+            TryDelete(inbox);
+            TryDelete(storage);
+        }
+    }
+
+    [Fact]
+    public async Task IngestPendingAsync_RespectsMaxFilesPerRun()
+    {
+        var inbox = Path.Combine(Path.GetTempPath(), "tikr-email-inbox-" + Guid.NewGuid().ToString("N"));
+        var storage = Path.Combine(Path.GetTempPath(), "tikr-email-store-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(inbox);
+        Directory.CreateDirectory(storage);
+
+        try
+        {
+            await File.WriteAllTextAsync(Path.Combine(inbox, "a.txt"), "one");
+            await File.WriteAllTextAsync(Path.Combine(inbox, "b.txt"), "two");
+            await File.WriteAllTextAsync(Path.Combine(inbox, "c.txt"), "three");
+
+            await using var db = await TestDbContextFactory.CreateMigratedAsync();
+            var (sut, _) = BuildSut(db, inbox, storage, extractEnabled: false, maxFiles: 2);
+
+            var result = await sut.IngestPendingAsync();
+            result.Ingested.Should().Be(2);
+            Directory.GetFiles(inbox).Should().HaveCount(1);
         }
         finally
         {
@@ -153,15 +186,20 @@ public class FolderEmailIngestionServiceTests
         TikrDbContext db,
         string inbox,
         string storage,
-        bool extractEnabled)
+        bool extractEnabled,
+        int? maxFiles = null)
     {
+        var values = new Dictionary<string, string?>
+        {
+            ["TIKR_EMAIL_INBOX_PATH"] = inbox,
+            ["FILE_STORAGE_PATH"] = storage,
+            ["TIKR_EMAIL_STRUCTURED_EXTRACT"] = extractEnabled ? "true" : "false"
+        };
+        if (maxFiles is { } capped)
+            values["TIKR_EMAIL_INGEST_MAX_FILES"] = capped.ToString();
+
         var config = new ConfigurationBuilder()
-            .AddInMemoryCollection(new Dictionary<string, string?>
-            {
-                ["TIKR_EMAIL_INBOX_PATH"] = inbox,
-                ["FILE_STORAGE_PATH"] = storage,
-                ["TIKR_EMAIL_STRUCTURED_EXTRACT"] = extractEnabled ? "true" : "false"
-            })
+            .AddInMemoryCollection(values)
             .Build();
 
         var notices = new EmailIngestionNoticeStore();
