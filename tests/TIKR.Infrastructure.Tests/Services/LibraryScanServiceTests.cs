@@ -449,6 +449,141 @@ public class LibraryScanServiceTests
         public bool IsAuthenticated => true;
     }
 
+    [Fact]
+    public async Task ScanAsync_SkipsFilesOverUploadLimitWithoutCreatingDocuments()
+    {
+        var library = Path.Combine(Path.GetTempPath(), "tikr-library-too-big-" + Guid.NewGuid().ToString("N"));
+        var storage = Path.Combine(Path.GetTempPath(), "tikr-library-store-too-big-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(library);
+        Directory.CreateDirectory(storage);
+
+        try
+        {
+            var huge = Path.Combine(library, "municipal-code.pdf");
+            await using (var fs = File.Create(huge))
+            {
+                fs.SetLength(DocumentService.MaxUploadBytes + 1);
+            }
+
+            await using var db = await TestDbContextFactory.CreateMigratedAsync();
+            var config = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string?>
+                {
+                    ["TIKR_LIBRARY_SCAN_PATH"] = library,
+                    ["FILE_STORAGE_PATH"] = storage
+                })
+                .Build();
+
+            var trackingAi = new TrackingTaggingAi();
+            var services = new ServiceCollection();
+            services.AddSingleton<IConfiguration>(config);
+            services.AddSingleton(db);
+            services.AddScoped<IDocumentService, DocumentService>();
+            var featureState = new FeatureSettingsState();
+            featureState.Replace(new FeatureSettingsSnapshot
+            {
+                OllamaHost = "http://localhost:11434",
+                OllamaChatModel = "llama3.2:3b",
+                UseGrok = false,
+                FileStoragePath = storage
+            });
+            services.AddSingleton(featureState);
+            services.AddSingleton<IFileStorageService, LocalFileStorageService>();
+            services.AddScoped<IAuditService, AuditService>();
+            services.AddSingleton<ICurrentUserService>(new StubCurrentUser("library-scan@town.gov"));
+            services.AddSingleton<IHybridAiService>(trackingAi);
+            var provider = services.BuildServiceProvider();
+
+            var sut = new LibraryScanService(
+                provider.GetRequiredService<IServiceScopeFactory>(),
+                config,
+                NullLogger<LibraryScanService>.Instance);
+
+            var result = await sut.ScanAsync();
+            result.Imported.Should().Be(0);
+            result.Skipped.Should().Be(1);
+            result.Failed.Should().Be(0);
+            trackingAi.TagCallCount.Should().Be(0);
+            (await db.Documents.CountAsync()).Should().Be(0);
+        }
+        finally
+        {
+            try { Directory.Delete(library, recursive: true); } catch { /* ignore */ }
+            try { Directory.Delete(storage, recursive: true); } catch { /* ignore */ }
+        }
+    }
+
+    [Fact]
+    public async Task ScanAsync_PersistsImportRecordBeforeTagSoCrashDoesNotReupload()
+    {
+        var library = Path.Combine(Path.GetTempPath(), "tikr-library-pre-tag-" + Guid.NewGuid().ToString("N"));
+        var storage = Path.Combine(Path.GetTempPath(), "tikr-library-store-pre-tag-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(library);
+        Directory.CreateDirectory(storage);
+
+        try
+        {
+            await File.WriteAllTextAsync(
+                Path.Combine(library, "lift-station.txt"),
+                "Town of Wiley South Lift Station grant packet with enough text for a library import.");
+
+            await using var db = await TestDbContextFactory.CreateMigratedAsync();
+            var config = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string?>
+                {
+                    ["TIKR_LIBRARY_SCAN_PATH"] = library,
+                    ["FILE_STORAGE_PATH"] = storage
+                })
+                .Build();
+
+            var boomAi = new BoomAfterFirstTagAi();
+            var services = new ServiceCollection();
+            services.AddSingleton<IConfiguration>(config);
+            services.AddSingleton(db);
+            services.AddScoped<IDocumentService, DocumentService>();
+            var featureState = new FeatureSettingsState();
+            featureState.Replace(new FeatureSettingsSnapshot
+            {
+                OllamaHost = "http://localhost:11434",
+                OllamaChatModel = "llama3.2:3b",
+                UseGrok = false,
+                FileStoragePath = storage
+            });
+            services.AddSingleton(featureState);
+            services.AddSingleton<IFileStorageService, LocalFileStorageService>();
+            services.AddScoped<IAuditService, AuditService>();
+            services.AddSingleton<ICurrentUserService>(new StubCurrentUser("library-scan@town.gov"));
+            services.AddSingleton<IHybridAiService>(boomAi);
+            var provider = services.BuildServiceProvider();
+
+            var sut = new LibraryScanService(
+                provider.GetRequiredService<IServiceScopeFactory>(),
+                config,
+                NullLogger<LibraryScanService>.Instance);
+
+            var first = await sut.ScanAsync();
+            first.Imported.Should().Be(1);
+            boomAi.TagCallCount.Should().Be(1);
+            (await db.LibraryImportRecords.CountAsync()).Should().Be(1, "fingerprint must exist even when tag throws");
+
+            // Simulate incomplete corpus after a crash during tag/OCR.
+            var doc = await db.Documents.SingleAsync();
+            doc.FullTextContent = null;
+            await db.SaveChangesAsync();
+
+            boomAi.ThrowOnTag = false;
+            var second = await sut.ScanAsync();
+            second.Imported.Should().Be(0);
+            (await db.Documents.CountAsync()).Should().Be(1, "must not create a second copy after tag failure");
+            boomAi.TagCallCount.Should().Be(2, "retry tag in place via incomplete path");
+        }
+        finally
+        {
+            try { Directory.Delete(library, recursive: true); } catch { /* ignore */ }
+            try { Directory.Delete(storage, recursive: true); } catch { /* ignore */ }
+        }
+    }
+
     private class StubTaggingAi : IHybridAiService
     {
         public virtual Task<TagDocumentResponse> TagDocumentAsync(
@@ -500,6 +635,23 @@ public class LibraryScanServiceTests
             TagCallCount++;
             LastRelativePath = libraryRelativePath;
             return Task.FromResult(new TagDocumentResponse(documentId, ["library"], "Minutes"));
+        }
+    }
+
+    private sealed class BoomAfterFirstTagAi : StubTaggingAi
+    {
+        public int TagCallCount { get; private set; }
+        public bool ThrowOnTag { get; set; } = true;
+
+        public override Task<TagDocumentResponse> TagDocumentAsync(
+            Guid documentId,
+            CancellationToken cancellationToken = default,
+            string? libraryRelativePath = null)
+        {
+            TagCallCount++;
+            if (ThrowOnTag)
+                throw new InvalidOperationException("simulated tag/OOM");
+            return Task.FromResult(new TagDocumentResponse(documentId, ["library"], "Imported"));
         }
     }
 
