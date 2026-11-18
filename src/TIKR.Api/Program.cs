@@ -685,7 +685,7 @@ api.MapPost("/documents", async (HttpRequest request, IFileStorageService storag
     var form = await request.ReadFormAsync();
     var file = form.Files.FirstOrDefault();
     if (file is null) return Results.BadRequest("No file uploaded.");
-    if (file.Length > 100 * 1024 * 1024) return Results.BadRequest("File too large (max 100MB).");
+    if (file.Length > DocumentService.MaxUploadBytes) return Results.BadRequest("File too large (max 100MB).");
     if (string.IsNullOrWhiteSpace(file.FileName)) return Results.BadRequest("Invalid filename.");
 
     var isTransient = bool.TryParse(form["isTransient"], out var transientFlag) && transientFlag;
@@ -738,7 +738,7 @@ api.MapPut("/documents/{id:guid}/content", async (
     var form = await request.ReadFormAsync();
     var file = form.Files.FirstOrDefault();
     if (file is null) return Results.BadRequest("No file uploaded.");
-    if (file.Length > 100 * 1024 * 1024) return Results.BadRequest("File too large (max 100MB).");
+    if (file.Length > DocumentService.MaxUploadBytes) return Results.BadRequest("File too large (max 100MB).");
 
     try
     {
@@ -1342,7 +1342,7 @@ api.MapPost("/ai/agent-scan", async (HttpRequest request, IDocumentAgentService 
     var file = request.Form.Files.FirstOrDefault();
     if (file is null || file.Length == 0)
         return Results.BadRequest("No file uploaded.");
-    if (file.Length > 100 * 1024 * 1024) return Results.BadRequest("File too large (max 100MB).");
+    if (file.Length > DocumentService.MaxUploadBytes) return Results.BadRequest("File too large (max 100MB).");
     if (string.IsNullOrWhiteSpace(file.FileName)) return Results.BadRequest("Invalid filename.");
 
     endpointLog.LogInformation(
