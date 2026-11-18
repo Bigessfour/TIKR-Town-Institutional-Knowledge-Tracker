@@ -18,6 +18,9 @@ namespace TIKR.Infrastructure.Services;
 /// </summary>
 public class DocumentService(TikrDbContext db, ILogger<DocumentService>? logger = null) : IDocumentService
 {
+    /// <summary>Shared upload ceiling for API, Documents UI, and library scan.</summary>
+    public const long MaxUploadBytes = 100L * 1024 * 1024;
+
     private readonly ILogger _log = logger ?? NullLogger<DocumentService>.Instance;
 
     public async Task<Document> UploadAsync(
@@ -37,7 +40,7 @@ public class DocumentService(TikrDbContext db, ILogger<DocumentService>? logger 
 
         // Centralized validation (best practice)
         if (content == null) throw new ArgumentException("No file uploaded.");
-        if (length > 100 * 1024 * 1024) throw new ArgumentException("File too large (max 100MB).");
+        if (length > MaxUploadBytes) throw new ArgumentException("File too large (max 100MB).");
         if (string.IsNullOrWhiteSpace(fileName)) throw new ArgumentException("Invalid filename.");
 
         try
@@ -263,7 +266,7 @@ public class DocumentService(TikrDbContext db, ILogger<DocumentService>? logger 
         try
         {
             if (content is null) throw new ArgumentException("No file content.");
-            if (length > 100 * 1024 * 1024) throw new ArgumentException("File too large (max 100MB).");
+            if (length > MaxUploadBytes) throw new ArgumentException("File too large (max 100MB).");
 
             var entity = await db.Documents.FindAsync([id], ct)
                          ?? throw new KeyNotFoundException($"Document {id} not found.");

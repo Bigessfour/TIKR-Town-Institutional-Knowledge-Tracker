@@ -335,6 +335,62 @@ else
             <p><strong>Files kept on:</strong> @_localStatus.StorageLabel</p>
             <p><strong>Last saved:</strong> @LocalStatusFooterHelper.FormatLastSaved(_localStatus.DataLastModifiedUtc, DateTime.UtcNow)</p>
             <p><strong>Local helper:</strong> @(_localStatus.OllamaAvailable ? "Ready" : "Offline — chat pauses until it returns")</p>
+            @if (!string.IsNullOrWhiteSpace(_localStatus.AiStatusMessage))
+            {
+                <SfTooltip Content="Status from the town server about Ollama models and recovery." Position="Position.TopCenter">
+                    <p class="text-muted" style="font-size:0.9rem;">@_localStatus.AiStatusMessage</p>
+                </SfTooltip>
+            }
+            <p class="mt-2"><strong>Background jobs</strong></p>
+            <p class="text-muted" style="font-size:0.9rem;">
+                Library scan:
+                @if (_localStatus.LastLibraryScanUtc is { } libAt)
+                {
+                    <span>@libAt.ToLocalTime().ToString("g")</span>
+                    @if (!string.IsNullOrWhiteSpace(_localStatus.LastLibraryScanSummary))
+                    {
+                        <span> — @_localStatus.LastLibraryScanSummary</span>
+                    }
+                }
+                else
+                {
+                    <span>None yet</span>
+                }
+            </p>
+            <p class="text-muted" style="font-size:0.9rem;">
+                Email inbox:
+                @if (_localStatus.LastEmailIngestUtc is { } emailAt)
+                {
+                    <span>@emailAt.ToLocalTime().ToString("g")</span>
+                    @if (!string.IsNullOrWhiteSpace(_localStatus.LastEmailIngestSummary))
+                    {
+                        <span> — @_localStatus.LastEmailIngestSummary</span>
+                    }
+                }
+                else
+                {
+                    <span>None yet</span>
+                }
+            </p>
+            <p class="text-muted" style="font-size:0.9rem;">
+                Assistant memory recovery:
+                @if (_localStatus.LastEmbeddingRecoveryUtc is { } recAt)
+                {
+                    <span>@recAt.ToLocalTime().ToString("g")</span>
+                    @if (!string.IsNullOrWhiteSpace(_localStatus.LastEmbeddingRecoverySummary))
+                    {
+                        <span> — @_localStatus.LastEmbeddingRecoverySummary</span>
+                    }
+                }
+                else
+                {
+                    <span>None yet</span>
+                }
+                @if (_localStatus.EmbeddingRecoveryNeeded)
+                {
+                    <span> — needs attention</span>
+                }
+            </p>
         }
     </CardContent>
 </SfCard>
@@ -378,6 +434,14 @@ else
         else
         {
             <p><strong>Local helper:</strong> @(_status.OllamaAvailable ? "Ready" : "Not available")</p>
+            @if (!string.IsNullOrWhiteSpace(_status.StatusMessage))
+            {
+                <p class="text-muted" style="font-size:0.9rem;">@_status.StatusMessage</p>
+            }
+            @if (_status.CircuitOpen)
+            {
+                <p class="text-muted" style="font-size:0.9rem;">Local helper is paused briefly after repeated failures (will retry automatically).</p>
+            }
             <SfTooltip Content="Advanced helper is Grok." Position="Position.TopCenter">
                 <p><strong>Advanced helper:</strong> @(_status.GrokEnabled ? "On" : "Off")</p>
             </SfTooltip>

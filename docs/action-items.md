@@ -143,6 +143,7 @@ Shipped: circuit-scoped multi-turn memory + follow-up retrieval rewrite + Clear 
 ### v1.0 remaining (promoted from deferred / vNext)
 
 - [x] **NAS library scan → ingest → embed → Assistant RAG scaffold** — `TIKR_LIBRARY_SCAN_PATH`, `LibraryScanService` + hosted poller, `LibraryImportRecord` fingerprints (source files untouched), Settings Scan now / Reindex, `search_town_documents` agent tool, `/assistant` RAG reuse. Proof: `LibraryScanServiceTests`, `TownDocumentSearchToolRegistryTests`, config tests.
+- [x] **Library scan OOM / duplicate import** — Persist `LibraryImportRecord` before tag/OCR so a 3g API OOM cannot re-upload the same path. Skip files over `DocumentService.MaxUploadBytes` (100MB) without calling upload. Documents uploader max matches 100MB. Proof: `ScanAsync_PersistsImportRecordBeforeTagSoCrashDoesNotReupload`, `ScanAsync_SkipsFilesOverUploadLimitWithoutCreatingDocuments`. NAS: scan path cleared until this image is deployed; 15k+ lift-station duplicates soft-deleted.
 - [x] **PDF/Word OCR** — `SyncfusionDocumentOcrService` (Tesseract via `Syncfusion.PDF.OCR.Net.Core`); sparse-text gate; Word→PDF→OCR; wired into agent extractor. Town ingest formats exclude TIFF. Proof: `SyncfusionDocumentOcrServiceTests`, config tests.
 
 Do these before Deb walkthrough + tag:

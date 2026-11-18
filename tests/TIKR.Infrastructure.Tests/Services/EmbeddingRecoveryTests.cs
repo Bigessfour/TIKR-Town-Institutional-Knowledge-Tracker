@@ -218,7 +218,7 @@ public class EmbeddingRecoveryTests
         var factory = new Mock<IOllamaChatClientFactory>();
         factory.Setup(f => f.CreateChatClient()).Returns(new StubChatClient(""));
         factory.SetupGet(f => f.ChatModel).Returns("test-model");
-        factory.Setup(f => f.CreateEmbeddingGenerator(It.IsAny<string>()))
+        factory.Setup(f => f.CreateEmbeddingGenerator(It.IsAny<string?>()))
             .Returns(new StubEmbeddingGenerator(embedder));
         return new HybridAiService(
             db,

@@ -13,4 +13,7 @@ public interface IEmailIngestionService
 
     /// <summary>Ingest pending files from the inbox folder into document storage.</summary>
     Task<EmailIngestionResult> IngestPendingAsync(CancellationToken ct = default);
+
+    /// <summary>Operator status for Settings / local-status.</summary>
+    EmailIngestionStatusDto GetStatus();
 }

@@ -1,5 +1,10 @@
-# Primary CI gate: build, test, lint, and Docker smoke.
-# One workflow run per push/PR — no workflow_run chains or child workflow spawns.
+# Primary CI gate: build, test, lint, and Docker/E2E.
+# Heavy work runs in parallel: dotnet gate || docker gate || trunk.
+#
+# Runner notes (public repo):
+# - ubuntu-latest is already the best free standard runner (4 vCPU / 16 GB).
+# - Paid larger runners (8/16-core) need GitHub Team + org larger-runner setup; they are NOT free for public repos.
+# - Optional override: set repo Actions variable TIKR_CI_RUNNER to a larger-runner label when available.
 name: TIKR CI
 
 on:
@@ -18,16 +23,18 @@ permissions:
   actions: write
 
 jobs:
-  build-and-test:
-    runs-on: ubuntu-latest
-
+  detect-changes:
+    runs-on: ubuntu-slim
+    outputs:
+      code_changed: ${{ steps.changes.outputs.code_changed }}
+      docker_gate: ${{ steps.changes.outputs.docker_gate }}
+      recent_green: ${{ steps.changes.outputs.recent_green }}
     steps:
       - uses: actions/checkout@v4
         with:
-          # The docs-only check fetches the PR base itself. Full history is not needed.
           fetch-depth: 1
 
-      - name: Detect code vs docs-only changes (skip expensive build/test/E2E/coverage for pure docs PRs)
+      - name: Detect code vs docs-only changes
         id: changes
         env:
           GH_TOKEN: ${{ github.token }}
@@ -48,9 +55,6 @@ jobs:
               echo "unknown" > /tmp/changed.txt
             fi
           else
-            # A push has no PR file list. Do not write a placeholder here: the
-            # docs-only branch used to treat the word "code" as a non-code diff
-            # and skip tests on main.
             echo "Push event — running full build/test/coverage/E2E."
             echo "push" > /tmp/changed.txt
           fi
@@ -68,14 +72,12 @@ jobs:
               echo "No image inputs changed — dotnet test runs. Docker build and Playwright are skipped."
             fi
           else
-            # Only skip when we positively know the PR is docs/non-code.
             echo "code_changed=false" >> "$GITHUB_OUTPUT"
             echo "docker_gate=false" >> "$GITHUB_OUTPUT"
             echo "Only docs/markdown or unrelated files changed — skipping heavy steps to save runner time."
           fi
           cat /tmp/changed.txt | head -20 || true
 
-          # Skip redundant heavy steps only on explicit re-runs of an already-green SHA.
           if [ "${{ github.run_attempt }}" != "1" ]; then
             SHA="${{ github.sha }}"
             CURRENT_RUN_ID="${{ github.run_id }}"
@@ -88,12 +90,21 @@ jobs:
             fi
           fi
 
+  build-and-test:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.code_changed == 'true' || needs.detect-changes.outputs.code_changed == ''
+    # Public free default is ubuntu-latest (4 vCPU / 16 GB). Set repo var TIKR_CI_RUNNER for paid larger runners.
+    runs-on: ${{ vars.TIKR_CI_RUNNER || 'ubuntu-latest' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
       - name: Setup .NET 10
         uses: actions/setup-dotnet@v6
         with:
           dotnet-version: 10.0.x
           cache: true
-          # No packages.lock.json in this repo. Hash project files instead.
           cache-dependency-path: |
             **/*.csproj
             **/Directory.Build.props
@@ -109,13 +120,14 @@ jobs:
         run: dotnet build TIKR.sln --no-restore --configuration Release
 
       - name: Test with coverage
-        if: (steps.changes.outputs.code_changed == 'true' || steps.changes.outputs.code_changed == '') && steps.changes.outputs.recent_green != 'true'
+        if: needs.detect-changes.outputs.recent_green != 'true'
         run: |
           # GrokLicensed is opt-in live xAI (TIKR_RUN_GROK_LIVE=true); never block default CI.
+          # Quiet logs: verbosity was a large share of wall-clock on 4-core runners.
           dotnet test TIKR.sln \
             --no-build \
             --configuration Release \
-            --verbosity normal \
+            --verbosity minimal \
             --filter "Category!=GrokLicensed" \
             --settings coverlet.runsettings \
             --collect:"XPlat Code Coverage" \
@@ -123,57 +135,14 @@ jobs:
 
       - name: Upload coverage report
         uses: actions/upload-artifact@v4
-        if: always()
+        if: always() && needs.detect-changes.outputs.recent_green != 'true'
         with:
           name: coverage-report
           path: coverage/**/coverage.cobertura.xml
 
       - name: Verify per-assembly coverage thresholds
-        if: (steps.changes.outputs.code_changed == 'true' || steps.changes.outputs.code_changed == '') && steps.changes.outputs.recent_green != 'true'
+        if: needs.detect-changes.outputs.recent_green != 'true'
         run: python3 scripts/check_coverage.py coverage
-        # On failure, the subsequent "Capture failure snapshot" (if: failure()) will emit structured info.
-        # We also write a dedicated file there for high-signal to ollama.
-
-      - name: Setup Node.js for E2E
-        if: (steps.changes.outputs.code_changed == 'true' || steps.changes.outputs.code_changed == '') && steps.changes.outputs.recent_green != 'true' && (steps.changes.outputs.docker_gate == 'true' || steps.changes.outputs.docker_gate == '')
-        uses: actions/setup-node@v7
-        with:
-          node-version: 20
-          cache: npm
-          cache-dependency-path: tests/e2e/package-lock.json
-
-      - name: Cache Playwright browsers
-        if: (steps.changes.outputs.code_changed == 'true' || steps.changes.outputs.code_changed == '') && steps.changes.outputs.recent_green != 'true' && (steps.changes.outputs.docker_gate == 'true' || steps.changes.outputs.docker_gate == '')
-        uses: actions/cache@v6
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ hashFiles('tests/e2e/package-lock.json') }}
-
-      - name: Set up Docker Buildx
-        if: (steps.changes.outputs.code_changed == 'true' || steps.changes.outputs.code_changed == '') && steps.changes.outputs.recent_green != 'true' && (steps.changes.outputs.docker_gate == 'true' || steps.changes.outputs.docker_gate == '')
-        uses: docker/setup-buildx-action@v3
-
-      - name: Build API and Web images
-        if: (steps.changes.outputs.code_changed == 'true' || steps.changes.outputs.code_changed == '') && steps.changes.outputs.recent_green != 'true' && (steps.changes.outputs.docker_gate == 'true' || steps.changes.outputs.docker_gate == '')
-        uses: docker/bake-action@v7
-        with:
-          source: .
-          files: docker/docker-bake.ci.hcl
-          targets: smoke
-          load: true
-          provenance: false
-
-      - name: Docker Build, Smoke Test & E2E Gate
-        if: (steps.changes.outputs.code_changed == 'true' || steps.changes.outputs.code_changed == '') && steps.changes.outputs.recent_green != 'true' && (steps.changes.outputs.docker_gate == 'true' || steps.changes.outputs.docker_gate == '')
-        env:
-          SYNCFUSION_LICENSE_KEY: ${{ secrets.SYNCFUSION_LICENSE_KEY }}
-          TIKR_CI_DOCKER_CACHE: gha
-          TIKR_CI_SKIP_IMAGE_BUILD: 1
-        run: ./scripts/ci-smoke.sh
-
-      - name: Docker and Playwright skipped
-        if: (steps.changes.outputs.code_changed == 'true' || steps.changes.outputs.code_changed == '') && steps.changes.outputs.recent_green != 'true' && steps.changes.outputs.docker_gate == 'false'
-        run: echo "Library-only diff. dotnet test ran. Docker build and Playwright were skipped."
 
       - name: Capture failure snapshot
         if: failure()
@@ -188,7 +157,7 @@ jobs:
             echo "event=${{ github.event_name }}"
           } > failure-context/meta.txt
           dotnet --info > failure-context/dotnet-info.txt 2>&1 || true
-          dotnet test TIKR.sln --no-build --configuration Release --verbosity normal \
+          dotnet test TIKR.sln --no-build --configuration Release --verbosity minimal \
             > failure-context/last-test-output.txt 2>&1 || true
 
           # Structured coverage snippet when the gate fails (helps when gh logs are empty)
@@ -210,15 +179,86 @@ jobs:
           path: failure-context/
           retention-days: 14
 
-      - name: Docs-only or recent-green success (no heavy re-run needed)
-        if: steps.changes.outputs.code_changed != 'true' || steps.changes.outputs.recent_green == 'true'
+      - name: Recent-green success (no heavy re-run needed)
+        if: needs.detect-changes.outputs.recent_green == 'true'
         run: |
-          echo "build-and-test job completes successfully (docs-only or recently green SHA)."
-          echo "Heavy steps were skipped to save time."
-          echo "This avoids re-running long build/test/E2E when only docs changed or the exact commit was already successful recently."
+          echo "build-and-test skipped heavy re-run for an already-green SHA."
+
+  docker-e2e:
+    needs: detect-changes
+    if: >-
+      (needs.detect-changes.outputs.code_changed == 'true' || needs.detect-changes.outputs.code_changed == '')
+      && (needs.detect-changes.outputs.docker_gate == 'true' || needs.detect-changes.outputs.docker_gate == '')
+      && needs.detect-changes.outputs.recent_green != 'true'
+    runs-on: ${{ vars.TIKR_CI_RUNNER || 'ubuntu-latest' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup Node.js for E2E
+        uses: actions/setup-node@v7
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: tests/e2e/package-lock.json
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('tests/e2e/package-lock.json') }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build API and Web images
+        uses: docker/bake-action@v7
+        with:
+          source: .
+          files: docker/docker-bake.ci.hcl
+          targets: smoke
+          load: true
+          provenance: false
+
+      - name: Docker Build, Smoke Test & E2E Gate
+        env:
+          SYNCFUSION_LICENSE_KEY: ${{ secrets.SYNCFUSION_LICENSE_KEY }}
+          TIKR_CI_DOCKER_CACHE: gha
+          TIKR_CI_SKIP_IMAGE_BUILD: 1
+        run: ./scripts/ci-smoke.sh
+
+      - name: Capture docker/E2E failure snapshot
+        if: failure()
+        run: |
+          mkdir -p failure-context
+          {
+            echo "workflow=TIKR CI / docker-e2e"
+            echo "run_id=${{ github.run_id }}"
+            echo "failure_type=docker-e2e"
+          } > failure-context/meta.txt || true
+          docker images > failure-context/docker-images.txt 2>&1 || true
+          ls -l failure-context/ || true
+
+      - name: Upload docker/E2E failure snapshot
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-failure-snapshot-docker-${{ github.run_id }}
+          path: failure-context/
+          retention-days: 14
+
+  docs-only:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.code_changed == 'false'
+    runs-on: ubuntu-slim
+    steps:
+      - run: |
+          echo "Docs/non-code PR — skipped build/test/Docker/E2E."
+          echo "trunk-check still runs as the quality gate."
 
   trunk-check:
-    runs-on: ubuntu-latest
+    runs-on: ${{ vars.TIKR_CI_RUNNER || 'ubuntu-latest' }}
     permissions:
       checks: write
       contents: read
@@ -238,7 +278,6 @@ jobs:
 
       - name: Verify dotnet format
         run: dotnet format TIKR.sln --verify-no-changes
-        # Failure capture (rich diff + reason) happens in the "Capture trunk/format..." step below (if: failure())
 
       - name: Trunk Code Quality
         uses: trunk-io/trunk-action@v1
@@ -253,14 +292,12 @@ jobs:
             echo "trunk_failed=true"
           } > failure-context/meta.txt || true
 
-          # Rich structured format failure info for ollama (when full logs missing)
           {
             echo "failure_type=dotnet-format"
             echo "command=dotnet format TIKR.sln --verify-no-changes"
             echo "common_issues=FINALNEWLINE or CHARSET (migrations, .cs files without trailing newline)"
             echo "advice=run 'dotnet format TIKR.sln' locally and commit the result"
             git diff --name-only HEAD 2>/dev/null | head -10 || true
-            # If any local mods from previous (rare on verify), show
           } > failure-context/format-failure.txt || true
 
           ls -l failure-context/ || true

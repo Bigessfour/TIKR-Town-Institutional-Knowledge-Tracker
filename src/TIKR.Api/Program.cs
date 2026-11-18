@@ -202,7 +202,39 @@ app.UseSerilogRequestLogging(options =>
 if (authEnabled)
     app.MapAuthEndpoints();
 
-app.MapGet("/health", () => Results.Ok(new { status = "healthy", timestamp = DateTime.UtcNow }));
+app.MapGet("/health", (
+    EmbeddingRecoveryState recovery,
+    ILibraryScanService library,
+    IEmailIngestionService email) =>
+{
+    var libraryStatus = library.GetStatus();
+    var emailStatus = email.GetStatus();
+    var recoverySnap = recovery.Snapshot();
+    return Results.Ok(new
+    {
+        status = "healthy",
+        timestamp = DateTime.UtcNow,
+        recovery = new
+        {
+            needed = recoverySnap.RecoveryNeeded,
+            lastAutoReindexUtc = recoverySnap.LastAutoReindexUtc,
+            lastTrigger = recoverySnap.LastTrigger,
+            lastResultSummary = recoverySnap.LastResultSummary,
+            lastError = recoverySnap.LastError
+        },
+        library = new
+        {
+            configured = libraryStatus.Configured,
+            lastScanUtc = libraryStatus.LastScanUtc,
+            scanInProgress = libraryStatus.ScanInProgress
+        },
+        email = new
+        {
+            configured = emailStatus.Configured,
+            lastIngestUtc = emailStatus.LastIngestUtc
+        }
+    });
+});
 
 var api = app.MapGroup("/api");
 if (authEnabled)
@@ -210,7 +242,13 @@ if (authEnabled)
 
 api.MapChatHistoryEndpoints();
 
-api.MapGet("/system/local-status", async (IConfiguration config, IHybridAiService ai, FeatureSettingsState settings) =>
+api.MapGet("/system/local-status", async (
+    IConfiguration config,
+    IHybridAiService ai,
+    FeatureSettingsState settings,
+    EmbeddingRecoveryState recovery,
+    ILibraryScanService library,
+    IEmailIngestionService email) =>
 {
     var snap = settings.Current;
     var town = snap.TownName;
@@ -221,7 +259,31 @@ api.MapGet("/system/local-status", async (IConfiguration config, IHybridAiServic
         dataModified = File.GetLastWriteTimeUtc(dbPath);
 
     var aiStatus = await ai.GetStatusAsync();
-    return Results.Ok(new LocalStorageStatusDto(town, storageLabel, dataModified, aiStatus.OllamaAvailable));
+    var libraryStatus = library.GetStatus();
+    var emailStatus = email.GetStatus();
+    var recoverySnap = recovery.Snapshot();
+
+    string? librarySummary = null;
+    if (libraryStatus.LastResult is { } lr)
+        librarySummary = $"looked at {lr.Scanned}, brought in {lr.Imported}, skipped {lr.Skipped}, failed {lr.Failed}";
+
+    string? emailSummary = null;
+    if (emailStatus.LastResult is { } er)
+        emailSummary = $"ingested {er.Ingested}, skipped {er.Skipped}, errors {er.Errors.Count}";
+
+    return Results.Ok(new LocalStorageStatusDto(
+        town,
+        storageLabel,
+        dataModified,
+        aiStatus.OllamaAvailable,
+        AiStatusMessage: aiStatus.StatusMessage,
+        LastLibraryScanUtc: libraryStatus.LastScanUtc,
+        LastLibraryScanSummary: librarySummary,
+        LastEmailIngestUtc: emailStatus.LastIngestUtc,
+        LastEmailIngestSummary: emailSummary,
+        LastEmbeddingRecoveryUtc: recoverySnap.LastAutoReindexUtc,
+        LastEmbeddingRecoverySummary: recoverySnap.LastResultSummary,
+        EmbeddingRecoveryNeeded: recoverySnap.RecoveryNeeded));
 });
 
 api.MapGet("/system/document-sdk-status", (IConfiguration config, FeatureSettingsState settings) =>
@@ -235,6 +297,9 @@ api.MapGet("/system/document-sdk-status", (IConfiguration config, FeatureSetting
             && settings.Current.UseSyncfusionAgentTools
     });
 });
+
+api.MapGet("/email/ingest-status", (IEmailIngestionService ingestion) =>
+    Results.Ok(ingestion.GetStatus()));
 
 api.MapPost("/email/ingest", async (IEmailIngestionService ingestion, ILogger<Program> endpointLog) =>
 {
@@ -685,7 +750,7 @@ api.MapPost("/documents", async (HttpRequest request, IFileStorageService storag
     var form = await request.ReadFormAsync();
     var file = form.Files.FirstOrDefault();
     if (file is null) return Results.BadRequest("No file uploaded.");
-    if (file.Length > 100 * 1024 * 1024) return Results.BadRequest("File too large (max 100MB).");
+    if (file.Length > DocumentService.MaxUploadBytes) return Results.BadRequest("File too large (max 100MB).");
     if (string.IsNullOrWhiteSpace(file.FileName)) return Results.BadRequest("Invalid filename.");
 
     var isTransient = bool.TryParse(form["isTransient"], out var transientFlag) && transientFlag;
@@ -738,7 +803,7 @@ api.MapPut("/documents/{id:guid}/content", async (
     var form = await request.ReadFormAsync();
     var file = form.Files.FirstOrDefault();
     if (file is null) return Results.BadRequest("No file uploaded.");
-    if (file.Length > 100 * 1024 * 1024) return Results.BadRequest("File too large (max 100MB).");
+    if (file.Length > DocumentService.MaxUploadBytes) return Results.BadRequest("File too large (max 100MB).");
 
     try
     {
@@ -1342,7 +1407,7 @@ api.MapPost("/ai/agent-scan", async (HttpRequest request, IDocumentAgentService 
     var file = request.Form.Files.FirstOrDefault();
     if (file is null || file.Length == 0)
         return Results.BadRequest("No file uploaded.");
-    if (file.Length > 100 * 1024 * 1024) return Results.BadRequest("File too large (max 100MB).");
+    if (file.Length > DocumentService.MaxUploadBytes) return Results.BadRequest("File too large (max 100MB).");
     if (string.IsNullOrWhiteSpace(file.FileName)) return Results.BadRequest("Invalid filename.");
 
     endpointLog.LogInformation(
@@ -1445,7 +1510,7 @@ static void LogStartupDiagnostics(WebApplication app, Microsoft.Extensions.Loggi
         env, contentRoot, urls, logDir);
     logger.LogInformation(
         "Data paths — ConnectionString={ConnectionString}, SqlitePath={SqlitePath}, Exists={DbExists}, FileStorage={Storage}, TIKR_DATA_PATH={DataPath}",
-        effectiveCs,
+        TikrConfiguration.RedactConnectionStringForLog(effectiveCs),
         effectiveDbPath ?? dbPath ?? "(not sqlite file path)",
         (effectiveDbPath ?? dbPath) is not null && File.Exists(effectiveDbPath ?? dbPath!),
         storage,

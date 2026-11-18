@@ -184,6 +184,18 @@ public sealed class LibraryScanService(
                 var currentUser = scope.ServiceProvider.GetRequiredService<ICurrentUserService>();
                 var ai = scope.ServiceProvider.GetRequiredService<IHybridAiService>();
 
+                var fileInfo = new FileInfo(filePath);
+                if (fileInfo.Length > DocumentService.MaxUploadBytes)
+                {
+                    // Deterministic skip — do not call UploadAsync (would throw) or OOM on huge PDFs.
+                    skipped++;
+                    logger.LogWarning(
+                        "Library scan skipped {RelativePath}: {Bytes} bytes exceeds {MaxBytes} byte upload limit",
+                        relativePath, fileInfo.Length, DocumentService.MaxUploadBytes);
+                    errors.Add($"{relativePath}: file too large (max 100MB)");
+                    continue;
+                }
+
                 var fileName = Path.GetFileName(filePath);
                 var ext = Path.GetExtension(fileName);
                 await using var stream = File.OpenRead(filePath);
@@ -198,18 +210,8 @@ public sealed class LibraryScanService(
                     currentUser,
                     ct);
 
-                try
-                {
-                    await ai.TagDocumentAsync(document.Id, ct, relativePath);
-                }
-                catch (Exception tagEx)
-                {
-                    logger.LogWarning(tagEx,
-                        "Library scan uploaded {RelativePath} but tag/embed failed; will retry on next poll if corpus still incomplete",
-                        relativePath);
-                    errors.Add($"{relativePath}: tag/embed — {tagEx.Message}");
-                }
-
+                // Persist the import fingerprint before tagging. Tag/OCR can OOM the API
+                // container; without this row the next poll re-uploads forever.
                 existing ??= await db.LibraryImportRecords
                     .FirstOrDefaultAsync(r => r.RelativePath == relativePath, ct);
 
@@ -250,6 +252,18 @@ public sealed class LibraryScanService(
                 logger.LogInformation(
                     "Library scan imported {RelativePath} as document {DocumentId}",
                     relativePath, document.Id);
+
+                try
+                {
+                    await ai.TagDocumentAsync(document.Id, ct, relativePath);
+                }
+                catch (Exception tagEx)
+                {
+                    logger.LogWarning(tagEx,
+                        "Library scan uploaded {RelativePath} but tag/embed failed; will retry on next poll if corpus still incomplete",
+                        relativePath);
+                    errors.Add($"{relativePath}: tag/embed — {tagEx.Message}");
+                }
             }
             catch (Exception ex)
             {
