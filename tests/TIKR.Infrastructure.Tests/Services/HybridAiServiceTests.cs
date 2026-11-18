@@ -309,6 +309,8 @@ public class HybridAiServiceTests
         var ollama = new Mock<IOllamaChatClientFactory>();
         ollama.Setup(o => o.IsAvailableAsync(It.IsAny<CancellationToken>())).ReturnsAsync(true);
         ollama.SetupGet(o => o.ChatModel).Returns("llama3.2:3b");
+        ollama.Setup(o => o.GetModelInventoryAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new OllamaModelInventoryDto(true, true, true, 1, "Local helper ready."));
 
         var grok = CreateEnabledGrok("ok");
         var sut = CreateService(db, ollama.Object, grok);
@@ -317,6 +319,8 @@ public class HybridAiServiceTests
         status.OllamaAvailable.Should().BeTrue();
         status.OllamaModel.Should().Be("llama3.2:3b");
         status.GrokEnabled.Should().BeTrue();
+        status.EmbeddingModelPresent.Should().BeTrue();
+        status.StatusMessage.Should().Contain("ready");
     }
 
     [Fact]
@@ -326,10 +330,13 @@ public class HybridAiServiceTests
         var ollama = new Mock<IOllamaChatClientFactory>();
         ollama.Setup(o => o.IsAvailableAsync(It.IsAny<CancellationToken>())).ReturnsAsync(false);
         ollama.SetupGet(o => o.ChatModel).Returns("llama3.2:3b");
+        ollama.Setup(o => o.GetModelInventoryAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new OllamaModelInventoryDto(false, false, false, 0, "Local helper offline."));
 
         var sut = CreateService(db, ollama.Object, DisabledGrok);
         var status = await sut.GetStatusAsync();
         status.OllamaAvailable.Should().BeFalse();
+        status.StatusMessage.Should().Contain("offline");
     }
 
     [Fact]
@@ -779,8 +786,11 @@ public class HybridAiServiceTests
         var factory = new Mock<IOllamaChatClientFactory>();
         factory.Setup(f => f.CreateChatClient()).Returns(chatClient ?? new StubChatClient(responseText));
         factory.SetupGet(f => f.ChatModel).Returns("test-model");
-        factory.Setup(f => f.CreateEmbeddingGenerator(It.IsAny<string>()))
+        factory.SetupGet(f => f.EmbeddingModel).Returns("nomic-embed-text");
+        factory.Setup(f => f.CreateEmbeddingGenerator(It.IsAny<string?>()))
             .Returns(new StubEmbeddingGenerator(embedder ?? (_ => null)));
+        factory.Setup(f => f.GetModelInventoryAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new OllamaModelInventoryDto(true, true, true, 0, "Local helper ready."));
         return factory.Object;
     }
 

@@ -223,17 +223,85 @@ public static class TikrConfiguration
     public static string? GetAdminBootstrapPassword(IConfiguration configuration) =>
         configuration["TIKR_ADMIN_PASSWORD"];
 
+    /// <summary>Minimum UTF-8 character length for <c>TIKR_JWT_SIGNING_KEY</c> when auth is enabled.</summary>
+    public const int MinJwtSigningKeyLength = 32;
+
     public static string GetJwtSigningKey(IConfiguration configuration)
     {
         var key = configuration["TIKR_JWT_SIGNING_KEY"];
         if (!string.IsNullOrWhiteSpace(key))
+        {
+            if (IsAuthEnabled(configuration))
+                EnsureJwtSigningKeyLength(key);
             return key;
+        }
 
         if (IsAuthEnabled(configuration))
             throw new InvalidOperationException(
                 "TIKR_JWT_SIGNING_KEY is required when authentication is enabled.");
 
         return TikrAuthDefaults.DevDisabledJwtSigningKey;
+    }
+
+    /// <summary>
+    /// Throws when auth is on and the signing key is shorter than <see cref="MinJwtSigningKeyLength"/>.
+    /// Never logs the key value.
+    /// </summary>
+    public static void EnsureJwtSigningKeyLength(string key)
+    {
+        if (string.IsNullOrWhiteSpace(key) || key.Trim().Length < MinJwtSigningKeyLength)
+        {
+            throw new InvalidOperationException(
+                $"TIKR_JWT_SIGNING_KEY must be at least {MinJwtSigningKeyLength} characters when authentication is enabled.");
+        }
+    }
+
+    /// <summary>
+    /// Ensures SQLite connection strings include shared cache and a command timeout suitable for NAS disks.
+    /// WAL is enforced at open via <c>PRAGMA journal_mode=WAL</c> (see Infrastructure init).
+    /// </summary>
+    public static string EnsureSqliteConnectionDefaults(string connectionString)
+    {
+        if (string.IsNullOrWhiteSpace(connectionString))
+            return connectionString;
+
+        var trimmed = connectionString.Trim().TrimEnd(';');
+        if (!trimmed.Contains("Data Source=", StringComparison.OrdinalIgnoreCase)
+            && !trimmed.Contains("DataSource=", StringComparison.OrdinalIgnoreCase))
+            return connectionString;
+
+        if (!trimmed.Contains("Cache=", StringComparison.OrdinalIgnoreCase))
+            trimmed += ";Cache=Shared";
+
+        if (!trimmed.Contains("Default Timeout=", StringComparison.OrdinalIgnoreCase)
+            && !trimmed.Contains("Command Timeout=", StringComparison.OrdinalIgnoreCase))
+            trimmed += ";Default Timeout=30";
+
+        return trimmed;
+    }
+
+    /// <summary>
+    /// Redacts password= / pwd= segments from connection strings before logging.
+    /// </summary>
+    public static string RedactConnectionStringForLog(string? connectionString)
+    {
+        if (string.IsNullOrWhiteSpace(connectionString))
+            return "(null)";
+
+        var parts = connectionString.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        for (var i = 0; i < parts.Length; i++)
+        {
+            var part = parts[i];
+            var eq = part.IndexOf('=');
+            if (eq <= 0)
+                continue;
+            var name = part[..eq].Trim();
+            if (name.Equals("Password", StringComparison.OrdinalIgnoreCase)
+                || name.Equals("Pwd", StringComparison.OrdinalIgnoreCase))
+                parts[i] = $"{name}=***";
+        }
+
+        return string.Join(';', parts);
     }
 
     public static int GetJwtExpirationHours(IConfiguration configuration) =>
@@ -308,7 +376,8 @@ public static class TikrConfiguration
     }
 
     /// <summary>
-    /// Documents (and knowledge entries) loaded per reindex batch before SaveChanges + change-tracker clear. Default 20.
+    /// Documents (and knowledge entries) loaded per reindex batch before SaveChanges + change-tracker clear.
+    /// Default 10 (DS225+ / 6 GB RAM).
     /// </summary>
     public static int GetEmbeddingReindexBatchSize(IConfiguration? configuration)
     {
@@ -316,7 +385,83 @@ public static class TikrConfiguration
             int.TryParse(configuration["TIKR_EMBEDDING_REINDEX_BATCH_SIZE"], out var fromEnv) &&
             fromEnv > 0)
             return fromEnv;
-        return 20;
+        return 10;
+    }
+
+    /// <summary>
+    /// Max embedding chunks generated per document or vault entry. Default 40 (~20k chars at 500-char chunks).
+    /// </summary>
+    public static int GetMaxEmbeddingChunksPerDocument(IConfiguration? configuration)
+    {
+        if (configuration is not null &&
+            int.TryParse(configuration["TIKR_MAX_EMBEDDING_CHUNKS"], out var fromEnv) &&
+            fromEnv > 0)
+            return fromEnv;
+        return 40;
+    }
+
+    /// <summary>
+    /// Max characters of document extract kept for tagging/embedding source text. Default 50_000.
+    /// </summary>
+    public static int GetMaxEmbeddingSourceChars(IConfiguration? configuration)
+    {
+        if (configuration is not null &&
+            int.TryParse(configuration["TIKR_MAX_EMBEDDING_SOURCE_CHARS"], out var fromEnv) &&
+            fromEnv >= 4_000)
+            return fromEnv;
+        return 50_000;
+    }
+
+    /// <summary>HTTP timeout for Ollama probes (/api/tags, /api/ps). Default 10 seconds.</summary>
+    public static int GetOllamaHttpTimeoutSeconds(IConfiguration? configuration)
+    {
+        if (configuration is not null &&
+            int.TryParse(configuration["TIKR_OLLAMA_HTTP_TIMEOUT_SECONDS"], out var fromEnv) &&
+            fromEnv > 0)
+            return fromEnv;
+        return 10;
+    }
+
+    /// <summary>Open the Ollama circuit after this many consecutive failures. Default 5.</summary>
+    public static int GetOllamaCircuitBreakerFailures(IConfiguration? configuration)
+    {
+        if (configuration is not null &&
+            int.TryParse(configuration["TIKR_OLLAMA_CIRCUIT_FAILURES"], out var fromEnv) &&
+            fromEnv > 0)
+            return fromEnv;
+        return 5;
+    }
+
+    /// <summary>Seconds to keep the Ollama circuit open before a trial call. Default 60.</summary>
+    public static int GetOllamaCircuitBreakerCoolSeconds(IConfiguration? configuration)
+    {
+        if (configuration is not null &&
+            int.TryParse(configuration["TIKR_OLLAMA_CIRCUIT_COOL_SECONDS"], out var fromEnv) &&
+            fromEnv > 0)
+            return fromEnv;
+        return 60;
+    }
+
+    /// <summary>
+    /// Skip embedding recovery when Ollama reports at least this many loaded models (RAM pressure). Default 2.
+    /// </summary>
+    public static int GetOllamaMaxLoadedModelsForRecovery(IConfiguration? configuration)
+    {
+        if (configuration is not null &&
+            int.TryParse(configuration["TIKR_OLLAMA_MAX_LOADED_FOR_RECOVERY"], out var fromEnv) &&
+            fromEnv > 0)
+            return fromEnv;
+        return 2;
+    }
+
+    /// <summary>
+    /// Max files processed per email inbox poll. Default 50. Set 0 for unlimited.
+    /// </summary>
+    public static int GetEmailIngestMaxFilesPerRun(IConfiguration configuration)
+    {
+        if (!int.TryParse(configuration["TIKR_EMAIL_INGEST_MAX_FILES"], out var max) || max < 0)
+            return 50;
+        return max == 0 ? int.MaxValue : max;
     }
 
     /// <summary>

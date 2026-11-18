@@ -2,7 +2,7 @@
 
 Checklist for maintainers closing active development and publishing **v1.0.0** (or next semver) for Deb’s NAS install.
 
-**Clerk install (Deb):** [deb-nas-install.md](deb-nas-install.md)  
+**Clerk install (Deb):** [deb-nas-install.md](deb-nas-install.md)
 **Living status:** [action-items.md](action-items.md), [incremental-plan.md](incremental-plan.md)
 
 ---
@@ -30,12 +30,12 @@ Clerk walkthrough and user guide: [clerk-tour-deployment.md](clerk-tour-deployme
 
 ## Phase 2 — Final sign-off (human + docs)
 
-| Gate | Owner | Evidence |
-|------|--------|----------|
-| Phase 0 PR #3 — Deb NAS doc | Maintainer | [deb-nas-install.md](deb-nas-install.md) linked from README |
-| Phase 0 PR #4 — Walkthrough | Deb / stand-in | Record session using [demo-deb.md](demo-deb.md); check bus-factor box in [action-items.md](action-items.md) |
-| Condensed Syncfusion / UI pass | Maintainer | Note date in [syncfusion-control-audit.md](syncfusion-control-audit.md) |
-| Layer 2 Done Detector | Maintainer | [action-items.md](action-items.md) Project-Level gate |
+| Gate                           | Owner          | Evidence                                                                                                    |
+| ------------------------------ | -------------- | ----------------------------------------------------------------------------------------------------------- |
+| Phase 0 PR #3 — Deb NAS doc    | Maintainer     | [deb-nas-install.md](deb-nas-install.md) linked from README                                                 |
+| Phase 0 PR #4 — Walkthrough    | Deb / stand-in | Record session using [demo-deb.md](demo-deb.md); check bus-factor box in [action-items.md](action-items.md) |
+| Condensed Syncfusion / UI pass | Maintainer     | Note date in [syncfusion-control-audit.md](syncfusion-control-audit.md)                                     |
+| Layer 2 Done Detector          | Maintainer     | [action-items.md](action-items.md) Project-Level gate                                                       |
 
 **Post-ship (do not block tag):** full axe pass, Word/Spreadsheet edit+save, IMAP, 10C-C badge, licensed NAS agent smoke — tracked under **Post-ship / v1.1+** in action-items. (PDF/Word/Spreadsheet **preview** shipped.)
 
@@ -98,11 +98,53 @@ Switch to `docker-compose.prod.yml` + GHCR after the first successful release wo
 
 ---
 
+## NAS durability checklist (SQLite + logs + vault)
+
+For Synology DS225+ (6 GB RAM, local-first, one clerk). No document-at-rest encryption.
+
+### SQLite
+
+- TIKR opens SQLite with **WAL** (`PRAGMA journal_mode=WAL`), **busy_timeout=5000**, and connection defaults `Cache=Shared;Default Timeout=30`.
+- Keep the DB under the bind-mounted data path (`TIKR_DATA_PATH`, typically `/volume1/tikr/data/tikr.db`).
+- **Vacuum schedule (recommended):** once a month during idle hours, stop API briefly or use Synology Task Scheduler with the API container stopped, then:
+
+  ```bash
+  sqlite3 /volume1/tikr/data/tikr.db "PRAGMA integrity_check; VACUUM;"
+  ```
+
+- **Hyper Backup / snapshots:** include the whole `TIKR_DATA_PATH` folder (DB + `documents/` + `.dpkeys` + logs). Daily incremental + weekly retention is enough for one-clerk towns.
+- Confirm WAL files (`tikr.db-wal`, `tikr.db-shm`) live next to the DB on the same volume.
+
+### Vault / clerk handover export
+
+- In the UI: **Vault → Copy Everything for New Clerk** (clipboard) and **Generate Complete Handover Package** (PDF download via `GET /api/vault/handover-package`).
+- Exports are downloads, not a fixed NAS folder — save the PDF into the town share after generation.
+- Clerk guide: `src/TIKR.Web/wwwroot/help/clerk-user-guide.md`; install notes: [deb-nas-install.md](deb-nas-install.md).
+
+### Logs (rotation / retention)
+
+- API Serilog writes rolling files under `TIKR_DATA_PATH/logs` (or `/data/logs` in Compose) with **14-day** retention (`retainedFileCountLimit: 14`).
+- On Synology, also enable **Log Center** rotation for Docker if you collect container stdout; keep at least 14 days to match app logs.
+- Do not ship logs that might contain connection strings with passwords — startup redacts `Password=` / `Pwd=` segments.
+
+### Optional auth bootstrap (no behavior change)
+
+When enabling multi-user auth, set all of: `TIKR_AUTH_ENABLED`, `TIKR_ADMIN_EMAIL`, `TIKR_ADMIN_PASSWORD`, and `TIKR_JWT_SIGNING_KEY` (**≥ 32 characters**). Keys/passwords are never logged. See `docker/.env.example`.
+
+### Operator status
+
+- `GET /health` — liveness plus last recovery / library / email timestamps.
+- `GET /api/system/local-status` — Settings “At a glance” + background job last-run summary.
+- Settings page shows library scan, email ingest, and embedding recovery last-run lines.
+
+---
+
 ## Related
 
-| Doc | Purpose |
-|-----|---------|
-| [docker/README.md](../docker/README.md) | Dev compose, host Ollama, Mac port 5001 |
-| [validate-prod.sh](../validate-prod.sh) | Automated smoke after deploy |
-| [demo-deb.md](demo-deb.md) | Clerk demo script |
-| [AGENTS.md](../AGENTS.md) | Agent rules + done-detector |
+| Doc                                      | Purpose                                 |
+| ---------------------------------------- | --------------------------------------- |
+| [docker/README.md](../docker/README.md)  | Dev compose, host Ollama, Mac port 5001 |
+| [validate-prod.sh](../validate-prod.sh)  | Automated smoke after deploy            |
+| [demo-deb.md](demo-deb.md)               | Clerk demo script                       |
+| [AGENTS.md](../AGENTS.md)                | Agent rules + done-detector             |
+| [deb-nas-install.md](deb-nas-install.md) | Clerk-facing NAS install                |

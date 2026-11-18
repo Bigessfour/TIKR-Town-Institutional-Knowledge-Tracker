@@ -19,6 +19,8 @@ public sealed class EmbeddingRecoveryHostedService(
     EmbeddingRecoveryState state,
     EmbeddingRecoveryStateStore stateStore,
     IConfiguration configuration,
+    OllamaCircuitBreaker circuitBreaker,
+    EmbeddingReindexGate reindexGate,
     ILogger<EmbeddingRecoveryHostedService> logger) : BackgroundService
 {
     /// <summary>True until we observe a healthy Ollama poll (or after a failed poll).</summary>
@@ -92,6 +94,35 @@ public sealed class EmbeddingRecoveryHostedService(
         {
             _ollamaWasUnhealthy = true;
             TikrActionLog.Info(logger, "AI.EmbeddingRecovery", "Ollama unavailable — waiting");
+            return;
+        }
+
+        if (circuitBreaker.IsOpen || circuitBreaker.LastCallTimedOut)
+        {
+            TikrActionLog.Info(logger, "AI.EmbeddingRecovery",
+                "Ollama circuit open or recent timeout — deferring recovery");
+            return;
+        }
+
+        if (reindexGate.IsBusy)
+        {
+            TikrActionLog.Info(logger, "AI.EmbeddingRecovery", "Reindex already in progress — skip");
+            return;
+        }
+
+        var maxLoaded = TikrConfiguration.GetOllamaMaxLoadedModelsForRecovery(configuration);
+        if (status.LoadedModelCount >= maxLoaded)
+        {
+            TikrActionLog.Info(logger, "AI.EmbeddingRecovery",
+                $"Ollama load high (Loaded={status.LoadedModelCount} >= {maxLoaded}) — deferring recovery");
+            return;
+        }
+
+        if (!status.EmbeddingModelPresent)
+        {
+            state.NoteError(status.StatusMessage ?? "nomic-embed-text missing");
+            TikrActionLog.Info(logger, "AI.EmbeddingRecovery",
+                status.StatusMessage ?? "Embedding model missing — waiting");
             return;
         }
 

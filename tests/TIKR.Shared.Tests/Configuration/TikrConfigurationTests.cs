@@ -396,4 +396,60 @@ public class TikrConfigurationTests
 
         TikrConfiguration.GetJwtExpirationHours(BuildConfig(values)).Should().Be(expected);
     }
+
+    [Fact]
+    public void GetEmbeddingReindexBatchSize_DefaultsToTen()
+    {
+        TikrConfiguration.GetEmbeddingReindexBatchSize(BuildConfig([]))
+            .Should().Be(10);
+    }
+
+    [Fact]
+    public void GetMaxEmbeddingChunksPerDocument_DefaultsToForty()
+    {
+        TikrConfiguration.GetMaxEmbeddingChunksPerDocument(BuildConfig([]))
+            .Should().Be(40);
+    }
+
+    [Fact]
+    public void GetMaxEmbeddingSourceChars_DefaultsToFiftyThousand()
+    {
+        TikrConfiguration.GetMaxEmbeddingSourceChars(BuildConfig([]))
+            .Should().Be(50_000);
+    }
+
+    [Fact]
+    public void EnsureSqliteConnectionDefaults_AddsCacheAndTimeout()
+    {
+        TikrConfiguration.EnsureSqliteConnectionDefaults("Data Source=/data/tikr.db")
+            .Should().Contain("Cache=Shared")
+            .And.Contain("Default Timeout=30");
+    }
+
+    [Fact]
+    public void RedactConnectionStringForLog_MasksPassword()
+    {
+        TikrConfiguration.RedactConnectionStringForLog("Host=db;Password=secret;Username=u")
+            .Should().Be("Host=db;Password=***;Username=u");
+    }
+
+    [Fact]
+    public void GetJwtSigningKey_ThrowsWhenAuthEnabledAndKeyTooShort()
+    {
+        var act = () => TikrConfiguration.GetJwtSigningKey(BuildConfig(new Dictionary<string, string?>
+        {
+            ["TIKR_AUTH_ENABLED"] = "true",
+            ["TIKR_JWT_SIGNING_KEY"] = "too-short"
+        }));
+
+        act.Should().Throw<InvalidOperationException>()
+            .WithMessage("*32*");
+    }
+
+    [Fact]
+    public void GetEmailIngestMaxFilesPerRun_DefaultsToFifty()
+    {
+        TikrConfiguration.GetEmailIngestMaxFilesPerRun(BuildConfig([]))
+            .Should().Be(50);
+    }
 }

@@ -24,8 +24,24 @@ public sealed class FolderEmailIngestionService(
         ".pdf", ".docx", ".doc", ".xlsx", ".xls", ".txt", ".md", ".csv", ".eml", ".msg"
     };
 
+    private readonly object _statusGate = new();
+    private EmailIngestionResult? _lastResult;
+    private DateTime? _lastIngestUtc;
+
     public bool IsConfigured =>
         !string.IsNullOrWhiteSpace(TikrConfiguration.GetEmailInboxPath(configuration));
+
+    public EmailIngestionStatusDto GetStatus()
+    {
+        lock (_statusGate)
+        {
+            return new EmailIngestionStatusDto(
+                Configured: IsConfigured,
+                InboxPath: TikrConfiguration.GetEmailInboxPath(configuration),
+                LastResult: _lastResult,
+                LastIngestUtc: _lastIngestUtc);
+        }
+    }
 
     public async Task<EmailIngestionResult> IngestPendingAsync(CancellationToken ct = default)
     {
@@ -45,13 +61,24 @@ public sealed class FolderEmailIngestionService(
         var contactsUpdated = 0;
         var knowledgeCreated = 0;
         var extractEnabled = TikrConfiguration.GetEmailStructuredExtractEnabled(configuration);
+        var maxFiles = TikrConfiguration.GetEmailIngestMaxFilesPerRun(configuration);
+        var processedCount = 0;
 
         TikrActionLog.Started(logger, "Email.FolderIngest",
-            $"Inbox={inboxPath} StructuredExtract={extractEnabled}");
+            $"Inbox={inboxPath} StructuredExtract={extractEnabled} MaxFiles={maxFiles}");
 
         foreach (var filePath in Directory.EnumerateFiles(inboxPath))
         {
             ct.ThrowIfCancellationRequested();
+            if (processedCount >= maxFiles)
+            {
+                skipped++;
+                logger.LogInformation(
+                    "Email folder deferring remaining files (MaxFiles={MaxFiles})",
+                    maxFiles);
+                break;
+            }
+
             var fileName = Path.GetFileName(filePath);
             var ext = Path.GetExtension(fileName);
             if (!AllowedExtensions.Contains(ext))
@@ -61,6 +88,7 @@ public sealed class FolderEmailIngestionService(
                 continue;
             }
 
+            processedCount++;
             try
             {
                 await using var scope = scopeFactory.CreateAsyncScope();
@@ -136,7 +164,7 @@ public sealed class FolderEmailIngestionService(
         TikrActionLog.Completed(logger, "Email.FolderIngest",
             $"Ingested={ingested} Skipped={skipped} Errors={errors.Count} ContactsCreated={contactsCreated} ContactsUpdated={contactsUpdated} KnowledgeCreated={knowledgeCreated}");
 
-        return new EmailIngestionResult(
+        var result = new EmailIngestionResult(
             ingested,
             skipped,
             errors,
@@ -144,6 +172,14 @@ public sealed class FolderEmailIngestionService(
             contactsUpdated,
             knowledgeCreated,
             notices);
+
+        lock (_statusGate)
+        {
+            _lastResult = result;
+            _lastIngestUtc = DateTime.UtcNow;
+        }
+
+        return result;
     }
 
     private static bool IsEmailLike(string ext) =>
