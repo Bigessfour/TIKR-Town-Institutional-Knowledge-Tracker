@@ -81,7 +81,7 @@ docker compose -f docker/docker-compose.yml up --build
 ### 3. Git workflow
 
 - `main` is protected — all changes via pull requests
-- CI runs on every PR: **[TIKR CI](.github/workflows/ci.yml)** (build, test, Trunk lint/format, Ollama failure triage)
+- CI runs on every PR: **[TIKR CI](.github/workflows/ci.yml)** (build, test, Trunk lint/format, Docker smoke)
 - Merge when both checks pass
 
 ### 4. Tests

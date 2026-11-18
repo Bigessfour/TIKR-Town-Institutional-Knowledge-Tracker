@@ -1,4 +1,4 @@
-# Primary CI gate: build, test, lint, Docker/E2E, and Ollama failure triage (on failure only).
+# Primary CI gate: build, test, lint, and Docker/E2E.
 # Heavy work runs in parallel: dotnet gate || docker gate || trunk.
 #
 # Runner notes (public repo):
@@ -160,6 +160,7 @@ jobs:
           dotnet test TIKR.sln --no-build --configuration Release --verbosity minimal \
             > failure-context/last-test-output.txt 2>&1 || true
 
+          # Structured coverage snippet when the gate fails (helps when gh logs are empty)
           python3 scripts/check_coverage.py coverage > failure-context/coverage-raw.txt 2>&1 || true
           if grep -qi 'FAIL\|coverage' failure-context/coverage-raw.txt 2>/dev/null; then
             {
@@ -308,29 +309,3 @@ jobs:
           name: ci-failure-snapshot-trunk-${{ github.run_id }}
           path: failure-context/
           retention-days: 14
-
-  ollama-diagnosis:
-    needs: [build-and-test, docker-e2e, trunk-check]
-    # docker-e2e may be skipped; still diagnose when any required gate failed.
-    if: >-
-      always()
-      && !cancelled()
-      && (
-        needs.build-and-test.result == 'failure'
-        || needs.docker-e2e.result == 'failure'
-        || needs.trunk-check.result == 'failure'
-      )
-    runs-on: ubuntu-slim
-    permissions:
-      actions: read
-      contents: read
-      pull-requests: write
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Run Ollama failure diagnosis
-        uses: ./.github/actions/ollama-ci-diagnosis
-        with:
-          run_id: ${{ github.run_id }}
-          workflow_name: TIKR CI
