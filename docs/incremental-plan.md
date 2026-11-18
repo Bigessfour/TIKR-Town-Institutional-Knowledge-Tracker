@@ -64,7 +64,7 @@ Living roadmap for TIKR development. Agents and contributors: read the **current
 
 - `.gitignore` hardened (`.agents/`, coverage, keys, env variants)
 - Trunk: gitleaks, yamllint, markdownlint, hadolint (+ dotnet format via workflow SDK 10)
-- LICENSE (MIT), SECURITY.md, PR template, dependabot
+- LICENSE (MIT), SECURITY.md, PR template (Dependabot removed; manual dependency bumps)
 - Initial commit pushed to `main`
 
 **Key paths:** `.trunk/`, `.github/workflows/`, `.gitleaks.toml`
@@ -90,7 +90,7 @@ Living roadmap for TIKR development. Agents and contributors: read the **current
 | 2    | Commit EF Core `TikrDbContext` + Migrations                                                    | done                                                                                           |
 | 3    | Run `dotnet format TIKR.sln`; verify `dotnet test` + Trunk on PR                               | done                                                                                           |
 | 4    | Merge PR `fix/ci-green-main` with green **TIKR CI** + **Trunk**                                | done ([PR #9](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/9)) |
-| 5    | Triage Dependabot PRs after `main` is green — see [dependabot-policy.md](dependabot-policy.md) | done                                                                                           |
+| 5    | Dependabot removed — dependency bumps are manual focused PRs                                   | done                                                                                           |
 
 **Verify locally:**
 
@@ -108,7 +108,7 @@ Repeat-safe checklist — safe to re-run anytime:
 - [x] **Settings → Branches:** protect `main`; require PR; require checks `build-and-test` + `trunk_check`
 - [x] **Settings → General:** **Allow auto-merge** enabled
 - [x] **Settings → Code security:** Secret scanning + Push protection (already enabled)
-- [x] **Settings → Advanced Security:** Dependabot security updates + grouped security (security updates enabled via API; grouping via `dependabot.yml` `applies-to: security-updates` groups)
+- [x] **Settings → Advanced Security:** Dependabot alerts/updates **disabled** (config removed; bumps are manual)
 - [x] **Settings → General:** topics (`blazor`, `dotnet`, `sqlite`, `ollama`, `municipal`)
 - [x] **Settings → Actions:** allow actions; read-only default `GITHUB_TOKEN` — verified 2026-07-25 via `gh api` (`default_workflow_permissions: read`)
 

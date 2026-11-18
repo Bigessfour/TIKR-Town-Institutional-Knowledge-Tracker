@@ -205,4 +205,4 @@ Captured from codebase + plan review. Tracks stubs, Phase 0 closure, and non-Req
 - [x] Merged feature branches deleted from origin (`phase10b`, `phase0-*`, `phase9-text-extraction`, `phase10c-agent-tools-a1`)
 - [x] E2E work rebased to `feature/phase10c-e2e-proof` after #35 squash-merge
 - [ ] Merge PR #36; delete `feature/phase10c-e2e-proof` after merge
-- [ ] Dependabot action bumps ([#15](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/15)–[#17](https://github.com/Bigessfour/TIKR-Town-Institutional-Knowledge-Tracker/pull/17)) — green CI; `@dependabot rebase` requested
+- [x] Dependabot removed from the project — dependency bumps are manual focused PRs

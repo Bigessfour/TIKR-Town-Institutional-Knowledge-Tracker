@@ -33,7 +33,7 @@ Help design, implement, and document TIKR: Blazor Interactive Server UI, Minimal
    ```
 4. Open PR; merge only when **TIKR CI** and **Trunk** are green.
 5. Do not commit secrets, `.env` files, or `.cursor/mcp.json`.
-6. **Dependabot:** follow [docs/dependabot-policy.md](docs/dependabot-policy.md) — never merge red dependency PRs; majors are manual.
+6. **Dependencies:** bump NuGet / Actions manually via focused PRs; do not re-enable Dependabot.
 
 ## Secrets
 
@@ -202,6 +202,5 @@ For new features: read the active [incremental-plan](docs/incremental-plan.md) p
 | `~/.cursor/skills/function-inventory/scripts/update-function-inventory.py`   | Personal Python lightweight function tracker (preferred)     |
 | [.github/workflows/ci.yml](.github/workflows/ci.yml)                         | Build, test, Docker smoke                                    |
 | [.github/workflows/ci.yml](.github/workflows/ci.yml)                         | Build, test, Trunk lint, Ollama failure triage               |
-| [docs/dependabot-policy.md](docs/dependabot-policy.md)                       | Dependabot PR handling                                       |
 | [.github/SECURITY.md](.github/SECURITY.md)                                   | Vulnerability reporting                                      |
 | [.cursor/rules/tikr.mdc](.cursor/rules/tikr.mdc)                             | Always-on Cursor rule                                        |
