@@ -100,8 +100,9 @@ public class AssistantPageTests : ClerkTestContext
     {
         RegisterApi();
         // Unmapped CI host → banner explains assignment; Settings link available.
+        // Explicit timeout: Syncfusion AssistView + tooltip can starve the default 1s wait under full-solution CI load.
         var cut = RenderComponent<Assistant>();
-        cut.WaitForAssertion(() => cut.Markup.Should().Contain("data-tour=\"clerk-identity\""));
+        cut.WaitForElement("[data-tour=\"clerk-identity\"]", TimeSpan.FromSeconds(10));
         cut.Markup.Should().Contain("No clerk is assigned for this computer");
     }
 

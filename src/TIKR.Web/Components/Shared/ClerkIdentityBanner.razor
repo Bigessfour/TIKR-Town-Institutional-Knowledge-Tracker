@@ -3,33 +3,34 @@
 
 @using TIKR.Web.Services
 
-<SfTooltip Content="@TooltipText" Position="Position.TopCenter">
-<div class="clerk-identity-banner @(Compact ? "clerk-identity-banner-compact" : null)"
-     role="status"
-     data-tour="clerk-identity">
-    @if (ClerkIdentity.IsResolved)
-    {
-        <span>
-            This computer’s clerk:
-            <strong>@ClerkIdentity.DisplayName</strong>
-            @if (ClerkIdentity.IsManualOverride)
+@* data-tour stays outside SfTooltip so bUnit can find it even when Syncfusion defers tooltip children. *@
+<div data-tour="clerk-identity" role="status">
+    <SfTooltip Content="@TooltipText" Position="Position.TopCenter">
+        <div class="clerk-identity-banner @(Compact ? "clerk-identity-banner-compact" : null)">
+            @if (ClerkIdentity.IsResolved)
             {
-                <span class="text-muted"> — chosen on this computer</span>
+                <span>
+                    This computer’s clerk:
+                    <strong>@ClerkIdentity.DisplayName</strong>
+                    @if (ClerkIdentity.IsManualOverride)
+                    {
+                        <span class="text-muted"> — chosen on this computer</span>
+                    }
+                </span>
             }
-        </span>
-    }
-    else
-    {
-        <span>
-            No clerk is assigned for this computer.
-            @if (_showSettingsLink)
+            else
             {
-                <a href="/settings">Choose a clerk in Settings</a>
+                <span>
+                    No clerk is assigned for this computer.
+                    @if (_showSettingsLink)
+                    {
+                        <a href="/settings">Choose a clerk in Settings</a>
+                    }
+                </span>
             }
-        </span>
-    }
+        </div>
+    </SfTooltip>
 </div>
-</SfTooltip>
 
 @code {
     [Parameter] public bool Compact { get; set; }
